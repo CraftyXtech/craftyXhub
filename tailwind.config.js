@@ -12,8 +12,40 @@ export default {
 
     theme: {
         extend: {
+            colors: {
+                primary: '#007bff',  // blue from original CSS
+                'primary-dark': '#0056b3', // darker blue for hover
+                secondary: '#6c757d', // gray from original CSS
+                'dark': '#212529',
+                'light': '#f8f9fa',
+                'border': '#dee2e6',
+                'text': '#495057',
+            },
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Roboto', ...defaultTheme.fontFamily.sans],
+                heading: ['Poppins', ...defaultTheme.fontFamily.sans],
+            },
+            spacing: {
+                'sm': '8px',
+                'md': '16px',
+                'lg': '24px',
+                'xl': '32px',
+            },
+            maxWidth: {
+                'container': '1200px',
+            },
+            typography: {
+                DEFAULT: {
+                    css: {
+                        maxWidth: '1200px',
+                        a: {
+                            color: '#007bff',
+                            '&:hover': {
+                                color: '#0056b3',
+                            },
+                        },
+                    },
+                },
             },
         },
     },
