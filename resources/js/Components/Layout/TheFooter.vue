@@ -1,67 +1,78 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 
+// Updated footer categories to match main navigation
 const footerCategories = [
     {
         title: 'TECHNOLOGY',
         links: [
-            { name: 'AI & Tech', route: 'technology' },
-            { name: 'Software & Apps', route: 'technology' },
-            { name: 'Cybersecurity', route: 'technology' }
+            { name: 'Web Dev', route: 'technology' }, 
+            { name: 'AI', route: 'technology' },
+            { name: 'Hardware', route: 'technology' }
+            // Add more specific tech links if needed
         ]
     },
     {
-        title: 'CRAFTS',
+        title: 'FINANCE',
         links: [
-            { name: 'Knitting', route: 'crafts' },
-            { name: 'Pottery', route: 'crafts' },
-            { name: 'Paper Crafts', route: 'crafts' },
-            { name: 'DIY Projects', route: 'diy' }
+            { name: 'Investing', route: 'finance' },
+            { name: 'Budgeting', route: 'finance' },
+            { name: 'Personal Finance', route: 'finance' } 
+            // Add more specific finance links if needed
         ]
     },
     {
-        title: 'ART',
+        title: 'HEALTH',
         links: [
-            { name: 'Painting', route: 'art' },
-            { name: 'Digital Art', route: 'art' },
-            { name: 'Sculpture', route: 'art' },
-            { name: 'Drawing', route: 'art' }
+            { name: 'Fitness', route: 'health' },
+            { name: 'Nutrition', route: 'health' },
+            { name: 'Wellness', route: 'health' }
+            // Add more specific health links if needed
         ]
     },
     {
-        title: 'HOME DECOR',
+        title: 'EDUCATION',
         links: [
-            { name: 'Furniture', route: 'home-decor' },
-            { name: 'Textiles', route: 'home-decor' },
-            { name: 'Wall Art', route: 'home-decor' },
-            { name: 'Seasonal Decor', route: 'home-decor' }
+            { name: 'Courses', route: 'education' },
+            { name: 'Tutorials', route: 'education' },
+            { name: 'Learning Resources', route: 'education' }
+            // Add more specific education links if needed
         ]
     },
     {
-        title: 'JEWELRY',
+        title: 'SPORTS',
         links: [
-            { name: 'Beaded', route: 'jewelry' },
-            { name: 'Metal Work', route: 'jewelry' },
-            { name: 'Wire Jewelry', route: 'jewelry' },
-            { name: 'Vintage', route: 'jewelry' },
-            { name: 'Custom Designs', route: 'jewelry' }
+            { name: 'Football', route: 'sports' },
+            { name: 'Basketball', route: 'sports' },
+            { name: 'Highlights', route: 'sports' }
+             // Add more specific sports links if needed
         ]
     },
     {
-        title: 'HANDMADE',
+        title: 'TRAVEL',
         links: [
-            { name: 'Clothing', route: 'handmade' },
-            { name: 'Accessories', route: 'handmade' },
-            { name: 'Gifts', route: 'handmade' }
+            { name: 'Destinations', route: 'travel' },
+            { name: 'Travel Tips', route: 'travel' },
+            { name: 'Budget Travel', route: 'travel' }
+            // Add more specific travel links if needed
+        ]
+    },
+    {
+        title: 'LIFESTYLE',
+        links: [
+            { name: 'Fashion', route: 'lifestyle' },
+            { name: 'Food', route: 'lifestyle' },
+            { name: 'Hobbies', route: 'lifestyle' }
+            // Add more specific lifestyle links if needed
         ]
     },
     {
         title: 'COMMUNITY',
         links: [
-            { name: 'Interviews', route: 'community' },
-            { name: 'Success Stories', route: 'community' },
-            { name: 'Artist Features', route: 'community' },
-            { name: 'Workshops', route: 'community' }
+            { name: 'Forums', route: 'community' },
+            { name: 'Events', route: 'community' },
+            { name: 'User Stories', route: 'community' } 
+             // Add more specific community links if needed
         ]
     },
     {
@@ -80,16 +91,16 @@ const currentYear = new Date().getFullYear();
 <template>
     <footer class="bg-gray-900 text-gray-200 py-12 text-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-wrap justify-between gap-6 mb-12">
+            <div class="flex justify-between gap-4 mb-12 overflow-x-auto pb-4">
                 <div 
                     v-for="category in footerCategories" 
                     :key="category.title" 
-                    class="flex-1 min-w-[150px]"
+                    class=""  
                 >
-                    <h4 class="text-white text-base font-semibold mb-4">{{ category.title }}</h4>
+                    <h4 class="text-white text-base font-semibold mb-4 whitespace-nowrap">{{ category.title }}</h4>
                     <ul>
                         <li v-for="link in category.links" :key="link.name" class="mb-2">
-                            <Link :href="route(link.route)" class="text-gray-400 hover:text-white">
+                            <Link :href="route(link.route)" class="text-gray-400 hover:text-white whitespace-nowrap">
                                 {{ link.name }}
                             </Link>
                         </li>

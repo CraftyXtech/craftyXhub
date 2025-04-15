@@ -7,12 +7,13 @@ const props = defineProps({
         default: () => [
             { id: 0, name: 'All' },
             { id: 1, name: 'Technology' },
-            { id: 2, name: 'Crafts' },
-            { id: 3, name: 'DIY' },
-            { id: 4, name: 'Art' },
-            { id: 5, name: 'Jewelry' },
-            { id: 6, name: 'Handmade' },
-            { id: 7, name: 'Community' }
+            { id: 2, name: 'Finance' },
+            { id: 3, name: 'Health' },
+            { id: 4, name: 'Education' },
+            { id: 5, name: 'Sports' },
+            { id: 6, name: 'Travel' },
+            { id: 7, name: 'Lifestyle' },
+            { id: 8, name: 'Community' }
         ]
     },
     initialActive: {

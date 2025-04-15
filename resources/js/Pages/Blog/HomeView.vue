@@ -8,106 +8,139 @@ import CategoryTags from '@/Components/Blog/CategoryTags.vue';
 import SearchBar from '@/Components/Shared/SearchBar.vue';
 import SubscribeBanner from '@/Components/Shared/SubscribeBanner.vue';
 
-// Mock data for blog posts
+// Updated mock data for blog posts reflecting new categories
 const allPosts = [
     {
         id: 1,
-        title: 'Essential Knitting Tips for Beginners',
-        slug: 'essential-knitting-tips-for-beginners',
-        excerpt: 'Learn the basics of knitting with these helpful tips and tricks. From choosing the right yarn to mastering different stitches, get started on your knitting journey today!',
-        category: 'Crafts',
-        categoryId: 2,
-        readTime: '3 min',
-        imageUrl: 'https://via.placeholder.com/800x600/FF6B6B/FFFFFF?text=Knitting+Basics',
-        date: '2023-05-15'
+        title: 'The Future of AI in Web Development',
+        slug: 'future-of-ai-in-web-development',
+        excerpt: 'Explore how Artificial Intelligence is revolutionizing web development workflows, from code generation to automated testing.',
+        category: 'Technology',
+        categoryId: 1, // Corresponds to 'Technology' in CategoryTags
+        readTime: '5 min',
+        imageUrl: 'https://via.placeholder.com/800x600/118AB2/FFFFFF?text=AI+Web+Dev',
+        date: '2024-07-15'
     },
     {
         id: 2,
-        title: 'Creating Beautiful Polymer Clay Jewelry',
-        slug: 'creating-beautiful-polymer-clay-jewelry',
-        excerpt: 'Discover how to make stunning polymer clay jewelry from home. This beginner-friendly guide covers materials, techniques, and design tips for creating unique pieces.',
-        category: 'Jewelry',
-        categoryId: 5,
-        readTime: '5 min',
-        imageUrl: 'https://via.placeholder.com/800x600/4ECDC4/FFFFFF?text=Polymer+Clay',
-        date: '2023-06-02'
+        title: "Beginner's Guide to Stock Market Investing",
+        slug: 'beginners-guide-stock-market-investing',
+        excerpt: 'New to investing? This guide covers the basics of the stock market, how to choose stocks, and strategies for long-term growth.',
+        category: 'Finance',
+        categoryId: 2, // Corresponds to 'Finance'
+        readTime: '7 min',
+        imageUrl: 'https://via.placeholder.com/800x600/06D6A0/FFFFFF?text=Investing+101',
+        date: '2024-07-10'
     },
     {
         id: 3,
-        title: 'DIY Home Decor Projects Under $50',
-        slug: 'diy-home-decor-projects-under-50',
-        excerpt: 'Transform your space with these budget-friendly DIY home decor ideas. Get a designer look without breaking the bank using simple materials and techniques.',
-        category: 'DIY',
-        categoryId: 3,
+        title: 'Meal Planning for a Healthier Lifestyle',
+        slug: 'meal-planning-healthier-lifestyle',
+        excerpt: 'Learn effective meal planning strategies to save time, reduce stress, and make healthier food choices throughout the week.',
+        category: 'Health',
+        categoryId: 3, // Corresponds to 'Health'
         readTime: '4 min',
-        imageUrl: 'https://via.placeholder.com/800x600/FFD166/000000?text=Home+Decor',
-        date: '2023-07-11'
+        imageUrl: 'https://via.placeholder.com/800x600/FFD166/000000?text=Meal+Plan',
+        date: '2024-07-05'
     },
     {
         id: 4,
-        title: 'Digital Art Fundamentals for Craft Businesses',
-        slug: 'digital-art-fundamentals-for-craft-businesses',
-        excerpt: 'Level up your craft business with digital art. Learn how to create digital designs for products, marketing, and online presence to boost your craft sales.',
-        category: 'Art',
-        categoryId: 4,
-        readTime: '7 min',
-        imageUrl: 'https://via.placeholder.com/800x600/6A0572/FFFFFF?text=Digital+Art',
-        date: '2023-08-05'
+        title: 'Top Online Courses for Learning Python',
+        slug: 'top-online-courses-learning-python',
+        excerpt: 'Discover the best online platforms and courses to master Python programming, whether you are a beginner or looking to advance your skills.',
+        category: 'Education',
+        categoryId: 4, // Corresponds to 'Education'
+        readTime: '6 min',
+        imageUrl: 'https://via.placeholder.com/800x600/F78764/FFFFFF?text=Python+Courses',
+        date: '2024-06-28'
     },
     {
         id: 5,
-        title: 'Sustainable Crafting: Eco-Friendly Materials Guide',
-        slug: 'sustainable-crafting-eco-friendly-materials-guide',
-        excerpt: 'Make your crafting more environmentally friendly with this guide to sustainable materials and practices. Reduce waste while creating beautiful handmade items.',
-        category: 'Crafts',
-        categoryId: 2,
-        readTime: '4 min',
-        imageUrl: 'https://via.placeholder.com/800x600/1B9AAA/FFFFFF?text=Sustainable+Crafts',
-        date: '2023-09-15'
+        title: 'Effective Workout Routines for Busy People',
+        slug: 'effective-workout-routines-busy-people',
+        excerpt: 'Short on time? Find efficient and effective workout routines that you can fit into even the busiest schedules to stay active and fit.',
+        category: 'Health',
+        categoryId: 3, // Corresponds to 'Health'
+        readTime: '5 min',
+        imageUrl: 'https://via.placeholder.com/800x600/4ECDC4/FFFFFF?text=Quick+Workouts',
+        date: '2024-06-20'
     },
     {
         id: 6,
-        title: 'Building a Supportive Crafting Community',
-        slug: 'building-a-supportive-crafting-community',
-        excerpt: 'Learn how to connect with fellow artisans and build a supportive community around your craft. Networking tips, collaboration ideas, and community-building strategies.',
-        category: 'Community',
-        categoryId: 7,
-        readTime: '5 min',
-        imageUrl: 'https://via.placeholder.com/800x600/F78764/FFFFFF?text=Craft+Community',
-        date: '2023-10-07'
+        title: 'Budget Travel: Tips for Seeing the World Affordably',
+        slug: 'budget-travel-tips-seeing-world-affordably',
+        excerpt: 'Dreaming of travel but tight on budget? Learn practical tips and tricks for exploring new destinations without breaking the bank.',
+        category: 'Travel',
+        categoryId: 6, // Corresponds to 'Travel'
+        readTime: '8 min',
+        imageUrl: 'https://via.placeholder.com/800x600/6A0572/FFFFFF?text=Budget+Travel',
+        date: '2024-06-15'
     },
     {
         id: 7,
-        title: 'Handmade Candle Making at Home',
-        slug: 'handmade-candle-making-at-home',
-        excerpt: 'Start your own candle-making hobby or business with this comprehensive guide. Learn about different waxes, fragrances, and techniques for beautiful homemade candles.',
-        category: 'Handmade',
-        categoryId: 6,
+        title: 'Introduction to Personal Finance Management',
+        slug: 'introduction-personal-finance-management',
+        excerpt: 'Take control of your finances with this beginner-friendly guide to budgeting, saving, and managing debt effectively.',
+        category: 'Finance',
+        categoryId: 2, // Corresponds to 'Finance'
         readTime: '6 min',
-        imageUrl: 'https://via.placeholder.com/800x600/06D6A0/FFFFFF?text=Candle+Making',
-        date: '2023-11-12'
+        imageUrl: 'https://via.placeholder.com/800x600/FF6B6B/FFFFFF?text=Personal+Finance',
+        date: '2024-06-10'
     },
     {
         id: 8,
-        title: 'Tech Solutions for Managing Your Craft Business',
-        slug: 'tech-solutions-for-managing-your-craft-business',
-        excerpt: 'Streamline your craft business with the right technology. From inventory management to online marketing, discover tools that will help you grow and scale your creative venture.',
+        title: 'Latest Trends in Mobile App Development',
+        slug: 'latest-trends-mobile-app-development',
+        excerpt: 'Stay ahead of the curve by learning about the newest trends shaping the mobile app development landscape in 2024 and beyond.',
         category: 'Technology',
-        categoryId: 1,
-        readTime: '8 min',
-        imageUrl: 'https://via.placeholder.com/800x600/118AB2/FFFFFF?text=Craft+Tech',
-        date: '2023-12-01'
+        categoryId: 1, // Corresponds to 'Technology'
+        readTime: '7 min',
+        imageUrl: 'https://via.placeholder.com/800x600/073B4C/FFFFFF?text=Mobile+Trends',
+        date: '2024-06-01'
     },
     {
-        id: 9,
-        title: 'Seasonal Craft Ideas for Winter Holidays',
-        slug: 'seasonal-craft-ideas-for-winter-holidays',
-        excerpt: 'Get inspired with these winter holiday craft projects. Perfect for gifts, decorations, or selling at seasonal markets. Includes step-by-step tutorials and material lists.',
-        category: 'DIY',
-        categoryId: 3,
+        id: 9, 
+        title: 'Training Regimen of Top Athletes',
+        slug: 'training-regimen-top-athletes',
+        excerpt: 'Get a glimpse into the demanding training schedules and techniques used by professional athletes across different sports.',
+        category: 'Sports',
+        categoryId: 5, // Corresponds to 'Sports'
+        readTime: '6 min',
+        imageUrl: 'https://via.placeholder.com/800x600/EF476F/FFFFFF?text=Athlete+Training',
+        date: '2024-05-25'
+    },
+    {
+        id: 10,
+        title: 'Minimalist Living: Declutter Your Life',
+        slug: 'minimalist-living-declutter-your-life',
+        excerpt: 'Explore the principles of minimalism and how decluttering your physical and digital spaces can lead to a more focused life.',
+        category: 'Lifestyle',
+        categoryId: 7, // Corresponds to 'Lifestyle'
+        readTime: '5 min',
+        imageUrl: 'https://via.placeholder.com/800x600/06D6A0/FFFFFF?text=Minimalism',
+        date: '2024-05-18'
+    },
+    {
+        id: 11,
+        title: 'Organizing Local Community Events Successfully',
+        slug: 'organizing-local-community-events-successfully',
+        excerpt: 'A step-by-step guide to planning and executing successful local community events, from securing venues to engaging volunteers.',
+        category: 'Community',
+        categoryId: 8, // Corresponds to 'Community'
+        readTime: '7 min',
+        imageUrl: 'https://via.placeholder.com/800x600/FFD166/000000?text=Community+Events',
+        date: '2024-05-12'
+    },
+    {
+        id: 12,
+        title: 'Healthy Eating Habits for a Balanced Lifestyle',
+        slug: 'healthy-eating-habits-balanced-lifestyle',
+        excerpt: 'Learn how to cultivate sustainable healthy eating habits that nourish your body and support a balanced, energetic lifestyle.',
+        category: 'Lifestyle', // Another Lifestyle example
+        categoryId: 7, // Corresponds to 'Lifestyle'
         readTime: '4 min',
-        imageUrl: 'https://via.placeholder.com/800x600/073B4C/FFFFFF?text=Winter+Crafts',
-        date: '2024-01-05'
+        imageUrl: 'https://via.placeholder.com/800x600/118AB2/FFFFFF?text=Healthy+Eating',
+        date: '2024-05-05'
     }
 ];
 
@@ -137,7 +170,15 @@ const applyFilters = () => {
         let filtered = [...allPosts];
         
         if (selectedCategory.value !== 0) {
-            filtered = filtered.filter(post => post.categoryId === selectedCategory.value);
+            // Find the category name based on the ID from the CategoryTags component
+            const categoryMap = {
+                1: 'Technology', 2: 'Finance', 3: 'Health', 4: 'Education',
+                5: 'Sports', 6: 'Travel', 7: 'Lifestyle', 8: 'Community'
+            };
+            const categoryName = categoryMap[selectedCategory.value];
+            if (categoryName) {
+                 filtered = filtered.filter(post => post.category === categoryName);
+            }
         }
         
         // Then filter by search query if present
@@ -186,17 +227,20 @@ onMounted(() => {
         <section class="py-12 border-b border-gray-200 mb-8">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <p class="text-primary text-sm font-medium mb-2">
-                    Explore Ideas, Crafts & Inspiration That Matter
+                    <!-- Updated Hero Text -->
+                    Explore Ideas, Insights & Inspiration That Matter
                 </p>
                 
                 <h1 class="text-3xl md:text-4xl font-bold mb-2 flex items-center justify-center gap-2">
                     <span>🚀</span> <!-- Placeholder for icon -->
-                    <span>Discover, Create & Connect</span>
+                    <!-- Updated Hero Title -->
+                    <span>Discover Knowledge & Connect</span>
                 </h1>
                 
                 <p class="max-w-2xl mx-auto text-gray-600 mb-8">
-                    Join 24K+ artisans exploring the latest crafting techniques, expert tips, and engaging stories. 
-                    Showcase your creations, find resources, and connect with like-minded creators.
+                    <!-- Updated Hero Description -->
+                    Join thousands exploring the latest trends, expert tips, and engaging stories across various fields. 
+                    Find resources, share insights, and connect with like-minded individuals.
                 </p>
                 
                 <CategoryTags @filter="filterByCategory" />

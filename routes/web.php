@@ -20,15 +20,50 @@ Route::get('/blog/{slug}', function ($slug) {
 })->name('blog.show');
 
 Route::get('/category/{category}', function ($category) {
+    // This generic route might still be useful if you pass slugs directly
+    // Or we might want to remove it if we only use named routes below
     return Inertia::render('Blog/HomeView', [
         'categoryFilter' => $category
     ]);
 })->name('category');
 
+// --- NEW CATEGORY ROUTES ---
+// Technology
 Route::get('/category/technology', function () {
     return Inertia::render('Blog/HomeView', ['categoryFilter' => 'technology']);
 })->name('technology');
+// Finance
+Route::get('/category/finance', function () {
+    return Inertia::render('Blog/HomeView', ['categoryFilter' => 'finance']);
+})->name('finance');
+// Health
+Route::get('/category/health', function () {
+    return Inertia::render('Blog/HomeView', ['categoryFilter' => 'health']);
+})->name('health');
+// Education
+Route::get('/category/education', function () {
+    return Inertia::render('Blog/HomeView', ['categoryFilter' => 'education']);
+})->name('education');
+// Sports
+Route::get('/category/sports', function () {
+    return Inertia::render('Blog/HomeView', ['categoryFilter' => 'sports']);
+})->name('sports');
+// Travel
+Route::get('/category/travel', function () {
+    return Inertia::render('Blog/HomeView', ['categoryFilter' => 'travel']);
+})->name('travel');
+// Lifestyle
+Route::get('/category/lifestyle', function () {
+    return Inertia::render('Blog/HomeView', ['categoryFilter' => 'lifestyle']);
+})->name('lifestyle');
+// Community (Assuming this one remains relevant)
+Route::get('/category/community', function () {
+    return Inertia::render('Blog/HomeView', ['categoryFilter' => 'community']);
+})->name('community');
 
+
+// --- REMOVED OLD CATEGORY ROUTES ---
+/*
 Route::get('/category/crafts', function () {
     return Inertia::render('Blog/HomeView', ['categoryFilter' => 'crafts']);
 })->name('crafts');
@@ -52,10 +87,8 @@ Route::get('/category/jewelry', function () {
 Route::get('/category/handmade', function () {
     return Inertia::render('Blog/HomeView', ['categoryFilter' => 'handmade']);
 })->name('handmade');
+*/
 
-Route::get('/category/community', function () {
-    return Inertia::render('Blog/HomeView', ['categoryFilter' => 'community']);
-})->name('community');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');

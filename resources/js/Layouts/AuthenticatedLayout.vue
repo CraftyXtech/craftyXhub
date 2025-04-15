@@ -6,8 +6,13 @@ import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link } from '@inertiajs/vue3';
+import { navItemsLeft, navItemsRight } from '@/Shared/navigationItems'; // Import shared items
 
 const showingNavigationDropdown = ref(false);
+
+// Define navigation items (can be fetched or defined statically)
+// REMOVED: const navItemsLeft = [ ... ];
+// REMOVED: const navItemsRight = [ ... ];
 </script>
 
 <template>
@@ -19,30 +24,65 @@ const showingNavigationDropdown = ref(false);
                 <!-- Primary Navigation Menu -->
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="flex h-16 justify-between">
-                        <div class="flex">
-                            <!-- Logo -->
-                            <div class="flex shrink-0 items-center">
-                                <Link :href="route('dashboard')">
-                                    <ApplicationLogo
-                                        class="block h-9 w-auto fill-current text-gray-800"
-                                    />
-                                </Link>
-                            </div>
-
-                            <!-- Navigation Links -->
-                            <div
-                                class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex"
-                            >
-                                <NavLink
-                                    :href="route('dashboard')"
-                                    :active="route().current('dashboard')"
-                                >
-                                    Dashboard
+                        <!-- Left Navigation Links -->
+                        <div class="hidden items-center space-x-8 sm:-my-px sm:flex">
+                             <template v-for="item in navItemsLeft" :key="item.name">
+                                <Dropdown v-if="item.dropdown" align="left" width="48">
+                                    <template #trigger>
+                                        <button class="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium leading-5 text-gray-500 transition duration-150 ease-in-out hover:border-gray-300 hover:text-gray-700 focus:border-gray-300 focus:text-gray-700 focus:outline-none">
+                                            {{ item.name }}
+                                            <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </template>
+                                    <template #content>
+                                        <DropdownLink v-for="subItem in item.dropdown" :key="subItem" href="#"> <!-- Replace # with actual links -->
+                                            {{ subItem }}
+                                        </DropdownLink>
+                                    </template>
+                                </Dropdown>
+                                <NavLink v-else href="#"> <!-- Replace # with actual links -->
+                                    {{ item.name }}
                                 </NavLink>
-                            </div>
+                            </template>
                         </div>
 
+                        <!-- Logo -->
+                        <div class="flex shrink-0 items-center">
+                            <Link :href="route('dashboard')">
+                                <ApplicationLogo
+                                    class="block h-9 w-auto fill-current text-gray-800"
+                                />
+                                <!-- Optional: If logo doesn't contain text -->
+                                <!-- <span class="ml-2 text-lg font-semibold text-gray-800">CraftyXhub</span> -->
+                            </Link>
+                        </div>
+
+                        <!-- Right Navigation Links & Settings -->
                         <div class="hidden sm:ms-6 sm:flex sm:items-center">
+                             <div class="hidden items-center space-x-8 sm:-my-px sm:flex">
+                                <template v-for="item in navItemsRight" :key="item.name">
+                                    <Dropdown v-if="item.dropdown" align="right" width="48">
+                                         <template #trigger>
+                                            <button class="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium leading-5 text-gray-500 transition duration-150 ease-in-out hover:border-gray-300 hover:text-gray-700 focus:border-gray-300 focus:text-gray-700 focus:outline-none">
+                                                {{ item.name }}
+                                                <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </template>
+                                        <template #content>
+                                            <DropdownLink v-for="subItem in item.dropdown" :key="subItem" href="#"> <!-- Replace # with actual links -->
+                                                {{ subItem }}
+                                            </DropdownLink>
+                                        </template>
+                                    </Dropdown>
+                                     <NavLink v-else href="#"> <!-- Replace # with actual links -->
+                                        {{ item.name }}
+                                    </NavLink>
+                                </template>
+                            </div>
                             <!-- Settings Dropdown -->
                             <div class="relative ms-3">
                                 <Dropdown align="right" width="48">
@@ -140,10 +180,20 @@ const showingNavigationDropdown = ref(false);
                     class="sm:hidden"
                 >
                     <div class="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            :href="route('dashboard')"
-                            :active="route().current('dashboard')"
-                        >
+                         <!-- Responsive Links -->
+                        <template v-for="item in [...navItemsLeft, ...navItemsRight]" :key="item.name">
+                             <div v-if="item.dropdown" class="pt-2 pb-1 border-t border-gray-200">
+                                <div class="px-4 font-medium text-base text-gray-800">{{ item.name }}</div>
+                                <ResponsiveNavLink v-for="subItem in item.dropdown" :key="subItem" href="#"> <!-- Replace # with actual links -->
+                                    {{ subItem }}
+                                </ResponsiveNavLink>
+                            </div>
+                             <ResponsiveNavLink v-else href="#"> <!-- Replace # with actual links -->
+                                {{ item.name }}
+                            </ResponsiveNavLink>
+                        </template>
+                        <!-- Add Dashboard link back if needed -->
+                        <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
                             Dashboard
                         </ResponsiveNavLink>
                     </div>

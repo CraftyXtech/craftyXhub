@@ -22,8 +22,8 @@ export default {
                 'text': '#495057',
             },
             fontFamily: {
-                sans: ['Roboto', ...defaultTheme.fontFamily.sans],
-                heading: ['Poppins', ...defaultTheme.fontFamily.sans],
+                sans: ['Open Sans', 'Roboto', ...defaultTheme.fontFamily.sans],
+                heading: ['Montserrat', ...defaultTheme.fontFamily.sans],
             },
             spacing: {
                 'sm': '8px',
