@@ -101,3 +101,9 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+// Add route for Profile View page
+Route::get('/profile/view', function () {
+    // In a real app, you might pass user data from the controller
+    return Inertia::render('Profile/ProfileView'); 
+})->middleware(['auth'])->name('profile.view');

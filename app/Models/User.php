@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
@@ -29,12 +31,12 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    public function posts()
+    public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
     }
 
-    public function comments()
+    public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
     }
@@ -66,9 +68,9 @@ class User extends Authenticatable
                     ->withTimestamps();
     }
 
-    public function likes()
+    public function likes(): BelongsToMany
     {
-        return $this->hasMany(Like::class);
+        return $this->belongsToMany(Post::class, 'likes', 'user_id', 'post_id')->withTimestamps();
     }
 
     public function likedPosts()
@@ -95,4 +97,14 @@ class User extends Authenticatable
     {
         return $this->following()->where('followed_id', $user->id)->exists();
     }
+
+    /**
+     * The posts that the user has saved.
+     */
+    public function savedPosts(): BelongsToMany
+    {
+        return $this->belongsToMany(Post::class, 'saved_posts', 'user_id', 'post_id')->withTimestamps();
+    }
+
+    // TODO: Add relationship for preferences later
 }

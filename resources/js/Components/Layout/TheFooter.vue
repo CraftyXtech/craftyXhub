@@ -89,7 +89,7 @@ const currentYear = new Date().getFullYear();
 </script>
 
 <template>
-    <footer class="bg-gray-900 text-gray-200 py-12 text-sm">
+    <footer class="bg-gray-900 text-gray-200 dark:bg-gray-950 dark:text-gray-300 py-12 text-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between gap-4 mb-12 overflow-x-auto pb-4">
                 <div 
@@ -97,10 +97,10 @@ const currentYear = new Date().getFullYear();
                     :key="category.title" 
                     class=""  
                 >
-                    <h4 class="text-white text-base font-semibold mb-4 whitespace-nowrap">{{ category.title }}</h4>
+                    <h4 class="text-white dark:text-gray-100 text-base font-semibold mb-4 whitespace-nowrap">{{ category.title }}</h4>
                     <ul>
                         <li v-for="link in category.links" :key="link.name" class="mb-2">
-                            <Link :href="route(link.route)" class="text-gray-400 hover:text-white whitespace-nowrap">
+                            <Link :href="route(link.route)" class="text-gray-400 hover:text-white dark:text-gray-500 dark:hover:text-gray-100 whitespace-nowrap">
                                 {{ link.name }}
                             </Link>
                         </li>
@@ -108,23 +108,23 @@ const currentYear = new Date().getFullYear();
                 </div>
             </div>
             
-            <div class="border-t border-gray-700 pt-6 flex flex-wrap justify-between items-center gap-4">
-                <Link :href="route('home')" class="font-heading text-xl font-bold text-white">
+            <div class="border-t border-gray-700 dark:border-gray-800 pt-6 flex flex-wrap justify-between items-center gap-4">
+                <Link :href="route('home')" class="font-heading text-xl font-bold text-white dark:text-gray-100">
                     CraftyXhub
                 </Link>
                 
-                <p class="text-gray-400 text-center flex-grow">
+                <p class="text-gray-400 dark:text-gray-500 text-center flex-grow">
                     © {{ currentYear }} CraftyXhub. All rights reserved.
                 </p>
                 
-                <div class="text-gray-400">
-                    <a href="#" aria-label="Facebook" class="ml-4 text-lg hover:text-white">
+                <div class="text-gray-400 dark:text-gray-500">
+                    <a href="#" aria-label="Facebook" class="ml-4 text-lg hover:text-white dark:hover:text-gray-100">
                         <i class="fab fa-facebook-f"></i>
                     </a>
-                    <a href="#" aria-label="LinkedIn" class="ml-4 text-lg hover:text-white">
+                    <a href="#" aria-label="LinkedIn" class="ml-4 text-lg hover:text-white dark:hover:text-gray-100">
                         <i class="fab fa-linkedin-in"></i>
                     </a>
-                    <a href="#" aria-label="Twitter" class="ml-4 text-lg hover:text-white">
+                    <a href="#" aria-label="Twitter" class="ml-4 text-lg hover:text-white dark:hover:text-gray-100">
                         <i class="fab fa-twitter"></i>
                     </a>
                 </div>

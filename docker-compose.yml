@@ -1,0 +1,58 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: craftyxhub-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - craftyxhub-network
+
+  db:
+    image: pgvector/pgvector:pg15
+    container_name: craftyxhub-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      SERVICE_NAME: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - craftyxhub-network
+    ports:
+      - "${DB_PORT}:5432"
+
+  webserver:
+    image: nginx:1.25-alpine
+    container_name: craftyxhub-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - craftyxhub-network
+
+  npm:
+    image: node:20
+    container_name: craftyxhub-npm
+    volumes:
+      - ./:/var/www
+    working_dir: /var/www
+    entrypoint: ['npm']
+    networks:
+      - craftyxhub-network
+
+networks:
+  craftyxhub-network:
+    driver: bridge
+
+volumes:
+  postgres-data: 

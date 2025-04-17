@@ -24,11 +24,11 @@ const handleKeyPress = (event) => {
             v-model="searchQuery"
             type="search" 
             placeholder="Search for projects and tutorials" 
-            class="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            class="w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-light focus:border-primary dark:focus:border-primary-light"
             @keypress="handleKeyPress"
         >
         <button 
-            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-primary"
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary-light"
             @click="handleSearch"
         >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

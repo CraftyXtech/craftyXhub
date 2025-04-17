@@ -7,6 +7,7 @@ import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link } from '@inertiajs/vue3';
 import { navItemsLeft, navItemsRight } from '@/Shared/navigationItems'; // Import shared items
+import QnABot from '@/Components/Shared/QnABot.vue'; // Import QnABot
 
 const showingNavigationDropdown = ref(false);
 
@@ -112,7 +113,7 @@ const showingNavigationDropdown = ref(false);
 
                                     <template #content>
                                         <DropdownLink
-                                            :href="route('profile.edit')"
+                                            :href="route('profile.view')"
                                         >
                                             Profile
                                         </DropdownLink>
@@ -214,7 +215,7 @@ const showingNavigationDropdown = ref(false);
                         </div>
 
                         <div class="mt-3 space-y-1">
-                            <ResponsiveNavLink :href="route('profile.edit')">
+                            <ResponsiveNavLink :href="route('profile.view')">
                                 Profile
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
@@ -243,6 +244,10 @@ const showingNavigationDropdown = ref(false);
             <main>
                 <slot />
             </main>
+
+            <!-- QnA Bot Component -->
+            <QnABot />
+
         </div>
     </div>
 </template>

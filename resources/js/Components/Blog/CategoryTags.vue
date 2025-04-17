@@ -4,47 +4,38 @@ import { ref } from 'vue';
 const props = defineProps({
     categories: {
         type: Array,
-        default: () => [
-            { id: 0, name: 'All' },
-            { id: 1, name: 'Technology' },
-            { id: 2, name: 'Finance' },
-            { id: 3, name: 'Health' },
-            { id: 4, name: 'Education' },
-            { id: 5, name: 'Sports' },
-            { id: 6, name: 'Travel' },
-            { id: 7, name: 'Lifestyle' },
-            { id: 8, name: 'Community' }
-        ]
+        required: true // Expect categories to be passed in now
+        // Expected structure: [{ id: Number|String, name: String, slug: String }]
     },
-    initialActive: {
-        type: Number,
-        default: 0 // 'All' category by default
+    initialActiveSlug: {
+        type: String,
+        default: 'all' // Default to the 'all' slug
     }
 });
 
 const emit = defineEmits(['filter']);
 
-// Track the active category
-const activeCategory = ref(props.initialActive);
+// Track the active category *slug*
+const activeCategorySlug = ref(props.initialActiveSlug);
 
-const selectCategory = (categoryId) => {
-    activeCategory.value = categoryId;
-    emit('filter', categoryId);
+const selectCategory = (categorySlug) => {
+    activeCategorySlug.value = categorySlug;
+    emit('filter', categorySlug);
 };
 </script>
 
 <template>
     <div class="flex justify-center items-center gap-2 flex-wrap mb-8">
-        <button 
-            v-for="category in categories" 
-            :key="category.id"
+        <button
+            v-for="category in categories"
+            :key="category.slug" 
             :class="[
                 'px-4 py-2 text-sm border rounded-full transition duration-200',
-                activeCategory === category.id 
-                    ? 'bg-primary text-white border-primary' 
-                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                activeCategorySlug === category.slug 
+                    ? 'bg-primary text-white border-primary dark:bg-primary-light dark:text-gray-900 dark:border-primary-light'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600'
             ]"
-            @click="selectCategory(category.id)"
+            @click="selectCategory(category.slug)" 
         >
             {{ category.name }}
         </button>

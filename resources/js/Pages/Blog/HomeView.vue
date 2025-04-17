@@ -1,219 +1,172 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { ref, onMounted, computed, watch } from 'vue';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import TheHeader from '@/Components/Layout/TheHeader.vue';
 import TheFooter from '@/Components/Layout/TheFooter.vue';
 import BlogPostCard from '@/Components/Blog/BlogPostCard.vue';
 import CategoryTags from '@/Components/Blog/CategoryTags.vue';
 import SearchBar from '@/Components/Shared/SearchBar.vue';
 import SubscribeBanner from '@/Components/Shared/SubscribeBanner.vue';
-
-// Updated mock data for blog posts reflecting new categories
-const allPosts = [
-    {
-        id: 1,
-        title: 'The Future of AI in Web Development',
-        slug: 'future-of-ai-in-web-development',
-        excerpt: 'Explore how Artificial Intelligence is revolutionizing web development workflows, from code generation to automated testing.',
-        category: 'Technology',
-        categoryId: 1, // Corresponds to 'Technology' in CategoryTags
-        readTime: '5 min',
-        imageUrl: 'https://via.placeholder.com/800x600/118AB2/FFFFFF?text=AI+Web+Dev',
-        date: '2024-07-15'
-    },
-    {
-        id: 2,
-        title: "Beginner's Guide to Stock Market Investing",
-        slug: 'beginners-guide-stock-market-investing',
-        excerpt: 'New to investing? This guide covers the basics of the stock market, how to choose stocks, and strategies for long-term growth.',
-        category: 'Finance',
-        categoryId: 2, // Corresponds to 'Finance'
-        readTime: '7 min',
-        imageUrl: 'https://via.placeholder.com/800x600/06D6A0/FFFFFF?text=Investing+101',
-        date: '2024-07-10'
-    },
-    {
-        id: 3,
-        title: 'Meal Planning for a Healthier Lifestyle',
-        slug: 'meal-planning-healthier-lifestyle',
-        excerpt: 'Learn effective meal planning strategies to save time, reduce stress, and make healthier food choices throughout the week.',
-        category: 'Health',
-        categoryId: 3, // Corresponds to 'Health'
-        readTime: '4 min',
-        imageUrl: 'https://via.placeholder.com/800x600/FFD166/000000?text=Meal+Plan',
-        date: '2024-07-05'
-    },
-    {
-        id: 4,
-        title: 'Top Online Courses for Learning Python',
-        slug: 'top-online-courses-learning-python',
-        excerpt: 'Discover the best online platforms and courses to master Python programming, whether you are a beginner or looking to advance your skills.',
-        category: 'Education',
-        categoryId: 4, // Corresponds to 'Education'
-        readTime: '6 min',
-        imageUrl: 'https://via.placeholder.com/800x600/F78764/FFFFFF?text=Python+Courses',
-        date: '2024-06-28'
-    },
-    {
-        id: 5,
-        title: 'Effective Workout Routines for Busy People',
-        slug: 'effective-workout-routines-busy-people',
-        excerpt: 'Short on time? Find efficient and effective workout routines that you can fit into even the busiest schedules to stay active and fit.',
-        category: 'Health',
-        categoryId: 3, // Corresponds to 'Health'
-        readTime: '5 min',
-        imageUrl: 'https://via.placeholder.com/800x600/4ECDC4/FFFFFF?text=Quick+Workouts',
-        date: '2024-06-20'
-    },
-    {
-        id: 6,
-        title: 'Budget Travel: Tips for Seeing the World Affordably',
-        slug: 'budget-travel-tips-seeing-world-affordably',
-        excerpt: 'Dreaming of travel but tight on budget? Learn practical tips and tricks for exploring new destinations without breaking the bank.',
-        category: 'Travel',
-        categoryId: 6, // Corresponds to 'Travel'
-        readTime: '8 min',
-        imageUrl: 'https://via.placeholder.com/800x600/6A0572/FFFFFF?text=Budget+Travel',
-        date: '2024-06-15'
-    },
-    {
-        id: 7,
-        title: 'Introduction to Personal Finance Management',
-        slug: 'introduction-personal-finance-management',
-        excerpt: 'Take control of your finances with this beginner-friendly guide to budgeting, saving, and managing debt effectively.',
-        category: 'Finance',
-        categoryId: 2, // Corresponds to 'Finance'
-        readTime: '6 min',
-        imageUrl: 'https://via.placeholder.com/800x600/FF6B6B/FFFFFF?text=Personal+Finance',
-        date: '2024-06-10'
-    },
-    {
-        id: 8,
-        title: 'Latest Trends in Mobile App Development',
-        slug: 'latest-trends-mobile-app-development',
-        excerpt: 'Stay ahead of the curve by learning about the newest trends shaping the mobile app development landscape in 2024 and beyond.',
-        category: 'Technology',
-        categoryId: 1, // Corresponds to 'Technology'
-        readTime: '7 min',
-        imageUrl: 'https://via.placeholder.com/800x600/073B4C/FFFFFF?text=Mobile+Trends',
-        date: '2024-06-01'
-    },
-    {
-        id: 9, 
-        title: 'Training Regimen of Top Athletes',
-        slug: 'training-regimen-top-athletes',
-        excerpt: 'Get a glimpse into the demanding training schedules and techniques used by professional athletes across different sports.',
-        category: 'Sports',
-        categoryId: 5, // Corresponds to 'Sports'
-        readTime: '6 min',
-        imageUrl: 'https://via.placeholder.com/800x600/EF476F/FFFFFF?text=Athlete+Training',
-        date: '2024-05-25'
-    },
-    {
-        id: 10,
-        title: 'Minimalist Living: Declutter Your Life',
-        slug: 'minimalist-living-declutter-your-life',
-        excerpt: 'Explore the principles of minimalism and how decluttering your physical and digital spaces can lead to a more focused life.',
-        category: 'Lifestyle',
-        categoryId: 7, // Corresponds to 'Lifestyle'
-        readTime: '5 min',
-        imageUrl: 'https://via.placeholder.com/800x600/06D6A0/FFFFFF?text=Minimalism',
-        date: '2024-05-18'
-    },
-    {
-        id: 11,
-        title: 'Organizing Local Community Events Successfully',
-        slug: 'organizing-local-community-events-successfully',
-        excerpt: 'A step-by-step guide to planning and executing successful local community events, from securing venues to engaging volunteers.',
-        category: 'Community',
-        categoryId: 8, // Corresponds to 'Community'
-        readTime: '7 min',
-        imageUrl: 'https://via.placeholder.com/800x600/FFD166/000000?text=Community+Events',
-        date: '2024-05-12'
-    },
-    {
-        id: 12,
-        title: 'Healthy Eating Habits for a Balanced Lifestyle',
-        slug: 'healthy-eating-habits-balanced-lifestyle',
-        excerpt: 'Learn how to cultivate sustainable healthy eating habits that nourish your body and support a balanced, energetic lifestyle.',
-        category: 'Lifestyle', // Another Lifestyle example
-        categoryId: 7, // Corresponds to 'Lifestyle'
-        readTime: '4 min',
-        imageUrl: 'https://via.placeholder.com/800x600/118AB2/FFFFFF?text=Healthy+Eating',
-        date: '2024-05-05'
-    }
-];
+import RecommendedArticles from '@/Components/RecommendedArticles.vue';
 
 // Reactive state
-const displayedPosts = ref([...allPosts]);
+const displayedPosts = ref([]);
+const paginationData = ref(null);
 const searchQuery = ref('');
-const selectedCategory = ref(0); // Default: All
+const currentSearchTerm = ref('');
+const selectedCategory = ref(null);
 const isLoading = ref(false);
+const isSearching = ref(false);
+const recommendedPosts = ref([]);
+const isLoadingRecommendations = ref(false);
+
+const page = usePage();
+
+// Check if user is authenticated
+const isAuthenticated = computed(() => !!page.props.auth.user);
+
+// Define a simple map for categories used in the CategoryTags component
+// In a real app, this might be fetched or passed from the backend
+const categoryMapForTags = ref([
+    { id: 'all', name: 'All', slug: 'all' }, // Use 'all' slug for clearing filter
+    { id: 1, name: 'Technology', slug: 'technology' },
+    { id: 2, name: 'Finance', slug: 'finance' },
+    { id: 3, name: 'Health', slug: 'health' },
+    { id: 4, name: 'Education', slug: 'education' },
+    { id: 5, name: 'Sports', slug: 'sports' },
+    { id: 6, name: 'Travel', slug: 'travel' },
+    { id: 7, name: 'Lifestyle', slug: 'lifestyle' },
+    { id: 8, name: 'Community', slug: 'community' }
+]);
+
+// Computed properties
+const trendingPosts = computed(() => {
+    const initialPosts = paginationData.value?.data || displayedPosts.value;
+    return initialPosts.slice(0, 3);
+});
+
+const featuredAuthor = ref({
+    name: 'Alex Thompson',
+    bio: 'Alex is a passionate full-stack developer and tech writer, focused on making complex topics accessible. He loves exploring new frameworks and sharing his findings with the community.',
+    imageUrl: 'https://via.placeholder.com/150/073B4C/FFFFFF?text=Alex+T',
+    profileLink: '#'
+});
 
 // Methods
-const filterByCategory = (categoryId) => {
-    selectedCategory.value = categoryId;
-    applyFilters();
+const fetchPosts = async (page = 1, preserveScroll = false) => {
+    if (isSearching.value) return;
+    
+    isLoading.value = true;
+    try {
+        let params = { page: page };
+        if (selectedCategory.value) {
+            params.category = selectedCategory.value;
+        }
+
+        const response = await axios.get('/api/posts', { params });
+
+        if (page === 1) {
+            displayedPosts.value = response.data.data;
+        } else {
+            displayedPosts.value = [...displayedPosts.value, ...response.data.data];
+        }
+        paginationData.value = response.data.meta;
+
+    } catch (error) {
+        console.error("Error fetching posts:", error);
+        displayedPosts.value = [];
+        paginationData.value = null;
+    } finally {
+        isLoading.value = false;
+        if (!preserveScroll) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+};
+
+const executeSearch = async (query) => {
+    if (!query || query.length < 3) {
+        clearSearch();
+        return;
+    }
+    
+    isLoading.value = true;
+    isSearching.value = true;
+    currentSearchTerm.value = query;
+    displayedPosts.value = [];
+    paginationData.value = null;
+
+    try {
+        const response = await axios.get('/api/search', { 
+            params: { query: query, limit: 12 }
+        });
+        displayedPosts.value = response.data.data;
+    } catch (error) {
+        console.error("Error executing search:", error);
+        displayedPosts.value = [];
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+const clearSearch = () => {
+    searchQuery.value = '';
+    currentSearchTerm.value = '';
+    if (isSearching.value) {
+        isSearching.value = false;
+        fetchPosts();
+    }
 };
 
 const handleSearch = (query) => {
     searchQuery.value = query;
-    applyFilters();
+    executeSearch(query);
 };
 
-const applyFilters = () => {
-    isLoading.value = true;
+const filterByCategory = (categorySlug) => {
+    clearSearch();
+    selectedCategory.value = categorySlug === 'all' ? null : categorySlug;
+    fetchPosts();
+};
+
+const fetchRecommendations = async () => {
+    if (!isAuthenticated.value) return;
     
-    // Simulate API call/loading
-    setTimeout(() => {
-        // First filter by category (if not "All")
-        let filtered = [...allPosts];
-        
-        if (selectedCategory.value !== 0) {
-            // Find the category name based on the ID from the CategoryTags component
-            const categoryMap = {
-                1: 'Technology', 2: 'Finance', 3: 'Health', 4: 'Education',
-                5: 'Sports', 6: 'Travel', 7: 'Lifestyle', 8: 'Community'
-            };
-            const categoryName = categoryMap[selectedCategory.value];
-            if (categoryName) {
-                 filtered = filtered.filter(post => post.category === categoryName);
-            }
+    isLoadingRecommendations.value = true;
+    try {
+        const response = await axios.get('/api/posts/recommendations');
+        recommendedPosts.value = response.data.data;
+    } catch (error) {
+        if (error.response && error.response.status !== 401) {
+             console.error("Error fetching recommendations:", error);
         }
-        
-        // Then filter by search query if present
-        if (searchQuery.value) {
-            const query = searchQuery.value.toLowerCase();
-            filtered = filtered.filter(post => 
-                post.title.toLowerCase().includes(query) || 
-                post.excerpt.toLowerCase().includes(query) ||
-                post.category.toLowerCase().includes(query)
-            );
-        }
-        
-        displayedPosts.value = filtered;
-        isLoading.value = false;
-    }, 300);
+        recommendedPosts.value = [];
+    } finally {
+        isLoadingRecommendations.value = false;
+    }
 };
 
 const loadMore = () => {
-    // In a real app, this would load the next page of results
-    // For this demo, we'll just simulate a loading state
-    isLoading.value = true;
-    
-    setTimeout(() => {
-        isLoading.value = false;
-        // You might add more posts here in a real application
-    }, 1000);
+    if (!isSearching.value && paginationData.value && paginationData.value.current_page < paginationData.value.last_page) {
+        fetchPosts(paginationData.value.current_page + 1, true);
+    }
 };
 
-// Initialize
+const getPageNumberFromUrl = (url) => {
+    if (!url) return null;
+    try {
+        const urlParams = new URLSearchParams(new URL(url).search);
+        return urlParams.get('page');
+    } catch (e) {
+        console.error("Error parsing pagination URL:", e);
+        return null;
+    }
+}
+
 onMounted(() => {
-    // Simulate initial data fetch
-    isLoading.value = true;
-    setTimeout(() => {
-        isLoading.value = false;
-    }, 300);
+    fetchPosts();
+    fetchRecommendations();
 });
 </script>
 
@@ -222,71 +175,122 @@ onMounted(() => {
     
     <TheHeader />
     
-    <main>
+    <main class="bg-gray-50 dark:bg-gray-800">
         <!-- Hero Section -->
-        <section class="py-12 border-b border-gray-200 mb-8">
+        <section class="py-12 border-b border-gray-200 dark:border-gray-700 mb-8 bg-white dark:bg-gray-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                <p class="text-primary text-sm font-medium mb-2">
-                    <!-- Updated Hero Text -->
+                <p class="text-primary dark:text-primary-light text-sm font-medium mb-2">
                     Explore Ideas, Insights & Inspiration That Matter
                 </p>
                 
-                <h1 class="text-3xl md:text-4xl font-bold mb-2 flex items-center justify-center gap-2">
-                    <span>🚀</span> <!-- Placeholder for icon -->
-                    <!-- Updated Hero Title -->
+                <h1 class="text-3xl md:text-4xl font-bold mb-2 flex items-center justify-center gap-2 text-gray-900 dark:text-gray-100">
+                    <span>🚀</span>
                     <span>Discover Knowledge & Connect</span>
                 </h1>
                 
-                <p class="max-w-2xl mx-auto text-gray-600 mb-8">
-                    <!-- Updated Hero Description -->
+                <p class="max-w-2xl mx-auto text-gray-600 dark:text-gray-400 mb-8">
                     Join thousands exploring the latest trends, expert tips, and engaging stories across various fields. 
                     Find resources, share insights, and connect with like-minded individuals.
                 </p>
                 
-                <CategoryTags @filter="filterByCategory" />
+                <CategoryTags @filter="filterByCategory" :categories="categoryMapForTags" />
                 
-                <SearchBar @search="handleSearch" />
+                <SearchBar 
+                    :modelValue="searchQuery" 
+                    @update:modelValue="searchQuery = $event" 
+                    @search="handleSearch" 
+                    @clear="clearSearch" 
+                 />
+                 <p v-if="isSearching" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    Showing semantic search results for: "{{ currentSearchTerm }}". 
+                    <button @click="clearSearch" class="text-indigo-600 dark:text-indigo-400 hover:underline">Clear search</button>
+                </p>
             </div>
         </section>
         
+        <!-- Trending Now Section -->
+        <section class="py-12 bg-white dark:bg-gray-900">
+             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-2xl font-bold mb-8 text-center text-gray-900 dark:text-gray-100">Trending Now 🔥</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <BlogPostCard
+                        v-for="post in trendingPosts"
+                        :key="'trending-'+post.id"
+                        :post="post"
+                    />
+                </div>
+            </div>
+        </section>
+        
+        <!-- Recommended For You Section -->
+        <section v-if="isAuthenticated && recommendedPosts.length > 0" class="py-12 bg-gray-50 dark:bg-gray-800">
+             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                 <RecommendedArticles :posts="recommendedPosts" />
+            </div>
+        </section>
+
         <!-- Blog Grid Section -->
-        <section class="py-8 mb-16">
+        <section class="py-12">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <!-- Loading indicator -->
-                <div v-if="isLoading" class="flex justify-center items-center py-12">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                </div>
+                <h2 v-if="!isSearching" class="text-2xl font-bold mb-8 text-center text-gray-900 dark:text-gray-100">Latest Articles</h2>
+                <h2 v-else class="text-2xl font-bold mb-8 text-center text-gray-900 dark:text-gray-100">Search Results</h2>
                 
-                <!-- No results message -->
-                <div v-else-if="displayedPosts.length === 0" class="text-center py-12">
-                    <h3 class="text-xl font-medium text-gray-700 mb-2">No results found</h3>
-                    <p class="text-gray-500">
-                        Try adjusting your search or filter to find what you're looking for.
-                    </p>
+                <div v-if="isLoading" class="flex justify-center items-center py-16">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary dark:border-primary-light"></div>
                 </div>
-                
-                <!-- Posts grid -->
-                <div 
-                    v-else 
-                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-                >
+                <div v-else-if="displayedPosts.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <BlogPostCard 
                         v-for="post in displayedPosts" 
                         :key="post.id" 
                         :post="post" 
                     />
                 </div>
+                <div v-else-if="isSearching" class="text-center text-gray-500 dark:text-gray-400 py-16">
+                    <p>No relevant articles found for "{{ currentSearchTerm }}". Try different keywords.</p>
+                </div>
+                <div v-else class="text-center text-gray-500 dark:text-gray-400 py-16">
+                    <p>No articles found matching your criteria. Try adjusting your category.</p>
+                </div>
                 
-                <!-- Load more button -->
-                <div class="text-center mt-12">
-                    <button 
-                        @click="loadMore" 
-                        class="px-6 py-3 border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 inline-flex items-center"
-                        :disabled="isLoading"
-                    >
-                        <span>Load More</span>
-                        <span class="ml-1 text-xs">▼</span>
-                    </button>
+                <div v-if="!isSearching">
+                    <div class="text-center mt-12" v-if="paginationData && paginationData.current_page < paginationData.last_page">
+                        <button @click="loadMore" :disabled="isLoading" class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-6 rounded-full transition duration-300 disabled:opacity-50 dark:bg-primary-light dark:hover:bg-primary dark:text-gray-900">
+                            {{ isLoading ? 'Loading...' : 'Load More' }}
+                        </button>
+                    </div>
+                    
+                    <div class="flex justify-center mt-8 space-x-1" v-else-if="paginationData && paginationData.last_page > 1">
+                        <button 
+                            v-for="pageLink in paginationData.links" 
+                            :key="pageLink.label" 
+                            @click="fetchPosts(getPageNumberFromUrl(pageLink.url), true)" 
+                            :disabled="!pageLink.url || pageLink.active || isLoading"
+                            v-html="pageLink.label"
+                            :class="[
+                                'px-3 py-1 border rounded transition duration-150 text-sm',
+                                pageLink.active ? 'bg-primary text-white border-primary dark:bg-primary-light dark:text-gray-900 dark:border-primary-light z-10' : 'bg-white hover:bg-gray-100 text-gray-600 border-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 dark:border-gray-600',
+                                !pageLink.url ? 'opacity-50 cursor-not-allowed' : ''
+                            ]"
+                        >
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Featured Author Section -->
+        <section class="py-12 bg-gray-100 dark:bg-gray-800">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-2xl font-bold mb-8 text-gray-900 dark:text-gray-100">Featured Author ✨</h2>
+                <div class="flex flex-col sm:flex-row items-center gap-6 bg-white dark:bg-gray-700 p-6 rounded-lg shadow-md">
+                    <img :src="featuredAuthor.imageUrl" :alt="featuredAuthor.name" class="w-24 h-24 rounded-full flex-shrink-0 border-4 border-primary dark:border-primary-light">
+                    <div class="text-left">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">{{ featuredAuthor.name }}</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mb-3">{{ featuredAuthor.bio }}</p>
+                        <Link :href="featuredAuthor.profileLink" class="font-medium text-sm text-primary hover:text-primary-dark dark:text-primary-light dark:hover:text-primary">
+                            View Profile
+                        </Link>
+                    </div>
                 </div>
             </div>
         </section>
