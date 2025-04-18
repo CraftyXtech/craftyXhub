@@ -91,7 +91,7 @@ Route::get('/category/handmade', function () {
 
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    return redirect()->route('profile.view');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -107,3 +107,35 @@ Route::get('/profile/view', function () {
     // In a real app, you might pass user data from the controller
     return Inertia::render('Profile/ProfileView'); 
 })->middleware(['auth'])->name('profile.view');
+
+// --- Admin Dashboard Routes ---
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
+        ->name('dashboard'); // -> admin.dashboard
+
+    // User management routes
+    Route::patch('/users/{user}/role', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'updateUserRole'])
+        ->name('users.update-role');
+    Route::delete('/users/{user}', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'deleteUser'])
+        ->name('users.delete');
+        
+    // Content management routes
+    Route::get('/content/analytics', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'contentAnalytics'])
+        ->name('content.analytics');
+    Route::get('/content/approval', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'contentApproval'])
+        ->name('content.approval');
+});
+
+// --- Editor Dashboard Routes ---
+Route::middleware(['auth', 'verified', 'editor'])->prefix('editor')->name('editor.')->group(function () {
+    // Main dashboard
+    Route::get('/dashboard', [\App\Http\Controllers\Editor\EditorDashboardController::class, 'index'])
+        ->name('dashboard'); // -> editor.dashboard
+    
+    // Post management routes (CRUD)
+    Route::resource('posts', \App\Http\Controllers\Editor\PostController::class);
+    
+    // Post statistics
+    Route::get('/stats', [\App\Http\Controllers\Editor\EditorDashboardController::class, 'stats'])
+        ->name('stats');
+});

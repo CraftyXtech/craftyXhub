@@ -31,7 +31,6 @@ class Post extends Model
         'featured',
         'comments_enabled',
         'featured_image_path',
-        'reading_time',
         'embedding',
         'generated_image_path',
     ];
@@ -136,6 +135,29 @@ class Post extends Model
         return $this->savers()->where('user_id', $user->id)->exists();
     }
 
+    /**
+     * Users who have recently read this post.
+     */
+    public function readers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_reads', 'post_id', 'user_id')
+                    ->withPivot('read_at', 'read_progress')
+                    ->orderByPivot('read_at', 'desc');
+    }
+
+    /**
+     * Record a read event for a user.
+     */
+    public function recordRead(User $user, int $progress = 100): void
+    {
+        $this->readers()->syncWithoutDetaching([
+            $user->id => [
+                'read_at' => now(),
+                'read_progress' => $progress,
+            ]
+        ]);
+    }
+
     public function getRouteKeyName()
     {
         return 'slug';
@@ -223,19 +245,6 @@ class Post extends Model
             }
             if (empty($post->published_at) && $post->status === 'published') {
                  $post->published_at = now();
-            }
-             if (empty($post->reading_time)) {
-                $wordCount = Str::wordCount(strip_tags($post->body));
-                $minutes = ceil($wordCount / 200); // Assuming 200 WPM
-                $post->reading_time = max(1, $minutes); // Ensure at least 1 minute
-            }
-        });
-
-        static::updating(function ($post) {
-             if ($post->isDirty('body') && !$post->isDirty('reading_time')) {
-                 $wordCount = Str::wordCount(strip_tags($post->body));
-                $minutes = ceil($wordCount / 200);
-                $post->reading_time = max(1, $minutes);
             }
         });
     }

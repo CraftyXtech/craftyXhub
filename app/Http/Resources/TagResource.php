@@ -18,6 +18,11 @@ class TagResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
+            'followersCount' => $this->whenCounted('followers'),
+            'postsCount' => $this->whenCounted('posts'),
+            'isFollowing' => $this->when($request->user(), function () use ($request) {
+                return $request->user()->isFollowingTopic($this->resource);
+            }),
         ];
     }
 }

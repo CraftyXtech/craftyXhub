@@ -105,6 +105,41 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Post::class, 'saved_posts', 'user_id', 'post_id')->withTimestamps();
     }
+    
+    /**
+     * Get the user's reading history.
+     */
+    public function recentlyRead(): HasMany
+    {
+        return $this->hasMany(UserRead::class);
+    }
+    
+    /**
+     * Get posts that the user has recently read.
+     */
+    public function recentlyReadPosts(): BelongsToMany
+    {
+        return $this->belongsToMany(Post::class, 'user_reads', 'user_id', 'post_id')
+                    ->withPivot('read_at', 'read_progress')
+                    ->orderByPivot('read_at', 'desc');
+    }
+    
+    /**
+     * Get the topics (tags) that the user follows.
+     */
+    public function followedTopics(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'user_topics', 'user_id', 'tag_id')
+                    ->withTimestamps();
+    }
+    
+    /**
+     * Check if a user follows a specific topic.
+     */
+    public function isFollowingTopic(Tag $tag): bool
+    {
+        return $this->followedTopics()->where('tag_id', $tag->id)->exists();
+    }
 
     // TODO: Add relationship for preferences later
 }

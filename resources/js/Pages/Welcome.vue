@@ -41,17 +41,20 @@ function handleImageError() {
                 </div>
                 
                 <div v-if="canLogin" class="flex items-center space-x-4">
-                    <Link v-if="$page.props.auth.user" :href="route('dashboard')" class="text-white hover:text-indigo-200 transition">
-                            Dashboard
+                    <Link v-if="$page.props.auth.user" :href="route('dashboard')" 
+                        class="px-4 py-2 rounded-md bg-white text-indigo-800 hover:bg-indigo-100 transition font-medium">
+                        Dashboard
+                    </Link>
+                    <template v-else>
+                        <Link :href="route('login')" 
+                            class="px-4 py-2 rounded-md border-2 border-white text-white hover:bg-white hover:text-indigo-900 transition font-medium">
+                            Log in
                         </Link>
-                        <template v-else>
-                        <Link :href="route('login')" class="text-white hover:text-indigo-200 transition">
-                                Log in
-                            </Link>
-                        <Link v-if="canRegister" :href="route('register')" class="px-4 py-2 rounded-md bg-white text-indigo-800 hover:bg-indigo-100 transition font-medium">
-                                Register
-                            </Link>
-                        </template>
+                        <Link v-if="canRegister" :href="route('register')" 
+                            class="px-4 py-2 rounded-md bg-white text-indigo-800 hover:bg-indigo-100 transition font-medium">
+                            Get Started
+                        </Link>
+                    </template>
                 </div>
                     </nav>
 

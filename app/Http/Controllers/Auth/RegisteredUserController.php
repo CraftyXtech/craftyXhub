@@ -46,6 +46,14 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        // Role-based redirect after registration
+        if ($user->isAdmin()) {
+            return redirect(route('admin.dashboard', absolute: false));
+        } elseif ($user->isEditor()) {
+            return redirect(route('editor.dashboard', absolute: false));
+        }
+
+        // Default redirect for regular users
+        return redirect(route('home', absolute: false)); // Assuming 'home' is the route for regular users
     }
 }

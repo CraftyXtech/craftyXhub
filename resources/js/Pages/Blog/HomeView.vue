@@ -9,6 +9,8 @@ import CategoryTags from '@/Components/Blog/CategoryTags.vue';
 import SearchBar from '@/Components/Shared/SearchBar.vue';
 import SubscribeBanner from '@/Components/Shared/SubscribeBanner.vue';
 import RecommendedArticles from '@/Components/RecommendedArticles.vue';
+import RecentlyReadArticles from '@/Components/Blog/RecentlyReadArticles.vue';
+import FollowedTopics from '@/Components/Blog/FollowedTopics.vue';
 
 // Reactive state
 const displayedPosts = ref([]);
@@ -20,6 +22,11 @@ const isLoading = ref(false);
 const isSearching = ref(false);
 const recommendedPosts = ref([]);
 const isLoadingRecommendations = ref(false);
+const recentlyReadArticles = ref([]);
+const followedTopics = ref([]);
+const suggestedTopics = ref([]);
+const isLoadingRecentlyRead = ref(false);
+const isLoadingTopics = ref(false);
 
 const page = usePage();
 
@@ -164,9 +171,74 @@ const getPageNumberFromUrl = (url) => {
     }
 }
 
+const fetchRecentlyReadArticles = async () => {
+    if (!isAuthenticated.value) return;
+    
+    isLoadingRecentlyRead.value = true;
+    try {
+        const response = await axios.get('/api/user/recently-read');
+        recentlyReadArticles.value = response.data.data || [];
+    } catch (error) {
+        if (error.response && error.response.status !== 401) {
+            console.error("Error fetching recently read articles:", error);
+        }
+        recentlyReadArticles.value = [];
+    } finally {
+        isLoadingRecentlyRead.value = false;
+    }
+};
+
+const fetchFollowedTopics = async () => {
+    if (!isAuthenticated.value) return;
+    
+    isLoadingTopics.value = true;
+    try {
+        const [followedResponse, suggestedResponse] = await Promise.all([
+            axios.get('/api/user/followed-topics'),
+            axios.get('/api/topics/suggested')
+        ]);
+        
+        followedTopics.value = followedResponse.data.data || [];
+        suggestedTopics.value = suggestedResponse.data.data || [];
+    } catch (error) {
+        if (error.response && error.response.status !== 401) {
+            console.error("Error fetching topics:", error);
+        }
+        followedTopics.value = [];
+        suggestedTopics.value = [];
+    } finally {
+        isLoadingTopics.value = false;
+    }
+};
+
+const handleTopicUpdated = (payload) => {
+    const { topicId, isFollowing } = payload;
+    
+    if (isFollowing) {
+        // Add to followed topics
+        const topic = suggestedTopics.value.find(t => t.id === topicId);
+        if (topic) {
+            followedTopics.value.push(topic);
+            suggestedTopics.value = suggestedTopics.value.filter(t => t.id !== topicId);
+        }
+    } else {
+        // Remove from followed topics
+        const topic = followedTopics.value.find(t => t.id === topicId);
+        if (topic) {
+            suggestedTopics.value.push(topic);
+            followedTopics.value = followedTopics.value.filter(t => t.id !== topicId);
+        }
+    }
+};
+
 onMounted(() => {
     fetchPosts();
     fetchRecommendations();
+    
+    if (isAuthenticated.value) {
+        fetchRecentlyReadArticles();
+        fetchFollowedTopics();
+    }
 });
 </script>
 
@@ -226,6 +298,28 @@ onMounted(() => {
         <section v-if="isAuthenticated && recommendedPosts.length > 0" class="py-12 bg-gray-50 dark:bg-gray-800">
              <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                  <RecommendedArticles :posts="recommendedPosts" />
+            </div>
+        </section>
+
+        <!-- Recently Read Articles Section (Only for authenticated users) -->
+        <section v-if="isAuthenticated" class="py-12 bg-gray-50 dark:bg-gray-800">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <RecentlyReadArticles 
+                    :articles="recentlyReadArticles" 
+                    :isLoading="isLoadingRecentlyRead" 
+                />
+            </div>
+        </section>
+        
+        <!-- Followed Topics Section (Only for authenticated users) -->
+        <section v-if="isAuthenticated" class="py-12 bg-white dark:bg-gray-900">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <FollowedTopics 
+                    :topics="followedTopics" 
+                    :suggestedTopics="suggestedTopics" 
+                    :isLoading="isLoadingTopics"
+                    @topic-updated="handleTopicUpdated" 
+                />
             </div>
         </section>
 

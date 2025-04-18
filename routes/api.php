@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\UserProfileController;
 use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\RecommendationController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\UserPersonalizationController;
 
 // Public routes
 Route::get('/posts', [PostController::class, 'index']);
@@ -35,6 +36,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/preferences', [UserProfileController::class, 'updatePreferences']);
     Route::get('/user/likes', [UserProfileController::class, 'getLikedPosts']);
     Route::get('/user/bookmarks', [UserProfileController::class, 'getBookmarkedPosts']);
+    
+    // User Personalization
+    Route::get('/user/recently-read', [UserPersonalizationController::class, 'getRecentlyRead']);
+    Route::post('/posts/{post:id}/read', [UserPersonalizationController::class, 'recordRead']);
+    Route::get('/user/followed-topics', [UserPersonalizationController::class, 'getFollowedTopics']);
+    Route::post('/topics/follow', [UserPersonalizationController::class, 'toggleFollowTopic']);
+    Route::get('/topics/suggested', [UserPersonalizationController::class, 'getSuggestedTopics']);
 
     // AI Features
     Route::post('/ai/summarize', [AiController::class, 'summarize']);

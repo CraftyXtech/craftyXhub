@@ -1,19 +1,18 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link } from '@inertiajs/vue3';
-import { navItemsLeft, navItemsRight } from '@/Shared/navigationItems'; // Import shared items
-import QnABot from '@/Components/Shared/QnABot.vue'; // Import QnABot
+import { navItemsLeft, navItemsRight, getAuthItems } from '@/Shared/navigationItems';
+import QnABot from '@/Components/Shared/QnABot.vue';
 
 const showingNavigationDropdown = ref(false);
 
-// Define navigation items (can be fetched or defined statically)
-// REMOVED: const navItemsLeft = [ ... ];
-// REMOVED: const navItemsRight = [ ... ];
+// Compute auth items
+const authItems = computed(() => getAuthItems());
 </script>
 
 <template>
@@ -38,12 +37,12 @@ const showingNavigationDropdown = ref(false);
                                         </button>
                                     </template>
                                     <template #content>
-                                        <DropdownLink v-for="subItem in item.dropdown" :key="subItem" href="#"> <!-- Replace # with actual links -->
+                                        <DropdownLink v-for="subItem in item.dropdown" :key="subItem" href="#">
                                             {{ subItem }}
                                         </DropdownLink>
                                     </template>
                                 </Dropdown>
-                                <NavLink v-else href="#"> <!-- Replace # with actual links -->
+                                <NavLink v-else :href="item.href || '#'">
                                     {{ item.name }}
                                 </NavLink>
                             </template>
@@ -74,58 +73,46 @@ const showingNavigationDropdown = ref(false);
                                             </button>
                                         </template>
                                         <template #content>
-                                            <DropdownLink v-for="subItem in item.dropdown" :key="subItem" href="#"> <!-- Replace # with actual links -->
+                                            <DropdownLink v-for="subItem in item.dropdown" :key="subItem" href="#">
                                                 {{ subItem }}
                                             </DropdownLink>
                                         </template>
                                     </Dropdown>
-                                     <NavLink v-else href="#"> <!-- Replace # with actual links -->
+                                     <NavLink v-else :href="item.href || '#'">
                                         {{ item.name }}
                                     </NavLink>
                                 </template>
                             </div>
-                            <!-- Settings Dropdown -->
-                            <div class="relative ms-3">
-                                <Dropdown align="right" width="48">
-                                    <template #trigger>
-                                        <span class="inline-flex rounded-md">
-                                            <button
-                                                type="button"
-                                                class="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
-                                            >
-                                                {{ $page.props.auth.user.name }}
 
-                                                <svg
-                                                    class="-me-0.5 ms-2 h-4 w-4"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 20 20"
-                                                    fill="currentColor"
-                                                >
-                                                    <path
-                                                        fill-rule="evenodd"
-                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clip-rule="evenodd"
-                                                    />
+                            <!-- Auth Items -->
+                            <div class="hidden items-center space-x-4 sm:-my-px sm:flex">
+                                <template v-for="item in authItems" :key="item.name">
+                                    <Dropdown v-if="item.dropdown" align="right" width="48">
+                                        <template #trigger>
+                                            <button class="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none">
+                                                {{ item.name }}
+                                                <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                                 </svg>
                                             </button>
-                                        </span>
-                                    </template>
-
-                                    <template #content>
-                                        <DropdownLink
-                                            :href="route('profile.view')"
-                                        >
-                                            Profile
-                                        </DropdownLink>
-                                        <DropdownLink
-                                            :href="route('logout')"
-                                            method="post"
-                                            as="button"
-                                        >
-                                            Log Out
-                                        </DropdownLink>
-                                    </template>
-                                </Dropdown>
+                                        </template>
+                                        <template #content>
+                                            <DropdownLink :href="route('profile.view')">Profile</DropdownLink>
+                                            <DropdownLink :href="route('logout')" method="post" as="button">Log Out</DropdownLink>
+                                        </template>
+                                    </Dropdown>
+                                    <Link v-else
+                                        :href="item.href"
+                                        :class="[
+                                            item.highlight
+                                                ? 'bg-indigo-600 text-white hover:bg-indigo-500'
+                                                : 'text-gray-500 hover:text-gray-700 border-2 border-transparent hover:border-gray-300',
+                                            'px-4 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out'
+                                        ]"
+                                    >
+                                        {{ item.name }}
+                                    </Link>
+                                </template>
                             </div>
                         </div>
 
@@ -182,50 +169,17 @@ const showingNavigationDropdown = ref(false);
                 >
                     <div class="space-y-1 pb-3 pt-2">
                          <!-- Responsive Links -->
-                        <template v-for="item in [...navItemsLeft, ...navItemsRight]" :key="item.name">
+                        <template v-for="item in [...navItemsLeft, ...navItemsRight, ...authItems]" :key="item.name">
                              <div v-if="item.dropdown" class="pt-2 pb-1 border-t border-gray-200">
                                 <div class="px-4 font-medium text-base text-gray-800">{{ item.name }}</div>
-                                <ResponsiveNavLink v-for="subItem in item.dropdown" :key="subItem" href="#"> <!-- Replace # with actual links -->
+                                <ResponsiveNavLink v-for="subItem in item.dropdown" :key="subItem" href="#">
                                     {{ subItem }}
                                 </ResponsiveNavLink>
                             </div>
-                             <ResponsiveNavLink v-else href="#"> <!-- Replace # with actual links -->
+                             <ResponsiveNavLink v-else :href="item.href || '#'">
                                 {{ item.name }}
                             </ResponsiveNavLink>
                         </template>
-                        <!-- Add Dashboard link back if needed -->
-                        <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                            Dashboard
-                        </ResponsiveNavLink>
-                    </div>
-
-                    <!-- Responsive Settings Options -->
-                    <div
-                        class="border-t border-gray-200 pb-1 pt-4"
-                    >
-                        <div class="px-4">
-                            <div
-                                class="text-base font-medium text-gray-800"
-                            >
-                                {{ $page.props.auth.user.name }}
-                            </div>
-                            <div class="text-sm font-medium text-gray-500">
-                                {{ $page.props.auth.user.email }}
-                            </div>
-                        </div>
-
-                        <div class="mt-3 space-y-1">
-                            <ResponsiveNavLink :href="route('profile.view')">
-                                Profile
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                :href="route('logout')"
-                                method="post"
-                                as="button"
-                            >
-                                Log Out
-                            </ResponsiveNavLink>
-                        </div>
                     </div>
                 </div>
             </nav>
