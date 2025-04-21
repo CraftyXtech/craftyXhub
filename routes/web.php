@@ -4,20 +4,16 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Web\PostController;
+use App\Http\Controllers\Web\CommentController;
+use App\Http\Controllers\Web\InteractionController;
+use App\Http\Controllers\Web\UserProfileController;
 
-Route::get('/', function () {
-    return Inertia::render('Blog/HomeView');
-})->name('home');
+Route::get('/', [PostController::class, 'index'])->name('home');
 
-Route::get('/blog', function () {
-    return Inertia::render('Blog/HomeView');
-})->name('blog');
+Route::get('/blog', [PostController::class, 'index'])->name('blog');
 
-Route::get('/blog/{slug}', function ($slug) {
-    return Inertia::render('Blog/BlogPostView', [
-        'slug' => $slug,
-    ]);
-})->name('blog.show');
+Route::get('/blog/{post:slug}', [PostController::class, 'show'])->name('blog.show');
 
 Route::get('/category/{category}', function ($category) {
     // This generic route might still be useful if you pass slugs directly
@@ -102,11 +98,10 @@ Route::middleware('auth')->group(function () {
 
 require __DIR__.'/auth.php';
 
-// Add route for Profile View page
-Route::get('/profile/view', function () {
-    // In a real app, you might pass user data from the controller
-    return Inertia::render('Profile/ProfileView'); 
-})->middleware(['auth'])->name('profile.view');
+// Use the new UserProfileController for the profile view route
+Route::get('/profile/view', [\App\Http\Controllers\Web\UserProfileController::class, 'show'])
+    ->middleware(['auth'])
+    ->name('profile.view');
 
 // --- Admin Dashboard Routes ---
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -134,8 +129,28 @@ Route::middleware(['auth', 'verified', 'editor'])->prefix('editor')->name('edito
     
     // Post management routes (CRUD)
     Route::resource('posts', \App\Http\Controllers\Editor\PostController::class);
+
+    // Add the bulk action route
+    Route::post('posts/bulk-action', [\App\Http\Controllers\Editor\PostController::class, 'bulkAction'])
+        ->name('posts.bulk-action'); 
     
     // Post statistics
     Route::get('/stats', [\App\Http\Controllers\Editor\EditorDashboardController::class, 'stats'])
         ->name('stats');
 });
+
+Route::post('/posts/{post}/comments', [CommentController::class, 'store'])
+    ->middleware('auth')
+    ->name('posts.comments.store');
+
+Route::post('/posts/{post}/like', [InteractionController::class, 'toggleLike'])
+    ->middleware('auth')
+    ->name('posts.like');
+
+Route::post('/posts/{post}/save', [InteractionController::class, 'toggleSave'])
+    ->middleware('auth')
+    ->name('posts.save');
+
+Route::put('/profile/preferences', [UserProfileController::class, 'updatePreferences'])
+    ->middleware(['auth'])
+    ->name('profile.preferences.update');

@@ -2,46 +2,38 @@
 defineProps({
     message: {
         type: String,
-        default: 'An error occurred.'
+        required: true
     },
-    showRetry: {
+    dismissible: {
         type: Boolean,
         default: false
     }
 });
 
-const emit = defineEmits(['retry']);
-
-const handleRetry = () => {
-    emit('retry');
-};
+const emit = defineEmits(['dismiss']);
 </script>
 
 <template>
-    <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-md my-4">
-        <div class="flex">
+    <div 
+        class="bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4 flex items-start justify-between"
+        role="alert"
+    >
+        <div class="flex items-start">
             <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-red-400 dark:text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                </svg>
+                <span class="material-icons text-red-600 dark:text-red-400">error</span>
             </div>
             <div class="ml-3">
-                <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
-                    Error
-                </h3>
-                <div class="mt-2 text-sm text-red-700 dark:text-red-300">
-                    <p>{{ message }}</p>
-                </div>
-                <div v-if="showRetry" class="mt-4">
-                    <button
-                        type="button"
-                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-gray-800"
-                        @click="handleRetry"
-                    >
-                        Retry
-                    </button>
-                </div>
+                <p class="text-sm text-red-700 dark:text-red-200">{{ message }}</p>
             </div>
         </div>
+        <button 
+            v-if="dismissible"
+            type="button"
+            class="ml-auto -mx-1.5 -my-1.5 bg-red-50 dark:bg-red-900/50 text-red-500 dark:text-red-400 rounded-lg focus:ring-2 focus:ring-red-400 p-1.5 hover:bg-red-100 dark:hover:bg-red-800 inline-flex items-center justify-center h-8 w-8"
+            @click="emit('dismiss')"
+        >
+            <span class="sr-only">Dismiss</span>
+            <span class="material-icons text-sm">close</span>
+        </button>
     </div>
 </template> 

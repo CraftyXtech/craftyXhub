@@ -1,6 +1,6 @@
 <script setup>
 import { ref, nextTick } from 'vue';
-import axios from 'axios';
+import { router } from '@inertiajs/vue3';
 
 const isOpen = ref(false);
 const userInput = ref('');
@@ -45,24 +45,31 @@ const sendMessage = async (question = null) => {
     isLoading.value = true;
     apiError.value = null;
 
-    try {
-        const response = await axios.post('/api/ai/ask', {
-            question: textToSend
-        });
-        addMessage('bot', response.data.answer);
-    } catch (error) {
-        console.error("Error asking AI:", error);
-        let errorMessage = "Sorry, I encountered an error. Please try again later.";
-        if (error.response && error.response.status === 401) {
-            errorMessage = "Authentication error. Please ensure you are logged in.";
-        } else if (error.response && error.response.data && error.response.data.message) {
-            errorMessage = error.response.data.message;
-        }
-        addMessage('bot', errorMessage);
-        apiError.value = errorMessage;
-    } finally {
-        isLoading.value = false;
-    }
+    router.post(route('ai.ask'), {
+        question: textToSend,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        only: ['aiBotAnswer'],
+        onSuccess: (page) => {
+            if (page.props.aiBotAnswer) {
+                 addMessage('bot', page.props.aiBotAnswer);
+            } else {
+                 addMessage('bot', 'Received a response, but could not find the answer.');
+                 console.warn('AI bot answer prop missing in response:', page.props);
+            }
+            apiError.value = null;
+        },
+        onError: (errors) => {
+            console.error("Error asking AI via Inertia:", errors);
+            const firstError = Object.values(errors)[0] || "Sorry, I encountered an error. Please try again later.";
+            addMessage('bot', firstError);
+            apiError.value = firstError;
+        },
+        onFinish: () => {
+            isLoading.value = false;
+        },
+    });
 };
 
 </script>

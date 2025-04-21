@@ -7,7 +7,8 @@ services:
     restart: unless-stopped
     working_dir: /var/www
     volumes:
-      - ./:/var/www
+      - .:/var/www
+      - /var/www/node_modules
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     networks:
       - craftyxhub-network
@@ -33,23 +34,27 @@ services:
     container_name: craftyxhub-nginx
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8000:80"
     volumes:
-      - ./:/var/www
+      - .:/var/www
+      - /var/www/node_modules
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
     networks:
       - craftyxhub-network
 
   npm:
-    image: node:20
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: craftyxhub-npm
     volumes:
-      - ./:/var/www
+      - .:/var/www
+      - /var/www/node_modules
     working_dir: /var/www
     ports:
       - "5173:5173"
       - "5174:5174"
-    entrypoint: ['npm', 'run', 'dev']
+    command: npm run dev
     environment:
       - HOST=0.0.0.0
     networks:

@@ -199,4 +199,46 @@ class PostController extends Controller
         return redirect()->route('editor.posts.index')
             ->with('success', 'Post deleted successfully!');
     }
+
+    /**
+     * Apply a bulk action to multiple posts.
+     *
+     * @param Request $request
+     * @return RedirectResponse
+     */
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'action' => 'required|string|in:delete,publish,draft,review,reject', // Add other valid actions
+            'ids'    => 'required|array',
+            'ids.*'  => 'integer|exists:posts,id',
+        ]);
+
+        $action = $validated['action'];
+        $postIds = $validated['ids'];
+
+        // Ensure user can update/delete these posts (maybe check ownership or admin role)
+        $posts = Post::whereIn('id', $postIds)->where('user_id', Auth::id())->get(); // Basic ownership check
+        // More robust check using Gates:
+        // $posts = Post::findMany($postIds);
+        // foreach ($posts as $post) {
+        //     if (Gate::denies('update', $post) && $action !== 'delete') {
+        //         abort(403, 'Unauthorized action on some posts.');
+        //     }
+        //     if (Gate::denies('delete', $post) && $action === 'delete') {
+        //         abort(403, 'Unauthorized action on some posts.');
+        //     }
+        // }
+
+        if ($posts->isEmpty() && count($postIds) > 0) {
+            return redirect()->back()->with('error', 'Could not perform action on specified posts. Check permissions.');
+        }
+
+        $actualIds = $posts->pluck('id')->all(); // Get IDs the user is authorized for
+
+        // Delegate the actual action to the service
+        $message = $this->postService->applyBulkAction($action, $actualIds);
+
+        return redirect()->route('editor.posts.index')->with('success', $message ?? 'Bulk action applied successfully.');
+    }
 } 

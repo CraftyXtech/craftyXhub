@@ -1,7 +1,6 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
-import { Head, Link, usePage } from '@inertiajs/vue3';
-import axios from 'axios';
+import { ref, computed, watch } from 'vue';
+import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import TheHeader from '@/Components/Layout/TheHeader.vue';
 import TheFooter from '@/Components/Layout/TheFooter.vue';
 import BlogPostCard from '@/Components/Blog/BlogPostCard.vue';
@@ -12,21 +11,22 @@ import RecommendedArticles from '@/Components/RecommendedArticles.vue';
 import RecentlyReadArticles from '@/Components/Blog/RecentlyReadArticles.vue';
 import FollowedTopics from '@/Components/Blog/FollowedTopics.vue';
 
-// Reactive state
-const displayedPosts = ref([]);
-const paginationData = ref(null);
-const searchQuery = ref('');
-const currentSearchTerm = ref('');
-const selectedCategory = ref(null);
-const isLoading = ref(false);
-const isSearching = ref(false);
-const recommendedPosts = ref([]);
-const isLoadingRecommendations = ref(false);
-const recentlyReadArticles = ref([]);
-const followedTopics = ref([]);
-const suggestedTopics = ref([]);
-const isLoadingRecentlyRead = ref(false);
-const isLoadingTopics = ref(false);
+// --- Define Props --- 
+const props = defineProps({
+  posts: { type: Object, required: true }, // Laravel Paginator
+  filters: { type: Object, default: () => ({ query: null, category: null }) }, // Contains query, category
+  // Conditionally loaded props (ensure controller passes these if needed)
+  recentlyRead: { type: Object, default: () => ({ data: [] }) },
+  followedTopics: { type: Array, default: () => [] },
+  suggestedTopics: { type: Array, default: () => [] },
+  recommendedPosts: { type: Object, default: () => ({ data: [] }) } // For partial reload
+});
+
+// Reactive state (mostly for UI control, not primary data)
+const searchQuery = ref(props.filters.query || '');
+const selectedCategory = ref(props.filters.category || null);
+const isLoading = ref(false); // Router events can manage this
+const isSearching = ref(!!props.filters.query);
 
 const page = usePage();
 
@@ -47,10 +47,9 @@ const categoryMapForTags = ref([
     { id: 8, name: 'Community', slug: 'community' }
 ]);
 
-// Computed properties
+// Computed properties using props
 const trendingPosts = computed(() => {
-    const initialPosts = paginationData.value?.data || displayedPosts.value;
-    return initialPosts.slice(0, 3);
+    return props.posts?.data?.slice(0, 3) || [];
 });
 
 const featuredAuthor = ref({
@@ -60,186 +59,94 @@ const featuredAuthor = ref({
     profileLink: '#'
 });
 
-// Methods
-const fetchPosts = async (page = 1, preserveScroll = false) => {
-    if (isSearching.value) return;
-    
-    isLoading.value = true;
-    try {
-        let params = { page: page };
-        if (selectedCategory.value) {
-            params.category = selectedCategory.value;
-        }
+// --- Methods using Inertia Router --- 
 
-        const response = await axios.get('/api/posts', { params });
+// Fetching posts is now handled by visiting the route. 
+// This function can be removed or repurposed if needed for other actions.
+// const fetchPosts = async (...) => { ... }; 
 
-        if (page === 1) {
-            displayedPosts.value = response.data.data;
-        } else {
-            displayedPosts.value = [...displayedPosts.value, ...response.data.data];
-        }
-        paginationData.value = response.data.meta;
-
-    } catch (error) {
-        console.error("Error fetching posts:", error);
-        displayedPosts.value = [];
-        paginationData.value = null;
-    } finally {
-        isLoading.value = false;
-        if (!preserveScroll) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }
-};
-
-const executeSearch = async (query) => {
-    if (!query || query.length < 3) {
-        clearSearch();
-        return;
-    }
-    
-    isLoading.value = true;
-    isSearching.value = true;
-    currentSearchTerm.value = query;
-    displayedPosts.value = [];
-    paginationData.value = null;
-
-    try {
-        const response = await axios.get('/api/search', { 
-            params: { query: query, limit: 12 }
-        });
-        displayedPosts.value = response.data.data;
-    } catch (error) {
-        console.error("Error executing search:", error);
-        displayedPosts.value = [];
-    } finally {
-        isLoading.value = false;
-    }
+const executeSearch = (query) => {
+    // Use router.get for searching, passing current category filter
+    router.get(route('home'), { 
+        query: query, 
+        category: selectedCategory.value || undefined // Keep category filter
+    }, {
+        preserveState: true, 
+        replace: true, // Avoid adding duplicate history entries for searches
+        onStart: () => isLoading.value = true,
+        onFinish: () => isLoading.value = false,
+    });
 };
 
 const clearSearch = () => {
     searchQuery.value = '';
-    currentSearchTerm.value = '';
-    if (isSearching.value) {
-        isSearching.value = false;
-        fetchPosts();
-    }
+    // Go back to non-search state by removing the query param
+    router.get(route('home'), { 
+        category: selectedCategory.value || undefined // Keep category filter
+    }, {
+        preserveState: true, 
+        replace: true,
+        onStart: () => isLoading.value = true,
+        onFinish: () => isLoading.value = false,
+    });
 };
 
 const handleSearch = (query) => {
-    searchQuery.value = query;
+    // Optional: Add debounce or length check
     executeSearch(query);
 };
 
 const filterByCategory = (categorySlug) => {
-    clearSearch();
-    selectedCategory.value = categorySlug === 'all' ? null : categorySlug;
-    fetchPosts();
-};
-
-const fetchRecommendations = async () => {
-    if (!isAuthenticated.value) return;
+    const newCategory = categorySlug === 'all' ? null : categorySlug;
+    selectedCategory.value = newCategory;
+    searchQuery.value = ''; // Clear search when changing category
     
-    isLoadingRecommendations.value = true;
-    try {
-        const response = await axios.get('/api/posts/recommendations');
-        recommendedPosts.value = response.data.data;
-    } catch (error) {
-        if (error.response && error.response.status !== 401) {
-             console.error("Error fetching recommendations:", error);
-        }
-        recommendedPosts.value = [];
-    } finally {
-        isLoadingRecommendations.value = false;
-    }
+    // Use router.get for category filtering
+    router.get(route('home'), { 
+        category: newCategory || undefined 
+    }, {
+        preserveState: true, 
+        replace: true, 
+        onStart: () => isLoading.value = true,
+        onFinish: () => isLoading.value = false,
+    });
 };
 
-const loadMore = () => {
-    if (!isSearching.value && paginationData.value && paginationData.value.current_page < paginationData.value.last_page) {
-        fetchPosts(paginationData.value.current_page + 1, true);
-    }
+// Fetch recommendations using partial reload
+const fetchRecommendations = () => {
+    if (!isAuthenticated.value || !route().has('recommendations.index')) return; // Check if route exists
+    router.get(route('recommendations.index'), {}, {
+        only: ['recommendedPosts'],
+        preserveState: true,
+        preserveScroll: true, 
+    });
 };
 
-const getPageNumberFromUrl = (url) => {
-    if (!url) return null;
-    try {
-        const urlParams = new URLSearchParams(new URL(url).search);
-        return urlParams.get('page');
-    } catch (e) {
-        console.error("Error parsing pagination URL:", e);
-        return null;
-    }
-}
+// Remove old fetchRecommendations, fetchRecentlyRead, fetchFollowedTopics methods
+// const fetchRecommendations = async () => { ... }; 
+// const fetchRecentlyReadArticles = async () => { ... };
+// const fetchFollowedTopics = async () => { ... };
 
-const fetchRecentlyReadArticles = async () => {
-    if (!isAuthenticated.value) return;
-    
-    isLoadingRecentlyRead.value = true;
-    try {
-        const response = await axios.get('/api/user/recently-read');
-        recentlyReadArticles.value = response.data.data || [];
-    } catch (error) {
-        if (error.response && error.response.status !== 401) {
-            console.error("Error fetching recently read articles:", error);
-        }
-        recentlyReadArticles.value = [];
-    } finally {
-        isLoadingRecentlyRead.value = false;
-    }
-};
+// Load more is handled by Inertia pagination links, remove this method
+// const loadMore = () => { ... };
 
-const fetchFollowedTopics = async () => {
-    if (!isAuthenticated.value) return;
-    
-    isLoadingTopics.value = true;
-    try {
-        const [followedResponse, suggestedResponse] = await Promise.all([
-            axios.get('/api/user/followed-topics'),
-            axios.get('/api/topics/suggested')
-        ]);
-        
-        followedTopics.value = followedResponse.data.data || [];
-        suggestedTopics.value = suggestedResponse.data.data || [];
-    } catch (error) {
-        if (error.response && error.response.status !== 401) {
-            console.error("Error fetching topics:", error);
-        }
-        followedTopics.value = [];
-        suggestedTopics.value = [];
-    } finally {
-        isLoadingTopics.value = false;
-    }
-};
+// Helper function for parsing page numbers is no longer needed with Inertia links
+// const getPageNumberFromUrl = (url) => { ... };
 
-const handleTopicUpdated = (payload) => {
-    const { topicId, isFollowing } = payload;
-    
-    if (isFollowing) {
-        // Add to followed topics
-        const topic = suggestedTopics.value.find(t => t.id === topicId);
-        if (topic) {
-            followedTopics.value.push(topic);
-            suggestedTopics.value = suggestedTopics.value.filter(t => t.id !== topicId);
-        }
-    } else {
-        // Remove from followed topics
-        const topic = followedTopics.value.find(t => t.id === topicId);
-        if (topic) {
-            suggestedTopics.value.push(topic);
-            followedTopics.value = followedTopics.value.filter(t => t.id !== topicId);
-        }
+// Call fetchRecommendations on mount if user is authenticated
+watch(isAuthenticated, (newValue) => {
+    if (newValue) {
+        fetchRecommendations();
     }
-};
+}, { immediate: true });
 
-onMounted(() => {
-    fetchPosts();
-    fetchRecommendations();
-    
-    if (isAuthenticated.value) {
-        fetchRecentlyReadArticles();
-        fetchFollowedTopics();
-    }
-});
+// Watch for changes in filters from URL to update local state if needed
+watch(() => props.filters, (newFilters) => {
+    searchQuery.value = newFilters.query || '';
+    selectedCategory.value = newFilters.category || null;
+    isSearching.value = !!newFilters.query;
+}, { deep: true });
+
 </script>
 
 <template>
@@ -270,11 +177,11 @@ onMounted(() => {
                 <SearchBar 
                     :modelValue="searchQuery" 
                     @update:modelValue="searchQuery = $event" 
-                    @search="handleSearch" 
-                    @clear="clearSearch" 
+                    @search="handleSearch"
+                    @clear="clearSearch"
                  />
-                 <p v-if="isSearching" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    Showing semantic search results for: "{{ currentSearchTerm }}". 
+                 <p v-if="props.filters.query" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    Showing results for: "{{ props.filters.query }}". 
                     <button @click="clearSearch" class="text-indigo-600 dark:text-indigo-400 hover:underline">Clear search</button>
                 </p>
             </div>
@@ -295,9 +202,9 @@ onMounted(() => {
         </section>
         
         <!-- Recommended For You Section -->
-        <section v-if="isAuthenticated && recommendedPosts.length > 0" class="py-12 bg-gray-50 dark:bg-gray-800">
+        <section v-if="isAuthenticated && props.recommendedPosts.data.length > 0" class="py-12 bg-gray-50 dark:bg-gray-800">
              <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                 <RecommendedArticles :posts="recommendedPosts" />
+                 <RecommendedArticles :posts="props.recommendedPosts.data" />
             </div>
         </section>
 
@@ -305,8 +212,7 @@ onMounted(() => {
         <section v-if="isAuthenticated" class="py-12 bg-gray-50 dark:bg-gray-800">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <RecentlyReadArticles 
-                    :articles="recentlyReadArticles" 
-                    :isLoading="isLoadingRecentlyRead" 
+                    :articles="props.recentlyRead.data" 
                 />
             </div>
         </section>
@@ -315,10 +221,8 @@ onMounted(() => {
         <section v-if="isAuthenticated" class="py-12 bg-white dark:bg-gray-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <FollowedTopics 
-                    :topics="followedTopics" 
-                    :suggestedTopics="suggestedTopics" 
-                    :isLoading="isLoadingTopics"
-                    @topic-updated="handleTopicUpdated" 
+                    :followed="props.followedTopics" 
+                    :suggested="props.suggestedTopics" 
                 />
             </div>
         </section>
@@ -326,49 +230,46 @@ onMounted(() => {
         <!-- Blog Grid Section -->
         <section class="py-12">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 v-if="!isSearching" class="text-2xl font-bold mb-8 text-center text-gray-900 dark:text-gray-100">Latest Articles</h2>
+                <h2 v-if="!props.filters.query" class="text-2xl font-bold mb-8 text-center text-gray-900 dark:text-gray-100">Latest Articles</h2>
                 <h2 v-else class="text-2xl font-bold mb-8 text-center text-gray-900 dark:text-gray-100">Search Results</h2>
                 
                 <div v-if="isLoading" class="flex justify-center items-center py-16">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary dark:border-primary-light"></div>
                 </div>
-                <div v-else-if="displayedPosts.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div v-else-if="props.posts?.data?.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <BlogPostCard 
-                        v-for="post in displayedPosts" 
+                        v-for="post in props.posts.data" 
                         :key="post.id" 
                         :post="post" 
                     />
                 </div>
-                <div v-else-if="isSearching" class="text-center text-gray-500 dark:text-gray-400 py-16">
-                    <p>No relevant articles found for "{{ currentSearchTerm }}". Try different keywords.</p>
-                </div>
-                <div v-else class="text-center text-gray-500 dark:text-gray-400 py-16">
-                    <p>No articles found matching your criteria. Try adjusting your category.</p>
+                <div v-else class="text-center py-16 text-gray-600 dark:text-gray-400">
+                     <p v-if="props.filters.query">No posts found matching your search "{{ props.filters.query }}".</p>
+                     <p v-else-if="props.filters.category">No posts found in the category "{{ props.filters.category }}".</p>
+                    <p v-else>No posts available yet.</p>
                 </div>
                 
-                <div v-if="!isSearching">
-                    <div class="text-center mt-12" v-if="paginationData && paginationData.current_page < paginationData.last_page">
-                        <button @click="loadMore" :disabled="isLoading" class="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-6 rounded-full transition duration-300 disabled:opacity-50 dark:bg-primary-light dark:hover:bg-primary dark:text-gray-900">
-                            {{ isLoading ? 'Loading...' : 'Load More' }}
-                        </button>
+                <!-- Pagination -->
+                <div v-if="props.posts?.links?.length > 3" class="mt-12 flex justify-center">
+                     <div class="flex flex-wrap -mb-1">
+                        <template v-for="(link, key) in props.posts.links" :key="key">
+                             <div 
+                                v-if="link.url === null" 
+                                class="mr-1 mb-1 px-4 py-3 text-sm leading-4 text-gray-400 border rounded"
+                                v-html="link.label"
+                            />
+                            <Link 
+                                v-else 
+                                class="mr-1 mb-1 px-4 py-3 text-sm leading-4 border rounded hover:bg-white focus:border-primary focus:text-primary dark:hover:bg-gray-700 dark:focus:border-primary-light dark:focus:text-primary-light"
+                                :class="{ 'bg-white dark:bg-gray-700': link.active }" 
+                                :href="link.url" 
+                                v-html="link.label" 
+                                preserve-state 
+                                preserve-scroll
+                             />
+                        </template>
                     </div>
-                    
-                    <div class="flex justify-center mt-8 space-x-1" v-else-if="paginationData && paginationData.last_page > 1">
-                        <button 
-                            v-for="pageLink in paginationData.links" 
-                            :key="pageLink.label" 
-                            @click="fetchPosts(getPageNumberFromUrl(pageLink.url), true)" 
-                            :disabled="!pageLink.url || pageLink.active || isLoading"
-                            v-html="pageLink.label"
-                            :class="[
-                                'px-3 py-1 border rounded transition duration-150 text-sm',
-                                pageLink.active ? 'bg-primary text-white border-primary dark:bg-primary-light dark:text-gray-900 dark:border-primary-light z-10' : 'bg-white hover:bg-gray-100 text-gray-600 border-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 dark:border-gray-600',
-                                !pageLink.url ? 'opacity-50 cursor-not-allowed' : ''
-                            ]"
-                        >
-                        </button>
-                    </div>
-                </div>
+                 </div>
             </div>
         </section>
         

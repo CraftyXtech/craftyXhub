@@ -258,6 +258,64 @@ class PostManagementService
     }
     
     /**
+     * Apply a bulk action to specified posts.
+     *
+     * @param string $action The action to perform (e.g., 'delete', 'publish', 'draft').
+     * @param array $postIds Array of Post IDs to apply the action to.
+     * @return string Success message.
+     */
+    public function applyBulkAction(string $action, array $postIds): string
+    {
+        if (empty($postIds)) {
+            return 'No posts selected for bulk action.';
+        }
+
+        $message = '';
+        $count = count($postIds);
+
+        switch ($action) {
+            case 'delete':
+                Post::whereIn('id', $postIds)->delete(); // Consider soft deletes if enabled
+                $message = "Successfully deleted {$count} post(s).";
+                break;
+
+            case 'publish':
+                Post::whereIn('id', $postIds)->update([
+                    'status' => 'published',
+                    'published_at' => now()
+                ]);
+                $message = "Successfully published {$count} post(s).";
+                break;
+
+            case 'draft':
+                Post::whereIn('id', $postIds)->update([
+                    'status' => 'draft',
+                    'published_at' => null
+                ]);
+                $message = "Successfully moved {$count} post(s) to drafts.";
+                break;
+
+            case 'review':
+                Post::whereIn('id', $postIds)->update(['status' => 'under_review']);
+                $message = "Successfully submitted {$count} post(s) for review.";
+                break;
+
+            case 'reject': // Example for a rejection workflow
+                Post::whereIn('id', $postIds)->update(['status' => 'rejected']);
+                $message = "Successfully rejected {$count} post(s).";
+                break;
+
+            default:
+                throw new \InvalidArgumentException("Invalid bulk action: {$action}");
+        }
+
+        // Clear relevant caches after bulk actions
+        $this->clearPostCache();
+
+        return $message;
+    }
+    
+    /**
      * Delete a post
      *
      * @param Post $post
@@ -265,45 +323,40 @@ class PostManagementService
      */
     public function deletePost(Post $post): bool
     {
-        // Delete tags relationship
-        $post->tags()->detach();
+        $deleted = $post->delete(); // Use delete() for soft deletes
         
-        // Delete the post
-        $result = $post->delete();
+        if ($deleted) {
+            $this->clearPostCache();
+        }
         
-        // Clear cache
-        $this->clearPostCache();
-        
-        return $result;
+        return $deleted;
     }
     
     /**
-     * Clear post-related cache
+     * Clear relevant post caches.
      */
     protected function clearPostCache(): void
     {
-        $userId = Auth::id();
-        
-        // Clear editor stats
-        foreach (['day', 'week', 'month', 'year'] as $period) {
-            Cache::forget("editor_post_stats_{$userId}_{$period}");
-            Cache::forget("admin_post_stats_{$period}");
-        }
-        
-        // Clear dashboard data
+        // Example: Clear stats caches or specific post caches
         Cache::forget('admin_content_overview');
+        // Potentially clear user-specific stats if needed
+        // Cache::forget("editor_post_stats_" . Auth::id() . "_week");
+        // ... add other cache keys to forget ...
     }
     
     /**
-     * Get categories and tags for post form
+     * Get common options needed for post forms (categories, tags).
      *
      * @return array
      */
     public function getPostFormOptions(): array
     {
+        $categories = Category::select('id', 'name')->orderBy('name')->get();
+        $tags = Tag::select('id', 'name')->orderBy('name')->get();
+
         return [
-            'categories' => Category::orderBy('name')->get(['id', 'name']),
-            'tags' => Tag::orderBy('name')->get(['id', 'name']),
+            'categories' => $categories,
+            'tags' => $tags,
         ];
     }
 } 

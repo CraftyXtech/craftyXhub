@@ -1,13 +1,12 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import Pagination from '@/Components/Pagination.vue';
 import LoadingIndicator from '@/Components/LoadingIndicator.vue';
 import ErrorMessage from '@/Components/ErrorMessage.vue';
-import axios from 'axios';
 
 const props = defineProps({
     posts: Object,
@@ -115,71 +114,74 @@ const isSelected = (postId) => {
     return selectedItems.value.includes(postId);
 };
 
-// Delete a post
-const deletePost = async (postId) => {
+// --- Refactored Delete Post (using Inertia link/router) --- 
+const confirmAndDeletePost = (postId) => {
     if (!confirm('Are you sure you want to delete this post?')) {
         return;
     }
-
-    deletingPostId.value = postId;
-    deleteError.value = null;
-
-    try {
-        await axios.delete(route('api.posts.destroy', postId));
-        // Refresh the posts list
-        router.reload({ only: ['posts'] });
-    } catch (err) {
-        deleteError.value = err.response?.data?.message || 'Failed to delete post';
-    } finally {
-        deletingPostId.value = null;
-    }
+    router.delete(route('editor.posts.destroy', postId), { // Use the correct route name (likely from resource)
+        preserveScroll: true,
+        onStart: () => { deletingPostId.value = postId; deleteError.value = null; },
+        onError: (errors) => { 
+            deleteError.value = errors.message || 'Failed to delete post';
+            console.error("Delete error:", errors);
+        },
+        onFinish: () => { deletingPostId.value = null; },
+        onSuccess: () => { selectedItems.value = selectedItems.value.filter(id => id !== postId); } // Remove from selection
+    });
 };
 
-// Bulk actions
-const bulkActionsValue = ref('');
+// --- Refactored Bulk Actions (using useForm) --- 
+const bulkActionForm = useForm({
+    action: '', // Bound to the select dropdown
+    ids: [],    // Will be populated before submit
+});
+
 const bulkActionsOptions = [
     { value: '', label: 'Bulk Actions' },
     { value: 'delete', label: 'Delete Selected' },
     { value: 'publish', label: 'Publish Selected' },
     { value: 'draft', label: 'Move to Draft' },
     { value: 'review', label: 'Submit for Review' },
+    { value: 'reject', label: 'Reject Selected' }, // Add reject if implemented
 ];
 
-const applyBulkAction = async () => {
-    if (!bulkActionsValue.value || selectedItems.value.length === 0) {
+const applyBulkAction = () => {
+    if (!bulkActionForm.action || selectedItems.value.length === 0) {
         return;
     }
 
-    if (bulkActionsValue.value === 'delete' && !confirm(`Are you sure you want to delete ${selectedItems.value.length} selected posts?`)) {
-        bulkActionsValue.value = '';
+    if (bulkActionForm.action === 'delete' && !confirm(`Are you sure you want to delete ${selectedItems.value.length} selected posts?`)) {
+        bulkActionForm.reset('action');
         return;
     }
 
-    loading.value = true;
-    error.value = null;
+    bulkActionForm.ids = [...selectedItems.value]; // Copy selected items to form
 
-    try {
-        await axios.post(route('api.posts.bulk-action'), {
-            action: bulkActionsValue.value,
-            ids: selectedItems.value
-        });
-        
-        // Reset selection and refresh
-        selectedItems.value = [];
-        bulkActionsValue.value = '';
-        router.reload({ only: ['posts'] });
-    } catch (err) {
-        error.value = err.response?.data?.message || 'Failed to apply bulk action';
-    } finally {
-        loading.value = false;
-    }
+    bulkActionForm.post(route('editor.posts.bulk-action'), { // Use the new route name
+        preserveScroll: true,
+        onSuccess: () => {
+            selectedItems.value = []; // Clear selection on success
+            bulkActionForm.reset(); // Reset form fields
+            // Post list updates automatically due to redirect
+        },
+        onError: (errors) => {
+            // Validation errors are in bulkActionForm.errors
+            error.value = errors.message || 'Failed to apply bulk action.'; // Display general error
+            console.error('Bulk action error:', errors);
+        },
+        onFinish: () => {
+            // bulkActionForm.processing resets automatically
+        }
+    });
 };
 
-// Handle retry after error
+// Handle retry after error (might need adjustment depending on form state)
 const retryAction = () => {
     error.value = null;
     deleteError.value = null;
-    router.reload({ only: ['posts'] });
+    // Reloading might still be simplest way to clear potential issues
+    router.reload({ only: ['posts'] }); 
 };
 </script>
 
@@ -216,16 +218,18 @@ const retryAction = () => {
             
             <!-- Error handling -->
             <ErrorMessage 
-                v-if="error" 
-                :message="error"
+                v-if="error || bulkActionForm.hasErrors" 
+                :message="error || bulkActionForm.errors.ids || bulkActionForm.errors.action || 'An error occurred.'"
                 :retry="retryAction"
             />
 
             <!-- Bulk actions -->
             <div v-if="selectedItems.length > 0" class="mb-4 flex items-center space-x-2">
+                <!-- Bind select to bulkActionForm.action -->
                 <select 
-                    v-model="bulkActionsValue"
+                    v-model="bulkActionForm.action"
                     class="rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 shadow-sm"
+                    :disabled="bulkActionForm.processing"
                 >
                     <option 
                         v-for="option in bulkActionsOptions" 
@@ -236,11 +240,12 @@ const retryAction = () => {
                     </option>
                 </select>
                 
+                <!-- Disable button based on form state -->
                 <SecondaryButton 
                     @click="applyBulkAction"
-                    :disabled="loading || !bulkActionsValue"
+                    :disabled="bulkActionForm.processing || !bulkActionForm.action"
                 >
-                    <span v-if="loading">Processing...</span>
+                    <span v-if="bulkActionForm.processing">Processing...</span>
                     <span v-else>Apply</span>
                 </SecondaryButton>
                 
@@ -250,7 +255,8 @@ const retryAction = () => {
             </div>
 
             <!-- Loading indicator -->
-            <div v-if="loading && !posts">
+            <!-- Use router.processing or a dedicated loading ref if needed -->
+            <div v-if="loading && !posts"> 
                 <LoadingIndicator />
             </div>
             
@@ -318,23 +324,17 @@ const retryAction = () => {
                                 {{ post.views || 0 }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex justify-end space-x-2">
-                                    <Link 
-                                        :href="route('editor.posts.edit', post.id)" 
-                                        class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                                    >
-                                        Edit
-                                    </Link>
-                                    
-                                    <button
-                                        @click="deletePost(post.id)"
-                                        class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                        :disabled="deletingPostId === post.id"
-                                    >
-                                        <span v-if="deletingPostId === post.id">Deleting...</span>
-                                        <span v-else>Delete</span>
-                                    </button>
-                                </div>
+                                <Link :href="route('editor.posts.edit', post.id)" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3">Edit</Link>
+                                
+                                <!-- Use refactored delete method -->
+                                <button 
+                                    @click="confirmAndDeletePost(post.id)" 
+                                    class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                    :disabled="deletingPostId === post.id"
+                                >
+                                    <span v-if="deletingPostId === post.id">Deleting...</span>
+                                    <span v-else>Delete</span>
+                                </button>
                                 <div v-if="deleteError && deletingPostId === post.id" class="text-red-500 text-xs mt-1">
                                     {{ deleteError }}
                                 </div>
@@ -342,24 +342,14 @@ const retryAction = () => {
                         </tr>
                     </tbody>
                 </table>
-                
-                <!-- Pagination -->
-                <div class="mt-4">
-                    <Pagination :links="posts.links" @page-selected="page => updateFilters({ page })" />
-                </div>
             </div>
-            
-            <!-- No posts message -->
-            <div v-else-if="posts && posts.data.length === 0" class="py-10 text-center">
-                <div class="text-gray-500 dark:text-gray-400">
-                    No posts found.
-                </div>
-                <Link 
-                    :href="route('editor.posts.create')" 
-                    class="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150"
-                >
-                    Create New Post
-                </Link>
+            <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
+                No posts found matching your criteria.
+            </div>
+
+             <!-- Pagination (Using Inertia links) -->
+            <div class="mt-6" v-if="posts?.links?.length > 3">
+                 <Pagination :links="posts.links" />
             </div>
         </div>
     </div>

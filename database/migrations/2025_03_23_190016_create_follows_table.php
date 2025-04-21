@@ -26,6 +26,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('folllows');
+        Schema::table('follows', function (Blueprint $table) {
+            // Drop foreign keys first to avoid dependency issues
+            $table->dropForeign(['follower_id']);
+            $table->dropForeign(['followed_id']);
+        });
+        Schema::dropIfExists('follows'); // Corrected typo: follows
     }
 };

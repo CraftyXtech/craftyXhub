@@ -1,12 +1,11 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, computed, onMounted } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ref, computed, onMounted, watch } from 'vue';
 import RoleManagementModal from './Partials/RoleManagementModal.vue';
-import Pagination from '@/Components/Pagination.vue';
+// import Pagination from '@/Components/Pagination.vue';
 import LoadingIndicator from '@/Components/LoadingIndicator.vue';
 import ErrorMessage from '@/Components/ErrorMessage.vue';
-import axios from 'axios';
 
 const props = defineProps({
     userCount: {
@@ -65,23 +64,31 @@ const loadUsers = (params = {}) => {
     });
 };
 
-// Function to delete a user
-const deleteUser = async (user) => {
-    if (!confirm(`Are you sure you want to delete the user ${user.name}?`)) {
+// Refactored delete user method
+const confirmAndDeleteUser = (user) => {
+    if (!confirm(`Are you sure you want to delete the user ${user.name}? This action cannot be undone.`)) {
         return;
     }
-    
-    loading.value.deleteUser = user.id;
-    errors.value.deleteUser = null;
-    
-    try {
-        await axios.delete(route('admin.users.delete', user.id));
-        loadUsers(); // Reload the user list
-    } catch (error) {
-        errors.value.deleteUser = "Failed to delete user: " + (error.response?.data?.message || error.message);
-    } finally {
-        loading.value.deleteUser = null;
-    }
+    // Use Inertia link/router for deletion
+    router.delete(route('admin.users.delete', user.id), {
+        preserveScroll: true,
+        onStart: () => {
+            // Optionally set a loading state for this specific user
+            loading.value.deleteUser = user.id;
+        },
+        onSuccess: () => {
+            // No need to manually call loadUsers(), the redirect handles the refresh.
+            // Optionally show a success notification based on flashed session data
+        },
+        onError: (errors) => {
+            // Handle errors, maybe display a notification
+             errors.value.deleteUser = errors.message || 'Failed to delete user.';
+             console.error("Error deleting user:", errors);
+        },
+        onFinish: () => {
+             loading.value.deleteUser = null; // Reset loading state
+        },
+    });
 };
 
 // Role management modal functions
@@ -230,7 +237,7 @@ const formatNumber = (num) => {
                                                 </button>
                                                 <button 
                                                     class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                                    @click="deleteUser(user)"
+                                                    @click="confirmAndDeleteUser(user)" 
                                                     :disabled="loading.deleteUser === user.id"
                                                 >
                                                     <span v-if="loading.deleteUser === user.id">Deleting...</span>
@@ -238,7 +245,7 @@ const formatNumber = (num) => {
                                                 </button>
                                                 <div v-if="errors.deleteUser && loading.deleteUser === user.id" class="text-red-500 text-xs mt-1">
                                                     {{ errors.deleteUser }}
-                                                </div>
+                                                 </div>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -246,7 +253,7 @@ const formatNumber = (num) => {
                                 
                                 <!-- Pagination -->
                                 <div class="mt-4" v-if="users && users.links && users.links.length > 3">
-                                    <Pagination :links="users.links" />
+                                    <!-- <Pagination :links="users.links" /> -->
                                 </div>
                             </template>
                         </div>
@@ -317,12 +324,13 @@ const formatNumber = (num) => {
                             </div>
                             
                             <div class="mt-4">
-                                <Link 
+                                <!-- Commenting out link to non-existent page -->
+                                <!-- <Link 
                                     :href="route('admin.content.analytics')" 
                                     class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
                                 >
                                     View detailed content analytics →
-                                </Link>
+                                </Link> -->
                             </div>
                         </div>
                     </div>
@@ -435,12 +443,13 @@ const formatNumber = (num) => {
                         </div>
                         
                         <div class="mt-4">
-                            <Link 
+                            <!-- Commenting out link to non-existent page -->
+                            <!-- <Link 
                                 :href="route('admin.content.analytics')" 
                                 class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
                             >
                                 View detailed analytics →
-                            </Link>
+                            </Link> -->
                         </div>
                     </div>
                 </div>

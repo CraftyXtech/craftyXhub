@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->unsignedBigInteger('parent_id')->nullable(); // For threading
             $table->text('body');
-            // $table->boolean('approved')->default(false); // Keep or remove as needed
+            $table->boolean('approved')->default(false); // Add approved column
             $table->timestamps();
 
             // Foreign key constraint for parent_id referring to the same table

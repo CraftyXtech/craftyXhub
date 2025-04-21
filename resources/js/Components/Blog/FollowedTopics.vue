@@ -1,56 +1,48 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Link } from '@inertiajs/vue3';
-import axios from 'axios';
+import { Link, router } from '@inertiajs/vue3';
 
 const props = defineProps({
-    topics: {
+    followed: {
         type: Array,
         default: () => []
     },
     suggestedTopics: {
         type: Array,
         default: () => []
-    },
-    isLoading: {
-        type: Boolean,
-        default: false
     }
 });
-
-const emit = defineEmits(['topic-updated']);
 
 // Local state
 const processingTopics = ref(new Set());
 
 // Check if there are any topics to display
-const hasTopics = computed(() => props.topics && props.topics.length > 0);
+const hasFollowedTopics = computed(() => props.followed && props.followed.length > 0);
 const hasSuggestions = computed(() => props.suggestedTopics && props.suggestedTopics.length > 0);
 
 // Follow or unfollow a topic
-const toggleFollowTopic = async (topicId, isCurrentlyFollowing) => {
+const toggleFollowTopic = (topicId) => {
     if (processingTopics.value.has(topicId)) return;
     
     processingTopics.value.add(topicId);
     
-    try {
-        const response = await axios.post('/api/topics/follow', {
-            tagId: topicId,
-            follow: !isCurrentlyFollowing
-        });
-        
-        // Emit event to parent component to update topics list
-        emit('topic-updated', {
-            topicId,
-            isFollowing: !isCurrentlyFollowing,
-            data: response.data
-        });
-    } catch (error) {
-        console.error(`Error ${isCurrentlyFollowing ? 'unfollowing' : 'following'} topic:`, error);
-        // Here you could add a notification for the user
-    } finally {
-        processingTopics.value.delete(topicId);
-    }
+    // Use Inertia router
+    router.post(route('topics.follow'), { 
+        tagId: topicId // Send tagId (or topic_id based on backend)
+    }, {
+        preserveScroll: true,
+        preserveState: true, // Keep other page state
+        onSuccess: () => {
+            // Data should refresh automatically via controller redirect/prop update
+        },
+        onError: (errors) => {
+            console.error(`Error toggling follow for topic ${topicId}:`, errors);
+            // Add user feedback if necessary
+        },
+        onFinish: () => {
+            processingTopics.value.delete(topicId);
+        }
+    });
 };
 
 // Get button style based on following status
@@ -68,16 +60,12 @@ const getButtonStyle = (isFollowing) => {
                 Topics You Follow
             </h2>
             
-            <div v-if="isLoading" class="flex justify-center items-center py-12">
-                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary dark:border-primary-light"></div>
-            </div>
-            
-            <div v-else-if="hasTopics" class="mb-8">
+            <div v-if="hasFollowedTopics" class="mb-8">
                 <div class="flex flex-wrap gap-3">
                     <button
-                        v-for="topic in topics"
+                        v-for="topic in followed"
                         :key="topic.id"
-                        @click="toggleFollowTopic(topic.id, true)"
+                        @click="toggleFollowTopic(topic.id)"
                         :disabled="processingTopics.has(topic.id)"
                         class="px-4 py-2 rounded-full text-sm font-medium transition-colors relative bg-indigo-100 text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-200 dark:hover:bg-indigo-800"
                     >
@@ -111,7 +99,7 @@ const getButtonStyle = (isFollowing) => {
                     <button
                         v-for="topic in suggestedTopics"
                         :key="topic.id"
-                        @click="toggleFollowTopic(topic.id, false)"
+                        @click="toggleFollowTopic(topic.id)"
                         :disabled="processingTopics.has(topic.id)"
                         :class="[
                             'px-4 py-2 rounded-full text-sm font-medium transition-colors relative',
