@@ -28,13 +28,13 @@ class UserProfileController extends Controller
                            ->paginate(5, ['*'], 'likes_page'); // Paginate with a specific page name
 
         // Fetch paginated bookmarked posts (adjust relation name and pagination as needed)
-        $bookmarkedPosts = $user->bookmarkedPosts() // Assuming 'bookmarkedPosts' is the relation
-                                ->with(['category:id,name,slug'])
-                                ->latest('pivot_created_at')
-                                ->paginate(5, ['*'], 'bookmarks_page');
+        $bookmarkedPosts = $user->bookmarkedPosts()
+                ->with(['category:id,name,slug'])
+                ->latest('pivot_created_at')
+                ->paginate(5, ['*'], 'bookmarks_page'); 
 
         // Fetch user preferences (assuming a relationship or dedicated method)
-        $preferences = $user->preferences()->first() ?? []; // Example: get preferences
+        $preferences = $user->preference()->first() ?? []; // Example: get preferences
 
         // Add any other data needed for the profile view
         // $recentActivity = $user->recentActivity()->limit(5)->get();

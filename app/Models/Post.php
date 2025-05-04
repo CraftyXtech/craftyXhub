@@ -30,7 +30,6 @@ class Post extends Model
         'status',
         'featured',
         'comments_enabled',
-        'featured_image_path',
         'embedding',
         'generated_image_path',
     ];

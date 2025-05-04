@@ -12,8 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('posts', function (Blueprint $table) {
-            // Add column to store the path to the AI-generated image
-            $table->string('generated_image_path')->nullable()->after('featured_image_path');
+            $table->string('generated_image_path')->nullable()->after('image_url');
         });
     }
 
