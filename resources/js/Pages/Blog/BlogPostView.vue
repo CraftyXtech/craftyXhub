@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed, onUnmounted, watch } from 'vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
-import TheHeader from '@/Components/Layout/TheHeader.vue';
-import TheFooter from '@/Components/Layout/TheFooter.vue';
+import TheHeader from '@/Components/Layout/Navbar.vue';
+import TheFooter from '@/Components/Layout/Footer.vue';
 import BlogPostCard from '@/Components/Blog/BlogPostCard.vue';
 import BlogSidebar from '@/Components/Blog/BlogSidebar.vue';
 import SubscribeBanner from '@/Components/Shared/SubscribeBanner.vue';
@@ -55,8 +55,8 @@ const generateSummary = () => {
 };
 
 const tableOfContents = computed(() => {
-    if (!props.post?.content?.sections) return [];
-    return props.post.content.sections.map(section => section.title);
+    if (!props.post?.body?.sections) return [];
+    return props.post.body.sections.map(section => section.title);
 });
 
 const relatedPosts = ref([
@@ -237,7 +237,7 @@ const askBot = () => {
                         
                         <div class="flex flex-wrap justify-center items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-6">
                             <span v-if="props.post.category" class="bg-primary text-white px-3 py-1 rounded-md dark:bg-primary-light dark:text-gray-900">{{ props.post.category.name }}</span>
-                            <span v-if="props.post.author" class="bg-gray-800 text-white px-3 py-1 rounded-md dark:bg-gray-700 dark:text-gray-200">{{ props.post.author }}</span>
+                            <!-- <span v-if="props" class="bg-gray-800 text-white px-3 py-1 rounded-md dark:bg-gray-700 dark:text-gray-200">{{ props.post.author }}</span> -->
                             <span>Published {{ props.post.published_at }}</span>
                             <span class="ml-2"><i class="far fa-clock mr-1"></i> {{ readingTime }}</span>
                         </div>
@@ -295,13 +295,13 @@ const askBot = () => {
                         <article ref="articleContentRef" class="flex-1 min-w-0 prose prose-lg max-w-none dark:prose-invert">
                             <!-- Introduction -->
                             <p class="text-lg leading-relaxed mb-8 text-gray-800 dark:text-gray-300">
-                                {{ props.post.content.introduction }}
+                                {{ props.post.body.introduction }}
                             </p>
                             
                             <!-- Numbered Sections -->
                             <ol class="mb-12">
                                 <li 
-                                    v-for="(section, index) in props.post.content.sections" 
+                                    v-for="(section, index) in props.post.body.sections" 
                                     :key="index"
                                     class="mb-12"
                                     :id="`section-${index + 1}`"
@@ -311,7 +311,7 @@ const askBot = () => {
                                         {{ section.title }}
                                     </h2>
                                     <p class="leading-relaxed text-gray-700 dark:text-gray-400">
-                                        {{ section.content }}
+                                        {{ section.body }}
                                     </p>
                                 </li>
                             </ol>
@@ -321,7 +321,7 @@ const askBot = () => {
                                 <p class="mb-2">
                                     <strong class="font-semibold text-gray-800 dark:text-gray-200 not-italic">Summary</strong>
                                 </p>
-                                <p>{{ props.post.content.conclusion }}</p>
+                                <p>{{ props.post.body.conclusion }}</p>
                             </div>
 
                             <!-- Topic Explorer -->

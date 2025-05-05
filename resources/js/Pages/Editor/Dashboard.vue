@@ -1,91 +1,3 @@
-<script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, computed, onMounted } from 'vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import SecondaryButton from '@/Components/SecondaryButton.vue';
-import LoadingIndicator from '@/Components/LoadingIndicator.vue';
-import ErrorMessage from '@/Components/ErrorMessage.vue';
-import axios from 'axios';
-
-const props = defineProps({
-    analytics: Object,
-    recentPosts: Array,
-    pendingReviews: Array,
-    viewTrends: Object,
-});
-
-// Loading and error states
-const loading = ref({
-    analytics: false,
-    posts: false,
-});
-const errors = ref({
-    analytics: null,
-    posts: null,
-});
-
-// Format date to readable format
-const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(date);
-};
-
-// Get status badge class
-const getStatusClass = (status) => {
-    switch (status) {
-        case 'published':
-            return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-        case 'draft':
-            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-        case 'under_review':
-            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-        case 'scheduled':
-            return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-        case 'rejected':
-            return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-        default:
-            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    }
-};
-
-// Format status text
-const formatStatus = (status) => {
-    switch (status) {
-        case 'published':
-            return 'Published';
-        case 'draft':
-            return 'Draft';
-        case 'under_review':
-            return 'Under Review';
-        case 'scheduled':
-            return 'Scheduled';
-        case 'rejected':
-            return 'Rejected';
-        default:
-            return status.charAt(0).toUpperCase() + status.slice(1);
-    }
-};
-
-// Function to retry loading data after an error
-const retryLoadData = () => {
-    router.visit(route('editor.dashboard'), { preserveScroll: true });
-};
-
-// Format numbers for display
-const formatNumber = (num) => {
-    if (num === undefined || num === null) return '0';
-    return new Intl.NumberFormat().format(num);
-};
-</script>
-
 <template>
     <Head title="Editor Dashboard" />
 
@@ -311,3 +223,92 @@ const formatNumber = (num) => {
         </div>
     </AuthenticatedLayout>
 </template> 
+
+
+<script setup>
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, computed, onMounted } from 'vue';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
+import LoadingIndicator from '@/Components/LoadingIndicator.vue';
+import ErrorMessage from '@/Components/ErrorMessage.vue';
+import axios from 'axios';
+
+const props = defineProps({
+    analytics: Object,
+    recentPosts: Array,
+    pendingReviews: Array,
+    viewTrends: Object,
+});
+
+// Loading and error states
+const loading = ref({
+    analytics: false,
+    posts: false,
+});
+const errors = ref({
+    analytics: null,
+    posts: null,
+});
+
+// Format date to readable format
+const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date);
+};
+
+// Get status badge class
+const getStatusClass = (status) => {
+    switch (status) {
+        case 'published':
+            return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        case 'draft':
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+        case 'under_review':
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+        case 'scheduled':
+            return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+        case 'rejected':
+            return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        default:
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+};
+
+// Format status text
+const formatStatus = (status) => {
+    switch (status) {
+        case 'published':
+            return 'Published';
+        case 'draft':
+            return 'Draft';
+        case 'under_review':
+            return 'Under Review';
+        case 'scheduled':
+            return 'Scheduled';
+        case 'rejected':
+            return 'Rejected';
+        default:
+            return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+};
+
+// Function to retry loading data after an error
+const retryLoadData = () => {
+    router.visit(route('editor.dashboard'), { preserveScroll: true });
+};
+
+// Format numbers for display
+const formatNumber = (num) => {
+    if (num === undefined || num === null) return '0';
+    return new Intl.NumberFormat().format(num);
+};
+</script>

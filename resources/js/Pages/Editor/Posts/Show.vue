@@ -195,7 +195,7 @@ const formatStatus = (status) => {
                         </div>
                         
                         <!-- Main Content -->
-                        <div class="prose dark:prose-invert max-w-none" v-html="post.content"></div>
+                        <div class="prose dark:prose-invert max-w-none" v-html="post"></div>
                     </div>
                 </div>
                 

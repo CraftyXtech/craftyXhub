@@ -13,7 +13,7 @@ Route::get('/', [PostController::class, 'index'])->name('home');
 
 Route::get('/blog', [PostController::class, 'index'])->name('blog');
 
-Route::get('/blog/{post:slug}', [PostController::class, 'show'])->name('blog.show');
+Route::get('/blog/{post:slug}', [PostController::class, 'show'])->name('posts.show');
 
 Route::get('/category/{category}', function ($category) {
     // This generic route might still be useful if you pass slugs directly
