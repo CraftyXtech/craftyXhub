@@ -9,6 +9,11 @@ use App\Http\Controllers\Web\CommentController;
 use App\Http\Controllers\Web\InteractionController;
 use App\Http\Controllers\Web\UserProfileController;
 
+// Test route for debugging - this should respond with a 200
+Route::get('/route-test', function() {
+    return "Routes are working!";
+})->name('route.test');
+
 Route::get('/', [PostController::class, 'index'])->name('home');
 
 Route::get('/blog', [PostController::class, 'index'])->name('blog');
@@ -109,34 +114,77 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         ->name('dashboard'); // -> admin.dashboard
 
     // User management routes
+    Route::get('/users', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'users'])
+        ->name('users.index');
+    Route::get('/users/statistics', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'userStatistics'])
+        ->name('users.statistics');
     Route::patch('/users/{user}/role', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'updateUserRole'])
         ->name('users.update-role');
     Route::delete('/users/{user}', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'deleteUser'])
-        ->name('users.delete');
-        
-    // Content management routes
-    Route::get('/content/analytics', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'contentAnalytics'])
-        ->name('content.analytics');
-    Route::get('/content/approval', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'contentApproval'])
-        ->name('content.approval');
+        ->name('users.destroy');
+    
+    // Posts management routes
+    Route::get('/posts', [\App\Http\Controllers\Admin\AdminPostController::class, 'index'])
+        ->name('posts.index');
+    Route::get('/posts/pending', [\App\Http\Controllers\Admin\AdminPostController::class, 'pendingApproval'])
+        ->name('posts.pending');
+    Route::get('/posts/rejected', [\App\Http\Controllers\Admin\AdminPostController::class, 'rejectedPosts'])
+        ->name('posts.rejected');
+    Route::get('/posts/{post}/review', [\App\Http\Controllers\Admin\AdminPostController::class, 'reviewPost'])
+        ->name('posts.review');
+    Route::patch('/posts/{post}/approve', [\App\Http\Controllers\Admin\AdminPostController::class, 'approve'])
+        ->name('posts.approve');
+    Route::patch('/posts/{post}/reject', [\App\Http\Controllers\Admin\AdminPostController::class, 'rejectPost'])
+        ->name('posts.reject');
+    
+    // System & settings routes
+    Route::get('/settings', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'index'])
+        ->name('settings.index');
+    Route::get('/system', [\App\Http\Controllers\Admin\AdminSystemController::class, 'index'])
+        ->name('system.index');
+    Route::post('/system/clear-cache', [\App\Http\Controllers\Admin\AdminSystemController::class, 'clearCache'])
+        ->name('system.clear-cache');
+    Route::post('/system/run-migrations', [\App\Http\Controllers\Admin\AdminSystemController::class, 'runMigrations'])
+        ->name('system.run-migrations');
 });
 
 // --- Editor Dashboard Routes ---
 Route::middleware(['auth', 'verified', 'editor'])->prefix('editor')->name('editor.')->group(function () {
-    // Main dashboard
-    Route::get('/dashboard', [\App\Http\Controllers\Editor\EditorDashboardController::class, 'index'])
-        ->name('dashboard'); // -> editor.dashboard
+    // Main dashboard - REMOVED as Editor/Dashboard.vue is deprecated and functionality merged to Admin/Dashboard.vue
+    // Route::get('/dashboard', [\App\Http\Controllers\Editor\EditorDashboardController::class, 'index'])
+    //     ->name('dashboard'); // -> editor.dashboard
     
-    // Post management routes (CRUD)
-    Route::resource('posts', \App\Http\Controllers\Editor\PostController::class);
-
-    // Add the bulk action route
+    // First define specific routes before the resource routes
+    // Add drafts view route
+    Route::get('posts/drafts', [\App\Http\Controllers\Editor\PostController::class, 'drafts'])
+        ->name('posts.drafts');
+    
+    // The order is important - specific routes must come before wildcard routes
+    // Add the bulk action route before any routes with {post} parameter
     Route::post('posts/bulk-action', [\App\Http\Controllers\Editor\PostController::class, 'bulkAction'])
         ->name('posts.bulk-action'); 
+        
+    // Add submit for review route - must come before the resource routes that use {post}
+    Route::post('posts/{post}/submit', [\App\Http\Controllers\Editor\PostController::class, 'submitForReview'])
+        ->name('posts.submit');
+    
+    // Add resubmit rejected post route
+    Route::post('posts/{post}/resubmit', [\App\Http\Controllers\Editor\PostController::class, 'resubmitRejected'])
+        ->name('posts.resubmit');
+    
+    // Then define the resource routes
+    // Post management routes (CRUD)
+    Route::resource('posts', \App\Http\Controllers\Editor\PostController::class);
     
     // Post statistics
     Route::get('/stats', [\App\Http\Controllers\Editor\EditorDashboardController::class, 'stats'])
         ->name('stats');
+    
+    // Category management routes
+    Route::resource('categories', \App\Http\Controllers\Editor\CategoryController::class);
+    
+    // Tag management routes
+    Route::resource('tags', \App\Http\Controllers\Editor\TagController::class);
 });
 
 Route::post('/posts/{post}/comments', [CommentController::class, 'store'])

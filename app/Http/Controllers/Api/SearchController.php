@@ -9,7 +9,7 @@ use App\Models\Post;
 use App\Http\Resources\PostResource;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
-use Pgvector\Laravel\Vector;
+// use Pgvector\Laravel\Vector;
 
 class SearchController extends Controller
 {
@@ -41,40 +41,32 @@ class SearchController extends Controller
         $searchQuery = $validator->validated()['query'];
         $limit = $validator->validated()['limit'] ?? 10; // Default limit
 
-        // 1. Generate embedding for the search query
-        $queryVector = $this->embeddingService->generateEmbedding($searchQuery);
-
-        if (!$queryVector) {
-            Log::error('Semantic Search: Failed to generate embedding for query', ['query' => $searchQuery]);
-            // Fallback to basic keyword search or return error?
-            // For now, return error
-            return response()->json(['message' => 'Could not process search query.'], 500);
-        }
-
-        // 2. Perform vector search
+        // TEMPORARILY DISABLED: Vector-based semantic search
+        // Using keyword-based search as fallback until vector column is added
+        Log::info('Semantic Search disabled - falling back to keyword search', ['query' => $searchQuery]);
+        
         try {
-            // Use the nearestNeighbors method from the HasNeighbors trait
-            // This performs `ORDER BY embedding <=> ?` query
-            // Assumes vector column is named 'embedding' and uses cosine distance by default
+            // Fallback to basic keyword search
             $posts = Post::query()
-                ->wherePublished() // Ensure we only search published posts
-                ->nearestNeighbors('embedding', new Vector($queryVector), $limit)
-                // ->with(...) // Eager load relationships needed by PostResource if not loaded by default
-                 ->with(['author:id,name', 'category:id,name,slug', 'tags:id,name,slug'])
-                 ->get();
-
-            // Optionally, you could add a distance threshold:
-            // ->whereRaw('embedding <=> ? < ?', [new Vector($queryVector), 0.5]) // Example threshold
-
+                ->wherePublished()
+                ->where(function($query) use ($searchQuery) {
+                    $query->where('title', 'like', "%{$searchQuery}%")
+                        ->orWhere('body', 'like', "%{$searchQuery}%")
+                        ->orWhere('excerpt', 'like', "%{$searchQuery}%");
+                })
+                ->with(['author:id,name', 'category:id,name,slug', 'tags:id,name,slug'])
+                ->limit($limit)
+                ->get();
+                
         } catch (\Exception $e) {
-             Log::error('Semantic Search: Database query failed.', [
+            Log::error('Search: Database query failed.', [
                 'query' => $searchQuery,
-                 'error' => $e->getMessage()
-             ]);
-             return response()->json(['message' => 'Search failed.'], 500);
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['message' => 'Search failed.'], 500);
         }
 
-        // 3. Return results
+        // Return results
         return PostResource::collection($posts);
     }
 } 

@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Pgvector\Laravel\HasNeighbors;
-use Pgvector\Laravel\Vector;
+// use Pgvector\Laravel\HasNeighbors;
+// use Pgvector\Laravel\Vector;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Storage;
 class Post extends Model
 {
     use HasFactory;
-    use HasNeighbors;
+    // use HasNeighbors;
 
     protected $fillable = [
         'user_id',
@@ -30,15 +30,14 @@ class Post extends Model
         'status',
         'featured',
         'comments_enabled',
-        'embedding',
         'generated_image_path',
+        'feedback',
     ];
 
     protected $casts = [
         'published_at' => 'datetime',
         'featured' => 'boolean',
         'comments_enabled' => 'boolean',
-        'embedding' => Vector::class,
     ];
 
     /**
@@ -46,7 +45,7 @@ class Post extends Model
      *
      * @var array
      */
-    protected $appends = ['published_at_human', 'display_image_url'];
+    protected $appends = ['published_at_human', 'display_image_url', 'url'];
 
     /**
      * Get the author of the post.
@@ -205,7 +204,7 @@ class Post extends Model
         return Attribute::make(
             get: function ($value, $attributes) {
                 if (!empty($attributes['generated_image_path']) && Storage::disk('public')->exists($attributes['generated_image_path'])) {
-                    return Storage::disk('public')->url($attributes['generated_image_path']);
+                    return asset('storage/' . $attributes['generated_image_path']);
                 } elseif (!empty($attributes['featured_image_path'])) {
                     // Assuming featured_image_path might already be a full URL or relative to public path
                     // If it's stored in storage/app/public like generated ones:
@@ -217,7 +216,7 @@ class Post extends Model
                      // Or if it's already a full URL:
                     // return $attributes['featured_image_path'];
                 }
-                return null; // Or return a placeholder URL: asset('images/placeholder.jpg')
+                return asset('images/placeholder.jpg'); // Return a placeholder image
             }
         );
     }
@@ -246,5 +245,45 @@ class Post extends Model
                  $post->published_at = now();
             }
         });
+    }
+
+    /**
+     * Get related posts based on category and tags
+     * 
+     * @param int $limit Number of related posts to return
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getRelatedPosts(int $limit = 3)
+    {
+        // Start with posts in the same category
+        return static::query()
+            ->where('id', '!=', $this->id) // Exclude current post
+            ->where('status', 'published')
+            ->whereNotNull('published_at')
+            ->where(function ($query) {
+                // Posts in the same category
+                $query->where('category_id', $this->category_id)
+                    // OR posts that share tags with the current post
+                    ->orWhereHas('tags', function ($query) {
+                        $tagIds = $this->tags->pluck('id');
+                        if ($tagIds->isNotEmpty()) {
+                            $query->whereIn('tags.id', $tagIds);
+                        }
+                    });
+            })
+            ->with(['author:id,name', 'category:id,name,slug'])
+            ->latest('published_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Get the URL for viewing this post
+     *
+     * @return string
+     */
+    public function getUrlAttribute(): string
+    {
+        return route('posts.show', $this->slug);
     }
 }

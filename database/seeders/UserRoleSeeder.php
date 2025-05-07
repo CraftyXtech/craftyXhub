@@ -15,7 +15,7 @@ class UserRoleSeeder extends Seeder
     public function run(): void
     {
         // Create Admin User
-        User::updateOrCreate(
+        $admin = User::updateOrCreate(
             ['email' => 'admin@example.com'], // Find by email to avoid duplicates
             [
                 'name' => 'Admin User',
@@ -26,8 +26,8 @@ class UserRoleSeeder extends Seeder
             ]
         );
 
-        // Create Editor User
-        User::updateOrCreate(
+        // Create Primary Editor User
+        $primaryEditor = User::updateOrCreate(
             ['email' => 'editor@example.com'], // Find by email to avoid duplicates
             [
                 'name' => 'Editor User',
@@ -39,7 +39,7 @@ class UserRoleSeeder extends Seeder
         );
 
         // Create Regular User
-        User::updateOrCreate(
+        $regularUser = User::updateOrCreate(
             ['email' => 'user@example.com'], // Find by email to avoid duplicates
             [
                 'name' => 'Regular User',
@@ -49,5 +49,35 @@ class UserRoleSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        // Create 5 additional regular users
+        for ($i = 1; $i <= 5; $i++) {
+            User::updateOrCreate(
+                ['email' => "user{$i}@example.com"],
+                [
+                    'name' => "Regular User {$i}",
+                    'email' => "user{$i}@example.com",
+                    'password' => Hash::make('password'),
+                    'role' => 'user',
+                    'email_verified_at' => now(),
+                    'bio' => "I'm Regular User {$i}, interested in the platform content.",
+                ]
+            );
+        }
+
+        // Create 5 additional editors
+        for ($i = 1; $i <= 5; $i++) {
+            User::updateOrCreate(
+                ['email' => "editor{$i}@example.com"],
+                [
+                    'name' => "Editor {$i}",
+                    'email' => "editor{$i}@example.com",
+                    'password' => Hash::make('password'),
+                    'role' => 'editor',
+                    'email_verified_at' => now(),
+                    'bio' => "I'm Editor {$i}, contributing quality content in my area of expertise.",
+                ]
+            );
+        }
     }
 }

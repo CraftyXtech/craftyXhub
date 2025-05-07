@@ -15,10 +15,11 @@ class DatabaseSeeder extends Seeder
     {
         
         $this->call([
-            UserRoleSeeder::class,
-            CategorySeeder::class,
-            TagSeeder::class,
-            PostSeeder::class,
+            UserRoleSeeder::class,      // Create admin, editors, and users
+            CategorySeeder::class,      // Create categories
+            TagSeeder::class,           // Create tags
+            UserPreferenceSeeder::class, // Create user preferences
+            PostSeeder::class,          // Create posts with different statuses
         ]);
     }
 }

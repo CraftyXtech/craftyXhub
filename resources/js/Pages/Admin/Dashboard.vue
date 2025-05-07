@@ -21,7 +21,31 @@ const props = defineProps({
     contentOverview: Object, // Content statistics
     viewTrends: Object, // View trends data
     contentNeedingApproval: Object, // Content needing approval
+    recentPosts: Array, // Recent posts (added for editor functionality) - Will be site-wide for admin
+    pendingReviews: Array, // Pending reviews (added for editor functionality) - Likely part of contentNeedingApproval
+    analytics: Object, // Editor analytics - Will be site-wide for admin, or use contentOverview
+    // New props might be added by AdminDashboardController for category/tag summaries
+    categorySummary: {
+        type: Array,
+        default: () => [],
+    },
+    tagSummary: {
+        type: Array,
+        default: () => [],
+    }
 });
+
+// Get user role for conditional rendering
+const page = usePage();
+const currentUserRole = computed(() => page.props.auth.user.role);
+
+const isAdmin = computed(() => currentUserRole.value === 'admin');
+const isEditor = computed(() => currentUserRole.value === 'editor');
+
+// Content management sections visible to both Admin and Editor (or just Admin if Editor has a more restricted view)
+// For now, assuming if you can see this dashboard, and you are an editor, you see content tools.
+const canManageContent = computed(() => isAdmin.value || isEditor.value);
+
 
 // Show/hide role management modal
 const showRoleModal = ref(false);
@@ -32,11 +56,15 @@ const loading = ref({
     users: false,
     contentOverview: false,
     deleteUser: null, // User ID being deleted
+    posts: false, 
+    analytics: false, 
 });
 const errors = ref({
     users: null,
     contentOverview: null,
     deleteUser: null,
+    posts: null, 
+    analytics: null, 
 });
 
 // Search filter
@@ -45,6 +73,7 @@ const debouncedSearch = computed(() => search.value);
 
 // Function to load user data
 const loadUsers = (params = {}) => {
+    if (!isAdmin.value) return; // Only admins can load all users
     loading.value.users = true;
     errors.value.users = null;
     
@@ -66,6 +95,7 @@ const loadUsers = (params = {}) => {
 
 // Refactored delete user method
 const confirmAndDeleteUser = (user) => {
+    if (!isAdmin.value) return;
     if (!confirm(`Are you sure you want to delete the user ${user.name}? This action cannot be undone.`)) {
         return;
     }
@@ -93,6 +123,7 @@ const confirmAndDeleteUser = (user) => {
 
 // Role management modal functions
 const openRoleModal = (user) => {
+    if (!isAdmin.value) return;
     selectedUser.value = user;
     showRoleModal.value = true;
 };
@@ -103,6 +134,7 @@ const closeRoleModal = () => {
 };
 
 const handleRoleUpdate = ({ userId, role }) => {
+    if (!isAdmin.value) return;
     // This is now handled by the modal component
     // Will make a proper API call
     closeRoleModal();
@@ -115,16 +147,21 @@ const handleRoleUpdate = ({ userId, role }) => {
 
 // Handle search input changes
 const handleSearchInput = () => {
+    if (isAdmin.value) { // Assuming search is for users, restrict to admin
     loadUsers();
+    }
 };
 
 // Function to retry loading data after an error
 const retryLoadUsers = () => {
+    if (isAdmin.value) {
     loadUsers();
+    }
 };
 
 // Period selection for view trends
 const changePeriod = (period) => {
+    // This might be an admin-only feature or adaptable for editors if they see trends
     router.get(route('admin.dashboard'), {
         ...props.filters,
         period
@@ -139,33 +176,132 @@ const formatNumber = (num) => {
     if (num === undefined || num === null) return '0';
     return new Intl.NumberFormat().format(num);
 };
+
+// Format date to readable format (added for editor functionality)
+const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date);
+};
+
+// Get status badge class (added for editor functionality)
+const getStatusClass = (status) => {
+    switch (status) {
+        case 'published':
+            return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        case 'draft':
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+        case 'under_review':
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+        case 'scheduled':
+            return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+        case 'rejected':
+            return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        default:
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+};
+
+// Format status text (added for editor functionality)
+const formatStatus = (status) => {
+    switch (status) {
+        case 'published':
+            return 'Published';
+        case 'draft':
+            return 'Draft';
+        case 'under_review':
+            return 'Under Review';
+        case 'scheduled':
+            return 'Scheduled';
+        case 'rejected':
+            return 'Rejected';
+        default:
+            return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+};
+
+// Function to retry loading data after an error (generic for sections)
+const retryLoadSectionData = (sectionKey) => {
+    // This function might need more context or specific reload actions per section
+    // For now, a general refresh might be okay for some data, or it triggers specific loaders
+    loading.value[sectionKey] = true;
+    errors.value[sectionKey] = null;
+    router.visit(route('admin.dashboard'), { // Or a more specific route if data is segmented
+        preserveScroll: true,
+        onSuccess: () => loading.value[sectionKey] = false,
+        onError: (err) => {
+            errors.value[sectionKey] = "Failed to reload " + sectionKey;
+            loading.value[sectionKey] = false;
+        }
+    });
+};
+
+// Helper function to handle direct navigation to admin routes when on editor routes
+const navigateToAdminRoute = (routeName) => {
+    console.log(`Direct navigation to admin route: ${routeName}`);
+    const currentRouteName = page.props.ziggy.route_name;
+    const isOnEditorRoute = currentRouteName.startsWith('editor.');
+    
+    if (isOnEditorRoute && isAdmin.value) {
+        console.log('Using direct router.visit for admin route from editor context');
+        router.visit(route(routeName));
+        return false;
+    }
+    
+    return true;
+};
 </script>
 
 <template>
-    <Head title="Admin Dashboard" />
+    <Head :title="isAdmin ? 'Admin Dashboard' : 'Editor Dashboard'" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Admin Dashboard</h2>
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                {{ isAdmin ? 'Admin Dashboard' : 'Editor Dashboard' }}
+            </h2>
         </template>
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-                <!-- Role Management Modal -->
+                
+                <!-- Welcome Banner & Quick Actions (Visible to Admins and Editors) -->
+                <div v-if="canManageContent" class="bg-indigo-600 dark:bg-indigo-800 shadow-sm sm:rounded-lg">
+                    <div class="px-4 py-6 sm:px-6">
+                        <h2 class="text-2xl font-bold text-white">
+                            Welcome, {{ $page.props.auth.user.name }}!
+                        </h2>
+                        <p class="mt-1 text-indigo-100">
+                            {{ isAdmin ? 'Manage users, content, and site performance from here.' : 'Manage your content from here.' }}
+                        </p>
+                        
+                        <!-- Quick actions buttons removed as these functions are now accessed through the sidebar -->
+                    </div>
+                </div>
+
+                <!-- Content Management Hub (Visible to Admins and Editors) - Removed as these functions are now accessed through the sidebar -->
+                
+                <!-- Role Management Modal (Admin Only) -->
                 <RoleManagementModal 
+                    v-if="isAdmin"
                     :show="showRoleModal" 
                     :user="selectedUser" 
                     @close="closeRoleModal" 
                     @update="handleRoleUpdate" 
                 />
                 
-                <!-- User Management Section -->
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <!-- User Management Section (Admin Only) -->
+                <div v-if="isAdmin" class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6">
                         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
                             User Management
                         </h3>
-                            
                             <div class="mb-4">
                             <div class="relative">
                                     <input
@@ -276,183 +412,80 @@ const formatNumber = (num) => {
                                 <p class="text-sm text-gray-500 dark:text-gray-400">Regular Users</p>
                                 <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ formatNumber(userStats.regular_users) }}</p>
                             </div>
-                            </div>
-                        </div>
-                    </div>
-
-                <!-- Content Overview -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="p-6">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Content Overview</h3>
-                            <LoadingIndicator v-if="!contentOverview" />
-                            <div v-else-if="contentOverview" class="grid grid-cols-2 gap-4">
-                                <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded">
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Total Posts</p>
-                                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ formatNumber(contentOverview.totalPosts) }}</p>
-                                </div>
-                                <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded">
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Total Views</p>
-                                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ formatNumber(contentOverview.totalViews) }}</p>
-                                </div>
-                                <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded">
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Published Posts</p>
-                                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ formatNumber(contentOverview.publishedPosts) }}</p>
-                                </div>
-                                <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded">
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Unique Viewers</p>
-                                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ formatNumber(contentOverview.uniqueViewers) }}</p>
-                                </div>
-                            </div>
-                            
-                            <!-- Top Posts Preview -->
-                            <div v-if="contentOverview && contentOverview.mostViewedPosts && contentOverview.mostViewedPosts.length > 0" class="mt-6">
-                                <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">Top Performing Posts</h4>
-                                <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-                                    <li v-for="post in contentOverview.mostViewedPosts" :key="post.id" class="py-2">
-                                        <div class="flex justify-between">
-                                            <Link 
-                                                :href="route('blog.show', post.slug)" 
-                                                class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline truncate max-w-xs"
-                                            >
-                                                {{ post.title }}
-                                            </Link>
-                                            <span class="text-sm text-gray-500 dark:text-gray-400">{{ formatNumber(post.view_count) }} views</span>
-                                        </div>
-                                    </li>
-                                </ul>
-                            </div>
-                            
-                            <div class="mt-4">
-                                <!-- Commenting out link to non-existent page -->
-                                <!-- <Link 
-                                    :href="route('admin.content.analytics')" 
-                                    class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                                >
-                                    View detailed content analytics →
-                                </Link> -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Content Needing Approval -->
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="p-6">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Content Needing Approval</h3>
-                            <LoadingIndicator v-if="!contentNeedingApproval" />
-                            
-                            <template v-else-if="contentNeedingApproval && contentNeedingApproval.pendingPosts && contentNeedingApproval.pendingPosts.length > 0">
-                                <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">Posts Under Review</h4>
-                                <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-                                    <li v-for="post in contentNeedingApproval.pendingPosts" :key="post.id" class="py-2">
-                                        <div class="flex justify-between">
-                                            <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ post.title }}</span>
-                                            <span class="text-sm text-gray-500 dark:text-gray-400">by {{ post.author ? post.author.name : 'Unknown' }}</span>
-                                        </div>
-                                    </li>
-                                </ul>
-                                
-                                <div class="mt-4">
-                                    <Link 
-                                        :href="route('admin.content.approval')" 
-                                        class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                                    >
-                                        Review all pending content →
-                                    </Link>
-                                </div>
-                            </template>
-                            
-                            <template v-else-if="contentNeedingApproval && contentNeedingApproval.pendingComments && contentNeedingApproval.pendingComments.length > 0">
-                                <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">Comments Pending Approval</h4>
-                                <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-                                    <li v-for="comment in contentNeedingApproval.pendingComments" :key="comment.id" class="py-2">
-                                        <div class="text-sm text-gray-700 dark:text-gray-300 truncate">
-                                            {{ comment.user ? comment.user.name : 'Anonymous' }} on "{{ comment.post ? comment.post.title : 'Unknown Post' }}"
-                                        </div>
-                                    </li>
-                                </ul>
-                                
-                                <div class="mt-4">
-                                    <Link 
-                                        :href="route('admin.content.approval')" 
-                                        class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                                    >
-                                        Review all pending content →
-                                    </Link>
-                                </div>
-                            </template>
-                            
-                            <div v-else class="text-center py-6 text-gray-500 dark:text-gray-400">
-                                No content currently needs approval.
-                            </div>
-                        </div>
-                        </div>
-                    </div>
-
-                <!-- View Trends -->
-                <div v-if="viewTrends" class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                                View Trends
-                            </h3>
-                            <div class="flex space-x-2">
-                                <button 
-                                    v-for="period in ['day', 'week', 'month', 'year']" 
-                                    :key="period"
-                                    @click="changePeriod(period)"
-                                    class="px-3 py-1 text-sm rounded-md"
-                                    :class="[
-                                        props.filters.period === period 
-                                            ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' 
-                                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                    ]"
-                                >
-                                    {{ period.charAt(0).toUpperCase() + period.slice(1) }}
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="h-80 w-full">
-                            <!-- Placeholder for Chart.js implementation -->
-                            <div v-if="viewTrends.labels && viewTrends.data" class="relative h-full">
-                                <!-- Simple representation of the chart data -->
-                                <div class="absolute inset-0 flex items-end">
-                                    <div 
-                                        v-for="(value, index) in viewTrends.data" 
-                                        :key="index"
-                                        class="bg-indigo-500 dark:bg-indigo-400 mx-1 rounded-t-sm"
-                                        :style="{
-                                            height: `${Math.max(5, (value / Math.max(...viewTrends.data)) * 100)}%`,
-                                            width: `${100 / viewTrends.data.length}%`
-                                        }"
-                                    ></div>
-                                </div>
-                                
-                                <!-- X axis labels -->
-                                <div class="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">
-                                    <div>{{ viewTrends.labels[0] }}</div>
-                                    <div>{{ viewTrends.labels[Math.floor(viewTrends.labels.length / 2)] }}</div>
-                                    <div>{{ viewTrends.labels[viewTrends.labels.length - 1] }}</div>
-                                </div>
-                            </div>
-                            
-                            <div v-else class="flex justify-center items-center h-full">
-                                <LoadingIndicator />
-                            </div>
-                        </div>
-                        
-                        <div class="mt-4">
-                            <!-- Commenting out link to non-existent page -->
-                            <!-- <Link 
-                                :href="route('admin.content.analytics')" 
-                                class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                            >
-                                View detailed analytics →
-                            </Link> -->
                         </div>
                     </div>
                 </div>
+
+                <!-- Site Analytics & Overview (Admin Only) -->
+                <div v-if="isAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Content Overview -->
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Content Overview</h3>
+                            <div v-if="loading.contentOverview"><LoadingIndicator /></div>
+                            <ErrorMessage v-else-if="errors.contentOverview" :message="errors.contentOverview" @retry="retryLoadSectionData('contentOverview')" />
+                            <div v-else-if="contentOverview" class="space-y-2 text-sm">
+                                <p>Total Posts: {{ formatNumber(contentOverview.totalPosts) }}</p>
+                                <p>Published Posts: {{ formatNumber(contentOverview.publishedPosts) }}</p>
+                                <p>Total Views: {{ formatNumber(contentOverview.totalViews) }}</p>
+                                <!-- Add more stats as needed -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View Trends -->
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">View Trends</h3>
+                            <!-- Existing View Trends implementation, ensure it's admin-centric -->
+                            <!-- Example: Period selection -->
+                             <div class="mb-4">
+                                <label for="period" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Period:</label>
+                                <select id="period" v-model="filters.period" @change="changePeriod($event.target.value)" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="day">Today</option>
+                                    <option value="week">Last 7 Days</option>
+                                    <option value="month">Last 30 Days</option>
+                                    <option value="year">Last Year</option>
+                                </select>
+                            </div>
+                            <div v-if="viewTrends && viewTrends.labels && viewTrends.labels.length">
+                                <!-- Simplified chart or data display -->
+                                <div class="h-40 flex items-end space-x-1 bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                                    <div 
+                                        v-for="(count, index) in viewTrends.data" 
+                                        :key="index"
+                                        :style="`height: ${Math.max(10, (count / (Math.max(...viewTrends.data) || 1)) * 100)}%`"
+                                        class="bg-indigo-500 dark:bg-indigo-600 w-full rounded-t"
+                                        :title="`${viewTrends.labels[index]}: ${formatNumber(count)} views`"
+                                    ></div>
+                                </div>
+                                <div class="mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                    <span>{{ viewTrends.labels[0] }}</span>
+                                    <span v-if="viewTrends.labels.length > 2">{{ viewTrends.labels[Math.floor(viewTrends.labels.length / 2)] }}</span>
+                                    <span v-if="viewTrends.labels.length > 1">{{ viewTrends.labels[viewTrends.labels.length - 1] }}</span>
+                                </div>
+                            </div>
+                             <div v-else class="text-sm text-gray-500 dark:text-gray-400">No trend data available for selected period.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Site Activity (Placeholder - Admin Only) -->
+                <div v-if="isAdmin && props.recentPosts && props.recentPosts.length">
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Recent Site Posts</h3>
+                            <ul class="space-y-3">
+                                <li v-for="post in props.recentPosts.slice(0,5)" :key="post.id" class="border-b dark:border-gray-700 pb-2 last:border-b-0">
+                                    <Link :href="route('posts.show', post.slug)" class="text-indigo-600 hover:underline dark:text-indigo-400" target="_blank">{{ post.title }}</Link>
+                                     <span class="px-2 py-0.5 rounded-full text-xs ml-2" :class="getStatusClass(post.status)">{{ formatStatus(post.status) }}</span>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">By {{ post.author ? post.author.name : 'N/A' }} - Last updated {{ formatDate(post.updated_at) }}</p>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </AuthenticatedLayout>

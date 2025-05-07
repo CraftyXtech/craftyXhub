@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
@@ -41,7 +41,7 @@ const emit = defineEmits(['cancel']);
 const form = useForm({
     title: props.post?.title || '',
     slug: props.post?.slug || '',
-    content: props.post?.content || '',
+    body: props.post?.content || props.post?.body || '',
     excerpt: props.post?.excerpt || '',
     category_id: props.post?.category_id || '',
     tags: props.post?.tags?.map(tag => tag.id) || [],
@@ -111,12 +111,46 @@ const submitForm = (status = 'draft') => {
         form.published_at = new Date().toISOString();
     }
     
-    const route = props.isEdit 
-        ? route('editor.posts.update', props.post.id)
-        : route('editor.posts.store');
+    // Make sure required fields are handled properly
+    if (!form.title) {
+        alert('Title is required');
+        return;
+    }
+    
+    if (!form.body) {
+        alert('Content is required');
+        return;
+    }
+    
+    if (!form.slug) {
+        // Auto-generate slug from title if empty
+        form.slug = form.title
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim();
+    }
+    
+    const routeName = props.isEdit 
+        ? 'editor.posts.update'
+        : 'editor.posts.store';
+    
+    const url = props.isEdit 
+        ? route(routeName, { post: props.post.slug })
+        : route(routeName);
         
-    form.post(route, {
+    form.post(url, {
         preserveScroll: true,
+        onSuccess: () => {
+            // Redirect to the posts index after successful submission
+            if (!props.isEdit) {
+                router.visit(route('editor.posts.index'));
+            }
+        },
+        onError: (errors) => {
+            console.error('Form submission failed:', errors);
+        }
     });
 };
 
@@ -147,11 +181,11 @@ const schedulePost = () => {
     form.status = 'scheduled';
     form.published_at = new Date(scheduledDate.value).toISOString();
     
-    const route = props.isEdit 
-        ? route('editor.posts.update', props.post.id)
+    const routeToSubmit = props.isEdit
+        ? route('editor.posts.update', { post: props.post.slug })
         : route('editor.posts.store');
         
-    form.post(route, {
+    form.post(routeToSubmit, {
         preserveScroll: true,
         onSuccess: () => {
             showScheduleModal.value = false;
@@ -166,7 +200,7 @@ const openDeleteModal = () => {
 
 // Delete post
 const deletePost = () => {
-    useForm({}).delete(route('editor.posts.destroy', props.post.id), {
+    useForm({}).delete(route('editor.posts.destroy', { post: props.post.slug }), {
         onSuccess: () => {
             showDeleteModal.value = false;
             window.location = route('editor.posts.index');
@@ -250,14 +284,14 @@ const formHasChanges = computed(() => {
 
                 <!-- Content -->
                 <div>
-                    <InputLabel for="content" value="Content" />
+                    <InputLabel for="body" value="Content" />
                     <RichEditor
-                        id="content"
-                        v-model="form.content"
+                        id="body"
+                        v-model="form.body"
                         class="mt-1 block w-full min-h-[400px]"
                         placeholder="Write your post content here..."
                     />
-                    <InputError :message="form.errors.content" class="mt-2" />
+                    <InputError :message="form.errors.body" class="mt-2" />
                 </div>
 
                 <!-- Excerpt -->

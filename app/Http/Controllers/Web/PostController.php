@@ -81,6 +81,9 @@ class PostController extends Controller
             }
         ]);
 
+        // Get related posts
+        $relatedPosts = $post->getRelatedPosts();
+
         // Optional: Record post view for the current user (consider throttling/queuing)
         // You might want a dedicated service or event listener for this
         // Example: RecordViewJob::dispatch($post, $request->user());
@@ -102,6 +105,7 @@ class PostController extends Controller
             'commentsProp' => $post->comments, 
             'isLikedProp' => $isLiked,
             'isSavedProp' => $isSaved,
+            'relatedPosts' => $relatedPosts,
         ]);
     }
 } 

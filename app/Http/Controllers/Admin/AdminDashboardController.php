@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Models\User; // Assuming User model is needed for counts, etc.
+use App\Models\User;
 use App\Models\Post;
 use App\Models\View;
 use App\Models\Comment;
@@ -17,6 +17,7 @@ use App\Services\Admin\ContentManagementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Category;
 
 class AdminDashboardController extends Controller
 {
@@ -58,6 +59,9 @@ class AdminDashboardController extends Controller
         // Get content needing approval
         $contentNeedingApproval = $this->contentService->getContentNeedingApproval();
 
+        // Get recent posts list
+        $recentPostsList = $this->contentService->getRecentPostsList();
+
         return Inertia::render('Admin/Dashboard', [
             'userCount' => $userStats['total'],
             'userStats' => $userStats,
@@ -72,6 +76,7 @@ class AdminDashboardController extends Controller
             'contentOverview' => $contentOverview,
             'viewTrends' => $viewTrends,
             'contentNeedingApproval' => $contentNeedingApproval,
+            'recentPostsList' => $recentPostsList,
         ]);
     }
 
@@ -224,6 +229,50 @@ class AdminDashboardController extends Controller
                 'postsByCategory' => $postsByCategory,
             ];
         });
+    }
+
+    /**
+     * Display users list for admin management
+     * 
+     * @return \Inertia\Response
+     */
+    public function users(Request $request)
+    {
+        $users = User::select('id', 'name', 'email', 'role', 'created_at')
+            ->when($request->search, function($query, $search) {
+                $query->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        return Inertia::render('Admin/Users/Index', [
+            'users' => $users,
+            'filters' => [
+                'search' => $request->search ?? '',
+            ]
+        ]);
+    }
+    
+    /**
+     * Display user statistics for admin
+     * 
+     * @return \Inertia\Response
+     */
+    public function userStatistics()
+    {
+        $userStats = [
+            'total' => User::count(),
+            'admins' => User::where('role', 'admin')->count(),
+            'editors' => User::where('role', 'editor')->count(),
+            'regular' => User::where('role', 'user')->count(),
+            'recentlyJoined' => User::orderBy('created_at', 'desc')->take(5)->get(),
+            'mostActive' => User::withCount('posts')->orderBy('posts_count', 'desc')->take(5)->get(),
+        ];
+        
+        return Inertia::render('Admin/Users/Statistics', [
+            'userStats' => $userStats
+        ]);
     }
 
     // Add other methods for user management, etc., later

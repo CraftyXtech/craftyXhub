@@ -3,7 +3,6 @@ import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import BlogPostCard from '@/Components/Blog/BlogPostCard.vue';
-import TheHeader from '@/Components/Layout/Navbar.vue';
 import TheFooter from '@/Components/Layout/Footer.vue';
 
 const props = defineProps({
@@ -30,7 +29,6 @@ const formatDate = (dateString) => {
 </script>
 
 <template>
-    <TheHeader />
     <Head>
         <title>{{ pageTitle }}</title>
     </Head>

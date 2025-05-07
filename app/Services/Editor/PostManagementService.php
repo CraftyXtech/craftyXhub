@@ -33,6 +33,9 @@ class PostManagementService
         // Filter by user
         if ($userPosts) {
             $query->where('user_id', Auth::id());
+        } else if ($request->user_id) {
+            // Apply user_id filter if provided explicitly
+            $query->where('user_id', $request->user_id);
         }
         
         // Apply filters

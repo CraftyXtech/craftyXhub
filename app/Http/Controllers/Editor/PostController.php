@@ -9,6 +9,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use App\Services\Editor\PostManagementService;
 use Illuminate\Http\RedirectResponse;
 
@@ -182,6 +183,65 @@ class PostController extends Controller
     }
 
     /**
+     * Display a list of the user's draft posts.
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function drafts(Request $request): Response
+    {
+        // Update the request to filter by draft status and current user
+        $request->merge([
+            'status' => 'draft',
+            'user_id' => Auth::id() // Ensure we're only showing the current user's drafts
+        ]);
+        
+        // Get draft posts with relationships loaded
+        $request->merge(['with_relations' => true]);
+        $drafts = $this->postService->getPosts($request, true); // Force user_id filter 
+        
+        // Get form options for filters
+        $formOptions = $this->postService->getPostFormOptions();
+
+        return Inertia::render('Editor/Posts/Drafts', [
+            'drafts' => $drafts,
+            'filters' => [
+                'search' => $request->search ?? '',
+                'status' => 'draft',
+            ],
+            'categories' => $formOptions['categories'],
+        ]);
+    }
+    
+    /**
+     * Submit a post for review.
+     *
+     * @param Post $post
+     * @return RedirectResponse
+     */
+    public function submitForReview(Post $post): RedirectResponse
+    {
+        // Authorize the request (only post owner can submit)
+        if (Gate::denies('update', $post) || $post->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        try {
+            // Update the post status
+            $post->status = 'under_review';
+            $post->save();
+            
+            return redirect()->route('editor.posts.drafts')
+                ->with('success', 'Post submitted for review.');
+        } catch (\Exception $e) {
+            // Log the error and return with an error message
+            Log::error('Error submitting post for review: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Error submitting post for review. Please try again.');
+        }
+    }
+    
+    /**
      * Remove the specified post from storage.
      *
      * @param Post $post
@@ -194,10 +254,12 @@ class PostController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
-        $this->postService->deletePost($post);
-
-        return redirect()->route('editor.posts.index')
-            ->with('success', 'Post deleted successfully!');
+        try {
+            $this->postService->deletePost($post);
+            return redirect()->back()->with('success', 'Post deleted successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error deleting post: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -240,5 +302,36 @@ class PostController extends Controller
         $message = $this->postService->applyBulkAction($action, $actualIds);
 
         return redirect()->route('editor.posts.index')->with('success', $message ?? 'Bulk action applied successfully.');
+    }
+
+    /**
+     * Resubmit a rejected post for review after addressing feedback.
+     *
+     * @param Request $request
+     * @param Post $post
+     * @return RedirectResponse
+     */
+    public function resubmitRejected(Request $request, Post $post): RedirectResponse
+    {
+        // Authorize the request (only post owner or editor can resubmit)
+        if (Gate::denies('update', $post)) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        try {
+            // Update the post status to under_review
+            $post->status = 'under_review';
+            // Clear previous rejection feedback
+            $post->feedback = null;
+            $post->save();
+            
+            return redirect()->route('editor.posts.index')
+                ->with('success', 'Post has been resubmitted for review.');
+        } catch (\Exception $e) {
+            // Log the error and return with an error message
+            Log::error('Error resubmitting post for review: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Error resubmitting post for review. Please try again.');
+        }
     }
 } 

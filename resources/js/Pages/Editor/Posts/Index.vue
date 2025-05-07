@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ref, watch, computed } from 'vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
@@ -19,6 +19,17 @@ const props = defineProps({
     canCreate: Boolean,
     canPublish: Boolean
 });
+
+const page = usePage();
+const currentUserRole = computed(() => page.props.auth.user.role);
+
+const isAdmin = computed(() => currentUserRole.value === 'admin');
+const pageTitle = computed(() => 
+    isAdmin.value ? 'Admin | Manage Posts' : 'Editor | Manage Posts'
+);
+const headerTitle = computed(() => 
+    isAdmin.value ? 'Manage Posts (Admin)' : 'Manage Posts'
+);
 
 const search = ref(props.filters.search || '');
 const status = ref(props.filters.status || '');
@@ -93,7 +104,7 @@ const confirmDelete = (post) => {
 };
 
 const deletePost = () => {
-    router.delete(route('editor.posts.destroy', postToDelete.value.id), {
+    router.delete(route('editor.posts.destroy', { post: postToDelete.value.slug }), {
         onSuccess: () => {
             showDeleteModal.value = false;
             postToDelete.value = null;
@@ -115,13 +126,13 @@ const clearFilters = () => {
 </script>
 
 <template>
-    <Head title="Manage Posts" />
+    <Head :title="pageTitle" />
 
     <AuthenticatedLayout>
         <template #header>
             <div class="flex justify-between items-center">
                 <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                    Manage Posts
+                    {{ headerTitle }}
                 </h2>
                 <Link 
                     v-if="canCreate"
@@ -268,19 +279,19 @@ const clearFilters = () => {
                                                 </template>
 
                                                 <template #content>
-                                                    <DropdownLink :href="route('editor.posts.edit', post.id)">
+                                                    <DropdownLink :href="route('editor.posts.edit', { post: post.slug })">
                                                         Edit
                                                     </DropdownLink>
                                                     <DropdownLink 
                                                         v-if="post.status === 'published'"
-                                                        :href="route('posts.show', post.slug)" 
+                                                        :href="route('posts.show', { post: post.slug })" 
                                                         target="_blank"
                                                     >
                                                         View
                                                     </DropdownLink>
                                                     <DropdownLink 
                                                         v-if="post.status === 'draft'"
-                                                        :href="route('editor.posts.submit', post.id)" 
+                                                        :href="route('editor.posts.submit', { post: post.slug })" 
                                                         method="post" 
                                                         as="button"
                                                     >

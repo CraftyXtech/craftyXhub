@@ -1,7 +1,8 @@
 <template>
-  <component
-    :is="as === 'button' ? 'button' : Link"
-    :href="as === 'button' ? undefined : href"
+  <Link
+    :href="href"
+    :method="method"
+    :as="as === 'link' ? undefined : as"
     :disabled="disabled"
     class="block w-full px-4 py-2 text-left text-sm transition-colors duration-200 ease-in-out"
     :class="{
@@ -12,7 +13,7 @@
     :aria-disabled="disabled ? 'true' : undefined"
   >
     <slot />
-  </component>
+  </Link>
 </template>
 
 <script setup>
@@ -36,5 +37,10 @@ defineProps({
     default: 'link',
     validator: (value) => ['link', 'button'].includes(value),
   },
+  method: {
+    type: String,
+    default: 'get',
+    validator: (value) => ['get', 'post', 'put', 'patch', 'delete'].includes(value.toLowerCase()),
+  }
 });
 </script>

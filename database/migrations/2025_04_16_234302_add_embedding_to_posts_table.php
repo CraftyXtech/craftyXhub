@@ -13,6 +13,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        return; // Temporarily disable this migration
+
         // First check if pgvector extension is available
         try {
             // Try to create the extension and catch any exceptions
@@ -53,6 +55,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        return; // Temporarily disable this migration
+
         // Check if pgvector extension is available
         try {
             DB::statement('SELECT count(*) FROM pg_extension WHERE extname = \'vector\';');

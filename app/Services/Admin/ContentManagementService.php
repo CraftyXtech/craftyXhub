@@ -8,6 +8,7 @@ use App\Models\Comment;
 use App\Models\User;
 use App\Models\Category;
 use App\Models\Tag;
+use App\Models\Like;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -32,6 +33,7 @@ class ContentManagementService
             $uniqueViewers = View::select('ip_address')->distinct()->count();
             
             $totalComments = Comment::count();
+            $totalLikes = Like::count();
             
             // Get posts with most views (top 5)
             $mostViewedPosts = Post::select('posts.id', 'title', 'slug', DB::raw('COUNT(views.id) as view_count'))
@@ -90,6 +92,7 @@ class ContentManagementService
                 'totalViews' => $totalViews,
                 'uniqueViewers' => $uniqueViewers,
                 'totalComments' => $totalComments,
+                'totalLikes' => $totalLikes,
                 'mostViewedPosts' => $mostViewedPosts,
                 'mostActiveUsers' => $mostActiveUsers,
                 'postsByCategory' => $postsByCategory,
@@ -172,5 +175,20 @@ class ContentManagementService
                 ->limit(10)
                 ->get(),
         ];
+    }
+
+    /**
+     * Get a list of recent posts site-wide.
+     *
+     * @param int $limit
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getRecentPostsList(int $limit = 5): \Illuminate\Database\Eloquent\Collection
+    {
+        return Post::with(['author:id,name', 'category:id,name'])
+            ->select('id', 'title', 'slug', 'status', 'user_id', 'category_id', 'created_at', 'updated_at', 'published_at')
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
     }
 } 

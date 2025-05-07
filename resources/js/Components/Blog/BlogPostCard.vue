@@ -1,7 +1,8 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
-defineProps({
+const props = defineProps({
     post: {
         type: Object,
         required: true,
@@ -18,11 +19,22 @@ defineProps({
         // }
     }
 });
+
+// Computed property to safely generate the URL
+const cardUrl = computed(() => {
+    if (props.post && props.post.url) {
+        return props.post.url;
+    }
+    if (props.post && props.post.slug && route().has('posts.show')) { // Check if route exists
+        return route('posts.show', props.post.slug);
+    }
+    return '#'; // Fallback URL if no slug or url is available
+});
 </script>
 
 <template>
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
-        <Link :href="route('posts.show', post.slug)">
+        <Link :href="cardUrl">
             <div class="aspect-w-16 aspect-h-9 overflow-hidden">
                 <img 
                     :src="post.display_image_url || '/images/placeholder-800x450.png'" 

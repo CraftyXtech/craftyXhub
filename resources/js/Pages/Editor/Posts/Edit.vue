@@ -1,7 +1,8 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Form from './Form.vue';
+import { computed } from 'vue';
 
 const props = defineProps({
     post: Object,
@@ -9,18 +10,30 @@ const props = defineProps({
     canPublish: Boolean
 });
 
+// Get user role for conditional rendering
+const page = usePage();
+const currentUserRole = computed(() => page.props.auth.user.role);
+const isAdmin = computed(() => currentUserRole.value === 'admin');
+
+const pageTitle = computed(() => 
+    isAdmin.value ? `Admin | Edit Post: ${props.post.title}` : `Editor | Edit Post: ${props.post.title}`
+);
+const headerTitle = computed(() => 
+    isAdmin.value ? `Edit Post (Admin): ${props.post.title}` : `Edit Post: ${props.post.title}`
+);
+
 const handleCancel = () => {
     router.visit(route('editor.posts.index'));
 };
 </script>
 
 <template>
-    <Head title="Edit Post" />
+    <Head :title="pageTitle" />
 
     <AuthenticatedLayout>
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                Edit Post: {{ post.title }}
+                {{ headerTitle }}
             </h2>
         </template>
 

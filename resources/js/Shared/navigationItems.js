@@ -30,6 +30,6 @@ export const getAuthItems = () => {
     
     return [
         { name: 'Sign In', href: route('login'), type: 'auth' },
-        // { name: 'Register', href: route('register'), type: 'auth', highlight: true }
+        { name: 'Register', href: route('register'), type: 'auth', highlight: true }
     ];
 }; 

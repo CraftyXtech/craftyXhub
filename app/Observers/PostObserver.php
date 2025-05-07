@@ -6,7 +6,7 @@ use App\Models\Post;
 use App\Services\EmbeddingService;
 use App\Services\ImageGenerationService;
 use Illuminate\Support\Facades\Log;
-use Pgvector\Laravel\Vector; // Import the Vector class
+// use Pgvector\Laravel\Vector; // Import the Vector class
 use Illuminate\Support\Facades\Storage;
 
 class PostObserver
@@ -34,7 +34,9 @@ class PostObserver
      */
     public function saving(Post $post): void
     {
+        // TEMPORARILY DISABLED: Skip embedding generation until the column is added
         // Combine title and excerpt for embedding content
+        /*
         $contentToEmbed = $post->title . "\n\n" . $post->excerpt; 
         // Consider adding body or tags if needed, but keep it concise initially.
         
@@ -54,6 +56,7 @@ class PostObserver
                  $post->embedding = null; // Ensure it's null if generation fails
             }
         }
+        */
 
         // --- Image Generation --- 
         // Generate image if title/excerpt changed, it's a new post, or no image exists yet,
