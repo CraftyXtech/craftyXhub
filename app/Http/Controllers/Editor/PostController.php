@@ -92,11 +92,22 @@ class PostController extends Controller
             'comments_enabled' => 'boolean',
         ]);
 
+        // Ensure editors can't publish directly
+        $user = Auth::user();
+        if ($user->role === 'editor' && $validated['status'] === 'published') {
+            $validated['status'] = 'under_review';
+            
+            // Provide feedback that the post is submitted for review instead of published
+            $message = 'Your post has been submitted for review by an administrator.';
+        } else {
+            $message = 'Post created successfully!';
+        }
+
         // Create the post
         $post = $this->postService->createPost($validated);
 
         return redirect()->route('editor.posts.edit', $post)
-            ->with('success', 'Post created successfully!');
+            ->with('success', $message);
     }
 
     /**
@@ -175,11 +186,27 @@ class PostController extends Controller
             'comments_enabled' => 'boolean',
         ]);
 
+        // Ensure editors can't publish directly
+        $user = Auth::user();
+        if ($user->role === 'editor') {
+            // If status is changing to published, change it to under_review
+            if ($validated['status'] === 'published' && $post->status !== 'published') {
+                $validated['status'] = 'under_review';
+                
+                // Provide feedback that the post is submitted for review instead of published
+                $message = 'Your post has been submitted for review by an administrator.';
+            } else {
+                $message = 'Post updated successfully!';
+            }
+        } else {
+            $message = 'Post updated successfully!';
+        }
+
         // Update the post
         $this->postService->updatePost($post, $validated);
 
         return redirect()->route('editor.posts.edit', $post)
-            ->with('success', 'Post updated successfully!');
+            ->with('success', $message);
     }
 
     /**

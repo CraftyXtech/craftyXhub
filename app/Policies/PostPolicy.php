@@ -59,8 +59,12 @@ class PostPolicy
             return true;
         }
         
-        // Editors can only update their own posts
-        return $user->isEditor() && $post->user_id === $user->id;
+        // Editors can only update their own posts that are not published
+        if ($user->isEditor()) {
+            return $post->user_id === $user->id && $post->status !== 'published';
+        }
+        
+        return false;
     }
 
     /**
@@ -116,12 +120,29 @@ class PostPolicy
      */
     public function publish(User $user, Post $post): bool
     {
-        // Admin can publish any post
+        // Only Admin can publish directly
         if ($user->isAdmin()) {
             return true;
         }
         
-        // Editors can only publish their own posts
-        return $user->isEditor() && $post->user_id === $user->id;
+        // Editors cannot publish directly, they must submit for review
+        return false;
+    }
+
+    /**
+     * Determine whether the user can submit the post for review.
+     *
+     * @param User $user
+     * @param Post $post
+     * @return bool
+     */
+    public function submitForReview(User $user, Post $post): bool
+    {
+        // Editors can only submit their own posts for review
+        if ($user->isEditor()) {
+            return $post->user_id === $user->id && $post->status !== 'published';
+        }
+        
+        return false;
     }
 } 

@@ -191,4 +191,175 @@ class ContentManagementService
             ->limit($limit)
             ->get();
     }
+    
+    /**
+     * Get content overview data for a specific user (editor)
+     *
+     * @param int $userId
+     * @return array
+     */
+    public function getContentOverviewForUser(int $userId): array
+    {
+        $cacheKey = "editor_content_overview_{$userId}";
+        
+        return Cache::remember($cacheKey, 600, function () use ($userId) {
+            $totalPosts = Post::where('user_id', $userId)->count();
+            $publishedPosts = Post::where('user_id', $userId)->wherePublished()->count();
+            $draftPosts = Post::where('user_id', $userId)->where('status', 'draft')->count();
+            $scheduledPosts = Post::where('user_id', $userId)
+                ->where('status', 'scheduled')
+                ->whereNotNull('published_at')
+                ->count();
+            
+            // Get views for this user's posts
+            $postIds = Post::where('user_id', $userId)->pluck('id')->toArray();
+            $totalViews = View::whereIn('post_id', $postIds)->count();
+            $uniqueViewers = View::whereIn('post_id', $postIds)
+                ->select('ip_address')
+                ->distinct()
+                ->count();
+            
+            // Get comments on this user's posts
+            $totalComments = Comment::whereIn('post_id', $postIds)->count();
+            $totalLikes = Like::whereIn('post_id', $postIds)->count();
+            
+            // Get posts with most views (top 5)
+            $mostViewedPosts = Post::select('posts.id', 'title', 'slug', DB::raw('COUNT(views.id) as view_count'))
+                ->leftJoin('views', 'posts.id', '=', 'views.post_id')
+                ->where('posts.user_id', $userId)
+                ->groupBy('posts.id', 'title', 'slug')
+                ->orderByDesc('view_count')
+                ->limit(5)
+                ->get();
+                
+            // Get posts by category
+            $postsByCategory = Post::select('categories.name', DB::raw('COUNT(posts.id) as post_count'))
+                ->leftJoin('categories', 'posts.category_id', '=', 'categories.id')
+                ->where('posts.user_id', $userId)
+                ->groupBy('categories.name')
+                ->orderByDesc('post_count')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'name' => $item->name ?? 'Uncategorized',
+                        'count' => $item->post_count,
+                    ];
+                });
+                
+            // Recent posts (last 7 days)
+            $recentPosts = Post::where('user_id', $userId)
+                ->where('created_at', '>=', Carbon::now()->subDays(7))
+                ->count();
+                
+            // Recent views (last 7 days)
+            $recentViews = View::whereIn('post_id', $postIds)
+                ->where('viewed_at', '>=', Carbon::now()->subDays(7))
+                ->count();
+                
+            // Recent comments (last 7 days)
+            $recentComments = Comment::whereIn('post_id', $postIds)
+                ->where('created_at', '>=', Carbon::now()->subDays(7))
+                ->count();
+                
+            // Most popular tags for this user
+            $popularTags = Tag::select('tags.id', 'tags.name', DB::raw('COUNT(post_tag.post_id) as usage_count'))
+                ->leftJoin('post_tag', 'tags.id', '=', 'post_tag.tag_id')
+                ->whereIn('post_tag.post_id', $postIds)
+                ->groupBy('tags.id', 'tags.name')
+                ->orderByDesc('usage_count')
+                ->limit(10)
+                ->get();
+            
+            return [
+                'totalPosts' => $totalPosts,
+                'publishedPosts' => $publishedPosts,
+                'draftPosts' => $draftPosts,
+                'scheduledPosts' => $scheduledPosts,
+                'totalViews' => $totalViews,
+                'uniqueViewers' => $uniqueViewers,
+                'totalComments' => $totalComments,
+                'totalLikes' => $totalLikes,
+                'mostViewedPosts' => $mostViewedPosts,
+                'postsByCategory' => $postsByCategory,
+                'recentPosts' => $recentPosts,
+                'recentViews' => $recentViews,
+                'recentComments' => $recentComments,
+                'popularTags' => $popularTags,
+                // No need to include mostActiveUsers since we're only showing one user's data
+            ];
+        });
+    }
+    
+    /**
+     * Get view trends by date range for a specific user
+     *
+     * @param int $userId
+     * @param string $period day|week|month|year
+     * @return array
+     */
+    public function getViewTrendsForUser(int $userId, string $period = 'week'): array
+    {
+        $cacheKey = "editor_view_trends_{$userId}_{$period}";
+        
+        return Cache::remember($cacheKey, 300, function () use ($userId, $period) {
+            // Get post IDs for this user
+            $postIds = Post::where('user_id', $userId)->pluck('id')->toArray();
+            
+            // Determine start date based on period
+            $startDate = match($period) {
+                'day' => Carbon::now()->subDay(),
+                'week' => Carbon::now()->subWeek(),
+                'month' => Carbon::now()->subMonth(),
+                'year' => Carbon::now()->subYear(),
+                default => Carbon::now()->subWeek(),
+            };
+            
+            // Get views by date
+            $viewsByDate = View::select(
+                    DB::raw('DATE(viewed_at) as date'), 
+                    DB::raw('COUNT(*) as count')
+                )
+                ->whereIn('post_id', $postIds)
+                ->where('viewed_at', '>=', $startDate)
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get()
+                ->pluck('count', 'date')
+                ->toArray();
+                
+            // Fill in missing dates
+            $dateRange = [];
+            $currentDate = clone $startDate;
+            $endDate = Carbon::now();
+            
+            while ($currentDate <= $endDate) {
+                $dateStr = $currentDate->format('Y-m-d');
+                $dateRange[$dateStr] = $viewsByDate[$dateStr] ?? 0;
+                $currentDate->addDay();
+            }
+            
+            // Format for charts
+            return [
+                'labels' => array_keys($dateRange),
+                'data' => array_values($dateRange),
+            ];
+        });
+    }
+    
+    /**
+     * Get a list of recent posts for a specific user
+     *
+     * @param int $userId
+     * @param int $limit
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getRecentPostsListForUser(int $userId, int $limit = 5): \Illuminate\Database\Eloquent\Collection
+    {
+        return Post::with(['author:id,name', 'category:id,name'])
+            ->select('id', 'title', 'slug', 'status', 'user_id', 'category_id', 'created_at', 'updated_at', 'published_at')
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
 } 

@@ -58,12 +58,12 @@ const sidebarNavItems = computed(() => {
                         icon: 'DocumentDuplicateIcon',
                         activeRoutes: ['editor.posts.drafts']
                     },
-                    {
+                    ...(isAdmin.value ? [{
                         label: 'Pending Approval',
                         href: getDirectUrl('/admin/posts/pending'),
                         icon: 'ClockIcon',
                         activeRoutes: ['admin.posts.pending', 'admin.posts.review']
-                    },
+                    }] : []),
                 ]
             },
             {

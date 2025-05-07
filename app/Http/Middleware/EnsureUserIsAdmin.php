@@ -22,15 +22,30 @@ class EnsureUserIsAdmin
             return redirect('login');
         }
 
-        // Assuming User model has isAdmin() method or uses Spatie Permission pkg
-        // Replace 'isAdmin' with 'hasRole('Admin')' if using Spatie pkg
-        if (!$request->user()->isAdmin()) {
+        $currentRoute = $request->route()->getName();
+        $user = $request->user();
+        
+        // Special case: Allow editors to access admin.dashboard
+        if ($currentRoute === 'admin.dashboard' && $user->isEditor()) {
+            return $next($request);
+        }
+        
+        // Require admin role for all other admin routes
+        if (!$user->isAdmin()) {
             Log::warning('Unauthorized admin access attempt.', [
-                'user_id' => $request->user()->id,
-                'email' => $request->user()->email,
+                'user_id' => $user->id,
+                'email' => $user->email,
                 'ip_address' => $request->ip(),
                 'route' => $request->path(),
             ]);
+            
+            // If it's an editor, redirect them to dashboard
+            if ($user->isEditor()) {
+                return redirect()->route('admin.dashboard')
+                    ->with('error', 'You do not have permission to access that page.');
+            }
+            
+            // For other users, redirect to home
             return redirect('/')->with('error', 'Unauthorized access.');
         }
 

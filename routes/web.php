@@ -150,9 +150,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 
 // --- Editor Dashboard Routes ---
 Route::middleware(['auth', 'verified', 'editor'])->prefix('editor')->name('editor.')->group(function () {
-    // Main dashboard - REMOVED as Editor/Dashboard.vue is deprecated and functionality merged to Admin/Dashboard.vue
-    // Route::get('/dashboard', [\App\Http\Controllers\Editor\EditorDashboardController::class, 'index'])
-    //     ->name('dashboard'); // -> editor.dashboard
+    // Main dashboard - Redirect to the admin dashboard
+    Route::get('/dashboard', function() {
+        return redirect()->route('admin.dashboard');
+    })->name('dashboard'); // -> editor.dashboard
     
     // First define specific routes before the resource routes
     // Add drafts view route

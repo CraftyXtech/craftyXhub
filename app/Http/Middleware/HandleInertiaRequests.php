@@ -38,6 +38,10 @@ class HandleInertiaRequests extends Middleware
                 'isAdmin' => $user ? $user->role === 'admin' : false,
                 'isEditor' => $user ? ($user->role === 'editor' || $user->role === 'admin') : false,
             ],
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+            ],
         ];
     }
 }

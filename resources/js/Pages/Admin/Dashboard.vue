@@ -285,6 +285,101 @@ const navigateToAdminRoute = (routeName) => {
                     </div>
                 </div>
 
+                <!-- Editor-specific Content Dashboard -->
+                <div v-if="isEditor && !isAdmin" class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">My Content Overview</h3>
+                        <div v-if="loading.contentOverview"><LoadingIndicator /></div>
+                        <ErrorMessage v-else-if="errors.contentOverview" :message="errors.contentOverview" @retry="retryLoadSectionData('contentOverview')" />
+                        <div v-else-if="contentOverview" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Total Posts</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ formatNumber(contentOverview.totalPosts) }}</p>
+                            </div>
+                            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Published</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ formatNumber(contentOverview.publishedPosts) }}</p>
+                            </div>
+                            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Drafts</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ formatNumber(contentOverview.draftPosts) }}</p>
+                            </div>
+                            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Under Review</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ formatNumber(contentOverview.pendingReviewPosts || 0) }}</p>
+                            </div>
+                            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg md:col-span-2">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Total Views</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ formatNumber(contentOverview.totalViews) }}</p>
+                            </div>
+                            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg md:col-span-2">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Total Comments</p>
+                                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ formatNumber(contentOverview.totalComments) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Editor View Trends (Editor-specific) -->
+                <div v-if="isEditor && !isAdmin && viewTrends" class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">My Content Performance</h3>
+                        
+                        <!-- Period selection -->
+                        <div class="mb-4">
+                            <label for="period" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Period:</label>
+                            <select id="period" v-model="filters.period" @change="changePeriod($event.target.value)" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <option value="day">Today</option>
+                                <option value="week">Last 7 Days</option>
+                                <option value="month">Last 30 Days</option>
+                                <option value="year">Last Year</option>
+                            </select>
+                        </div>
+                        
+                        <div v-if="viewTrends && viewTrends.labels && viewTrends.labels.length">
+                            <!-- Simplified chart or data display -->
+                            <div class="h-40 flex items-end space-x-1 bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                                <div
+                                    v-for="(count, index) in viewTrends.data"
+                                    :key="index"
+                                    :style="`height: ${Math.max(10, (count / (Math.max(...viewTrends.data) || 1)) * 100)}%`"
+                                    class="bg-indigo-500 dark:bg-indigo-600 w-full rounded-t"
+                                    :title="`${viewTrends.labels[index]}: ${formatNumber(count)} views`"
+                                ></div>
+                            </div>
+                            <div class="mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                <span>{{ viewTrends.labels[0] }}</span>
+                                <span v-if="viewTrends.labels.length > 2">{{ viewTrends.labels[Math.floor(viewTrends.labels.length / 2)] }}</span>
+                                <span v-if="viewTrends.labels.length > 1">{{ viewTrends.labels[viewTrends.labels.length - 1] }}</span>
+                            </div>
+                        </div>
+                        <div v-else class="text-sm text-gray-500 dark:text-gray-400">No trend data available for the selected period.</div>
+                    </div>
+                </div>
+
+                <!-- Editor Recent Posts -->
+                <div v-if="isEditor && !isAdmin && recentPostsList && recentPostsList.length" class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">My Recent Posts</h3>
+                        <ul class="space-y-3">
+                            <li v-for="post in recentPostsList" :key="post.id" class="border-b dark:border-gray-700 pb-2 last:border-b-0">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <Link :href="route('editor.posts.edit', post.id)" class="text-indigo-600 hover:underline dark:text-indigo-400">{{ post.title }}</Link>
+                                        <span class="px-2 py-0.5 rounded-full text-xs ml-2" :class="getStatusClass(post.status)">{{ formatStatus(post.status) }}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        Last updated {{ formatDate(post.updated_at) }}
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                        <div class="mt-4">
+                            <Link :href="route('editor.posts.index')" class="text-indigo-600 hover:underline dark:text-indigo-400 text-sm">View all posts →</Link>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Content Management Hub (Visible to Admins and Editors) - Removed as these functions are now accessed through the sidebar -->
                 
                 <!-- Role Management Modal (Admin Only) -->

@@ -44,26 +44,37 @@ class AdminDashboardController extends Controller
      */
     public function index(Request $request): Response
     {
-        // Get users with pagination and filtering
-        $users = $this->userService->getUsers($request);
+        // Get current user
+        $user = Auth::user();
+        $isEditor = $user->role === 'editor';
+        $isAdmin = $user->role === 'admin';
         
-        // Get user statistics
-        $userStats = $this->userService->getUserStats();
+        // Get users with pagination and filtering (admin only)
+        $users = $isAdmin ? $this->userService->getUsers($request) : null;
         
-        // Get content overview
-        $contentOverview = $this->contentService->getContentOverview();
+        // Get user statistics (admin only)
+        $userStats = $isAdmin ? $this->userService->getUserStats() : null;
         
-        // Get view trends
-        $viewTrends = $this->contentService->getViewTrends($request->period ?? 'week');
+        // Get content overview - filtered for editors
+        $contentOverview = $isAdmin 
+            ? $this->contentService->getContentOverview() 
+            : $this->contentService->getContentOverviewForUser($user->id);
         
-        // Get content needing approval
-        $contentNeedingApproval = $this->contentService->getContentNeedingApproval();
+        // Get view trends - filtered for editors
+        $viewTrends = $isAdmin
+            ? $this->contentService->getViewTrends($request->period ?? 'week')
+            : $this->contentService->getViewTrendsForUser($user->id, $request->period ?? 'week');
+        
+        // Get content needing approval - admin only
+        $contentNeedingApproval = $isAdmin ? $this->contentService->getContentNeedingApproval() : null;
 
-        // Get recent posts list
-        $recentPostsList = $this->contentService->getRecentPostsList();
+        // Get recent posts list - filtered for editors
+        $recentPostsList = $isAdmin
+            ? $this->contentService->getRecentPostsList()
+            : $this->contentService->getRecentPostsListForUser($user->id);
 
         return Inertia::render('Admin/Dashboard', [
-            'userCount' => $userStats['total'],
+            'userCount' => $userStats['total'] ?? 0,
             'userStats' => $userStats,
             'users' => $users,
             'filters' => [
@@ -77,6 +88,8 @@ class AdminDashboardController extends Controller
             'viewTrends' => $viewTrends,
             'contentNeedingApproval' => $contentNeedingApproval,
             'recentPostsList' => $recentPostsList,
+            'isEditor' => $isEditor,
+            'isAdmin' => $isAdmin,
         ]);
     }
 

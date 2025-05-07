@@ -39,7 +39,7 @@ class AuthenticatedSessionController extends Controller
         if ($user->isAdmin()) {
             return redirect()->intended(route('admin.dashboard', absolute: false));
         } elseif ($user->isEditor()) {
-            return redirect()->intended(route('editor.dashboard', absolute: false));
+            return redirect()->intended(route('editor.stats', absolute: false));
         }
 
         // Default redirect for regular users or if roles aren't set
