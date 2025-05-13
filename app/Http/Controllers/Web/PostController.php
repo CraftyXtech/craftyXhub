@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,9 +12,7 @@ use Illuminate\Support\Facades\Auth;
 
 class PostController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+ 
     public function index(Request $request): Response
     {
         $query = Post::query()
@@ -35,7 +34,20 @@ class PostController extends Controller
             });
         }
 
-        $posts = $query->paginate(10)->withQueryString();
+        $posts = $query->paginate(9)->withQueryString();
+        $categories = Category::withCount(['posts' => function ($query) {
+            $query->whereNotNull('published_at');
+        }])->get();
+        
+        $allCount = Post::whereNotNull('published_at')->count();
+        
+        $categories->prepend((object)[
+            'id' => null,
+            'name' => 'All',
+            'slug' => 'all',
+            'posts_count' => $allCount
+        ]);
+        
 
         $userSpecificProps = [];
         if (Auth::check()) {
@@ -50,58 +62,45 @@ class PostController extends Controller
 
         return Inertia::render('Blog/HomeView', [
             'posts' => $posts,
+            'categories' => $categories,
             'filters' => $request->only(['query', 'category']),
             ...$userSpecificProps
         ]);
     }
 
-    /**
-     * Display the specified resource.
-     */
+
     public function show(Request $request, Post $post): Response
     {
-        // Ensure the post is published
-        if ($post->published_at === null) { // Add any other status checks if needed
+        if ($post->published_at === null) { 
             abort(404);
         }
 
-        // Eager load necessary relationships
         $post->load([
             'author:id,name,avatar', 
             'category:id,name,slug', 
             'tags:id,name,slug', 
-            // Load top-level comments with their user and replies (also with user)
             'comments' => function ($query) {
-                $query->whereNull('parent_id') // Only top-level comments
+                $query->whereNull('parent_id') 
                       ->with(['user:id,name,avatar', 'replies' => function($q) {
-                          $q->with('user:id,name,avatar') // Load user for replies
+                          $q->with('user:id,name,avatar')
                             ->orderBy('created_at', 'asc'); 
                       }])
-                      ->orderBy('created_at', 'desc'); // Order top-level comments
+                      ->orderBy('created_at', 'desc'); 
             }
         ]);
 
-        // Get related posts
         $relatedPosts = $post->getRelatedPosts();
 
-        // Optional: Record post view for the current user (consider throttling/queuing)
-        // You might want a dedicated service or event listener for this
-        // Example: RecordViewJob::dispatch($post, $request->user());
-
-        // Get like/save status for the currently authenticated user
         $user = $request->user();
         $isLiked = false;
         $isSaved = false;
         if ($user) {
-            // Assuming standard pivot table relationships (likers, savers/bookmarks)
             $isLiked = $post->likers()->where('user_id', $user->id)->exists();
-            $isSaved = $user->bookmarkedPosts()->where('post_id', $post->id)->exists(); // Adjust relation name if needed
+            $isSaved = $user->bookmarkedPosts()->where('post_id', $post->id)->exists(); 
         }
         
-        // Pass the post and related data as props
         return Inertia::render('Blog/BlogPostView', [
             'post' => $post, 
-            // Pass comments directly (adjust structure/resource if needed)
             'commentsProp' => $post->comments, 
             'isLikedProp' => $isLiked,
             'isSavedProp' => $isSaved,
