@@ -1,263 +1,3 @@
-<script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ref, computed, onMounted, watch } from 'vue';
-import RoleManagementModal from './Partials/RoleManagementModal.vue';
-// import Pagination from '@/Components/Pagination.vue';
-import LoadingIndicator from '@/Components/LoadingIndicator.vue';
-import ErrorMessage from '@/Components/ErrorMessage.vue';
-
-const props = defineProps({
-    userCount: {
-        type: Number,
-        default: 0,
-    },
-    userStats: {
-        type: Object,
-        default: () => ({}),
-    },
-    users: Object, // Paginated users from backend
-    filters: Object, // Search filters
-    contentOverview: Object, // Content statistics
-    viewTrends: Object, // View trends data
-    contentNeedingApproval: Object, // Content needing approval
-    recentPosts: Array, // Recent posts (added for editor functionality) - Will be site-wide for admin
-    pendingReviews: Array, // Pending reviews (added for editor functionality) - Likely part of contentNeedingApproval
-    analytics: Object, // Editor analytics - Will be site-wide for admin, or use contentOverview
-    // New props might be added by AdminDashboardController for category/tag summaries
-    categorySummary: {
-        type: Array,
-        default: () => [],
-    },
-    tagSummary: {
-        type: Array,
-        default: () => [],
-    }
-});
-
-// Get user role for conditional rendering
-const page = usePage();
-const currentUserRole = computed(() => page.props.auth.user.role);
-
-const isAdmin = computed(() => currentUserRole.value === 'admin');
-const isEditor = computed(() => currentUserRole.value === 'editor');
-
-// Content management sections visible to both Admin and Editor (or just Admin if Editor has a more restricted view)
-// For now, assuming if you can see this dashboard, and you are an editor, you see content tools.
-const canManageContent = computed(() => isAdmin.value || isEditor.value);
-
-
-// Show/hide role management modal
-const showRoleModal = ref(false);
-const selectedUser = ref(null);
-
-// Loading and error states
-const loading = ref({
-    users: false,
-    contentOverview: false,
-    deleteUser: null, // User ID being deleted
-    posts: false, 
-    analytics: false, 
-});
-const errors = ref({
-    users: null,
-    contentOverview: null,
-    deleteUser: null,
-    posts: null, 
-    analytics: null, 
-});
-
-// Search filter
-const search = ref(props.filters.search || '');
-const debouncedSearch = computed(() => search.value);
-
-// Function to load user data
-const loadUsers = (params = {}) => {
-    if (!isAdmin.value) return; // Only admins can load all users
-    loading.value.users = true;
-    errors.value.users = null;
-    
-    router.get(route('admin.dashboard'), {
-        ...props.filters,
-        ...params,
-        search: debouncedSearch.value,
-    }, {
-        preserveState: true,
-        preserveScroll: true,
-        onError: (error) => {
-            errors.value.users = "Failed to load users. " + error;
-        },
-        onFinish: () => {
-            loading.value.users = false;
-        }
-    });
-};
-
-// Refactored delete user method
-const confirmAndDeleteUser = (user) => {
-    if (!isAdmin.value) return;
-    if (!confirm(`Are you sure you want to delete the user ${user.name}? This action cannot be undone.`)) {
-        return;
-    }
-    // Use Inertia link/router for deletion
-    router.delete(route('admin.users.delete', user.id), {
-        preserveScroll: true,
-        onStart: () => {
-            // Optionally set a loading state for this specific user
-            loading.value.deleteUser = user.id;
-        },
-        onSuccess: () => {
-            // No need to manually call loadUsers(), the redirect handles the refresh.
-            // Optionally show a success notification based on flashed session data
-        },
-        onError: (errors) => {
-            // Handle errors, maybe display a notification
-             errors.value.deleteUser = errors.message || 'Failed to delete user.';
-             console.error("Error deleting user:", errors);
-        },
-        onFinish: () => {
-             loading.value.deleteUser = null; // Reset loading state
-        },
-    });
-};
-
-// Role management modal functions
-const openRoleModal = (user) => {
-    if (!isAdmin.value) return;
-    selectedUser.value = user;
-    showRoleModal.value = true;
-};
-
-const closeRoleModal = () => {
-    showRoleModal.value = false;
-    selectedUser.value = null;
-};
-
-const handleRoleUpdate = ({ userId, role }) => {
-    if (!isAdmin.value) return;
-    // This is now handled by the modal component
-    // Will make a proper API call
-    closeRoleModal();
-    
-    // Refresh the user list to reflect changes
-    setTimeout(() => {
-        loadUsers();
-    }, 500);
-};
-
-// Handle search input changes
-const handleSearchInput = () => {
-    if (isAdmin.value) { // Assuming search is for users, restrict to admin
-    loadUsers();
-    }
-};
-
-// Function to retry loading data after an error
-const retryLoadUsers = () => {
-    if (isAdmin.value) {
-    loadUsers();
-    }
-};
-
-// Period selection for view trends
-const changePeriod = (period) => {
-    // This might be an admin-only feature or adaptable for editors if they see trends
-    router.get(route('admin.dashboard'), {
-        ...props.filters,
-        period
-    }, {
-        preserveState: true,
-        preserveScroll: true
-    });
-};
-
-// Format large numbers for display
-const formatNumber = (num) => {
-    if (num === undefined || num === null) return '0';
-    return new Intl.NumberFormat().format(num);
-};
-
-// Format date to readable format (added for editor functionality)
-const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(date);
-};
-
-// Get status badge class (added for editor functionality)
-const getStatusClass = (status) => {
-    switch (status) {
-        case 'published':
-            return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-        case 'draft':
-            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-        case 'under_review':
-            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-        case 'scheduled':
-            return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-        case 'rejected':
-            return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-        default:
-            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    }
-};
-
-// Format status text (added for editor functionality)
-const formatStatus = (status) => {
-    switch (status) {
-        case 'published':
-            return 'Published';
-        case 'draft':
-            return 'Draft';
-        case 'under_review':
-            return 'Under Review';
-        case 'scheduled':
-            return 'Scheduled';
-        case 'rejected':
-            return 'Rejected';
-        default:
-            return status.charAt(0).toUpperCase() + status.slice(1);
-    }
-};
-
-// Function to retry loading data after an error (generic for sections)
-const retryLoadSectionData = (sectionKey) => {
-    // This function might need more context or specific reload actions per section
-    // For now, a general refresh might be okay for some data, or it triggers specific loaders
-    loading.value[sectionKey] = true;
-    errors.value[sectionKey] = null;
-    router.visit(route('admin.dashboard'), { // Or a more specific route if data is segmented
-        preserveScroll: true,
-        onSuccess: () => loading.value[sectionKey] = false,
-        onError: (err) => {
-            errors.value[sectionKey] = "Failed to reload " + sectionKey;
-            loading.value[sectionKey] = false;
-        }
-    });
-};
-
-// Helper function to handle direct navigation to admin routes when on editor routes
-const navigateToAdminRoute = (routeName) => {
-    console.log(`Direct navigation to admin route: ${routeName}`);
-    const currentRouteName = page.props.ziggy.route_name;
-    const isOnEditorRoute = currentRouteName.startsWith('editor.');
-    
-    if (isOnEditorRoute && isAdmin.value) {
-        console.log('Using direct router.visit for admin route from editor context');
-        router.visit(route(routeName));
-        return false;
-    }
-    
-    return true;
-};
-</script>
-
 <template>
     <Head :title="isAdmin ? 'Admin Dashboard' : 'Editor Dashboard'" />
 
@@ -585,3 +325,263 @@ const navigateToAdminRoute = (routeName) => {
         </div>
     </AuthenticatedLayout>
 </template> 
+
+<script setup>
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ref, computed, onMounted, watch } from 'vue';
+import RoleManagementModal from './Partials/RoleManagementModal.vue';
+// import Pagination from '@/Components/Pagination.vue';
+import LoadingIndicator from '@/Components/LoadingIndicator.vue';
+import ErrorMessage from '@/Components/ErrorMessage.vue';
+
+const props = defineProps({
+    userCount: {
+        type: Number,
+        default: 0,
+    },
+    userStats: {
+        type: Object,
+        default: () => ({}),
+    },
+    users: Object, // Paginated users from backend
+    filters: Object, // Search filters
+    contentOverview: Object, // Content statistics
+    viewTrends: Object, // View trends data
+    contentNeedingApproval: Object, // Content needing approval
+    recentPosts: Array, // Recent posts (added for editor functionality) - Will be site-wide for admin
+    pendingReviews: Array, // Pending reviews (added for editor functionality) - Likely part of contentNeedingApproval
+    analytics: Object, // Editor analytics - Will be site-wide for admin, or use contentOverview
+    // New props might be added by AdminDashboardController for category/tag summaries
+    categorySummary: {
+        type: Array,
+        default: () => [],
+    },
+    tagSummary: {
+        type: Array,
+        default: () => [],
+    }
+});
+
+// Get user role for conditional rendering
+const page = usePage();
+const currentUserRole = computed(() => page.props.auth.user.role);
+
+const isAdmin = computed(() => currentUserRole.value === 'admin');
+const isEditor = computed(() => currentUserRole.value === 'editor');
+
+// Content management sections visible to both Admin and Editor (or just Admin if Editor has a more restricted view)
+// For now, assuming if you can see this dashboard, and you are an editor, you see content tools.
+const canManageContent = computed(() => isAdmin.value || isEditor.value);
+
+
+// Show/hide role management modal
+const showRoleModal = ref(false);
+const selectedUser = ref(null);
+
+// Loading and error states
+const loading = ref({
+    users: false,
+    contentOverview: false,
+    deleteUser: null, // User ID being deleted
+    posts: false, 
+    analytics: false, 
+});
+const errors = ref({
+    users: null,
+    contentOverview: null,
+    deleteUser: null,
+    posts: null, 
+    analytics: null, 
+});
+
+// Search filter
+const search = ref(props.filters.search || '');
+const debouncedSearch = computed(() => search.value);
+
+// Function to load user data
+const loadUsers = (params = {}) => {
+    if (!isAdmin.value) return; // Only admins can load all users
+    loading.value.users = true;
+    errors.value.users = null;
+    
+    router.get(route('admin.dashboard'), {
+        ...props.filters,
+        ...params,
+        search: debouncedSearch.value,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        onError: (error) => {
+            errors.value.users = "Failed to load users. " + error;
+        },
+        onFinish: () => {
+            loading.value.users = false;
+        }
+    });
+};
+
+// Refactored delete user method
+const confirmAndDeleteUser = (user) => {
+    if (!isAdmin.value) return;
+    if (!confirm(`Are you sure you want to delete the user ${user.name}? This action cannot be undone.`)) {
+        return;
+    }
+    // Use Inertia link/router for deletion
+    router.delete(route('admin.users.delete', user.id), {
+        preserveScroll: true,
+        onStart: () => {
+            // Optionally set a loading state for this specific user
+            loading.value.deleteUser = user.id;
+        },
+        onSuccess: () => {
+            // No need to manually call loadUsers(), the redirect handles the refresh.
+            // Optionally show a success notification based on flashed session data
+        },
+        onError: (errors) => {
+            // Handle errors, maybe display a notification
+             errors.value.deleteUser = errors.message || 'Failed to delete user.';
+             console.error("Error deleting user:", errors);
+        },
+        onFinish: () => {
+             loading.value.deleteUser = null; // Reset loading state
+        },
+    });
+};
+
+// Role management modal functions
+const openRoleModal = (user) => {
+    if (!isAdmin.value) return;
+    selectedUser.value = user;
+    showRoleModal.value = true;
+};
+
+const closeRoleModal = () => {
+    showRoleModal.value = false;
+    selectedUser.value = null;
+};
+
+const handleRoleUpdate = ({ userId, role }) => {
+    if (!isAdmin.value) return;
+    // This is now handled by the modal component
+    // Will make a proper API call
+    closeRoleModal();
+    
+    // Refresh the user list to reflect changes
+    setTimeout(() => {
+        loadUsers();
+    }, 500);
+};
+
+// Handle search input changes
+const handleSearchInput = () => {
+    if (isAdmin.value) { // Assuming search is for users, restrict to admin
+    loadUsers();
+    }
+};
+
+// Function to retry loading data after an error
+const retryLoadUsers = () => {
+    if (isAdmin.value) {
+    loadUsers();
+    }
+};
+
+// Period selection for view trends
+const changePeriod = (period) => {
+    // This might be an admin-only feature or adaptable for editors if they see trends
+    router.get(route('admin.dashboard'), {
+        ...props.filters,
+        period
+    }, {
+        preserveState: true,
+        preserveScroll: true
+    });
+};
+
+// Format large numbers for display
+const formatNumber = (num) => {
+    if (num === undefined || num === null) return '0';
+    return new Intl.NumberFormat().format(num);
+};
+
+// Format date to readable format (added for editor functionality)
+const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date);
+};
+
+// Get status badge class (added for editor functionality)
+const getStatusClass = (status) => {
+    switch (status) {
+        case 'published':
+            return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        case 'draft':
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+        case 'under_review':
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+        case 'scheduled':
+            return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+        case 'rejected':
+            return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        default:
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+};
+
+// Format status text (added for editor functionality)
+const formatStatus = (status) => {
+    switch (status) {
+        case 'published':
+            return 'Published';
+        case 'draft':
+            return 'Draft';
+        case 'under_review':
+            return 'Under Review';
+        case 'scheduled':
+            return 'Scheduled';
+        case 'rejected':
+            return 'Rejected';
+        default:
+            return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+};
+
+// Function to retry loading data after an error (generic for sections)
+const retryLoadSectionData = (sectionKey) => {
+    // This function might need more context or specific reload actions per section
+    // For now, a general refresh might be okay for some data, or it triggers specific loaders
+    loading.value[sectionKey] = true;
+    errors.value[sectionKey] = null;
+    router.visit(route('admin.dashboard'), { // Or a more specific route if data is segmented
+        preserveScroll: true,
+        onSuccess: () => loading.value[sectionKey] = false,
+        onError: (err) => {
+            errors.value[sectionKey] = "Failed to reload " + sectionKey;
+            loading.value[sectionKey] = false;
+        }
+    });
+};
+
+// Helper function to handle direct navigation to admin routes when on editor routes
+const navigateToAdminRoute = (routeName) => {
+    console.log(`Direct navigation to admin route: ${routeName}`);
+    const currentRouteName = page.props.ziggy.route_name;
+    const isOnEditorRoute = currentRouteName.startsWith('editor.');
+    
+    if (isOnEditorRoute && isAdmin.value) {
+        console.log('Using direct router.visit for admin route from editor context');
+        router.visit(route(routeName));
+        return false;
+    }
+    
+    return true;
+};
+</script>

@@ -1,3 +1,36 @@
+<template>
+    <div>
+        <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex">
+            <!-- Sidebar -->
+            <Sidebar 
+                v-if="auth.user && (isAdmin || isEditor)" 
+                :navItems="sidebarNavItems" 
+                :isMobileOpen="sidebarOpen"
+            />
+
+            <!-- Main content area -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <Navbar @toggle-sidebar="toggleSidebar" />
+
+                <!-- Page Heading -->
+                <header
+                    class="bg-white dark:bg-gray-800 shadow sticky top-0 z-10"
+                    v-if="$slots.header"
+                >
+                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                        <slot name="header" />
+                    </div>
+                </header>
+
+                <!-- Page Content -->
+                <main class="flex-1 overflow-y-auto">
+                    <slot />
+                </main>
+            </div>
+        </div>
+    </div>
+</template>
+
 <script setup>
 import { ref, computed } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
@@ -137,41 +170,3 @@ const toggleSidebar = () => {
     sidebarOpen.value = !sidebarOpen.value;
 };
 </script>
-
-<template>
-    <div>
-        <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex">
-            <!-- Sidebar -->
-            <Sidebar 
-                v-if="auth.user && (isAdmin || isEditor)" 
-                :navItems="sidebarNavItems" 
-                :isMobileOpen="sidebarOpen"
-            />
-
-            <!-- Main content area -->
-            <div class="flex-1 flex flex-col overflow-hidden">
-                <Navbar @toggle-sidebar="toggleSidebar" />
-
-                <!-- Page Heading -->
-                <header
-                    class="bg-white dark:bg-gray-800 shadow sticky top-0 z-10"
-                    v-if="$slots.header"
-                >
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        <slot name="header" />
-                    </div>
-                </header>
-
-                <!-- Page Content -->
-                <main class="flex-1 overflow-y-auto">
-                    <slot />
-                </main>
-            </div>
-        </div>
-    </div>
-</template>
-
-<style scoped>
-/* Ensure main content area doesn't get hidden by fixed sidebar on mobile if it overlays */
-/* Further adjustments might be needed based on exact sidebar behavior */
-</style>

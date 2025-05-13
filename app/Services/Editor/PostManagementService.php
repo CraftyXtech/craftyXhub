@@ -14,37 +14,27 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
 
 class PostManagementService
 {
-    /**
-     * Get posts with pagination and filtering
-     *
-     * @param Request $request
-     * @param bool $userPosts Only return posts owned by current user (false allows admin to see all)
-     * @return LengthAwarePaginator
-     */
-    public function getPosts(Request $request, bool $userPosts = true): LengthAwarePaginator
+
+    public function getPosts(Request $request, bool $userPosts = true): Collection
     {
-        $perPage = $request->per_page ?? 10;
-        
         $query = Post::query();
-        
-        // Filter by user
+
         if ($userPosts) {
             $query->where('user_id', Auth::id());
         } else if ($request->user_id) {
-            // Apply user_id filter if provided explicitly
             $query->where('user_id', $request->user_id);
         }
-        
-        // Apply filters
+
         $query->when($request->search, function ($query, $search) {
-                $query->where(function($q) use ($search) {
-                    $q->where('title', 'like', "%{$search}%")
-                      ->orWhere('body', 'like', "%{$search}%");
-                });
-            })
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('body', 'like', "%{$search}%");
+            });
+        })
             ->when($request->status, function ($query, $status) {
                 $query->where('status', $status);
             })
@@ -56,58 +46,49 @@ class PostManagementService
                     $q->where('tags.id', $tagId);
                 });
             });
-            
-        // Apply sorting
+
         $query->when($request->sort_by, function ($query, $sortBy) use ($request) {
-                $direction = $request->sort_direction ?? 'desc';
-                $query->orderBy($sortBy, $direction);
-            }, function ($query) {
-                $query->orderBy('updated_at', 'desc');
-            });
-            
-        // Include relationships if needed
+            $direction = $request->sort_direction ?? 'desc';
+            $query->orderBy($sortBy, $direction);
+        }, function ($query) {
+            $query->orderBy('updated_at', 'desc');
+        });
+
         if ($request->with_relations) {
             $query->with(['category:id,name', 'tags:id,name', 'author:id,name']);
         }
-        
-        return $query->paginate($perPage)->withQueryString();
+
+        return $query->get();
     }
-    
-    /**
-     * Get post statistics
-     *
-     * @param int|null $userId Only get stats for posts by this user (null for all posts)
-     * @param string $period Period for trend data (day, week, month, year)
-     * @return array
-     */
+
+
     public function getPostStats(?int $userId = null, string $period = 'week'): array
     {
-        $cacheKey = $userId 
-            ? "editor_post_stats_{$userId}_{$period}" 
+        $cacheKey = $userId
+            ? "editor_post_stats_{$userId}_{$period}"
             : "admin_post_stats_{$period}";
-            
+
         return Cache::remember($cacheKey, 300, function () use ($userId, $period) {
-            // Basic counts
             $query = Post::query();
             if ($userId) {
                 $query->where('user_id', $userId);
             }
-            
+
             $totalPosts = $query->count();
             $publishedPosts = (clone $query)->wherePublished()->count();
             $draftPosts = (clone $query)->where('status', 'draft')->count();
             $scheduledPosts = (clone $query)->where('status', 'scheduled')->count();
             $pendingReviewPosts = (clone $query)->where('status', 'under_review')->count();
-            
+
             // Determine start date for trends
-            $startDate = match($period) {
+            $startDate = match ($period) {
                 'day' => Carbon::now()->subDay(),
                 'week' => Carbon::now()->subWeek(),
                 'month' => Carbon::now()->subMonth(),
                 'year' => Carbon::now()->subYear(),
                 default => Carbon::now()->subWeek(),
             };
-            
+
             // View statistics
             $viewsQuery = View::query()
                 ->when($userId, function ($query) use ($userId) {
@@ -115,12 +96,12 @@ class PostManagementService
                         $q->where('user_id', $userId);
                     });
                 });
-                
+
             $totalViews = $viewsQuery->count();
             $recentViews = (clone $viewsQuery)
                 ->where('viewed_at', '>=', $startDate)
                 ->count();
-                
+
             // Get trending posts (most viewed)
             $trendingPosts = Post::select('posts.id', 'title', 'slug', DB::raw('COUNT(views.id) as view_count'))
                 ->leftJoin('views', 'posts.id', '=', 'views.post_id')
@@ -132,7 +113,7 @@ class PostManagementService
                 ->orderByDesc('view_count')
                 ->limit(5)
                 ->get();
-                
+
             // Get view trends by date
             $viewsByDate = View::select(DB::raw('DATE(viewed_at) as date'), DB::raw('COUNT(*) as count'))
                 ->when($userId, function ($query) use ($userId) {
@@ -146,18 +127,18 @@ class PostManagementService
                 ->get()
                 ->pluck('count', 'date')
                 ->toArray();
-                
+
             // Fill in missing dates
             $viewTrends = [];
             $currentDate = clone $startDate;
             $endDate = Carbon::now();
-            
+
             while ($currentDate <= $endDate) {
                 $dateStr = $currentDate->format('Y-m-d');
                 $viewTrends[$dateStr] = $viewsByDate[$dateStr] ?? 0;
                 $currentDate->addDay();
             }
-            
+
             return [
                 'totalPosts' => $totalPosts,
                 'publishedPosts' => $publishedPosts,
@@ -174,7 +155,7 @@ class PostManagementService
             ];
         });
     }
-    
+
     /**
      * Create a new post
      *
@@ -195,26 +176,26 @@ class PostManagementService
 
         // Set user ID
         $data['user_id'] = Auth::id();
-        
+
         // Set published_at if status is published
         if ($data['status'] === 'published' && !isset($data['published_at'])) {
             $data['published_at'] = now();
         }
-        
+
         // Create the post
         $post = Post::create($data);
-        
+
         // Sync tags if provided
         if (isset($data['tags']) && is_array($data['tags'])) {
             $post->tags()->sync($data['tags']);
         }
-        
+
         // Clear cache
         $this->clearPostCache();
-        
+
         return $post;
     }
-    
+
     /**
      * Update an existing post
      *
@@ -235,7 +216,7 @@ class PostManagementService
                 }
             }
         }
-        
+
         // Handle published_at changes based on status
         if (isset($data['status'])) {
             if ($data['status'] === 'published' && ($post->status !== 'published' || !$post->published_at)) {
@@ -244,22 +225,22 @@ class PostManagementService
                 $data['published_at'] = null;
             }
         }
-        
+
         // Update the post
         $post->fill($data);
         $post->save();
-        
+
         // Sync tags if provided
         if (isset($data['tags']) && is_array($data['tags'])) {
             $post->tags()->sync($data['tags']);
         }
-        
+
         // Clear cache
         $this->clearPostCache();
-        
+
         return $post;
     }
-    
+
     /**
      * Apply a bulk action to specified posts.
      *
@@ -317,7 +298,7 @@ class PostManagementService
 
         return $message;
     }
-    
+
     /**
      * Delete a post
      *
@@ -327,14 +308,14 @@ class PostManagementService
     public function deletePost(Post $post): bool
     {
         $deleted = $post->delete(); // Use delete() for soft deletes
-        
+
         if ($deleted) {
             $this->clearPostCache();
         }
-        
+
         return $deleted;
     }
-    
+
     /**
      * Clear relevant post caches.
      */
@@ -346,7 +327,7 @@ class PostManagementService
         // Cache::forget("editor_post_stats_" . Auth::id() . "_week");
         // ... add other cache keys to forget ...
     }
-    
+
     /**
      * Get common options needed for post forms (categories, tags).
      *
@@ -362,4 +343,4 @@ class PostManagementService
             'tags' => $tags,
         ];
     }
-} 
+}

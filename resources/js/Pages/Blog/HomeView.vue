@@ -59,26 +59,7 @@
             </div>
         </section>
 
-        <!-- Recently Read Articles Section - Simplified -->
-        <section v-if="isAuthenticated" class="py-16 bg-gray-50 dark:bg-gray-800">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <RecentlyReadArticles 
-                    :articles="props.recentlyRead.data" 
-                />
-            </div>
-        </section>
-        
-        <!-- Followed Topics Section - Cleaner layout -->
-        <section v-if="isAuthenticated" class="py-16 bg-white dark:bg-gray-900">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <FollowedTopics 
-                    :followed="props.followedTopics" 
-                    :suggested="props.suggestedTopics" 
-                />
-            </div>
-        </section>
 
-        <!-- Blog Grid Section - More streamlined -->
         <section class="py-16 bg-gray-50 dark:bg-gray-800">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h2 v-if="!props.filters.query" class="text-2xl font-semibold mb-10 text-center text-gray-800 dark:text-gray-200">Latest Articles</h2>
@@ -127,7 +108,7 @@
         <SubscribeBanner />
     </main>
     
-    <TheFooter />
+    <Footer />
 </template> 
 
 
@@ -135,7 +116,7 @@
 import { ref, computed, watch } from 'vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import Navbar from '@/Components/Layout/Navbar.vue';
-import TheFooter from '@/Components/Layout/Footer.vue';
+import Footer from '@/Components/Layout/Footer.vue';
 import BlogPostCard from '@/Components/Blog/BlogPostCard.vue';
 import CategoryTags from '@/Components/Blog/CategoryTags.vue';
 import SearchBar from '@/Components/Shared/SearchBar.vue';
