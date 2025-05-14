@@ -1,18 +1,15 @@
 <template>
     <div>
         <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex">
-            <!-- Sidebar -->
-            <Sidebar 
+            <!-- <Sidebar 
                 v-if="auth.user && (isAdmin || isEditor)" 
                 :navItems="sidebarNavItems" 
                 :isMobileOpen="sidebarOpen"
-            />
+            /> -->
 
-            <!-- Main content area -->
             <div class="flex-1 flex flex-col overflow-hidden">
                 <Navbar @toggle-sidebar="toggleSidebar" />
 
-                <!-- Page Heading -->
                 <header
                     class="bg-white dark:bg-gray-800 shadow sticky top-0 z-10"
                     v-if="$slots.header"
@@ -22,7 +19,6 @@
                     </div>
                 </header>
 
-                <!-- Page Content -->
                 <main class="flex-1 overflow-y-auto">
                     <slot />
                 </main>
@@ -33,12 +29,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import Dropdown from '@/Components/Dropdown.vue';
-import DropdownLink from '@/Components/DropdownLink.vue';
-import NavLink from '@/Components/NavLink.vue';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link, usePage, router } from '@inertiajs/vue3';
+import {  usePage } from '@inertiajs/vue3';
 import Navbar from '@/Components/Layout/Navbar.vue';
 import Sidebar from '@/Layouts/Partials/Sidebar.vue';
 
@@ -49,12 +40,10 @@ const auth = computed(() => page.props.auth);
 const isAdmin = computed(() => page.props.auth.isAdmin);
 const isEditor = computed(() => page.props.auth.isEditor);
 
-// Generate direct URLs to ensure navigation works across namespaces
 const getDirectUrl = (path) => {
     return window.location.origin + path;
 };
 
-// Define sidebar navigation items for Admin/Editor
 const sidebarNavItems = computed(() => {
     let items = [
         {
@@ -65,13 +54,12 @@ const sidebarNavItems = computed(() => {
         },
     ];
 
-    // Sections for both Admin and Editor
     if (isAdmin.value || isEditor.value) {
         items.push(
             {
                 label: 'Post Management',
                 icon: 'DocumentDuplicateIcon',
-                activeRoutes: ['editor.posts', 'admin.posts'], // Include both prefixes
+                activeRoutes: ['editor.posts', 'admin.posts'], 
                 children: [
                     {
                         label: 'All Posts',
@@ -140,7 +128,6 @@ const sidebarNavItems = computed(() => {
         );
     }
 
-    // User Management - Admin only
     if (isAdmin.value) {
         items.push({
             label: 'User Management',
@@ -155,9 +142,9 @@ const sidebarNavItems = computed(() => {
                 },
                 {
                     label: 'Roles & Permissions',
-                    href: '#', // Placeholder - Future implementation
+                    href: '#', 
                     icon: 'ShieldCheckIcon',
-                    activeRoutes: ['admin.roles.index'] // Example
+                    activeRoutes: ['admin.roles.index'] 
                 },
             ]
         });

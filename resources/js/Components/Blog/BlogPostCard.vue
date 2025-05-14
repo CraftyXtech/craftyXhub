@@ -15,7 +15,6 @@
           </div>
         </div>
         
-
         <div class="p-5">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
@@ -36,7 +35,7 @@
             </div>
           </div>
   
-          <h3 class="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-300">
+          <h3 class="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
             {{ truncateTitle(post.title) }}
           </h3>
           

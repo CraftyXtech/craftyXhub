@@ -1,4 +1,3 @@
-// Define shared navigation items
 import { usePage } from '@inertiajs/vue3';
 
 export const navItemsLeft = [
@@ -29,7 +28,6 @@ export const getAuthItems = () => {
     }
     
     return [
-        { name: 'Sign In', href: route('login'), type: 'auth' },
-        { name: 'Register', href: route('register'), type: 'auth', highlight: true }
+        { name: 'Sign In', href: route('login'), type: 'auth' }
     ];
 }; 
