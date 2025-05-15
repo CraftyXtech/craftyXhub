@@ -456,12 +456,12 @@ const toggleDarkMode = () => {
 // Initialize theme from localStorage or system preference
 onMounted(() => {
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
         isDarkMode.value = true;
-        document.documentElement.classList.add('dark');
+        document.documentElement.classList.add('light');
     } else {
         isDarkMode.value = false;
-        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.remove('light');
     }
 });
 
