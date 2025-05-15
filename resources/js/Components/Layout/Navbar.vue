@@ -570,7 +570,8 @@ const authenticatedUserAccountNav = computed(() => {
 const guestAccountNav = computed(() => {
     if (user.value) return [];
     return [
-        { name: 'Log In', routeName: 'login' }
+        { name: 'Log In', routeName: 'login' },
+        { name: 'Register', routeName: 'register', highlight: true }
     ];
 });
 </script>

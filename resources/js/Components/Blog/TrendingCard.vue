@@ -14,7 +14,7 @@
           <span 
             class="px-3 py-1 bg-blue-600/80 text-white text-xs font-medium rounded-full"
           >
-            {{ post.category.name }}
+            {{ post.category?.name || 'Uncategorized' }}
           </span>
           
           <span class="text-xs text-gray-200">
@@ -58,6 +58,12 @@
       required: true
     }
   });
+  
+  // Log the post prop when the component is created/mounted
+  console.log('TrendingCard received post (ID: ' + props.post.id + '):', JSON.parse(JSON.stringify(props.post)));
+  if (props.post.id === 4) { // Or whatever ID corresponds to "trending-4" if not literal
+      console.log('TrendingCard (ID: 4) - post.category:', JSON.parse(JSON.stringify(props.post.category)));
+  }
   
   // Format date function (can be expanded based on requirements)
   const formatDate = (dateString) => {
