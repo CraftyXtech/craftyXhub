@@ -6,7 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, validator
 import re
 
-from schemas.auth import AuthorResponse
+from schemas.post import AuthorResponse
 
 
 class CategoryCreateRequest(BaseModel):

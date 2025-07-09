@@ -27,7 +27,7 @@ from schemas.editor.posts import (
     PostResubmitRequest
 )
 from dependencies.editor_permissions import check_post_permissions
-from schemas.auth import AuthorResponse
+from schemas.post import AuthorResponse
 from schemas.post import CategoryResponse, TagResponse
 
 

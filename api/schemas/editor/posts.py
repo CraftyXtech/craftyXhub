@@ -4,8 +4,9 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 from pydantic import BaseModel, Field, validator
+from enum import Enum
 
-from schemas.auth import AuthorResponse
+from schemas.post import AuthorResponse
 from schemas.post import CategoryResponse, TagResponse
 
 

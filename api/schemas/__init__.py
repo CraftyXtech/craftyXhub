@@ -5,50 +5,95 @@ This module contains all Pydantic schemas for request/response validation
 and serialization in the CraftyXhub FastAPI application.
 """
 
-# Authentication schemas
+# Authentication schemas - FastAPI tutorial
 from .auth import (
+    Token,
+    TokenData,
+    User,
+    UserInDB,
+    UserLogin,
+    UserCreate,
+    UserUpdate,
+    UserResponse,
+    # Legacy schemas for backward compatibility
     LoginRequest,
     LoginResponse,
-    TokenResponse,
     RefreshTokenRequest,
-    UserResponse,
-    AuthError
+    RefreshTokenResponse,
+    LogoutRequest,
+    TokenValidationResponse,
+    PasswordChangeRequest,
+    PasswordResetRequest,
+    PasswordResetConfirm,
+    EmailVerificationRequest,
+    TwoFactorSetupResponse,
+    TwoFactorVerifyRequest,
+    TwoFactorLoginRequest,
+    PasswordStrengthResponse,
+    OAuthLoginRequest,
+    OAuthLinkRequest,
+    APIKeyCreate,
+    APIKeyResponse,
+    APIKeyList
 )
 
 # User registration schemas
 from .registration import (
     UserRegistration,
     RegistrationResponse,
-    EmailVerificationRequest,
+    EmailVerificationRequest as EmailVerificationRequestReg,
     EmailVerificationResponse
 )
 
 # Password management schemas
 from .password import (
-    PasswordResetRequest,
-    PasswordResetConfirm,
+    PasswordResetRequest as PasswordResetRequestPwd,
+    PasswordResetConfirm as PasswordResetConfirmPwd,
     PasswordChange,
     PasswordConfirm
 )
 
 __all__ = [
-    # Authentication
+    # FastAPI Tutorial Authentication
+    "Token",
+    "TokenData", 
+    "User",
+    "UserInDB",
+    "UserLogin",
+    "UserCreate",
+    "UserUpdate",
+    "UserResponse",
+    
+    # Legacy Authentication
     "LoginRequest",
     "LoginResponse", 
-    "TokenResponse",
     "RefreshTokenRequest",
-    "UserResponse",
-    "AuthError",
+    "RefreshTokenResponse",
+    "LogoutRequest",
+    "TokenValidationResponse",
+    "PasswordChangeRequest",
+    "PasswordResetRequest",
+    "PasswordResetConfirm",
+    "EmailVerificationRequest",
+    "TwoFactorSetupResponse",
+    "TwoFactorVerifyRequest",
+    "TwoFactorLoginRequest",
+    "PasswordStrengthResponse",
+    "OAuthLoginRequest",
+    "OAuthLinkRequest",
+    "APIKeyCreate",
+    "APIKeyResponse",
+    "APIKeyList",
     
     # Registration
     "UserRegistration",
     "RegistrationResponse",
-    "EmailVerificationRequest", 
+    "EmailVerificationRequestReg", 
     "EmailVerificationResponse",
     
     # Password Management
-    "PasswordResetRequest",
-    "PasswordResetConfirm",
+    "PasswordResetRequestPwd",
+    "PasswordResetConfirmPwd",
     "PasswordChange",
     "PasswordConfirm"
 ] 

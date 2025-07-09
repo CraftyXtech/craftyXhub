@@ -212,7 +212,7 @@ class EmailConfig(BaseSettings):
         return self.EMAIL_DEVELOPMENT_RECIPIENT
     
     model_config = {
-        "env_file": ".env",
+        "env_file": "../.env",
         "case_sensitive": True,
         "extra": "ignore"
     }

@@ -280,7 +280,7 @@ class ProductionConfig(BaseEnvironmentConfig):
         return all(var for var in required_vars) and not self.debug
     
     class Config:
-        env_file = ".env"
+        env_file = "../../.env"
         env_file_encoding = "utf-8"
         case_sensitive = False
         validate_assignment = True 

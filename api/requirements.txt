@@ -1,26 +1,39 @@
+# FastAPI and core dependencies
 fastapi==0.116.0
 uvicorn==0.35.0
+pydantic==2.11.7
+pydantic-settings==2.10.1
+
+# Database dependencies
 sqlmodel==0.0.24
 sqlalchemy==2.0.41
 asyncpg==0.30.0
 alembic==1.16.3
-pydantic==2.11.7
-pydantic-settings==2.10.1
-python-jose==3.5.0
-PyJWT==2.10.1
+
+# Authentication and security - Following FastAPI tutorial
+PyJWT==2.10.1  # Required for JWT tokens as per FastAPI tutorial
+python-multipart==0.0.20  # Required for OAuth2PasswordRequestForm
+passlib[bcrypt]==1.7.4  # Required for password hashing
+python-jose[cryptography]==3.3.0  # Alternative JWT library (keeping for compatibility)
+
+# Additional security
 bcrypt==4.2.0
-passlib==1.7.4
-python-multipart==0.0.20
-python-dotenv==1.1.1
-redis==5.2.0
 cryptography==45.0.5
-# Additional dependencies found in codebase
+
+# Configuration and environment
+python-dotenv==1.1.1
 PyYAML==6.0.2
+
+# Email validation
 email-validator==2.2.0
-# Testing dependencies (recommended by FastAPI)
+
+# Redis for caching and sessions
+redis==5.2.0
+
+# Type hints
+typing-extensions==4.12.2
+
+# Testing dependencies
 httpx==0.27.2
 pytest==8.3.3
-pytest-asyncio==0.23.8
-# Additional recommended dependencies
-python-jose[cryptography]==3.3.0
-typing-extensions==4.12.2 
+pytest-asyncio==0.23.8 

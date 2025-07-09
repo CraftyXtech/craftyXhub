@@ -22,7 +22,7 @@ from schemas.editor.categories import (
     CategoryMergeRequest
 )
 from dependencies.editor_permissions import check_category_permissions
-from schemas.auth import AuthorResponse
+from schemas.post import AuthorResponse
 
 
 class CategoryService:

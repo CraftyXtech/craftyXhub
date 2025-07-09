@@ -223,5 +223,5 @@ class BaseEnvironmentConfig(BaseModel, ABC):
         }
     
     class Config:
-        env_file = ".env"
+        env_file = "../../.env"
         case_sensitive = True 

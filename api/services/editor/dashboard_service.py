@@ -27,7 +27,7 @@ from schemas.editor.dashboard import (
     EngagementTrendsResponse
 )
 from schemas.editor.posts import PostSummaryResponse
-from schemas.auth import AuthorResponse
+from schemas.post import AuthorResponse
 from schemas.post import CategoryResponse, TagResponse
 
 

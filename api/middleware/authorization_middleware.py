@@ -3,7 +3,7 @@ Authorization Middleware
 
 Provides role-based access control, permission validation, and security enforcement
 for admin and editor functionalities with comprehensive audit logging.
-Follows SubPRD-AuthorizationMiddleware.md specifications.
+Following FastAPI middleware best practices.
 """
 
 from typing import Dict, List, Optional, Set, Callable
@@ -16,6 +16,7 @@ import json
 from datetime import datetime
 
 from models.user import User
+from schemas.auth import UserRole
 from services.admin.audit_service import AuditService
 from dependencies.auth import get_current_user
 from core.exceptions import AuthorizationError

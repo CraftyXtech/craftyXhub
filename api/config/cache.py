@@ -202,7 +202,7 @@ class CacheConfig(BaseSettings):
         return self.CACHE_ENABLED and self.CACHE_BACKEND != CacheBackend.DUMMY
     
     model_config = {
-        "env_file": ".env",
+        "env_file": "../.env",
         "case_sensitive": True,
         "extra": "ignore"
     }

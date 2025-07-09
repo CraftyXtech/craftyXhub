@@ -24,7 +24,7 @@ from schemas.editor.tags import (
     TaxonomySuggestionsResponse
 )
 from dependencies.editor_permissions import check_tag_permissions
-from schemas.auth import AuthorResponse
+from schemas.post import AuthorResponse
 
 
 class TagService:

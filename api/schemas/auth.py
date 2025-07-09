@@ -1,203 +1,164 @@
 """
-Authentication Schemas for CraftyXhub API
+Authentication schemas for CraftyXhub API
 
-Pydantic schemas for JWT authentication, login, token management,
-and user response models following SubPRD-JWTAuthentication.md specifications.
+Following FastAPI OAuth2 with Password (and hashing), Bearer with JWT tokens tutorial exactly.
 """
 
+from typing import Union, Optional, List
+from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
-from uuid import UUID
 from enum import Enum
 
-# ---------------------------------------------------------------------------
-# Shared Enumerations
-# ---------------------------------------------------------------------------
-
-
+# User role enumeration - following FastAPI best practices
 class UserRole(str, Enum):
-    """Enumeration of possible user roles across the application."""
-
+    """User role enumeration for role-based access control."""
     USER = "user"
     EDITOR = "editor"
     ADMIN = "admin"
 
+# Token schemas - exactly as in FastAPI tutorial
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
-# ---------------------------------------------------------------------------
-# Author Response Model
-# ---------------------------------------------------------------------------
+class TokenData(BaseModel):
+    username: Union[str, None] = None
 
+# User schemas - following FastAPI tutorial pattern
+class User(BaseModel):
+    username: str
+    email: Union[str, None] = None
+    full_name: Union[str, None] = None
+    disabled: Union[bool, None] = None
 
-class AuthorResponse(BaseModel):
-    """Author information in responses"""
-    id: UUID
-    name: str
-    avatar: Optional[str] = None
+class UserInDB(User):
+    hashed_password: str
 
-    class Config:
-        from_attributes = True
+# Login request schema - for OAuth2PasswordRequestForm compatibility
+class UserLogin(BaseModel):
+    username: str
+    password: str
 
+# Additional schemas for our specific needs
+class UserCreate(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    full_name: Optional[str] = None
 
-# ---------------------------------------------------------------------------
-# Authentication Schemas
-# ---------------------------------------------------------------------------
-
-
-class LoginRequest(BaseModel):
-    """Request schema for user login."""
-    email: EmailStr = Field(..., description="User email address")
-    password: str = Field(..., min_length=1, description="User password")
-    remember_me: bool = Field(default=False, description="Extended session duration")
-    
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "email": "user@example.com",
-                "password": "securepassword123",
-                "remember_me": False
-            }
-        }
-    }
-
-
-class TokenResponse(BaseModel):
-    """Response schema for JWT tokens."""
-    access_token: str = Field(..., description="JWT access token")
-    refresh_token: str = Field(..., description="JWT refresh token")
-    token_type: str = Field(default="bearer", description="Token type")
-    expires_in: int = Field(..., description="Access token expiration in seconds")
-    
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-                "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...", 
-                "token_type": "bearer",
-                "expires_in": 900
-            }
-        }
-    }
-
-
-class RefreshTokenRequest(BaseModel):
-    """Request schema for token refresh."""
-    refresh_token: str = Field(..., description="Valid refresh token")
-    
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
-            }
-        }
-    }
-
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    disabled: Optional[bool] = None
 
 class UserResponse(BaseModel):
-    """Response schema for user information."""
-    id: UUID = Field(..., description="User unique identifier")
-    name: str = Field(..., description="User full name")
-    email: EmailStr = Field(..., description="User email address")
-    role: str = Field(..., description="User role (user, editor, admin)")
-    avatar: Optional[str] = Field(None, description="User avatar URL")
-    bio: Optional[str] = Field(None, description="User biography")
-    email_verified_at: Optional[datetime] = Field(None, description="Email verification timestamp")
-    created_at: datetime = Field(..., description="Account creation timestamp")
-    
-    model_config = {
-        "from_attributes": True,
-        "json_schema_extra": {
-            "example": {
-                "id": "550e8400-e29b-41d4-a716-446655440000",
-                "name": "John Doe",
-                "email": "john@example.com",
-                "role": "user",
-                "avatar": "/media/avatars/john.jpg",
-                "bio": "Content creator and tech enthusiast",
-                "email_verified_at": "2024-01-15T10:30:00Z",
-                "created_at": "2024-01-01T00:00:00Z"
-            }
-        }
-    }
+    id: int
+    username: str
+    email: str
+    full_name: Optional[str] = None
+    disabled: bool = False
+    is_verified: bool = False
+    created_at: datetime
+    updated_at: datetime
 
+# Legacy schemas for backward compatibility
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+    remember_me: bool = False
 
 class LoginResponse(BaseModel):
-    """Complete login response with tokens and user data."""
-    user: UserResponse = Field(..., description="User information")
-    tokens: TokenResponse = Field(..., description="Authentication tokens")
-    
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "user": {
-                    "id": "550e8400-e29b-41d4-a716-446655440000",
-                    "name": "John Doe",
-                    "email": "john@example.com",
-                    "role": "user",
-                    "avatar": None,
-                    "bio": None,
-                    "email_verified_at": "2024-01-15T10:30:00Z",
-                    "created_at": "2024-01-01T00:00:00Z"
-                },
-                "tokens": {
-                    "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-                    "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-                    "token_type": "bearer",
-                    "expires_in": 900
-                }
-            }
-        }
-    }
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: UserResponse
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+class RefreshTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
 
 class LogoutRequest(BaseModel):
-    """Request schema for user logout."""
-    revoke_all_tokens: bool = Field(default=False, description="Revoke all user tokens")
-    
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "revoke_all_tokens": False
-            }
-        }
-    }
+    token: str
 
+class TokenValidationResponse(BaseModel):
+    valid: bool
+    user_id: Optional[str] = None
+    email: Optional[str] = None
+    role: Optional[str] = None
+    expires_at: Optional[datetime] = None
 
-class AuthError(BaseModel):
-    """Error response schema for authentication failures."""
-    error: str = Field(..., description="Error type")
-    message: str = Field(..., description="Human-readable error message")
-    details: Optional[dict] = Field(None, description="Additional error details")
-    
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "error": "invalid_credentials",
-                "message": "Invalid email or password",
-                "details": None
-            }
-        }
-    }
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
 
-class TokenClaims(BaseModel):
-    """JWT token claims structure."""
-    sub: str = Field(..., description="Subject (user ID)")
-    email: str = Field(..., description="User email")
-    role: str = Field(..., description="User role")
-    exp: int = Field(..., description="Expiration timestamp")
-    iat: int = Field(..., description="Issued at timestamp")
-    iss: str = Field(default="craftyhub", description="Token issuer")
-    
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "sub": "550e8400-e29b-41d4-a716-446655440000",
-                "email": "user@example.com",
-                "role": "user",
-                "exp": 1640995200,
-                "iat": 1640991600,
-                "iss": "craftyhub"
-            }
-        }
-    } 
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
+class EmailVerificationRequest(BaseModel):
+    token: str
+
+class TwoFactorSetupResponse(BaseModel):
+    qr_code: str
+    secret: str
+    backup_codes: List[str]
+
+class TwoFactorVerifyRequest(BaseModel):
+    token: str
+    code: str
+
+class TwoFactorLoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+    two_factor_code: str
+    remember_me: bool = False
+
+# Validation schemas
+class PasswordStrengthResponse(BaseModel):
+    is_strong: bool
+    score: int
+    feedback: List[str]
+    requirements_met: dict
+
+# OAuth schemas
+class OAuthLoginRequest(BaseModel):
+    provider: str
+    code: str
+    state: Optional[str] = None
+    redirect_uri: Optional[str] = None
+
+class OAuthLinkRequest(BaseModel):
+    provider: str
+    code: str
+    state: Optional[str] = None
+
+# API Key schemas
+class APIKeyCreate(BaseModel):
+    name: str
+    expires_at: Optional[datetime] = None
+    permissions: List[str] = []
+
+class APIKeyResponse(BaseModel):
+    id: str
+    name: str
+    key: str  # Only returned on creation
+    created_at: datetime
+    expires_at: Optional[datetime] = None
+    last_used_at: Optional[datetime] = None
+    permissions: List[str] = []
+
+class APIKeyList(BaseModel):
+    id: str
+    name: str
+    created_at: datetime
+    expires_at: Optional[datetime] = None
+    last_used_at: Optional[datetime] = None
+    permissions: List[str] = [] 

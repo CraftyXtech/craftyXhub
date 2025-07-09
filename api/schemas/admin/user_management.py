@@ -7,13 +7,6 @@ from enum import Enum
 from schemas.auth import UserRole
 
 
-class UserRole(str, Enum):
-    """User role enumeration."""
-    USER = "user"
-    EDITOR = "editor"
-    ADMIN = "admin"
-
-
 class UserSummaryResponse(BaseModel):
     """User summary for listing and management."""
     id: UUID

@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, validator
 from uuid import UUID
-from .auth import UserResponse, TokenResponse
+from .auth import UserResponse, RefreshTokenResponse
 
 
 class UserRegistration(BaseModel):
@@ -71,7 +71,7 @@ class UserRegistration(BaseModel):
 class RegistrationResponse(BaseModel):
     """Response schema for successful registration."""
     user: UserResponse = Field(..., description="Created user information")
-    tokens: Optional[TokenResponse] = Field(None, description="Authentication tokens (if email verified)")
+    tokens: Optional[RefreshTokenResponse] = Field(None, description="Authentication tokens (if email verified)")
     email_verification_required: bool = Field(..., description="Whether email verification is required")
     message: str = Field(..., description="Success message")
     
@@ -112,7 +112,7 @@ class EmailVerificationRequest(BaseModel):
 class EmailVerificationResponse(BaseModel):
     """Response schema for email verification."""
     user: UserResponse = Field(..., description="Verified user information")
-    tokens: TokenResponse = Field(..., description="Authentication tokens")
+    tokens: RefreshTokenResponse = Field(..., description="Authentication tokens")
     message: str = Field(..., description="Success message")
     
     model_config = {
@@ -130,7 +130,6 @@ class EmailVerificationResponse(BaseModel):
                 },
                 "tokens": {
                     "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-                    "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
                     "token_type": "bearer",
                     "expires_in": 900
                 },

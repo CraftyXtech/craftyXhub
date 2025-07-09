@@ -306,7 +306,7 @@ class ServicesConfig(BaseModel):
         return service_flags.get(service, False)
     
     class Config:
-        env_file = ".env"
+        env_file = "../.env"
         case_sensitive = True
 
 # Global services configuration instance

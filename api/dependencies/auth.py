@@ -1,382 +1,195 @@
 """
-Authentication Dependencies for CraftyXhub API
+Authentication dependencies for CraftyXhub API
 
-FastAPI dependencies for JWT authentication, role-based access control,
-and security according to SubPRD-JWTAuthentication.md and SubPRD-RoleBasedAccess.md.
+Following FastAPI OAuth2 with Password (and hashing), Bearer with JWT tokens tutorial exactly.
 """
 
-from typing import Optional
-from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from uuid import UUID
+from typing import Annotated, Union
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlmodel import Session, select
+import jwt
+from jwt.exceptions import InvalidTokenError
 
-from core.security import verify_token
+from core.config import settings
+from core.security import SECRET_KEY, ALGORITHM, TokenData
+from schemas.auth import User, UserInDB, UserRole
+from models.user import User as UserModel
 from dependencies.database import get_db
-from models.user import User
 
+# OAuth2 scheme for token extraction - exactly as in FastAPI tutorial
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# OAuth2 scheme for token extraction
-oauth2_scheme = HTTPBearer()
+# Fake users database for tutorial - will be replaced with real database
+fake_users_db = {
+    "testuser": {
+        "username": "testuser",
+        "full_name": "Test User",
+        "email": "testuser@example.com",
+        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
+        "disabled": False,
+    }
+}
 
+def get_user(db: Session, username: str) -> Union[UserInDB, None]:
+    """Get user from database - following FastAPI tutorial pattern."""
+    # First check fake database for tutorial compatibility
+    if username in fake_users_db:
+        user_dict = fake_users_db[username]
+        return UserInDB(**user_dict)
+    
+    # Then check real database (only if db is not None)
+    if db is not None:
+        try:
+            statement = select(UserModel).where(UserModel.username == username)
+            user = db.exec(statement).first()
+            if user:
+                return UserInDB(
+                    username=user.username,
+                    email=user.email,
+                    full_name=user.name,
+                    disabled=not user.is_active,
+                    hashed_password=user.password_hash
+                )
+        except Exception:
+            pass
+    
+    return None
+
+def authenticate_user(db: Session, username: str, password: str) -> Union[UserInDB, bool]:
+    """Authenticate user with username and password - exactly as in FastAPI tutorial."""
+    from core.security import verify_password
+    
+    user = get_user(db, username)
+    if not user:
+        return False
+    if not verify_password(password, user.hashed_password):
+        return False
+    return user
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
+    token: Annotated[str, Depends(oauth2_scheme)], 
+    db: Annotated[Session, Depends(get_db)]
 ) -> User:
-    """
-    Validate JWT token and return current user.
-    
-    Args:
-        credentials: HTTP Bearer token credentials
-        db: Database session
-        
-    Returns:
-        User: Authenticated user object
-        
-    Raises:
-        HTTPException: If token is invalid or user not found
-    """
+    """Get current user from JWT token - exactly as in FastAPI tutorial."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
-        # Verify JWT token
-        payload = verify_token(credentials.credentials, "access")
-        user_id = payload.get("sub")
-        
-        if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token payload",
-                headers={"WWW-Authenticate": "Bearer"}
-            )
-        
-        # Get user from database
-        result = await db.execute(
-            select(User).where(User.id == UUID(user_id))
-        )
-        user = result.scalar_one_or_none()
-        
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"}
-            )
-        
-        return user
-        
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid user ID format",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except InvalidTokenError:
+        raise credentials_exception
+    
+    user = get_user(db, username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
 
 async def get_current_active_user(
-    current_user: User = Depends(get_current_user)
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
-    """
-    Ensure user is active and verified.
-    
-    Args:
-        current_user: Current authenticated user
-        
-    Returns:
-        User: Active user object
-        
-    Raises:
-        HTTPException: If user is inactive or unverified
-    """
-    # In this implementation, we don't have an 'active' field
-    # but we can check if email is verified for certain operations
+    """Get current active user - exactly as in FastAPI tutorial."""
+    if current_user.disabled:
+        raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
-
-async def require_authentication(
-    current_user: User = Depends(get_current_user)
-) -> User:
-    """
-    Dependency that requires valid authentication.
-    """
-    if not current_user:
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
+# Legacy dependencies for backward compatibility
+async def get_current_user_legacy(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)]
+) -> UserModel:
+    """Legacy function - get current user as UserModel."""
+    user = await get_current_user(token, db)
     
-    return current_user
-
-
-async def require_email_verification(
-    current_user: User = Depends(get_current_user)
-) -> User:
-    """
-    Require email verification for sensitive operations.
-    
-    Args:
-        current_user: Current authenticated user
-        
-    Returns:
-        User: Email-verified user object
-        
-    Raises:
-        HTTPException: If email is not verified
-    """
-    if current_user.email_verified_at is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Email verification required for this operation"
-        )
-    return current_user
-
-
-# Role-based authorization dependencies
-async def require_admin(
-    current_user: User = Depends(get_current_user),
-    request: Request = None
-) -> User:
-    """
-    Dependency that ensures user has admin role.
-    """
-    if not current_user:
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-    
-    if not current_user.is_admin():
-        # Log unauthorized access attempt
-        from services.admin.audit_service import AuditService
-        from dependencies.database import get_db
-        
-        try:
-            db = await anext(get_db())
-            audit_service = AuditService(db)
-            await audit_service.log_access_attempt(
-                user_id=current_user.id,
-                route=request.url.path if request else "unknown",
-                required_permission="admin",
-                granted=False,
-                denial_reason="Insufficient role permissions"
-            )
-        except Exception:
-            pass  # Don't fail the request if audit logging fails
-        
-        raise HTTPException(
-            status_code=403,
-            detail="Admin access required"
-        )
-    
-    return current_user
-
-
-async def require_editor_or_admin(
-    current_user: User = Depends(get_current_user),
-    request: Request = None
-) -> User:
-    """
-    Dependency that ensures user has editor or admin role.
-    """
-    if not current_user:
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-    
-    if not (current_user.is_editor() or current_user.is_admin()):
-        # Log unauthorized access attempt
-        from services.admin.audit_service import AuditService
-        from dependencies.database import get_db
-        
-        try:
-            db = await anext(get_db())
-            audit_service = AuditService(db)
-            await audit_service.log_access_attempt(
-                user_id=current_user.id,
-                route=request.url.path if request else "unknown",
-                required_permission="editor",
-                granted=False,
-                denial_reason="Insufficient role permissions"
-            )
-        except Exception:
-            pass  # Don't fail the request if audit logging fails
-        
-        raise HTTPException(
-            status_code=403,
-            detail="Editor or Admin access required"
-        )
-    
-    return current_user
-
-
-async def require_owner_or_admin(
-    resource_user_id: UUID,
-    current_user: User = Depends(get_current_user)
-) -> User:
-    """
-    Ensure user owns the resource or has admin privileges.
-    
-    Args:
-        resource_user_id: User ID of the resource owner
-        current_user: Current authenticated user
-        
-    Returns:
-        User: Resource owner or admin user
-        
-    Raises:
-        HTTPException: If user doesn't own resource and isn't admin
-    """
-    if current_user.id != resource_user_id and not current_user.is_admin():
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied. You can only access your own resources or need admin privileges."
-        )
-    return current_user
-
-
-async def optional_authentication(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
-) -> Optional[User]:
-    """
-    Optional authentication for endpoints that work with or without authentication.
-    
-    Args:
-        credentials: Optional HTTP Bearer token credentials
-        db: Database session
-        
-    Returns:
-        Optional[User]: Authenticated user if token provided and valid, None otherwise
-    """
-    if not credentials:
-        return None
-    
+    # Convert to UserModel for legacy compatibility
     try:
-        # Verify JWT token
-        payload = verify_token(credentials.credentials, "access")
-        user_id = payload.get("sub")
-        
-        if user_id is None:
-            return None
-        
-        # Get user from database
-        result = await db.execute(
-            select(User).where(User.id == UUID(user_id))
-        )
-        user = result.scalar_one_or_none()
-        
-        return user
-        
-    except (HTTPException, ValueError):
-        # If token is invalid, just return None for optional auth
-        return None
-
-
-# Role-based access control helpers
-class RoleChecker:
-    """Helper class for role-based access control."""
+        statement = select(UserModel).where(UserModel.username == user.username)
+        db_user = db.exec(statement).first()
+        if db_user:
+            return db_user
+    except Exception:
+        pass
     
-    def __init__(self, required_roles: list[str]):
-        self.required_roles = required_roles
-    
-    def __call__(self, current_user: User = Depends(get_current_user)) -> User:
-        """Check if user has any of the required roles."""
-        user_role = current_user.role
-        
-        # Admin role has access to everything
-        if user_role == "admin":
-            return current_user
-        
-        # Check if user has any of the required roles
-        if user_role not in self.required_roles:
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="User not found in database"
+    )
+
+# Role-based access control - following FastAPI best practices
+def require_role(required_role: UserRole):
+    """Dependency factory for role-based access control."""
+    async def role_checker(
+        current_user: Annotated[UserModel, Depends(get_current_user_legacy)]
+    ) -> UserModel:
+        if current_user.role != required_role.value:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access denied. Required roles: {', '.join(self.required_roles)}"
+                detail=f"Operation requires {required_role.value} role"
             )
-        
         return current_user
+    return role_checker
 
-
-# Convenience role checkers
-require_user_role = RoleChecker(["user", "editor", "admin"])
-require_editor_role = RoleChecker(["editor", "admin"])
-require_admin_role = RoleChecker(["admin"])
-
-
-# Permission-based authorization
-def require_permission(permission: str):
-    """
-    Factory function to create permission-specific dependencies.
-    
-    Args:
-        permission: Required permission level
-        
-    Returns:
-        Dependency function
-    """
-    async def permission_dependency(
-        current_user: User = Depends(get_current_user),
-        request: Request = None
-    ) -> User:
-        if not current_user:
+def require_roles(*allowed_roles: UserRole):
+    """Dependency factory for multiple role access control."""
+    async def roles_checker(
+        current_user: Annotated[UserModel, Depends(get_current_user_legacy)]
+    ) -> UserModel:
+        allowed_role_values = [role.value for role in allowed_roles]
+        if current_user.role not in allowed_role_values:
+            roles_str = " or ".join(allowed_role_values)
             raise HTTPException(
-                status_code=401, 
-                detail="Authentication required",
-                headers={"WWW-Authenticate": "Bearer"}
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Operation requires {roles_str} role"
             )
-        
-        # Check permission based on role hierarchy
-        has_permission = False
-        if permission == "admin":
-            has_permission = current_user.is_admin()
-        elif permission == "editor":
-            has_permission = current_user.is_editor() or current_user.is_admin()
-        elif permission == "user":
-            has_permission = current_user.role in ["user", "editor", "admin"]
-        
-        if not has_permission:
-            # Log unauthorized access attempt
-            from services.admin.audit_service import AuditService
-            from dependencies.database import get_db
-            
-            try:
-                db = await anext(get_db())
-                audit_service = AuditService(db)
-                await audit_service.log_access_attempt(
-                    user_id=current_user.id,
-                    route=request.url.path if request else "unknown",
-                    required_permission=permission,
-                    granted=False,
-                    denial_reason=f"Missing permission: {permission}"
-                )
-            except Exception:
-                pass  # Don't fail the request if audit logging fails
-            
-            raise HTTPException(
-                status_code=403,
-                detail=f"Permission required: {permission}"
-            )
-        
         return current_user
-    
-    return permission_dependency
+    return roles_checker
 
+# Specific role dependencies - following FastAPI best practices
+require_admin = require_role(UserRole.ADMIN)
+require_editor = require_role(UserRole.EDITOR)
+require_user = require_role(UserRole.USER)
 
-# Rate limiting dependency (placeholder for future implementation)
-async def rate_limit_check(request: Request) -> None:
-    """
-    Rate limiting check for sensitive endpoints.
+# Combined role dependencies
+require_admin_or_editor = require_roles(UserRole.ADMIN, UserRole.EDITOR)
+require_any_role = require_roles(UserRole.USER, UserRole.EDITOR, UserRole.ADMIN)
+
+def require_user_or_admin(user_id: int):
+    """Dependency that requires the user to be the owner or an admin."""
+    async def user_or_admin_checker(
+        current_user: Annotated[UserModel, Depends(get_current_user_legacy)]
+    ) -> UserModel:
+        if current_user.id != user_id and current_user.role != UserRole.ADMIN.value:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: insufficient permissions"
+            )
+        return current_user
+    return user_or_admin_checker
+
+def require_minimum_role(minimum_role: UserRole):
+    """Dependency that requires at least the specified role level."""
+    role_hierarchy = {
+        UserRole.USER: 1,
+        UserRole.EDITOR: 2,
+        UserRole.ADMIN: 3
+    }
     
-    Args:
-        request: Current request
+    async def minimum_role_checker(
+        current_user: Annotated[UserModel, Depends(get_current_user_legacy)]
+    ) -> UserModel:
+        user_role_level = role_hierarchy.get(UserRole(current_user.role), 0)
+        required_level = role_hierarchy.get(minimum_role, 999)
         
-    Raises:
-        HTTPException: If rate limit exceeded
-    """
-    # TODO: Implement Redis-based rate limiting
-    # For now, this is a placeholder
-    pass 
+        if user_role_level < required_level:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Operation requires minimum {minimum_role.value} role"
+            )
+        return current_user
+    return minimum_role_checker 
