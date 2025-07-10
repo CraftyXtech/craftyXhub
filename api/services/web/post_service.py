@@ -28,7 +28,6 @@ from dependencies.pagination import PaginationParams, create_pagination_response
 
 
 class WebPostService:
-    """Service for handling public web post operations."""
     
     def __init__(self, db: AsyncSession):
         self.db = db

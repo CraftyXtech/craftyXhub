@@ -13,9 +13,7 @@ class AuthProvider(str, Enum):
 
 class AuthConfig(BaseSettings):
     """Authentication and security configuration."""
-    
-    # JWT Configuration - Following FastAPI Tutorial exactly
-    # to get a string like this run: openssl rand -hex 32
+
     JWT_SECRET_KEY: str = Field(default="09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7", env="JWT_SECRET_KEY")
     JWT_ALGORITHM: str = Field(default="HS256", env="JWT_ALGORITHM")  # Changed from RS256 to HS256
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, env="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")  # Changed from 15 to 30 as per tutorial
@@ -23,12 +21,7 @@ class AuthConfig(BaseSettings):
     JWT_TOKEN_ISSUER: str = Field(default="craftyhub", env="JWT_TOKEN_ISSUER")
     JWT_TOKEN_AUDIENCE: str = Field(default="craftyhub-users", env="JWT_TOKEN_AUDIENCE")
     
-    # Remove RSA Keys (not needed for HS256)
-    # JWT_PRIVATE_KEY_PATH: Optional[str] = Field(default=None, env="JWT_PRIVATE_KEY_PATH")
-    # JWT_PUBLIC_KEY_PATH: Optional[str] = Field(default=None, env="JWT_PUBLIC_KEY_PATH")
-    # JWT_PRIVATE_KEY: Optional[str] = Field(default=None, env="JWT_PRIVATE_KEY")
-    # JWT_PUBLIC_KEY: Optional[str] = Field(default=None, env="JWT_PUBLIC_KEY")
-    
+        
     # Session Configuration
     SESSION_SECRET_KEY: str = Field(default="dev-session-secret-key-change-me-please-1234567890", env="SESSION_SECRET_KEY")
     SESSION_COOKIE_NAME: str = Field(default="craftyx_session", env="SESSION_COOKIE_NAME")

@@ -17,7 +17,7 @@ class DevelopmentConfig(BaseEnvironmentConfig):
     
     # Development database
     use_local_database: bool = True
-    database_echo: bool = True  # SQL logging
+    database_echo: bool = False  # SQL logging disabled
     database_reset_on_start: bool = False
     seed_data_on_start: bool = True
     
@@ -184,11 +184,11 @@ class DevelopmentConfig(BaseEnvironmentConfig):
             "handlers": ["console", "file"],
             "disable_existing_loggers": False,
             "loggers": {
-                "uvicorn": {"level": "INFO"},
-                "sqlalchemy.engine": {"level": "INFO" if self.database_echo else "WARNING"},
-                "sqlalchemy.pool": {"level": "DEBUG" if self.database_echo else "WARNING"},
-                "fastapi": {"level": "DEBUG"},
-                "craftyx": {"level": "DEBUG"},
+                "uvicorn": {"level": "WARNING"},
+                "sqlalchemy.engine": {"level": "WARNING"},
+                "sqlalchemy.pool": {"level": "WARNING"},
+                "fastapi": {"level": "WARNING"},
+                "craftyx": {"level": "WARNING"},
             },
             "file_config": {
                 "filename": "./logs/development.log",

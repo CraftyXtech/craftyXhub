@@ -1,10 +1,3 @@
-"""
-Audit Service
-
-Provides audit logging for access attempts, security monitoring, and compliance tracking.
-Supports the Authorization Middleware with comprehensive access logging.
-"""
-
 from typing import Optional, Dict, Any
 from uuid import UUID
 from datetime import datetime, timedelta
@@ -20,8 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class AuditService:
-    """Service for security audit logging and monitoring."""
-    
+        
     def __init__(self, db: AsyncSession):
         self.db = db
     

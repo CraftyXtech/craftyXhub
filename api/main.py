@@ -1,7 +1,4 @@
-"""
-Main FastAPI application for CraftyXhub.
-Implements SubPRD-FastAPIAppSetup.md specifications.
-"""
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,13 +13,7 @@ from database.connection import init_database, close_database
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Application lifespan manager for startup and shutdown events.
-    
-    Args:
-        app: FastAPI application instance
-    """
-    # Startup
+   
     setup_logging()
     await init_database()
     
@@ -33,12 +24,7 @@ async def lifespan(app: FastAPI):
 
 
 def create_application() -> FastAPI:
-    """
-    Create and configure FastAPI application instance.
-    
-    Returns:
-        FastAPI: Configured application instance
-    """
+  
     settings = get_settings()
     config = settings.config
     
@@ -63,32 +49,23 @@ def create_application() -> FastAPI:
         terms_of_service="https://craftyhub.com/terms",
     )
     
-    # Configure middleware
+    
     configure_middleware(app, settings)
     
-    # Register exception handlers
     register_exception_handlers(app)
-    
-    # Include routers
+       
     include_routers(app, settings)
     
     return app
 
 
 def configure_middleware(app: FastAPI, settings) -> None:
-    """
-    Configure application middleware.
-    
-    Args:
-        app: FastAPI application instance
-        settings: Application settings
-    """
+   
     config = settings.config
     
-    # Request logging middleware (should be first)
-    app.add_middleware(RequestLoggingMiddleware)
-    
-    # Session middleware for session management
+   
+   
+   
     app.add_middleware(
         SessionMiddleware,
         secret_key="dev-secret-key-change-in-production",  # TODO: Get from config
@@ -97,7 +74,7 @@ def configure_middleware(app: FastAPI, settings) -> None:
         https_only=config.environment_name == "production"
     )
     
-    # CORS middleware
+   
     cors_config = config.get_cors_config()
     app.add_middleware(
         CORSMiddleware,
@@ -108,7 +85,7 @@ def configure_middleware(app: FastAPI, settings) -> None:
         expose_headers=["X-Request-ID"],
     )
     
-    # Trusted host middleware for production
+   
     if config.environment_name == "production":
         app.add_middleware(
             TrustedHostMiddleware,
@@ -117,22 +94,16 @@ def configure_middleware(app: FastAPI, settings) -> None:
 
 
 def include_routers(app: FastAPI, settings) -> None:
-    """
-    Include API routers with the application.
-    
-    Args:
-        app: FastAPI application instance
-        settings: Application settings
-    """
+   
     config = settings.config
     
-    # Import authentication routers
+   
     from routers.v1 import router as v1_router
     
-    # Health check endpoint
+   
     @app.get("/health", tags=["Health"])
     async def health_check():
-        """Health check endpoint for monitoring."""
+       
         from database.connection import check_database_health
         
         db_healthy = await check_database_health()
@@ -144,10 +115,10 @@ def include_routers(app: FastAPI, settings) -> None:
             "database": "connected" if db_healthy else "disconnected",
         }
     
-    # Root endpoint
+   
     @app.get("/", tags=["Root"])
     async def root():
-        """Root endpoint with API information."""
+       
         return {
             "message": "Welcome to CraftyXhub API",
             "version": "1.0.0",
@@ -155,31 +126,28 @@ def include_routers(app: FastAPI, settings) -> None:
             "environment": config.environment_name,
         }
     
-    # API version info
+   
     @app.get("/api", tags=["API Info"])
     async def api_info():
-        """API version and information endpoint."""
+       
         return {
             "name": "CraftyXhub API",
             "version": "1.0.0",
             "api_version": "v1",
-            "description": "CraftyXhub Content Management API",
+            "description": "CraftyXhub Backend Blog API",
             "environment": config.environment_name,
         }
     
-    # Include v1 API routers (includes all implemented endpoints)
+   
     app.include_router(v1_router)
 
 
-# Create application instance
+
 app = create_application()
 
 
 if __name__ == "__main__":
-    """
-    Run the application using uvicorn for development.
-    In production, use a proper WSGI server like Gunicorn with uvicorn workers.
-    """
+   
     import uvicorn
     
     settings = get_settings()

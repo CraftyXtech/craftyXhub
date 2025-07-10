@@ -21,16 +21,15 @@ from .audit_service import AuditService
 
 
 class SystemManagementService:
-    """Service for system management operations including monitoring, cache management, and maintenance."""
     
     def __init__(self, session: AsyncSession, audit_service: AuditService):
         self.session = session
         self.audit_service = audit_service
 
     async def get_system_info(self, admin_user: User) -> SystemInfoResponse:
-        """Get comprehensive system information."""
+        
         try:
-            # Get disk usage for current directory
+            
             disk_usage = shutil.disk_usage(".")
             disk_info = DiskUsageResponse(
                 total=disk_usage.total,
@@ -39,7 +38,7 @@ class SystemManagementService:
                 percentage=round((disk_usage.used / disk_usage.total) * 100, 2)
             )
             
-            # Get memory information
+            
             memory = psutil.virtual_memory()
             
             response = SystemInfoResponse(
@@ -76,7 +75,7 @@ class SystemManagementService:
             raise HTTPException(status_code=500, detail=f"Failed to get system info: {str(e)}")
 
     async def get_system_stats(self, admin_user: User) -> SystemStatsResponse:
-        """Get application statistics and configuration."""
+        
         try:
             # Get database connection count
             db_connections_result = await self.session.execute(
@@ -114,9 +113,9 @@ class SystemManagementService:
             raise HTTPException(status_code=500, detail=f"Failed to get system stats: {str(e)}")
 
     async def get_system_health(self, admin_user: User) -> SystemHealthResponse:
-        """Get system health status."""
+        
         try:
-            # Check database connectivity
+            
             try:
                 await self.session.execute(text("SELECT 1"))
                 database_status = "healthy"
@@ -125,11 +124,11 @@ class SystemManagementService:
                 database_status = "unhealthy"
                 database_response_time = None
                 
-            # Check memory usage
+            
             memory = psutil.virtual_memory()
             memory_status = "healthy" if memory.percent < 80 else "warning" if memory.percent < 95 else "critical"
             
-            # Check disk usage
+            
             disk = shutil.disk_usage(".")
             disk_percent = (disk.used / disk.total) * 100
             disk_status = "healthy" if disk_percent < 80 else "warning" if disk_percent < 95 else "critical"
@@ -167,18 +166,18 @@ class SystemManagementService:
             raise HTTPException(status_code=500, detail=f"Failed to check system health: {str(e)}")
 
     async def get_system_metrics(self, admin_user: User) -> SystemMetricsResponse:
-        """Get detailed system metrics."""
+        
         try:
-            # Get CPU information
+            
             cpu_percent = psutil.cpu_percent(interval=1, percpu=True)
             
-            # Get memory information
+            
             memory = psutil.virtual_memory()
             
-            # Get disk I/O information
+            
             disk_io = psutil.disk_io_counters()
             
-            # Get network information
+            
             network_io = psutil.net_io_counters()
             
             response = SystemMetricsResponse(
@@ -217,7 +216,7 @@ class SystemManagementService:
             raise HTTPException(status_code=500, detail=f"Failed to get system metrics: {str(e)}")
 
     async def clear_cache(self, cache_request: CacheClearRequest, admin_user: User) -> Dict[str, Any]:
-        """Clear specified cache types."""
+        
         try:
             valid_cache_types = ["application", "view", "route", "config", "all"]
             if cache_request.cache_type not in valid_cache_types:
@@ -226,8 +225,7 @@ class SystemManagementService:
                     detail=f"Invalid cache type. Must be one of: {', '.join(valid_cache_types)}"
                 )
             
-            # In a real implementation, this would clear actual caches
-            # For now, we'll simulate cache clearing
+            
             cleared_caches = []
             
             if cache_request.cache_type == "all":
@@ -265,9 +263,8 @@ class SystemManagementService:
             raise HTTPException(status_code=500, detail=f"Failed to clear cache: {str(e)}")
 
     async def get_cache_status(self, admin_user: User) -> Dict[str, Any]:
-        """Get cache status information."""
+
         try:
-            # In a real implementation, this would check actual cache status
             cache_status = {
                 "application_cache": {
                     "status": "active",
@@ -316,10 +313,9 @@ class SystemManagementService:
             raise HTTPException(status_code=500, detail=f"Failed to get cache status: {str(e)}")
 
     async def run_migrations(self, admin_user: User) -> Dict[str, Any]:
-        """Run pending database migrations."""
+        
         try:
-            # In a real implementation, this would run actual migrations
-            # Using Alembic or similar migration tool
+            
             result = {
                 "success": True,
                 "message": "All migrations completed successfully",
@@ -349,9 +345,9 @@ class SystemManagementService:
             raise HTTPException(status_code=500, detail=f"Failed to run migrations: {str(e)}")
 
     async def get_migration_status(self, admin_user: User) -> MigrationStatusResponse:
-        """Get database migration status."""
+        
         try:
-            # In a real implementation, this would check actual migration status
+            
             response = MigrationStatusResponse(
                 current_version="1.0.0",
                 pending_migrations=[],
@@ -385,9 +381,9 @@ class SystemManagementService:
             raise HTTPException(status_code=500, detail=f"Failed to get migration status: {str(e)}")
 
     async def enable_maintenance_mode(self, admin_user: User) -> Dict[str, Any]:
-        """Enable maintenance mode."""
+        
         try:
-            # Update maintenance mode setting
+            
             await self._update_setting("maintenance_mode", "true", admin_user)
             
             result = {
@@ -417,9 +413,9 @@ class SystemManagementService:
             raise HTTPException(status_code=500, detail=f"Failed to enable maintenance mode: {str(e)}")
 
     async def disable_maintenance_mode(self, admin_user: User) -> Dict[str, Any]:
-        """Disable maintenance mode."""
+        
         try:
-            # Update maintenance mode setting
+            
             await self._update_setting("maintenance_mode", "false", admin_user)
             
             result = {
@@ -449,8 +445,8 @@ class SystemManagementService:
             raise HTTPException(status_code=500, detail=f"Failed to disable maintenance mode: {str(e)}")
 
     async def _update_setting(self, key: str, value: str, admin_user: User) -> None:
-        """Update a system setting."""
-        # Check if setting exists
+            
+        
         stmt = select(Setting).where(Setting.key == key)
         result = await self.session.execute(stmt)
         setting = result.scalar_one_or_none()

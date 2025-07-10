@@ -1,6 +1,4 @@
-"""
-User-related schema definitions for the CraftyXhub API.
-"""
+
 
 from typing import Optional
 from datetime import datetime

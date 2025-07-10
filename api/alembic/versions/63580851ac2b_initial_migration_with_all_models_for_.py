@@ -1,10 +1,4 @@
-"""Initial migration with all models for production
 
-Revision ID: 63580851ac2b
-Revises: 
-Create Date: 2025-07-09 08:08:39.943981
-
-"""
 from typing import Sequence, Union
 
 from alembic import op

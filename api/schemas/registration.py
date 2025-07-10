@@ -1,9 +1,3 @@
-"""
-User Registration Schemas for CraftyXhub API
-
-Pydantic schemas for user registration, email verification, and onboarding
-following SubPRD-UserRegistration.md specifications.
-"""
 
 from datetime import datetime
 from typing import Optional

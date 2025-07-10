@@ -1,8 +1,4 @@
-"""
-Post Service
 
-Business logic for post management operations following SubPRD-PostAPI.md specifications.
-"""
 
 from typing import Optional, List, Tuple
 from datetime import datetime
@@ -31,7 +27,6 @@ from schemas.post import (
 
 
 class PostService:
-    """Service class for post-related operations"""
 
     def __init__(self, db: AsyncSession):
         self.db = db

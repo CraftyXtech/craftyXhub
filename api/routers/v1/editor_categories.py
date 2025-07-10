@@ -1,9 +1,4 @@
-"""
-Editor Categories API Router
 
-Provides endpoints for category management in the editor module.
-Follows SubPRD-CategoryTagManagement.md specifications.
-"""
 
 from typing import List, Optional
 from uuid import UUID

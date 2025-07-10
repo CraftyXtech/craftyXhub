@@ -1,8 +1,3 @@
-"""
-Like Service
-
-Business logic for post like operations following SubPRD-InteractionAPI.md specifications.
-"""
 
 from typing import Optional
 from datetime import datetime, timedelta
@@ -18,7 +13,6 @@ from schemas.interaction import LikeToggleResponse
 
 
 class LikeService:
-    """Service class for post like operations"""
 
     def __init__(self, db: AsyncSession):
         self.db = db

@@ -1,11 +1,3 @@
-"""
-Content Management Service
-
-Provides comprehensive content analytics, moderation workflows, performance tracking,
-and administrative insights for effective content governance and platform optimization.
-Follows SubPRD-ContentManagementService.md specifications.
-"""
-
 from typing import Dict, List, Optional, Tuple, Any
 from uuid import UUID
 from datetime import datetime, date, timedelta
@@ -31,7 +23,6 @@ from core.exceptions import ContentManagementError
 
 
 class ContentManagementService:
-    """Service for content analytics and administrative insights."""
     
     def __init__(self, db: AsyncSession):
         self.db = db

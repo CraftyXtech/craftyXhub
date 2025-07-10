@@ -1,10 +1,3 @@
-"""
-Password Management API Router for CraftyXhub
-
-Password reset, change, and confirmation endpoints
-following SubPRD-PasswordManagement.md specifications.
-"""
-
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select

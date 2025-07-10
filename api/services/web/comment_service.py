@@ -24,7 +24,6 @@ from dependencies.pagination import PaginationParams, create_pagination_response
 
 
 class WebCommentService:
-    """Service for handling public web comment operations."""
     
     def __init__(self, db: AsyncSession):
         self.db = db

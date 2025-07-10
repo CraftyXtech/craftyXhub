@@ -1,11 +1,3 @@
-"""
-User Management Service
-
-Provides comprehensive user administration capabilities including user listing,
-filtering, role management, user statistics, and administrative operations.
-Follows SubPRD-UserManagementService.md specifications.
-"""
-
 from typing import Dict, List, Optional, Any
 from uuid import UUID
 from datetime import datetime, timedelta
@@ -31,7 +23,6 @@ from core.security import hash_password
 
 
 class UserManagementService:
-    """Service for user administration and management."""
     
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -41,18 +32,7 @@ class UserManagementService:
         filters: UserFilters, 
         pagination: PaginationParams
     ) -> PaginatedUsersResponse:
-        """
-        Get paginated user listing with advanced filtering and search.
-        
-        Args:
-            filters: User filtering criteria
-            pagination: Pagination parameters
-            
-        Returns:
-            PaginatedUsersResponse: Paginated user data with filters
-        """
         try:
-            # Build base query with user statistics
             query = select(
                 User.id,
                 User.name,
@@ -114,7 +94,6 @@ class UserManagementService:
                     cutoff = now - timedelta(days=30)
                     query = query.having(func.max(User.updated_at) < cutoff)
             
-            # Apply sorting
             if filters.sort_by == 'name':
                 sort_column = User.name
             elif filters.sort_by == 'email':
@@ -131,21 +110,17 @@ class UserManagementService:
             else:
                 query = query.order_by(sort_column.asc())
             
-            # Get total count
             count_query = select(func.count()).select_from(
                 query.subquery()
             )
             total_count = await self.db.scalar(count_query)
             
-            # Apply pagination
             offset = (pagination.page - 1) * pagination.per_page
             paginated_query = query.offset(offset).limit(pagination.per_page)
             
-            # Execute query
             result = await self.db.execute(paginated_query)
             user_data = result.all()
             
-            # Format user responses
             users = []
             for data in user_data:
                 activity_status = self._determine_activity_status(data.last_activity)
@@ -162,14 +137,12 @@ class UserManagementService:
                     comments_count=data.comments_count or 0,
                     likes_count=data.likes_count or 0,
                     is_verified=data.email_verified_at is not None,
-                    can_edit=True,  # Based on admin permissions
-                    can_delete=data.role != 'admin'  # Prevent admin deletion
+                    can_edit=True,
+                    can_delete=data.role != 'admin'
                 ))
             
-            # Get role counts for filters
             role_counts = await self._get_role_counts()
             
-            # Build pagination response
             pagination_response = PaginationResponse(
                 page=pagination.page,
                 per_page=pagination.per_page,
@@ -195,34 +168,19 @@ class UserManagementService:
         admin_id: UUID,
         reason: Optional[str] = None
     ) -> UserResponse:
-        """
-        Update user role with validation and audit logging.
         
-        Args:
-            user_id: Target user ID
-            new_role: New role to assign
-            admin_id: Admin performing the change
-            reason: Reason for role change
-            
-        Returns:
-            UserResponse: Updated user data
-        """
         try:
             async with self.db.begin():
-                # Get current user
                 user = await self.db.get(User, user_id)
                 if not user:
                     raise UserNotFoundError(f"User {user_id} not found")
                 
-                # Validate role change
                 old_role = user.role
                 self._validate_role_change(old_role, new_role, admin_id, user_id)
-                
-                # Update user role
+
                 user.role = new_role
                 user.updated_at = datetime.utcnow()
                 
-                # Log the change in audit
                 await self._log_role_change(
                     user_id=user_id,
                     admin_id=admin_id,

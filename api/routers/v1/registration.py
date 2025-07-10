@@ -1,8 +1,7 @@
 """
 User Registration API Router for CraftyXhub
 
-User registration endpoints for account creation, email verification, and onboarding
-following SubPRD-UserRegistration.md specifications.
+User registration endpoints for account creation, email verification, and onboarding.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -23,7 +22,7 @@ from schemas.registration import (
     OnboardingPreferences,
     OnboardingResponse
 )
-from schemas.auth import TokenResponse, UserResponse
+from schemas.auth import LoginResponse
 from core.security import generate_verification_token
 
 

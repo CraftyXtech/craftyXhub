@@ -1,8 +1,3 @@
-"""
-Comment Service
-
-Business logic for comment management operations following SubPRD-CommentAPI.md specifications.
-"""
 
 from typing import Optional, List
 from datetime import datetime
@@ -28,7 +23,6 @@ from schemas.comment import (
 
 
 class CommentService:
-    """Service class for comment-related operations"""
 
     def __init__(self, db: AsyncSession):
         self.db = db

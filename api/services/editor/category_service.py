@@ -1,4 +1,4 @@
-"""Category service for editor module."""
+
 
 import re
 from datetime import datetime
@@ -26,7 +26,6 @@ from schemas.post import AuthorResponse
 
 
 class CategoryService:
-    """Service for managing categories."""
     
     def __init__(self, db: AsyncSession):
         self.db = db

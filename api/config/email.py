@@ -5,9 +5,7 @@ from enum import Enum
 import os
 
 class EmailConfig(BaseSettings):
-    """Email service configuration."""
     
-    # Email Provider Settings
     EMAIL_BACKEND: str = Field(default="smtp", env="EMAIL_BACKEND")
     EMAIL_HOST: str = Field(default="smtp.gmail.com", env="EMAIL_HOST")
     EMAIL_PORT: int = Field(default=587, env="EMAIL_PORT")
@@ -16,80 +14,66 @@ class EmailConfig(BaseSettings):
     EMAIL_USE_TLS: bool = Field(default=True, env="EMAIL_USE_TLS")
     EMAIL_USE_SSL: bool = Field(default=False, env="EMAIL_USE_SSL")
     
-    # Email Sending Configuration
     DEFAULT_FROM_EMAIL: str = Field(default="noreply@craftyhub.com", env="DEFAULT_FROM_EMAIL")
     DEFAULT_FROM_NAME: str = Field(default="CraftyXhub", env="DEFAULT_FROM_NAME")
     DEFAULT_REPLY_TO: Optional[str] = Field(default=None, env="DEFAULT_REPLY_TO")
     
-    # Email Delivery Settings
     EMAIL_TIMEOUT: int = Field(default=30, env="EMAIL_TIMEOUT")
     EMAIL_RETRY_ATTEMPTS: int = Field(default=3, env="EMAIL_RETRY_ATTEMPTS")
     EMAIL_RETRY_DELAY: int = Field(default=5, env="EMAIL_RETRY_DELAY")
     
-    # Template Configuration
     EMAIL_TEMPLATE_DIR: str = Field(default="templates/email", env="EMAIL_TEMPLATE_DIR")
     EMAIL_TEMPLATE_ENGINE: str = Field(default="jinja2", env="EMAIL_TEMPLATE_ENGINE")
     EMAIL_TEMPLATE_CACHE: bool = Field(default=True, env="EMAIL_TEMPLATE_CACHE")
     
-    # Email Queue Settings
     EMAIL_QUEUE_ENABLED: bool = Field(default=True, env="EMAIL_QUEUE_ENABLED")
     EMAIL_QUEUE_BACKEND: str = Field(default="redis", env="EMAIL_QUEUE_BACKEND")
     EMAIL_QUEUE_MAX_RETRIES: int = Field(default=3, env="EMAIL_QUEUE_MAX_RETRIES")
     EMAIL_QUEUE_RETRY_DELAY: int = Field(default=60, env="EMAIL_QUEUE_RETRY_DELAY")
     
-    # Rate Limiting
     EMAIL_RATE_LIMIT_ENABLED: bool = Field(default=True, env="EMAIL_RATE_LIMIT_ENABLED")
     EMAIL_RATE_LIMIT_PER_MINUTE: int = Field(default=60, env="EMAIL_RATE_LIMIT_PER_MINUTE")
     EMAIL_RATE_LIMIT_PER_HOUR: int = Field(default=1000, env="EMAIL_RATE_LIMIT_PER_HOUR")
     EMAIL_RATE_LIMIT_PER_DAY: int = Field(default=10000, env="EMAIL_RATE_LIMIT_PER_DAY")
     
-    # Email Types Configuration
     WELCOME_EMAIL_ENABLED: bool = Field(default=True, env="WELCOME_EMAIL_ENABLED")
     VERIFICATION_EMAIL_ENABLED: bool = Field(default=True, env="VERIFICATION_EMAIL_ENABLED")
     PASSWORD_RESET_EMAIL_ENABLED: bool = Field(default=True, env="PASSWORD_RESET_EMAIL_ENABLED")
     NOTIFICATION_EMAIL_ENABLED: bool = Field(default=True, env="NOTIFICATION_EMAIL_ENABLED")
     NEWSLETTER_EMAIL_ENABLED: bool = Field(default=False, env="NEWSLETTER_EMAIL_ENABLED")
     
-    # Email Templates
     WELCOME_EMAIL_TEMPLATE: str = Field(default="welcome.html", env="WELCOME_EMAIL_TEMPLATE")
     VERIFICATION_EMAIL_TEMPLATE: str = Field(default="email_verification.html", env="VERIFICATION_EMAIL_TEMPLATE")
     PASSWORD_RESET_EMAIL_TEMPLATE: str = Field(default="password_reset.html", env="PASSWORD_RESET_EMAIL_TEMPLATE")
     NOTIFICATION_EMAIL_TEMPLATE: str = Field(default="notification.html", env="NOTIFICATION_EMAIL_TEMPLATE")
     
-    # Email Subjects
     WELCOME_EMAIL_SUBJECT: str = Field(default="Welcome to CraftyXhub!", env="WELCOME_EMAIL_SUBJECT")
     VERIFICATION_EMAIL_SUBJECT: str = Field(default="Verify your email address", env="VERIFICATION_EMAIL_SUBJECT")
     PASSWORD_RESET_EMAIL_SUBJECT: str = Field(default="Reset your password", env="PASSWORD_RESET_EMAIL_SUBJECT")
     
-    # Email Content Settings
     EMAIL_INCLUDE_UNSUBSCRIBE: bool = Field(default=True, env="EMAIL_INCLUDE_UNSUBSCRIBE")
     EMAIL_INCLUDE_BRANDING: bool = Field(default=True, env="EMAIL_INCLUDE_BRANDING")
     EMAIL_TRACK_OPENS: bool = Field(default=False, env="EMAIL_TRACK_OPENS")
     EMAIL_TRACK_CLICKS: bool = Field(default=False, env="EMAIL_TRACK_CLICKS")
-    
-    # Bulk Email Settings
+
     BULK_EMAIL_ENABLED: bool = Field(default=False, env="BULK_EMAIL_ENABLED")
     BULK_EMAIL_BATCH_SIZE: int = Field(default=100, env="BULK_EMAIL_BATCH_SIZE")
     BULK_EMAIL_DELAY_BETWEEN_BATCHES: int = Field(default=5, env="BULK_EMAIL_DELAY_BETWEEN_BATCHES")
     
-    # Email Security
     EMAIL_DKIM_ENABLED: bool = Field(default=False, env="EMAIL_DKIM_ENABLED")
     EMAIL_DKIM_DOMAIN: Optional[str] = Field(default=None, env="EMAIL_DKIM_DOMAIN")
     EMAIL_DKIM_SELECTOR: Optional[str] = Field(default=None, env="EMAIL_DKIM_SELECTOR")
     EMAIL_DKIM_PRIVATE_KEY_PATH: Optional[str] = Field(default=None, env="EMAIL_DKIM_PRIVATE_KEY_PATH")
     
-    # Email Validation
     EMAIL_VALIDATION_ENABLED: bool = Field(default=True, env="EMAIL_VALIDATION_ENABLED")
     EMAIL_DOMAIN_BLACKLIST: List[str] = Field(default=[], env="EMAIL_DOMAIN_BLACKLIST")
     EMAIL_DISPOSABLE_CHECK: bool = Field(default=True, env="EMAIL_DISPOSABLE_CHECK")
     
-    # Logging and Monitoring
     EMAIL_LOGGING_ENABLED: bool = Field(default=True, env="EMAIL_LOGGING_ENABLED")
     EMAIL_LOG_LEVEL: str = Field(default="INFO", env="EMAIL_LOG_LEVEL")
     EMAIL_LOG_SENT_EMAILS: bool = Field(default=True, env="EMAIL_LOG_SENT_EMAILS")
     EMAIL_LOG_FAILED_EMAILS: bool = Field(default=True, env="EMAIL_LOG_FAILED_EMAILS")
     
-    # Development Settings
     EMAIL_DEVELOPMENT_MODE: bool = Field(default=False, env="EMAIL_DEVELOPMENT_MODE")
     EMAIL_DEVELOPMENT_RECIPIENT: Optional[str] = Field(default=None, env="EMAIL_DEVELOPMENT_RECIPIENT")
     EMAIL_FILE_PATH: Optional[str] = Field(default=None, env="EMAIL_FILE_PATH")

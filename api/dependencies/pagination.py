@@ -1,9 +1,3 @@
-"""
-Pagination dependencies for web endpoints.
-
-Provides reusable pagination logic for public-facing API endpoints
-with proper validation and metadata generation.
-"""
 
 from typing import Optional, Tuple, Dict, Any
 from math import ceil
@@ -14,7 +8,7 @@ from schemas.web.posts import PaginationResponse
 
 
 class PaginationParams(BaseModel):
-    """Pagination parameters for web endpoints."""
+    
     
     page: int = 1
     per_page: int = 9
@@ -24,12 +18,10 @@ class PaginationParams(BaseModel):
     
     @property
     def offset(self) -> int:
-        """Calculate offset for database queries."""
         return (self.page - 1) * self.per_page
     
     @property
     def limit(self) -> int:
-        """Get limit for database queries."""
         return self.per_page
 
 
@@ -37,19 +29,6 @@ def get_pagination_params(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(9, ge=1, le=50, description="Items per page")
 ) -> PaginationParams:
-    """
-    Get pagination parameters from query string.
-    
-    Args:
-        page: Page number (1-based)
-        per_page: Items per page (max 50)
-        
-    Returns:
-        PaginationParams: Validated pagination parameters
-        
-    Raises:
-        HTTPException: If parameters are invalid
-    """
     if page < 1:
         raise HTTPException(status_code=422, detail="Page must be greater than 0")
     
@@ -64,17 +43,6 @@ def create_pagination_response(
     per_page: int,
     total_count: int
 ) -> PaginationResponse:
-    """
-    Create pagination response metadata.
-    
-    Args:
-        page: Current page number
-        per_page: Items per page
-        total_count: Total number of items
-        
-    Returns:
-        PaginationResponse: Pagination metadata
-    """
     total_pages = ceil(total_count / per_page) if total_count > 0 else 1
     has_next = page < total_pages
     has_prev = page > 1
@@ -97,24 +65,12 @@ def paginate_query_results(
     per_page: int,
     total_count: int
 ) -> Tuple[list, PaginationResponse]:
-    """
-    Paginate query results and create pagination metadata.
     
-    Args:
-        results: List of query results
-        page: Current page number
-        per_page: Items per page
-        total_count: Total number of items
-        
-    Returns:
-        Tuple of (paginated_results, pagination_metadata)
-    """
     pagination = create_pagination_response(page, per_page, total_count)
     return results, pagination
 
 
 class SearchParams(BaseModel):
-    """Search parameters for web endpoints."""
     
     q: Optional[str] = None
     category: Optional[str] = None
@@ -140,26 +96,21 @@ class SearchParams(BaseModel):
     
     @property
     def has_search(self) -> bool:
-        """Check if search query is provided."""
         return self.q is not None and len(self.q.strip()) > 0
     
     @property
     def has_category_filter(self) -> bool:
-        """Check if category filter is provided."""
         return self.category is not None and len(self.category.strip()) > 0
     
     @property
     def has_tag_filter(self) -> bool:
-        """Check if tag filter is provided."""
         return self.tag is not None and len(self.tag.strip()) > 0
     
     @property
     def has_filters(self) -> bool:
-        """Check if any filters are applied."""
         return self.has_search or self.has_category_filter or self.has_tag_filter
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for response."""
         return {
             "q": self.q,
             "category": self.category,
@@ -176,22 +127,7 @@ def get_search_params(
     sort_by: str = Query("published_at", description="Sort field"),
     sort_direction: str = Query("desc", description="Sort direction")
 ) -> SearchParams:
-    """
-    Get search parameters from query string.
-    
-    Args:
-        q: Search query
-        category: Category slug
-        tag: Tag slug
-        sort_by: Sort field
-        sort_direction: Sort direction
-        
-    Returns:
-        SearchParams: Validated search parameters
-        
-    Raises:
-        HTTPException: If parameters are invalid
-    """
+   
     # Validate sort_by
     allowed_sorts = ['published_at', 'title', 'view_count', 'like_count', 'created_at']
     if sort_by not in allowed_sorts:
@@ -227,19 +163,7 @@ def get_comment_pagination_params(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(20, ge=1, le=100, description="Comments per page")
 ) -> PaginationParams:
-    """
-    Get pagination parameters for comments.
-    
-    Args:
-        page: Page number (1-based)
-        per_page: Comments per page (max 100)
-        
-    Returns:
-        PaginationParams: Validated pagination parameters
-        
-    Raises:
-        HTTPException: If parameters are invalid
-    """
+  
     if page < 1:
         raise HTTPException(status_code=422, detail="Page must be greater than 0")
     
@@ -253,19 +177,7 @@ def get_profile_pagination_params(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(12, ge=1, le=50, description="Posts per page")
 ) -> PaginationParams:
-    """
-    Get pagination parameters for profile collections.
-    
-    Args:
-        page: Page number (1-based)
-        per_page: Posts per page (max 50)
-        
-    Returns:
-        PaginationParams: Validated pagination parameters
-        
-    Raises:
-        HTTPException: If parameters are invalid
-    """
+   
     if page < 1:
         raise HTTPException(status_code=422, detail="Page must be greater than 0")
     

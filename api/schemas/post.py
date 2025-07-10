@@ -1,8 +1,4 @@
-"""
-Post API Schemas for CraftyXhub
 
-Request and response schemas for post API endpoints following SubPRD-PostAPI.md specifications.
-"""
 
 from typing import Optional, List
 from datetime import datetime

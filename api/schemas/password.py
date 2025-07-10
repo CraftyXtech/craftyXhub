@@ -1,9 +1,3 @@
-"""
-Password Management Schemas for CraftyXhub API
-
-Pydantic schemas for password reset, change, and confirmation
-following SubPRD-PasswordManagement.md specifications.
-"""
 
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, validator

@@ -29,7 +29,6 @@ from dependencies.pagination import PaginationParams, create_pagination_response
 
 
 class WebProfileService:
-    """Service for handling public web profile operations."""
     
     def __init__(self, db: AsyncSession):
         self.db = db

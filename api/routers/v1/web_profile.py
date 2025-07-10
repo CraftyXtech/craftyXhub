@@ -1,9 +1,3 @@
-"""
-Web Profile API Router
-
-Provides endpoints for user profile management, activity tracking,
-and user preferences in the public web interface.
-"""
 
 from typing import Optional
 from uuid import UUID
@@ -32,15 +26,7 @@ async def get_current_user_profile(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get current user's detailed profile information.
-    
-    Returns:
-    - User details with statistics
-    - Activity summary
-    - Preferences and settings
-    - Social metrics and connections
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -61,18 +47,7 @@ async def update_current_user_profile(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Update current user's profile information.
-    
-    - **name**: Display name
-    - **bio**: User biography
-    - **avatar**: Avatar URL (optional)
-    - **website**: Personal website URL (optional)
-    - **location**: User location (optional)
-    - **social_links**: Social media links (optional)
-    
-    Returns updated profile information.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -97,13 +72,7 @@ async def upload_user_avatar(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Upload and update user avatar image.
-    
-    - **avatar**: Image file (JPG, PNG, GIF - max 5MB)
-    
-    Processes and resizes the image, then updates the user's avatar URL.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -144,17 +113,7 @@ async def get_user_statistics(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get detailed user activity statistics.
-    
-    - **timeframe**: Time period for statistics calculation
-    
-    Returns:
-    - Post creation and interaction statistics
-    - Comment activity metrics
-    - Social engagement data
-    - Growth trends and analytics
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -183,15 +142,7 @@ async def get_user_posts(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get posts created by the current user.
-    
-    - **status**: Filter by post status (published, draft, all)
-    - **page**: Page number
-    - **per_page**: Posts per page
-    
-    Returns paginated list of user's posts with interaction data.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -217,11 +168,7 @@ async def get_user_liked_posts(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get posts liked by the current user.
-    
-    Returns paginated list of liked posts with like timestamps.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -246,11 +193,7 @@ async def get_user_bookmarked_posts(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get posts bookmarked by the current user.
-    
-    Returns paginated list of bookmarked posts with bookmark timestamps.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -276,15 +219,7 @@ async def get_user_activity_feed(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get user's activity feed.
-    
-    - **activity_type**: Filter by activity type
-    - **page**: Page number
-    - **per_page**: Activities per page
-    
-    Returns chronological list of user activities and interactions.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -308,15 +243,7 @@ async def get_user_preferences(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get user's preferences and settings.
-    
-    Returns:
-    - Notification preferences
-    - Privacy settings
-    - Display preferences
-    - Content filtering options
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -337,16 +264,7 @@ async def update_user_preferences(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Update user's preferences and settings.
-    
-    - **notifications**: Notification preferences
-    - **privacy**: Privacy settings
-    - **display**: Display preferences
-    - **content_filters**: Content filtering options
-    
-    Returns updated preferences.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -369,11 +287,7 @@ async def get_notification_preferences(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get user's notification preferences.
-    
-    Returns detailed notification settings for different types of events.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -394,16 +308,7 @@ async def update_notification_preferences(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Update user's notification preferences.
-    
-    - **email_notifications**: Email notification settings
-    - **push_notifications**: Push notification settings
-    - **frequency**: Notification frequency preferences
-    - **types**: Types of notifications to receive
-    
-    Returns updated notification preferences.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -426,11 +331,7 @@ async def get_privacy_settings(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get user's privacy and visibility settings.
-    
-    Returns current privacy configuration for profile and activity.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -451,16 +352,7 @@ async def update_privacy_settings(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Update user's privacy and visibility settings.
-    
-    - **profile_visibility**: Who can view the profile
-    - **activity_visibility**: Who can see user activity
-    - **contact_preferences**: How others can contact the user
-    - **data_sharing**: Data sharing preferences
-    
-    Returns updated privacy settings.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -485,13 +377,7 @@ async def get_public_user_profile(
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get public profile information for a user.
-    
-    - **user_id**: User UUID to get profile for
-    
-    Returns publicly visible profile information based on privacy settings.
-    """
+
     service = WebProfileService(db)
     
     # Get public user profile
@@ -513,15 +399,7 @@ async def get_public_user_posts(
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get publicly visible posts by a user.
-    
-    - **user_id**: User UUID to get posts for
-    - **page**: Page number
-    - **per_page**: Posts per page
-    
-    Returns published posts by the user, respecting privacy settings.
-    """
+
     service = WebProfileService(db)
     
     # Get public user posts
@@ -540,13 +418,7 @@ async def get_public_user_stats(
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get publicly visible user statistics.
-    
-    - **user_id**: User UUID to get stats for
-    
-    Returns aggregated statistics respecting privacy settings.
-    """
+
     service = WebProfileService(db)
     
     # Get public user statistics
@@ -567,13 +439,7 @@ async def delete_user_account(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Delete user account and all associated data.
-    
-    - **confirm**: Confirmation flag (must be true)
-    
-    This action is irreversible and will delete all user data.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,

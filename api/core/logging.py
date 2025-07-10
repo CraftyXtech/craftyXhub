@@ -1,6 +1,6 @@
 """
 Logging system for CraftyXhub FastAPI application.
-Implements SubPRD-LoggingSystem.md specifications.
+Centralized logging configuration.
 """
 import logging
 import logging.config
@@ -413,38 +413,38 @@ def setup_logging() -> None:
         },
         "loggers": {
             "craftyx": {
-                "level": log_level,
+                "level": "WARNING",
                 "handlers": ["console", "file"],
                 "propagate": False,
             },
             "craftyx.requests": {
-                "level": "INFO",
+                "level": "WARNING",
                 "handlers": ["console", "file"],
                 "propagate": False,
             },
             "craftyx.database": {
-                "level": "DEBUG" if config.debug_mode else "INFO",
+                "level": "WARNING",
                 "handlers": ["console", "file"],
                 "propagate": False,
             },
             "craftyx.security": {
-                "level": "INFO",
+                "level": "WARNING",
                 "handlers": ["console", "file"],
                 "propagate": False,
             },
             "sqlalchemy": {
-                "level": logging_config_data.get("loggers", {}).get("sqlalchemy.engine", {}).get("level", "WARNING"),
+                "level": "WARNING",
                 "handlers": ["file"],
                 "propagate": False,
             },
             "uvicorn": {
-                "level": logging_config_data.get("loggers", {}).get("uvicorn", {}).get("level", "INFO"),
+                "level": "WARNING",
                 "handlers": ["console"],
                 "propagate": False,
             },
         },
         "root": {
-            "level": log_level,
+            "level": "WARNING",
             "handlers": ["console", "file"],
         },
     }

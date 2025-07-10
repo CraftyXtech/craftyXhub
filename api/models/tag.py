@@ -11,16 +11,13 @@ if TYPE_CHECKING:
 class Tag(SQLModel, table=True):
     __tablename__ = "tags"
     
-    # Primary key and basic fields
     id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
     name: str = Field(unique=True, max_length=255, index=True)
     slug: str = Field(unique=True, max_length=255, index=True)
     
-    # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    # Relationships
     posts: List["Post"] = Relationship(
         back_populates="tags",
         sa_relationship_kwargs={"secondary": "post_tags"}
@@ -39,7 +36,7 @@ class Tag(SQLModel, table=True):
     @staticmethod
     def generate_slug(name: str) -> str:
         """Generate URL-friendly slug from tag name."""
-        # Convert to lowercase, replace spaces and special chars with hyphens
+        
         slug = re.sub(r'[^\w\s-]', '', name.lower())
         slug = re.sub(r'[-\s]+', '-', slug)
         return slug.strip('-')

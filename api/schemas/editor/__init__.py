@@ -1,1 +1,1 @@
-"""Editor schemas for CraftyXhub.""" 
+"""Editor Schemas""" 

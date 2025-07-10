@@ -1,8 +1,4 @@
-"""
-Interaction API Schemas for CraftyXhub
 
-Request and response schemas for social interaction endpoints following SubPRD-InteractionAPI.md specifications.
-"""
 
 from typing import Optional, List, Dict
 from datetime import datetime

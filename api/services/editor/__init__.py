@@ -1,1 +1,1 @@
-"""Editor services for CraftyXhub.""" 
+"""Editor Services""" 

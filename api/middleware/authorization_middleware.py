@@ -1,11 +1,3 @@
-"""
-Authorization Middleware
-
-Provides role-based access control, permission validation, and security enforcement
-for admin and editor functionalities with comprehensive audit logging.
-Following FastAPI middleware best practices.
-"""
-
 from typing import Dict, List, Optional, Set, Callable
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -25,15 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 class AuthorizationMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware for global route authorization and access control.
-    
-    Provides:
-    - Route-based access control
-    - Role validation and enforcement
-    - Audit logging for access attempts
-    - IP and request metadata tracking
-    """
     
     def __init__(self, app: ASGIApp):
         super().__init__(app)
@@ -41,49 +24,33 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         self.audit_service: Optional[AuditService] = None
     
     async def dispatch(self, request: Request, call_next: Callable):
-        """
-        Process request through authorization checks.
         
-        Args:
-            request: HTTP request object
-            call_next: Next middleware/handler in chain
-            
-        Returns:
-            Response: HTTP response
-        """
         try:
-            # Initialize audit service if needed
             if not self.audit_service:
                 from dependencies.database import get_db
                 db = await anext(get_db())
                 self.audit_service = AuditService(db)
             
-            # Check if route requires authorization
             route_path = request.url.path
             method = request.method
             
-            # Skip authorization for public routes
             if not self._requires_authorization(route_path, method):
                 return await call_next(request)
             
-            # Get current user
             try:
                 current_user = await self._get_current_user_from_request(request)
             except Exception:
                 current_user = None
             
-            # Check route access
             access_granted = await self._check_route_access(
                 current_user, route_path, method, request
             )
             
             if not access_granted:
-                # Log unauthorized access attempt
                 await self._log_unauthorized_access(
                     current_user, route_path, method, request
                 )
                 
-                # Return appropriate error response
                 if not current_user:
                     return JSONResponse(
                         status_code=401,
@@ -102,12 +69,10 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
                         }
                     )
             
-            # Log successful access
             await self._log_successful_access(
                 current_user, route_path, method, request
             )
             
-            # Continue to next middleware/handler
             response = await call_next(request)
             return response
             
@@ -119,12 +84,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             )
     
     def _initialize_protected_routes(self) -> Dict[str, Dict[str, str]]:
-        """
-        Initialize protected route patterns and required permissions.
-        
-        Returns:
-            Dict: Route patterns with required permissions
-        """
+       
         return {
             # Admin routes - require admin role
             "/admin": {"permission": "admin", "methods": ["GET", "POST", "PUT", "DELETE"]},
@@ -152,17 +112,6 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         }
     
     def _requires_authorization(self, path: str, method: str) -> bool:
-        """
-        Check if route requires authorization.
-        
-        Args:
-            path: Request path
-            method: HTTP method
-            
-        Returns:
-            bool: True if authorization required
-        """
-        # Public routes that don't require authorization
         public_patterns = [
             "/",
             "/docs",
@@ -182,62 +131,35 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             "/web/comments",
         ]
         
-        # Check if path is public
         for pattern in public_patterns:
             if self._path_matches_pattern(path, pattern):
                 return False
         
-        # Check if path matches protected patterns
         for pattern, config in self.protected_routes.items():
             if self._path_matches_pattern(path, pattern):
                 if method in config["methods"]:
                     return True
         
-        # Default: check if path starts with protected prefixes
         protected_prefixes = ["/admin", "/editor", "/api/v1/admin", "/api/v1/editor"]
         return any(path.startswith(prefix) for prefix in protected_prefixes)
     
     def _path_matches_pattern(self, path: str, pattern: str) -> bool:
-        """
-        Check if path matches pattern (supports wildcards).
         
-        Args:
-            path: Request path
-            pattern: Pattern to match
-            
-        Returns:
-            bool: True if path matches pattern
-        """
         if pattern.endswith("*"):
-            # Wildcard pattern
             prefix = pattern[:-1]
             return path.startswith(prefix)
         else:
-            # Exact match
             return path == pattern
     
     async def _get_current_user_from_request(self, request: Request) -> Optional[User]:
-        """
-        Extract current user from request.
         
-        Args:
-            request: HTTP request
-            
-        Returns:
-            Optional[User]: Current user if authenticated
-        """
         try:
-            # Get Authorization header
             auth_header = request.headers.get("Authorization")
             if not auth_header or not auth_header.startswith("Bearer "):
                 return None
             
-            # Extract token
             token = auth_header.split(" ")[1]
             
-            # Validate token and get user
-            # This would typically use your JWT validation logic
-            # For now, return None as we'll handle this in dependencies
             return None
             
         except Exception:
@@ -250,18 +172,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         method: str,
         request: Request
     ) -> bool:
-        """
-        Check if user has access to route.
         
-        Args:
-            user: Current user (if any)
-            path: Request path
-            method: HTTP method
-            request: Full request object
-            
-        Returns:
-            bool: True if access granted
-        """
         # Find matching route pattern
         required_permission = None
         for pattern, config in self.protected_routes.items():
@@ -270,29 +181,16 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
                     required_permission = config["permission"]
                     break
         
-        # If no specific permission required, allow access
         if not required_permission:
             return True
         
-        # Require authentication for protected routes
         if not user:
             return False
         
-        # Check permission
         return self._user_has_permission(user, required_permission)
     
     def _user_has_permission(self, user: User, permission: str) -> bool:
-        """
-        Check if user has required permission.
         
-        Args:
-            user: User object
-            permission: Required permission
-            
-        Returns:
-            bool: True if user has permission
-        """
-        # Permission hierarchy
         if permission == "admin":
             return user.role == "admin"
         elif permission == "editor":
@@ -309,15 +207,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         method: str,
         request: Request
     ):
-        """
-        Log unauthorized access attempt.
         
-        Args:
-            user: User attempting access
-            path: Request path
-            method: HTTP method
-            request: Full request object
-        """
         try:
             if self.audit_service:
                 await self.audit_service.log_access_attempt(
@@ -340,15 +230,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         method: str,
         request: Request
     ):
-        """
-        Log successful access (optional, for security monitoring).
         
-        Args:
-            user: User accessing resource
-            path: Request path
-            method: HTTP method
-            request: Full request object
-        """
         try:
             # Only log access to sensitive routes
             sensitive_prefixes = ["/admin", "/api/v1/admin"]
@@ -365,18 +247,9 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
                     )
         except Exception as e:
             logger.error(f"Failed to log successful access: {str(e)}")
-    
+
     def _get_required_permission(self, path: str, method: str) -> str:
-        """
-        Get required permission for path and method.
         
-        Args:
-            path: Request path
-            method: HTTP method
-            
-        Returns:
-            str: Required permission
-        """
         for pattern, config in self.protected_routes.items():
             if self._path_matches_pattern(path, pattern):
                 if method in config["methods"]:
@@ -385,16 +258,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         return "unknown"
     
     def _get_client_ip(self, request: Request) -> Optional[str]:
-        """
-        Extract client IP address from request.
         
-        Args:
-            request: HTTP request
-            
-        Returns:
-            Optional[str]: Client IP address
-        """
-        # Check for forwarded headers (proxy/load balancer)
         forwarded_for = request.headers.get("X-Forwarded-For")
         if forwarded_for:
             return forwarded_for.split(",")[0].strip()
@@ -403,16 +267,13 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         if real_ip:
             return real_ip
         
-        # Fallback to direct connection
         if hasattr(request, "client") and request.client:
             return request.client.host
         
         return None
 
 
-# Utility functions for manual authorization checks
 class AuthorizationUtils:
-    """Utility functions for authorization checks outside middleware."""
     
     @staticmethod
     def check_admin_access(user: Optional[User]) -> bool:
@@ -446,19 +307,9 @@ class AuthorizationUtils:
     
     @staticmethod
     def require_permission(required_permission: str):
-        """
-        Decorator factory for requiring specific permissions.
         
-        Args:
-            required_permission: Permission level required
-            
-        Returns:
-            Decorator function
-        """
         def decorator(func):
             async def wrapper(*args, **kwargs):
-                # This would be used with FastAPI dependencies
-                # The actual permission check is handled by dependencies
                 return await func(*args, **kwargs)
             return wrapper
         return decorator

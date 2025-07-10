@@ -1,7 +1,5 @@
 """
 View Tracking Service
-
-Service for tracking post views and analytics following SubPRD-PostAPI.md specifications.
 """
 
 from typing import Optional
@@ -17,7 +15,6 @@ from models.post import Post
 
 
 class ViewTrackingService:
-    """Service class for tracking post views and analytics"""
 
     def __init__(self, db: AsyncSession):
         self.db = db

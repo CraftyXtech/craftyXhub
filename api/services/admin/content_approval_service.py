@@ -14,7 +14,6 @@ from .audit_service import AuditService
 
 
 class ContentApprovalService:
-    """Service for content approval and moderation."""
     
     def __init__(self, db: AsyncSession):
         self.db = db

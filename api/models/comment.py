@@ -10,29 +10,27 @@ if TYPE_CHECKING:
 class Comment(SQLModel, table=True):
     __tablename__ = "comments"
     
-    # Primary key and basic fields
+    
     id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
     post_id: UUID = Field(foreign_key="posts.id", index=True)
     user_id: Optional[UUID] = Field(foreign_key="users.id", index=True, default=None)
     parent_id: Optional[UUID] = Field(foreign_key="comments.id", index=True, default=None)
     
-    # Content fields
-    content: str  # TEXT field for comment content
-    status: str = Field(default="pending", max_length=50, index=True)  # 'pending', 'approved', 'rejected', 'spam'
+   
+    content: str 
+    status: str = Field(default="pending", max_length=50, index=True) 
     
-    # Guest user fields (nullable for registered users)
+    
     guest_name: Optional[str] = Field(default=None, max_length=255)
     guest_email: Optional[str] = Field(default=None, max_length=255)
     
-    # Timestamps
+    
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    # Relationships
     post: Optional["Post"] = Relationship(back_populates="comments")
     author: Optional["User"] = Relationship(back_populates="comments")
-    
-    # Self-referential relationships for threading
+
     parent: Optional["Comment"] = Relationship(
         sa_relationship_kwargs={
             "remote_side": "Comment.id",
@@ -46,7 +44,6 @@ class Comment(SQLModel, table=True):
         }
     )
     
-    # Social interactions (polymorphic likes)
     liked_by_users: List["User"] = Relationship(
         back_populates="liked_comments",
         sa_relationship_kwargs={"secondary": "comment_likes"}
@@ -62,7 +59,7 @@ class Comment(SQLModel, table=True):
         if not self.user_id and not (self.guest_name and self.guest_email):
             raise ValueError("Either user_id or both guest_name and guest_email must be provided")
     
-    # Moderation methods
+    
     def approve(self) -> None:
         """Approve the comment."""
         self.status = "approved"

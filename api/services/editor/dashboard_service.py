@@ -1,4 +1,4 @@
-"""Dashboard service for editor module."""
+"""Dashboard Service"""
 
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
@@ -32,7 +32,6 @@ from schemas.post import CategoryResponse, TagResponse
 
 
 class DashboardService:
-    """Service for editor dashboard analytics."""
     
     def __init__(self, db: AsyncSession):
         self.db = db

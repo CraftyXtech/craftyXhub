@@ -1,4 +1,4 @@
-"""Tag service for editor module."""
+"""Tag Service"""
 
 import re
 from datetime import datetime
@@ -28,7 +28,6 @@ from schemas.post import AuthorResponse
 
 
 class TagService:
-    """Service for managing tags."""
     
     def __init__(self, db: AsyncSession):
         self.db = db

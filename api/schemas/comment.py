@@ -1,9 +1,3 @@
-"""
-Comment API Schemas for CraftyXhub
-
-Request and response schemas for comment API endpoints following SubPRD-CommentAPI.md specifications.
-"""
-
 from typing import Optional, List, Dict
 from datetime import datetime
 from uuid import UUID
@@ -26,7 +20,7 @@ class CommentModerationAction(str, Enum):
 
 
 class CommentCreateRequest(BaseModel):
-    """Request model for creating a new comment"""
+    
     body: str = Field(min_length=1, max_length=2000, description="Comment content")
     parent_id: Optional[UUID] = Field(None, description="Parent comment ID for replies")
 
@@ -42,7 +36,6 @@ class CommentCreateRequest(BaseModel):
 
 
 class CommentUpdateRequest(BaseModel):
-    """Request model for updating a comment"""
     body: str = Field(min_length=1, max_length=2000, description="Updated comment content")
 
     @validator('body')

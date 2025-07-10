@@ -1,7 +1,4 @@
-"""
-Exception handling for CraftyXhub FastAPI application.
-Implements SubPRD-ExceptionHandling.md specifications.
-"""
+
 from typing import Optional, Dict, Any, Union
 from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.responses import JSONResponse
@@ -17,10 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class CraftyXHubException(Exception):
-    """
-    Base exception class for CraftyXHub application.
-    All custom exceptions should inherit from this class.
-    """
+   
     
     def __init__(
         self,
@@ -37,7 +31,7 @@ class CraftyXHubException(Exception):
 
 
 class ValidationException(CraftyXHubException):
-    """Raised when data validation fails."""
+   
     
     def __init__(
         self,
@@ -55,7 +49,7 @@ class ValidationException(CraftyXHubException):
 
 
 class AuthenticationException(CraftyXHubException):
-    """Raised when authentication fails."""
+   
     
     def __init__(
         self,

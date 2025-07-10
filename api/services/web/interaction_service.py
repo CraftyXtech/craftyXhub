@@ -25,7 +25,6 @@ from dependencies.pagination import PaginationParams, create_pagination_response
 
 
 class WebInteractionService:
-    """Service for handling public web interaction operations."""
     
     def __init__(self, db: AsyncSession):
         self.db = db

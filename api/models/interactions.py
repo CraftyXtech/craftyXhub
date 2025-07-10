@@ -9,9 +9,7 @@ if TYPE_CHECKING:
     from .post import Post
     from .comment import Comment
 
-# Re-export PostTag from tag module for backward compatibility
 from .tag import PostTag
-# Re-export Comment from comment module for backward compatibility  
 from .comment import Comment
 
 class Like(SQLModel, table=True):
@@ -20,15 +18,15 @@ class Like(SQLModel, table=True):
         UniqueConstraint("user_id", "likeable_type", "likeable_id", name="uix_user_likeable"),
     )
     
-    # Primary key and basic fields
+    
     id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
     user_id: UUID = Field(foreign_key="users.id", index=True)
     
-    # Polymorphic fields for likeable content
-    likeable_type: str = Field(max_length=50, index=True)  # 'post' or 'comment'
+    
+    likeable_type: str = Field(max_length=50, index=True) 
     likeable_id: UUID = Field(index=True)
     
-    # Timestamp
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     # Relationships

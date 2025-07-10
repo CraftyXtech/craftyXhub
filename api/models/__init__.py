@@ -1,19 +1,4 @@
-"""
-CraftyXhub Data Models
 
-This module contains all SQLModel data models for the CraftyXhub blog platform,
-implementing the specifications from PRDs/02-Data-Models/.
-
-Models:
-- User: User authentication and profile management
-- Category: Content organization with hierarchical structure  
-- Tag: Flexible content labeling and topic following
-- Post: Core content model with publishing workflow and AI features
-- Comment: Hierarchical commenting with moderation and guest support
-- Social Interactions: Like, Bookmark, Follow, View for user engagement
-- User Engagement: UserRead, UserTopic, UserPreference, Media for personalization
-- Audit: Admin operation logging and system audit trails
-"""
 
 # Core models
 from .user import (
@@ -31,7 +16,6 @@ from .tag import Tag, PostTag
 from .post import Post
 from .comment import Comment, CommentLike
 
-# Social interaction models
 from .interactions import (
     Like,
     Bookmark, 

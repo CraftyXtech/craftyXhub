@@ -32,14 +32,7 @@ async def toggle_post_like(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Toggle like status for a post.
-    
-    - **post_id**: Post UUID to like/unlike
-    
-    Requires authentication. Returns updated like status and count.
-    Handles rate limiting to prevent spam interactions.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -70,13 +63,7 @@ async def toggle_post_bookmark(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Toggle bookmark status for a post.
-    
-    - **post_id**: Post UUID to bookmark/unbookmark
-    
-    Requires authentication. Allows users to save posts for later reading.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -101,14 +88,7 @@ async def record_post_view(
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Record a view for a post.
-    
-    - **post_id**: Post UUID to record view for
-    
-    Used for analytics and trending calculations.
-    Handles view deduplication and anonymous tracking.
-    """
+
     service = WebInteractionService(db)
     
     # Get client information
@@ -132,17 +112,7 @@ async def get_post_interaction_status(
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get current user's interaction status with a post.
-    
-    - **post_id**: Post UUID to check interactions for
-    
-    Returns:
-    - Like status (liked/not liked)
-    - Bookmark status (bookmarked/not bookmarked)
-    - View status and timestamp
-    - Total interaction counts
-    """
+
     service = WebInteractionService(db)
     
     # Get interaction status
@@ -159,13 +129,7 @@ async def get_post_interaction_counts(
     post_id: UUID,
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get interaction counts for a post.
-    
-    - **post_id**: Post UUID to get counts for
-    
-    Returns public interaction statistics without requiring authentication.
-    """
+
     service = WebInteractionService(db)
     
     # Get interaction counts
@@ -181,14 +145,7 @@ async def bulk_interactions(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Perform multiple interactions at once.
-    
-    - **interactions**: List of interaction operations to perform
-    
-    Useful for batch operations like bulk bookmarking or liking.
-    Requires authentication and enforces rate limiting.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -219,17 +176,7 @@ async def get_user_interaction_history(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get user's interaction history.
-    
-    - **interaction_type**: Filter by interaction type (like, bookmark, view)
-    - **date_from**: Start date for filtering
-    - **date_to**: End date for filtering
-    - **page**: Page number
-    - **per_page**: Items per page
-    
-    Returns paginated history of user's interactions with posts.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -254,11 +201,7 @@ async def get_user_liked_posts(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get posts liked by the current user.
-    
-    Returns paginated list of liked posts with interaction timestamps.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -282,11 +225,7 @@ async def get_user_bookmarked_posts(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get posts bookmarked by the current user.
-    
-    Returns paginated list of bookmarked posts with bookmark timestamps.
-    """
+
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -311,15 +250,7 @@ async def get_popular_content(
     content_type: str = "posts",  # posts, comments
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get popular content based on interaction metrics.
-    
-    - **timeframe**: Time period for popularity calculation
-    - **limit**: Maximum number of items to return
-    - **content_type**: Type of content (posts or comments)
-    
-    Returns content ranked by engagement scores and interaction counts.
-    """
+
     # Validate parameters
     if timeframe not in ["day", "week", "month", "year", "all"]:
         raise HTTPException(status_code=422, detail="Invalid timeframe")
@@ -349,15 +280,7 @@ async def get_trending_posts(
     category: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get trending posts based on recent engagement velocity.
-    
-    - **timeframe**: Time period for trending calculation
-    - **limit**: Maximum number of posts to return
-    - **category**: Filter by category slug (optional)
-    
-    Uses engagement velocity algorithm to identify rapidly growing content.
-    """
+
     # Validate timeframe
     if timeframe not in ["hour", "day", "week"]:
         raise HTTPException(status_code=422, detail="Invalid timeframe for trending")
@@ -382,13 +305,7 @@ async def get_engagement_statistics(
     timeframe: str = "week",
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get platform-wide engagement statistics.
-    
-    - **timeframe**: Time period for statistics calculation
-    
-    Returns aggregated interaction metrics and engagement trends.
-    """
+
     # Validate timeframe
     if timeframe not in ["day", "week", "month", "year"]:
         raise HTTPException(status_code=422, detail="Invalid timeframe")
@@ -406,13 +323,7 @@ async def get_interaction_type_statistics(
     timeframe: str = "week",
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get statistics broken down by interaction type.
-    
-    - **timeframe**: Time period for statistics calculation
-    
-    Returns counts and trends for likes, bookmarks, views, and comments.
-    """
+
     # Validate timeframe
     if timeframe not in ["day", "week", "month", "year"]:
         raise HTTPException(status_code=422, detail="Invalid timeframe")
@@ -431,13 +342,7 @@ async def clear_user_interactions(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Clear user's interaction history.
     
-    - **interaction_type**: Type of interactions to clear (optional, clears all if not specified)
-    
-    Allows users to clear their interaction history for privacy.
-    """
     if not current_user:
         raise HTTPException(
             status_code=401,

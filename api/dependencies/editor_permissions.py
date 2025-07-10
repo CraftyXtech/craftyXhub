@@ -1,4 +1,4 @@
-"""Editor permissions and access control dependencies."""
+
 
 from typing import Optional
 from uuid import UUID
@@ -19,9 +19,8 @@ async def require_editor_or_admin(
     current_user: User = Depends(get_current_user),
     request: Request = None
 ) -> User:
-    """Ensure user has editor or admin role."""
+
     if not (current_user.is_editor() or current_user.is_admin()):
-        # Log access attempt
         if request:
             audit_service = AuditService()
             await audit_service.log_access_attempt(
@@ -43,7 +42,6 @@ async def verify_post_ownership(
     current_user: User = Depends(require_editor_or_admin),
     db: AsyncSession = Depends(get_db)
 ) -> Post:
-    """Verify that the current user owns the post or is an admin."""
     result = await db.execute(
         select(Post).where(Post.id == post_id)
     )
@@ -52,7 +50,6 @@ async def verify_post_ownership(
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     
-    # Admins can edit any post, editors can only edit their own posts
     if not current_user.is_admin() and post.user_id != current_user.id:
         raise HTTPException(
             status_code=403, 
@@ -67,7 +64,6 @@ async def verify_category_permissions(
     current_user: User = Depends(require_editor_or_admin),
     db: AsyncSession = Depends(get_db)
 ) -> Category:
-    """Verify that the current user can edit the category."""
     result = await db.execute(
         select(Category).where(Category.id == category_id)
     )
@@ -76,7 +72,6 @@ async def verify_category_permissions(
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
     
-    # Only admins or the creator can edit categories
     if not current_user.is_admin() and category.created_by != current_user.id:
         raise HTTPException(
             status_code=403, 
@@ -91,7 +86,7 @@ async def verify_tag_permissions(
     current_user: User = Depends(require_editor_or_admin),
     db: AsyncSession = Depends(get_db)
 ) -> Tag:
-    """Verify that the current user can edit the tag."""
+    
     result = await db.execute(
         select(Tag).where(Tag.id == tag_id)
     )
@@ -100,7 +95,6 @@ async def verify_tag_permissions(
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")
     
-    # Only admins or the creator can edit tags
     if not current_user.is_admin() and tag.created_by != current_user.id:
         raise HTTPException(
             status_code=403, 
@@ -114,15 +108,13 @@ async def verify_post_edit_permissions(
     post: Post,
     current_user: User = Depends(require_editor_or_admin)
 ) -> Post:
-    """Verify that the post can be edited by the current user."""
-    # Published posts can only be edited by admins
+    
     if post.status == "published" and not current_user.is_admin():
         raise HTTPException(
             status_code=403, 
             detail="Published posts can only be edited by admins"
         )
     
-    # Editors can only edit their own posts
     if not current_user.is_admin() and post.user_id != current_user.id:
         raise HTTPException(
             status_code=403, 
@@ -136,8 +128,7 @@ async def verify_post_publish_permissions(
     post: Post,
     current_user: User = Depends(require_editor_or_admin)
 ) -> Post:
-    """Verify that the post can be published by the current user."""
-    # Only admins can publish posts
+    
     if not current_user.is_admin():
         raise HTTPException(
             status_code=403, 
@@ -176,7 +167,7 @@ async def verify_bulk_operation_permissions(
 
 
 def check_post_permissions(post: Post, current_user: User) -> dict:
-    """Check what permissions the current user has for a post."""
+    
     is_owner = post.user_id == current_user.id
     is_admin = current_user.is_admin()
     
@@ -190,10 +181,9 @@ def check_post_permissions(post: Post, current_user: User) -> dict:
 
 
 def check_category_permissions(category: Category, current_user: User) -> dict:
-    """Check what permissions the current user has for a category."""
+    
     is_creator = category.created_by == current_user.id
     is_admin = current_user.is_admin()
-    
     return {
         "can_edit": is_creator or is_admin,
         "can_delete": is_creator or is_admin
@@ -201,7 +191,6 @@ def check_category_permissions(category: Category, current_user: User) -> dict:
 
 
 def check_tag_permissions(tag: Tag, current_user: User) -> dict:
-    """Check what permissions the current user has for a tag."""
     is_creator = tag.created_by == current_user.id
     is_admin = current_user.is_admin()
     

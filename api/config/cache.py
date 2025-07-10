@@ -11,38 +11,31 @@ class CacheBackend(str, Enum):
     DUMMY = "dummy"
 
 class CacheConfig(BaseSettings):
-    """Cache configuration settings."""
     
-    # Cache Backend
     CACHE_BACKEND: CacheBackend = Field(default=CacheBackend.REDIS, env="CACHE_BACKEND")
     CACHE_URL: Optional[str] = Field(default=None, env="CACHE_URL")
     
-    # Redis Configuration
     REDIS_HOST: str = Field(default="localhost", env="REDIS_HOST")
     REDIS_PORT: int = Field(default=6379, env="REDIS_PORT")
     REDIS_DB: int = Field(default=0, env="REDIS_DB")
     REDIS_PASSWORD: Optional[str] = Field(default=None, env="REDIS_PASSWORD")
     REDIS_USERNAME: Optional[str] = Field(default=None, env="REDIS_USERNAME")
     
-    # Redis Connection Pool
     REDIS_POOL_SIZE: int = Field(default=10, env="REDIS_POOL_SIZE")
     REDIS_MAX_CONNECTIONS: int = Field(default=20, env="REDIS_MAX_CONNECTIONS")
     REDIS_RETRY_ON_TIMEOUT: bool = Field(default=True, env="REDIS_RETRY_ON_TIMEOUT")
     REDIS_HEALTH_CHECK_INTERVAL: int = Field(default=30, env="REDIS_HEALTH_CHECK_INTERVAL")
     
-    # Redis SSL Configuration
     REDIS_SSL: bool = Field(default=False, env="REDIS_SSL")
     REDIS_SSL_CERT_REQS: str = Field(default="required", env="REDIS_SSL_CERT_REQS")
     REDIS_SSL_CA_CERTS: Optional[str] = Field(default=None, env="REDIS_SSL_CA_CERTS")
     REDIS_SSL_CERTFILE: Optional[str] = Field(default=None, env="REDIS_SSL_CERTFILE")
     REDIS_SSL_KEYFILE: Optional[str] = Field(default=None, env="REDIS_SSL_KEYFILE")
     
-    # Timeout Settings
     REDIS_SOCKET_TIMEOUT: float = Field(default=5.0, env="REDIS_SOCKET_TIMEOUT")
     REDIS_SOCKET_CONNECT_TIMEOUT: float = Field(default=5.0, env="REDIS_SOCKET_CONNECT_TIMEOUT")
     REDIS_CONNECTION_TIMEOUT: float = Field(default=5.0, env="REDIS_CONNECTION_TIMEOUT")
     
-    # TTL Settings (in seconds)
     CACHE_DEFAULT_TTL: int = Field(default=3600, env="CACHE_DEFAULT_TTL")  # 1 hour
     CACHE_SESSION_TTL: int = Field(default=86400, env="CACHE_SESSION_TTL")  # 24 hours
     CACHE_USER_TTL: int = Field(default=1800, env="CACHE_USER_TTL")  # 30 minutes
@@ -51,34 +44,28 @@ class CacheConfig(BaseSettings):
     CACHE_TAG_TTL: int = Field(default=7200, env="CACHE_TAG_TTL")  # 2 hours
     CACHE_SEARCH_TTL: int = Field(default=900, env="CACHE_SEARCH_TTL")  # 15 minutes
     
-    # Cache Key Prefixes
     CACHE_KEY_PREFIX: str = Field(default="craftyx", env="CACHE_KEY_PREFIX")
     CACHE_SESSION_PREFIX: str = Field(default="session", env="CACHE_SESSION_PREFIX")
     CACHE_USER_PREFIX: str = Field(default="user", env="CACHE_USER_PREFIX")
     CACHE_POST_PREFIX: str = Field(default="post", env="CACHE_POST_PREFIX")
     CACHE_RATE_LIMIT_PREFIX: str = Field(default="ratelimit", env="CACHE_RATE_LIMIT_PREFIX")
     
-    # Serialization
     CACHE_SERIALIZER: str = Field(default="json", env="CACHE_SERIALIZER")
     CACHE_COMPRESSION: bool = Field(default=True, env="CACHE_COMPRESSION")
     CACHE_COMPRESSION_LEVEL: int = Field(default=6, env="CACHE_COMPRESSION_LEVEL")
     
-    # Memory Cache Settings (for in-memory backend)
     MEMORY_CACHE_MAX_SIZE: int = Field(default=1000, env="MEMORY_CACHE_MAX_SIZE")
     MEMORY_CACHE_TTL: int = Field(default=3600, env="MEMORY_CACHE_TTL")
     
-    # Performance Settings
     CACHE_MAX_KEY_LENGTH: int = Field(default=250, env="CACHE_MAX_KEY_LENGTH")
     CACHE_MAX_VALUE_SIZE: int = Field(default=1048576, env="CACHE_MAX_VALUE_SIZE")  # 1MB
     CACHE_BATCH_SIZE: int = Field(default=100, env="CACHE_BATCH_SIZE")
-    
-    # Cache Strategy
+
     CACHE_ENABLED: bool = Field(default=True, env="CACHE_ENABLED")
     CACHE_WRITE_THROUGH: bool = Field(default=False, env="CACHE_WRITE_THROUGH")
     CACHE_WRITE_BEHIND: bool = Field(default=False, env="CACHE_WRITE_BEHIND")
     CACHE_READ_FROM_REPLICA: bool = Field(default=False, env="CACHE_READ_FROM_REPLICA")
     
-    # Eviction and Cleanup
     CACHE_EVICTION_POLICY: str = Field(default="lru", env="CACHE_EVICTION_POLICY")
     CACHE_CLEANUP_INTERVAL: int = Field(default=300, env="CACHE_CLEANUP_INTERVAL")  # 5 minutes
     CACHE_MAX_MEMORY_USAGE: Optional[str] = Field(default=None, env="CACHE_MAX_MEMORY_USAGE")

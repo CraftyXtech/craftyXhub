@@ -13,33 +13,23 @@ if TYPE_CHECKING:
 class Post(SQLModel, table=True):
     __tablename__ = "posts"
     
-    # Primary key and basic fields
+    
     id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
     user_id: UUID = Field(foreign_key="users.id", index=True)
     category_id: Optional[UUID] = Field(foreign_key="categories.id", index=True, default=None)
-    
-    # Content fields
     title: str = Field(max_length=255)
     slug: str = Field(unique=True, max_length=255, index=True)
     excerpt: Optional[str] = None
-    body: str  # LONGTEXT equivalent
-    
-    # Publishing workflow fields
-    status: str = Field(default="draft", max_length=50, index=True)  # 'draft', 'under_review', 'published', 'rejected', 'archived'
+    body: str  
+    status: str = Field(default="draft", max_length=50, index=True)  
     published_at: Optional[datetime] = Field(default=None, index=True)
     difficulty_level: Optional[str] = Field(default=None, max_length=50)
     featured: bool = Field(default=False, index=True)
     comments_enabled: bool = Field(default=True)
-    
-    # AI features (excluding embeddings per memory)
     generated_image_path: Optional[str] = Field(default=None, max_length=255)
     feedback: Optional[str] = None
-    
-    # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    
-    # Relationships
     author: Optional["User"] = Relationship(back_populates="posts")
     category: Optional["Category"] = Relationship(back_populates="posts")
     tags: List["Tag"] = Relationship(
@@ -47,8 +37,6 @@ class Post(SQLModel, table=True):
         sa_relationship_kwargs={"secondary": "post_tags"}
     )
     comments: List["Comment"] = Relationship(back_populates="post")
-    
-    # Social interaction relationships
     liked_by_users: List["User"] = Relationship(
         back_populates="liked_posts",
         sa_relationship_kwargs={"secondary": "user_likes"}

@@ -14,7 +14,6 @@ from .audit_service import AuditService
 
 
 class SettingsService:
-    """Service for managing site settings and configuration."""
     
     def __init__(self, session: AsyncSession, audit_service: AuditService):
         self.session = session

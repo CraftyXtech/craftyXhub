@@ -1,9 +1,3 @@
-"""
-Web Comments API Router
-
-Provides endpoints for comment management in the public web interface.
-Supports threaded comments, moderation, and user interactions.
-"""
 
 from typing import Optional
 from uuid import UUID
@@ -35,19 +29,7 @@ async def get_post_comments(
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get threaded comments for a post.
     
-    - **post_id**: Post UUID to get comments for
-    - **page**: Page number for pagination
-    - **per_page**: Comments per page (max 100)
-    
-    Returns:
-    - Threaded comment structure
-    - Comment metadata (like counts, reply counts)
-    - User interaction status (if authenticated)
-    - Pagination information
-    """
     service = WebCommentService(db)
     
     # Get comments for post
@@ -68,18 +50,7 @@ async def create_comment(
     current_user: User = Depends(verify_user_can_comment),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Create a new comment or reply.
     
-    - **post_id**: Post UUID to comment on
-    - **content**: Comment content (HTML allowed)
-    - **parent_id**: Parent comment ID for replies (optional)
-    
-    Returns:
-    - Created comment information
-    - Threading information
-    - Rate limiting status
-    """
     service = WebCommentService(db)
     
     # Get client information for rate limiting
@@ -107,16 +78,7 @@ async def update_comment(
     current_user: User = Depends(verify_comment_ownership),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Update an existing comment.
     
-    - **post_id**: Post UUID (for validation)
-    - **comment_id**: Comment UUID to update
-    - **content**: Updated comment content
-    
-    Only the comment author can update their comments.
-    Admins and moderators may also update comments.
-    """
     service = WebCommentService(db)
     
     # Update comment
@@ -140,17 +102,7 @@ async def delete_comment(
     current_user: User = Depends(verify_comment_ownership),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Delete a comment.
-    
-    - **post_id**: Post UUID (for validation)
-    - **comment_id**: Comment UUID to delete
-    
-    Only the comment author can delete their comments.
-    Admins and moderators may also delete comments.
-    
-    Soft deletion is used to preserve threading structure.
-    """
+
     service = WebCommentService(db)
     
     # Delete comment
@@ -171,17 +123,7 @@ async def get_comment_stats(
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get comment statistics for a post.
     
-    - **post_id**: Post UUID to get stats for
-    
-    Returns:
-    - Total comment count
-    - Threading depth statistics
-    - Recent activity metrics
-    - User participation data (if authenticated)
-    """
     service = WebCommentService(db)
     
     # Get comment statistics
@@ -200,14 +142,7 @@ async def get_comment_thread(
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get a specific comment thread.
     
-    - **post_id**: Post UUID (for validation)
-    - **comment_id**: Root comment ID for the thread
-    
-    Returns the comment and all its nested replies in threaded format.
-    """
     service = WebCommentService(db)
     
     # Get comment thread
@@ -230,14 +165,7 @@ async def toggle_comment_like(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Toggle like status for a comment.
     
-    - **post_id**: Post UUID (for validation)
-    - **comment_id**: Comment UUID to like/unlike
-    
-    Requires authentication. Returns updated like status and count.
-    """
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -270,15 +198,7 @@ async def report_comment(
     current_user: User = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Report a comment for moderation.
     
-    - **post_id**: Post UUID (for validation)
-    - **comment_id**: Comment UUID to report
-    - **reason**: Reason for reporting
-    
-    Requires authentication. Creates a moderation queue entry.
-    """
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -305,13 +225,7 @@ async def get_comment_by_id(
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get a specific comment by ID.
-    
-    - **comment_id**: Comment UUID to retrieve
-    
-    Returns comment details with threading context.
-    """
+
     service = WebCommentService(db)
     
     # Get comment by ID
@@ -333,15 +247,7 @@ async def get_user_comments(
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get comments by a specific user.
     
-    - **user_id**: User UUID to get comments for
-    - **page**: Page number for pagination
-    - **per_page**: Comments per page
-    
-    Returns paginated list of user's comments across all posts.
-    """
     service = WebCommentService(db)
     
     # Get user comments

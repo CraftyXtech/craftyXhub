@@ -1,10 +1,3 @@
-"""
-Editor Tags API Router
-
-Provides endpoints for tag management in the editor module.
-Follows SubPRD-CategoryTagManagement.md specifications.
-"""
-
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query

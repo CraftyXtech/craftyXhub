@@ -9,6 +9,8 @@ from fastapi import APIRouter
 
 # Authentication routers
 from .auth import router as auth_router
+from .registration import router as registration_router
+from .password import router as password_router
 
 # Editor module routers
 from .editor_categories import router as editor_categories_router
@@ -28,16 +30,16 @@ try:
 except ImportError:
     admin_router = None
 
-try:
-    from .public import router as public_router
-except ImportError:
-    public_router = None
+# Note: public router removed to avoid duplicating web router functionality
+# The web_* routers already provide all public endpoints under /v1
 
 # Create main v1 router
 router = APIRouter(prefix="/v1")
 
 # Include authentication routes
 router.include_router(auth_router)
+router.include_router(registration_router)
+router.include_router(password_router)
 
 # Include editor module routes (requires editor/admin permissions)
 router.include_router(
@@ -76,16 +78,16 @@ if admin_router:
         tags=["Admin"]
     )
 
-# Include public API routes if available
-if public_router:
-    router.include_router(public_router, tags=["Public API"])
-
 # Available endpoints summary:
 # Authentication:
 #   - POST /v1/auth/login
 #   - POST /v1/auth/refresh
 #   - POST /v1/auth/logout
 #   - GET  /v1/auth/me
+#   - POST /v1/auth/register (User registration)
+#   - POST /v1/auth/verify-email (Email verification)
+#   - POST /v1/auth/password-reset-request (Password reset)
+#   - POST /v1/auth/password-change (Password change)
 
 # Editor Modules:
 #   - /v1/editor/categories/* (Category management)
@@ -101,7 +103,4 @@ if public_router:
 #   - /v1/profile/* (User profiles and preferences)
 
 # Admin (if available):
-#   - /v1/admin/* (Admin functions)
-
-# Public API (if available):
-#   - /v1/* (Public API endpoints) 
+#   - /v1/admin/* (Admin functions) 

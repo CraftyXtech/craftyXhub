@@ -1,10 +1,3 @@
-"""
-Editor Dashboard API Router
-
-Provides endpoints for the editor dashboard with analytics and insights.
-Follows SubPRD-EditorDashboard.md specifications.
-"""
-
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query

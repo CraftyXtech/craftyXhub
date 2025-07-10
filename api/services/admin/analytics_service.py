@@ -14,7 +14,6 @@ logger = get_logger(__name__)
 
 
 class AnalyticsService:
-    """Service for dashboard analytics and metrics."""
     
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -22,7 +21,6 @@ class AnalyticsService:
     async def get_user_statistics(self) -> Dict[str, Any]:
         """Get comprehensive user statistics."""
         try:
-            # Basic user counts by role
             user_counts = await self.db.execute(
                 select(
                     func.count(User.id).label('total'),
@@ -33,7 +31,6 @@ class AnalyticsService:
             )
             counts = user_counts.first()
             
-            # Active vs inactive users (based on email verification)
             activity_counts = await self.db.execute(
                 select(
                     func.sum(func.case((User.email_verified_at.is_not(None), 1), else_=0)).label('verified'),
@@ -42,7 +39,6 @@ class AnalyticsService:
             )
             activity = activity_counts.first()
             
-            # Recent signups (last 30 days)
             thirty_days_ago = datetime.utcnow() - timedelta(days=30)
             recent_signups_query = select(User).where(
                 User.created_at >= thirty_days_ago
@@ -51,7 +47,6 @@ class AnalyticsService:
             recent_signups_result = await self.db.execute(recent_signups_query)
             recent_signups = recent_signups_result.scalars().all()
             
-            # Growth metrics
             growth_metrics = await self._calculate_user_growth()
             
             return {
@@ -78,12 +73,10 @@ class AnalyticsService:
     async def get_content_overview(self, user_role: str = "admin", user_id: Optional[UUID] = None) -> Dict[str, Any]:
         """Get content overview statistics filtered by user role."""
         try:
-            # Base post query
             post_query = select(Post)
             if user_role == "editor" and user_id:
                 post_query = post_query.where(Post.user_id == user_id)
             
-            # Post counts by status
             status_counts = await self.db.execute(
                 select(
                     func.count(Post.id).label('total'),
@@ -96,10 +89,8 @@ class AnalyticsService:
             )
             counts = status_counts.first()
             
-            # Comment statistics
             comment_query = select(Comment)
             if user_role == "editor" and user_id:
-                # Editor sees comments on their posts only
                 comment_query = comment_query.join(Post).where(Post.user_id == user_id)
             
             comment_counts = await self.db.execute(
@@ -111,20 +102,15 @@ class AnalyticsService:
             )
             comment_stats = comment_counts.first()
             
-            # Engagement metrics
             like_count = await self._get_like_count(user_role, user_id)
             view_stats = await self._get_view_statistics(user_role, user_id)
             
-            # Most viewed posts (top 5)
             most_viewed = await self._get_most_viewed_posts(user_role, user_id, limit=5)
-            
-            # Most active users (top 5)
             most_active = await self._get_most_active_users(limit=5)
             
-            # Posts by category
+           
             category_stats = await self._get_posts_by_category(user_role, user_id)
-            
-            # Recent activity (last 7 days)
+          
             recent_activity = await self._get_recent_activity(user_role, user_id)
             
             return {
@@ -160,7 +146,7 @@ class AnalyticsService:
     async def get_view_trends(self, period: str = "month", user_role: str = "admin", user_id: Optional[UUID] = None) -> Dict[str, Any]:
         """Get view trends data for charts."""
         try:
-            # Calculate date range based on period
+            
             end_date = datetime.utcnow()
             if period == "day":
                 start_date = end_date - timedelta(days=1)
@@ -179,19 +165,19 @@ class AnalyticsService:
                 date_format = "%Y-%m-%d"  # Daily
                 labels = [(end_date - timedelta(days=i)).strftime("%m/%d") for i in range(29, -1, -1)]
             
-            # Base view query
+           
             view_query = select(View).where(
                 View.created_at >= start_date,
                 View.created_at <= end_date
             )
             
-            # Filter by user role
+           
             if user_role == "editor" and user_id:
                 view_query = view_query.join(Post).where(Post.user_id == user_id)
             
-            # Group by date and count views
+           
             if period == "day":
-                # Group by hour
+               
                 view_counts = await self.db.execute(
                     select(
                         func.extract('hour', View.created_at).label('period'),
@@ -202,7 +188,7 @@ class AnalyticsService:
                     ).group_by(func.extract('hour', View.created_at))
                 )
             else:
-                # Group by date
+               
                 view_counts = await self.db.execute(
                     select(
                         func.date(View.created_at).label('period'),
@@ -213,17 +199,17 @@ class AnalyticsService:
                     ).group_by(func.date(View.created_at))
                 )
             
-            # Convert to data array matching labels
+           
             data_dict = {str(row.period): row.count for row in view_counts}
             data = []
             
             for label in labels:
                 if period == "day":
-                    # Extract hour from label (format "HH:00")
+                   
                     hour = int(label.split(":")[0])
                     data.append(data_dict.get(str(hour), 0))
                 else:
-                    # For other periods, match the date format
+                   
                     data.append(data_dict.get(label, 0))
             
             return {
@@ -239,7 +225,7 @@ class AnalyticsService:
     async def get_approval_queue(self) -> Dict[str, Any]:
         """Get content needing approval (admin only)."""
         try:
-            # Posts pending approval
+           
             pending_posts_query = select(Post).where(
                 Post.status == 'under_review'
             ).options(selectinload(Post.author), selectinload(Post.category)).limit(10)
@@ -247,13 +233,13 @@ class AnalyticsService:
             pending_posts_result = await self.db.execute(pending_posts_query)
             pending_posts = pending_posts_result.scalars().all()
             
-            # Comments pending approval count
+           
             pending_comments_count = await self.db.execute(
                 select(func.count(Comment.id)).where(Comment.status == 'pending')
             )
             pending_comments = pending_comments_count.scalar() or 0
             
-            # Rejected posts count
+           
             rejected_posts_count = await self.db.execute(
                 select(func.count(Post.id)).where(Post.status == 'rejected')
             )
@@ -281,7 +267,7 @@ class AnalyticsService:
             if user_role == "editor" and user_id:
                 query = query.where(Post.user_id == user_id)
             else:
-                # Admin sees published posts only in recent list
+               
                 query = query.where(Post.status == 'published')
             
             query = query.order_by(desc(Post.created_at)).limit(limit)
@@ -293,35 +279,33 @@ class AnalyticsService:
             logger.error(f"Failed to get recent posts: {str(e)}")
             return []
 
-    # Helper methods
-    
+
     async def _calculate_user_growth(self) -> Dict[str, float]:
         """Calculate user growth metrics."""
         try:
             now = datetime.utcnow()
-            
-            # Daily growth
+
             yesterday = now - timedelta(days=1)
             daily_new = await self.db.execute(
                 select(func.count(User.id)).where(User.created_at >= yesterday)
             )
             daily_growth = daily_new.scalar() or 0
             
-            # Weekly growth
+            
             week_ago = now - timedelta(days=7)
             weekly_new = await self.db.execute(
                 select(func.count(User.id)).where(User.created_at >= week_ago)
             )
             weekly_growth = weekly_new.scalar() or 0
             
-            # Monthly growth
+            
             month_ago = now - timedelta(days=30)
             monthly_new = await self.db.execute(
                 select(func.count(User.id)).where(User.created_at >= month_ago)
             )
             monthly_growth = monthly_new.scalar() or 0
             
-            # Yearly growth
+            
             year_ago = now - timedelta(days=365)
             yearly_new = await self.db.execute(
                 select(func.count(User.id)).where(User.created_at >= year_ago)
@@ -343,7 +327,6 @@ class AnalyticsService:
         """Get total like count filtered by user role."""
         try:
             if user_role == "editor" and user_id:
-                # Editor sees likes on their posts only
                 result = await self.db.execute(
                     select(func.count(Like.id))
                     .join(Post, Like.post_id == Post.id)
@@ -362,7 +345,6 @@ class AnalyticsService:
         """Get view statistics filtered by user role."""
         try:
             if user_role == "editor" and user_id:
-                # Editor sees views on their posts only
                 total_views = await self.db.execute(
                     select(func.count(View.id))
                     .join(Post, View.post_id == Post.id)
@@ -511,7 +493,7 @@ class AnalyticsService:
         try:
             seven_days_ago = datetime.utcnow() - timedelta(days=7)
             
-            # New posts
+           
             post_filter = Post.created_at >= seven_days_ago
             if user_role == "editor" and user_id:
                 post_filter = and_(post_filter, Post.user_id == user_id)
@@ -520,7 +502,7 @@ class AnalyticsService:
                 select(func.count(Post.id)).where(post_filter)
             )
             
-            # New comments
+           
             comment_filter = Comment.created_at >= seven_days_ago
             if user_role == "editor" and user_id:
                 comment_filter = and_(
@@ -534,7 +516,7 @@ class AnalyticsService:
                 select(func.count(Comment.id)).where(comment_filter)
             )
             
-            # New users (admin only)
+           
             new_users = 0
             if user_role == "admin":
                 new_users_result = await self.db.execute(
@@ -542,7 +524,6 @@ class AnalyticsService:
                 )
                 new_users = new_users_result.scalar() or 0
             
-            # Total views
             view_filter = View.created_at >= seven_days_ago
             if user_role == "editor" and user_id:
                 view_filter = and_(

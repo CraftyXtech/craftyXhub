@@ -1,4 +1,4 @@
-"""Post service for editor module."""
+"""Post Service"""
 
 import re
 from datetime import datetime, timedelta
@@ -32,7 +32,6 @@ from schemas.post import CategoryResponse, TagResponse
 
 
 class PostService:
-    """Service for managing posts in editor module."""
     
     def __init__(self, db: AsyncSession):
         self.db = db

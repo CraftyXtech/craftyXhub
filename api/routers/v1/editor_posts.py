@@ -1,10 +1,3 @@
-"""
-Editor Posts API Router
-
-Provides endpoints for post management in the editor module.
-Follows SubPRD-PostManagement.md specifications.
-"""
-
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query

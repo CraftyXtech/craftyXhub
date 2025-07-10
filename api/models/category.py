@@ -10,20 +10,19 @@ if TYPE_CHECKING:
 
 
 class Category(SQLModel, table=True):
-    """Category model for hierarchical content organization."""
     __tablename__ = "categories"
     
-    # Primary key and basic fields
+   
     id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
     name: str = Field(unique=True, max_length=255, index=True)
     slug: str = Field(unique=True, max_length=255, index=True)
     description: Optional[str] = None
     
-    # Timestamps
+   
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    # Relationships
+   
     posts: List["Post"] = Relationship(back_populates="category")
     
     def __init__(self, **data):

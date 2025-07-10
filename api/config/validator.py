@@ -1,9 +1,3 @@
-"""
-Configuration Validator
-
-This module provides comprehensive validation for configuration settings
-including security checks, dependency validation, and environment-specific rules.
-"""
 
 import re
 import logging
@@ -15,12 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 class ValidationError(Exception):
-    """Configuration validation error."""
     pass
 
 
 class ValidationRule:
-    """A single validation rule."""
+    
     
     def __init__(
         self,
@@ -30,15 +23,7 @@ class ValidationRule:
         severity: str = "error",
         applies_to: Optional[List[str]] = None
     ):
-        """Initialize validation rule.
         
-        Args:
-            name: Rule name
-            validator: Validation function
-            error_message: Error message if validation fails
-            severity: Rule severity (error, warning, info)
-            applies_to: List of environments this rule applies to
-        """
         self.name = name
         self.validator = validator
         self.error_message = error_message
@@ -47,10 +32,9 @@ class ValidationRule:
 
 
 class ValidationResult:
-    """Result of configuration validation."""
     
     def __init__(self):
-        """Initialize validation result."""
+        
         self.errors: List[str] = []
         self.warnings: List[str] = []
         self.info: List[str] = []
@@ -58,37 +42,35 @@ class ValidationResult:
         self.failed_rules: List[str] = []
     
     def add_error(self, message: str, rule_name: str = None) -> None:
-        """Add an error message."""
+        
         self.errors.append(message)
         if rule_name:
             self.failed_rules.append(rule_name)
     
     def add_warning(self, message: str, rule_name: str = None) -> None:
-        """Add a warning message."""
+        
         self.warnings.append(message)
         if rule_name:
             self.failed_rules.append(rule_name)
     
     def add_info(self, message: str, rule_name: str = None) -> None:
-        """Add an info message."""
+        
         self.info.append(message)
     
     def add_passed(self, rule_name: str) -> None:
-        """Add a passed rule."""
+        
         self.passed_rules.append(rule_name)
     
     @property
     def is_valid(self) -> bool:
-        """Check if validation passed (no errors)."""
         return len(self.errors) == 0
     
     @property
-    def has_warnings(self) -> bool:
-        """Check if validation has warnings."""
+    def has_warnings(self) -> bool:        
         return len(self.warnings) > 0
     
     def summary(self) -> Dict[str, Any]:
-        """Get validation summary."""
+        
         return {
             "is_valid": self.is_valid,
             "errors_count": len(self.errors),
@@ -103,30 +85,15 @@ class ValidationResult:
 
 
 class ConfigValidator:
-    """Configuration validator with built-in and custom rules."""
-    
     def __init__(self):
-        """Initialize configuration validator."""
+        
         self.rules: List[ValidationRule] = []
         self._setup_builtin_rules()
     
     def add_rule(self, rule: ValidationRule) -> None:
-        """Add a custom validation rule.
-        
-        Args:
-            rule: Validation rule to add
-        """
         self.rules.append(rule)
     
     def remove_rule(self, rule_name: str) -> bool:
-        """Remove a validation rule by name.
-        
-        Args:
-            rule_name: Name of rule to remove
-            
-        Returns:
-            True if rule was removed, False if not found
-        """
         for i, rule in enumerate(self.rules):
             if rule.name == rule_name:
                 del self.rules[i]
@@ -134,24 +101,13 @@ class ConfigValidator:
         return False
     
     def validate(self, config: Dict[str, Any], environment: str = "development") -> ValidationResult:
-        """Validate configuration against all rules.
-        
-        Args:
-            config: Configuration to validate
-            environment: Target environment
-            
-        Returns:
-            Validation result
-        """
         result = ValidationResult()
         
         for rule in self.rules:
-            # Check if rule applies to current environment
             if environment not in rule.applies_to:
                 continue
             
             try:
-                # Run validation
                 if rule.validator(config):
                     result.add_passed(rule.name)
                 else:
@@ -168,9 +124,7 @@ class ConfigValidator:
         return result
     
     def _setup_builtin_rules(self) -> None:
-        """Setup built-in validation rules."""
         
-        # Security rules
         self.rules.extend([
             ValidationRule(
                 name="secret_key_length",
@@ -393,7 +347,7 @@ class ConfigValidator:
         ])
     
     def _validate_database_url(self, url: str) -> bool:
-        """Validate database URL format."""
+        
         if not url:
             return False
         
@@ -404,7 +358,6 @@ class ConfigValidator:
             return False
     
     def _validate_email(self, email: str) -> bool:
-        """Validate email address format."""
         if not email:
             return False
         
@@ -412,9 +365,8 @@ class ConfigValidator:
         return bool(re.match(pattern, email))
     
     def _validate_upload_path(self, path: str) -> bool:
-        """Validate upload path exists and is writable."""
         if not path:
-            return True  # Optional field
+            return True
         
         try:
             upload_path = Path(path)
@@ -423,7 +375,7 @@ class ConfigValidator:
             return False
     
     def _validate_rate_limits(self, config: Dict[str, Any]) -> bool:
-        """Validate rate limit format."""
+        
         rate_limit_keys = [
             "rate_limit_login", "rate_limit_api", "rate_limit_registration",
             "rate_limit_password_reset"
@@ -439,7 +391,7 @@ class ConfigValidator:
         return True
     
     def _validate_production_rate_limits(self, config: Dict[str, Any]) -> bool:
-        """Validate production rate limits are reasonable."""
+        
         limits = {
             "rate_limit_login": (5, "15minutes"),  # Max 5 attempts per 15 minutes
             "rate_limit_registration": (3, "hour"),  # Max 3 registrations per hour
@@ -467,19 +419,7 @@ def validate_config(
     environment: str = "development",
     custom_rules: Optional[List[ValidationRule]] = None
 ) -> ValidationResult:
-    """Validate configuration with built-in and custom rules.
-    
-    Args:
-        config: Configuration to validate
-        environment: Target environment
-        custom_rules: Additional custom validation rules
-        
-    Returns:
-        Validation result
-    """
     validator = ConfigValidator()
-    
-    # Add custom rules if provided
     if custom_rules:
         for rule in custom_rules:
             validator.add_rule(rule)
@@ -492,16 +432,7 @@ def validate_config_file(
     environment: str = "development",
     custom_rules: Optional[List[ValidationRule]] = None
 ) -> ValidationResult:
-    """Validate configuration from file.
     
-    Args:
-        config_file: Path to configuration file
-        environment: Target environment
-        custom_rules: Additional custom validation rules
-        
-    Returns:
-        Validation result
-    """
     import json
     from pathlib import Path
     
@@ -530,7 +461,7 @@ def validate_config_file(
         return result
 
 
-# Predefined rule sets for different scenarios
+
 SECURITY_RULES = [
     ValidationRule(
         name="no_default_passwords",

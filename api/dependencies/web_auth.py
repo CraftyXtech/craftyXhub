@@ -1,9 +1,3 @@
-"""
-Web-specific authentication dependencies.
-
-Provides authentication utilities for public-facing web endpoints
-with optional authentication and user context handling.
-"""
 
 from typing import Optional
 from fastapi import Depends, HTTPException, Request
@@ -16,7 +10,6 @@ from models.user import User
 from core.exceptions import AuthenticationError
 
 
-# Optional bearer token for web endpoints
 optional_bearer = HTTPBearer(auto_error=False)
 
 
@@ -25,29 +18,14 @@ async def get_optional_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_bearer),
     db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
-    """
-    Get current user if authenticated, otherwise return None.
     
-    This dependency is used for web endpoints that can work both
-    with authenticated and anonymous users.
-    
-    Args:
-        request: FastAPI request object
-        credentials: Optional bearer token
-        db: Database session
-        
-    Returns:
-        User object if authenticated, None otherwise
-    """
     if not credentials:
         return None
     
     try:
-        # Use the existing auth dependency to get user
         user = await get_current_user(credentials.credentials, db)
         return user
     except (AuthenticationError, HTTPException):
-        # If authentication fails, return None instead of raising
         return None
 
 
@@ -56,23 +34,7 @@ async def get_current_user_or_redirect(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_bearer),
     db: AsyncSession = Depends(get_db)
 ) -> User:
-    """
-    Get current user or redirect to login.
-    
-    This dependency is used for web endpoints that require authentication
-    and should redirect to login page if user is not authenticated.
-    
-    Args:
-        request: FastAPI request object
-        credentials: Optional bearer token
-        db: Database session
-        
-    Returns:
-        User object if authenticated
-        
-    Raises:
-        HTTPException: 401 with redirect information if not authenticated
-    """
+   
     if not credentials:
         raise HTTPException(
             status_code=401,
@@ -100,18 +62,7 @@ async def get_current_user_or_redirect(
 async def verify_user_can_comment(
     user: Optional[User] = Depends(get_optional_current_user)
 ) -> User:
-    """
-    Verify that user can comment on posts.
     
-    Args:
-        user: Current user (optional)
-        
-    Returns:
-        User object if authorized to comment
-        
-    Raises:
-        HTTPException: 401 if not authenticated, 403 if not authorized
-    """
     if not user:
         raise HTTPException(
             status_code=401,
@@ -132,18 +83,7 @@ async def verify_user_can_comment(
 async def verify_user_can_interact(
     user: Optional[User] = Depends(get_optional_current_user)
 ) -> User:
-    """
-    Verify that user can interact with posts (like, bookmark).
-    
-    Args:
-        user: Current user (optional)
-        
-    Returns:
-        User object if authorized to interact
-        
-    Raises:
-        HTTPException: 401 if not authenticated, 403 if not authorized
-    """
+   
     if not user:
         raise HTTPException(
             status_code=401,
@@ -164,18 +104,7 @@ async def verify_user_can_interact(
 async def get_user_context(
     user: Optional[User] = Depends(get_optional_current_user)
 ) -> dict:
-    """
-    Get user context for web responses.
-    
-    Provides user information and permissions for web endpoints
-    that need to customize responses based on user status.
-    
-    Args:
-        user: Current user (optional)
-        
-    Returns:
-        Dictionary with user context information
-    """
+   
     if not user:
         return {
             "is_authenticated": False,
@@ -201,20 +130,7 @@ async def verify_comment_ownership(
     user: User = Depends(get_current_user_or_redirect),
     db: AsyncSession = Depends(get_db)
 ) -> User:
-    """
-    Verify that user owns the comment or can moderate it.
-    
-    Args:
-        comment_id: Comment ID to verify
-        user: Current user
-        db: Database session
-        
-    Returns:
-        User object if authorized
-        
-    Raises:
-        HTTPException: 403 if not authorized, 404 if comment not found
-    """
+   
     from models.comment import Comment
     from sqlalchemy import select
     
@@ -239,15 +155,7 @@ async def verify_comment_ownership(
 async def get_rate_limit_info(
     user: Optional[User] = Depends(get_optional_current_user)
 ) -> dict:
-    """
-    Get rate limit information for the current user.
-    
-    Args:
-        user: Current user (optional)
-        
-    Returns:
-        Dictionary with rate limit information
-    """
+   
     if not user:
         return {
             "comment_limit": 5,  # Anonymous users get lower limits
@@ -278,24 +186,10 @@ async def check_post_access(
     user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> dict:
-    """
-    Check user's access to a specific post.
-    
-    Args:
-        post_id: Post ID to check
-        user: Current user (optional)
-        db: Database session
-        
-    Returns:
-        Dictionary with access information
-        
-    Raises:
-        HTTPException: 404 if post not found
-    """
+   
     from models.post import Post
     from sqlalchemy import select
     
-    # Get post
     stmt = select(Post).where(Post.id == post_id)
     result = await db.execute(stmt)
     post = result.scalar_one_or_none()
@@ -303,10 +197,8 @@ async def check_post_access(
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     
-    # Check if post is published
     is_published = post.status == "published" and post.published_at is not None
     
-    # Check if user can view unpublished posts
     can_view_unpublished = (
         user and 
         (user.role in ["admin", "editor"] or user.id == post.user_id)

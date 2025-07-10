@@ -70,7 +70,7 @@ class BaseConfig(BaseSettings):
     UPLOAD_PATH: str = Field(default="uploads", env="UPLOAD_PATH")
     
     # Logging Settings
-    LOG_LEVEL: str = Field(default="INFO", env="LOG_LEVEL")
+    LOG_LEVEL: str = Field(default="WARNING", env="LOG_LEVEL")
     LOG_FORMAT: str = Field(
         default="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         env="LOG_FORMAT"
