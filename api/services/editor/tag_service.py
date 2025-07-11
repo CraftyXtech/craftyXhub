@@ -1,4 +1,3 @@
-"""Tag Service"""
 
 import re
 from datetime import datetime
