@@ -102,13 +102,8 @@ class DatabaseManager:
         self._initialized = False
     
     async def health_check(self) -> bool:
-        """
-        Perform a database health check.
-        Returns True if database is accessible, False otherwise.
-        """
         try:
-            async with self.get_session() as session:
-                # Simple query to test connection
+            async with await self.get_session() as session:
                 from sqlalchemy import text
                 result = await session.exec(text("SELECT 1"))
                 return result is not None
@@ -122,15 +117,15 @@ db_manager = DatabaseManager()
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    async with db_manager.get_session() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+    session = await db_manager.get_session()
+    try:
+        yield session
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
 
 
 async def init_database() -> None:
@@ -166,7 +161,6 @@ class DatabaseTransaction:
         self.session = None
     
     async def __aenter__(self) -> AsyncSession:
-        """Enter transaction context."""
         self.session = await db_manager.get_session()
         return self.session
     

@@ -7,13 +7,13 @@ class DatabaseConfig(BaseSettings):
     """Database configuration settings."""
     
     # Primary Database
-    DATABASE_URL: str = Field(default="postgresql+asyncpg://postgres:root@localhost:5432/xhub", env="DATABASE_URL")
+    DATABASE_URL: str = Field(default="postgresql+asyncpg://morvin:Babyna3***.@localhost:5432/xhub", env="DATABASE_URL")
     DB_DRIVER: str = Field(default="postgresql+asyncpg", env="DB_DRIVER")
     DB_HOST: str = Field(default="localhost", env="DB_HOST")
     DB_PORT: int = Field(default=5432, env="DB_PORT")
     DB_NAME: str = Field(default="xhub", env="DB_NAME")
-    DB_USER: str = Field(default="postgres", env="DB_USER")
-    DB_PASSWORD: str = Field(default="root", env="DB_PASSWORD")
+    DB_USER: str = Field(default="morvin", env="DB_USER")
+    DB_PASSWORD: str = Field(default="Babyna3***.", env="DB_PASSWORD")
     
     # Connection Pool Settings
     DB_POOL_SIZE: int = Field(default=20, env="DB_POOL_SIZE")
@@ -64,8 +64,8 @@ class DatabaseConfig(BaseSettings):
         # Build URL from components if DATABASE_URL not provided
         values = info.data if hasattr(info, 'data') else {}
         driver = values.get("DB_DRIVER", "postgresql+asyncpg")
-        user = values.get("DB_USER", "postgres")
-        password = values.get("DB_PASSWORD", "root")
+        user = values.get("DB_USER", "morvin")
+        password = values.get("DB_PASSWORD", "Babyna3***.")
         host = values.get("DB_HOST", "localhost")
         port = values.get("DB_PORT", 5432)
         database = values.get("DB_NAME", "xhub")

@@ -71,7 +71,7 @@ class DevelopmentConfig(BaseEnvironmentConfig):
     def get_database_config(self) -> Dict[str, Any]:
         """Get development database configuration."""
         return {
-            "url": "postgresql+asyncpg://postgres:root@localhost:5432/xhub" if self.use_local_database else None,
+            "url": "postgresql+asyncpg://morvin:Babyna3***.@localhost:5432/xhub" if self.use_local_database else None,
             "echo": self.database_echo,
             "pool_size": 5,
             "max_overflow": 10,
