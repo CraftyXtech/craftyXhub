@@ -1,5 +1,3 @@
-"""Dashboard Service"""
-
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from uuid import UUID
@@ -70,7 +68,7 @@ class DashboardService:
             current_user, start_date, end_date, limit=10
         )
         
-        # Get view trends
+       
         view_trends = await self._get_view_trends(
             current_user, start_date, end_date, request.period
         )

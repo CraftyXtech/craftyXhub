@@ -1,9 +1,4 @@
-"""
-CraftyXhub API Schemas
 
-This module contains all Pydantic schemas for request/response validation
-and serialization in the CraftyXhub FastAPI application.
-"""
 
 # Authentication schemas - FastAPI tutorial
 from .auth import (

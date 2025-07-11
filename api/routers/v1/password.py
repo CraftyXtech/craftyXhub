@@ -21,7 +21,7 @@ from schemas.password import (
 from core.security import generate_verification_token
 
 
-router = APIRouter(prefix="/auth", tags=["Password Management"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post(

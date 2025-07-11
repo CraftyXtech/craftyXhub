@@ -12,7 +12,7 @@ from dependencies.auth import authenticate_user, get_current_active_user
 from dependencies.database import get_db
 from schemas.auth import Token, User
 
-router = APIRouter(prefix="/auth", tags=["authentication"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
