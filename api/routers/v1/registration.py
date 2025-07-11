@@ -1,8 +1,3 @@
-"""
-User Registration API Router for CraftyXhub
-
-User registration endpoints for account creation, email verification, and onboarding.
-"""
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,7 +21,7 @@ from schemas.auth import LoginResponse
 from core.security import generate_verification_token
 
 
-router = APIRouter(prefix="/auth", tags=["Registration"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post(
@@ -41,18 +36,7 @@ async def register_user(
     db: AsyncSession = Depends(get_db),
     request: Request = None
 ) -> RegistrationResponse:
-    """
-    Register a new user account.
     
-    - **name**: User full name (2-100 characters)
-    - **email**: User email address (must be unique)
-    - **password**: Strong password (8+ chars with complexity requirements)
-    - **confirm_password**: Password confirmation (must match)
-    - **terms_accepted**: Must be True
-    - **newsletter_enabled**: Newsletter subscription preference
-    
-    Creates user account and sends email verification.
-    """
     # TODO: Implement rate limiting (3 attempts per IP per hour)
     
     # Check if email already exists
@@ -77,17 +61,16 @@ async def register_user(
         # email_verified_at will be None until verification
     )
     
-    # Set password hash using the user's method
     user.password_hash = user.hash_password(registration_data.password)
     
     db.add(user)
     await db.commit()
     await db.refresh(user)
     
-    # Generate email verification token
+    
     verification_token = generate_verification_token("email_verification")
     
-    # TODO: Store verification token in database or Redis with expiration (24 hours)
+   
     # TODO: Send verification email
     
     # For now, return success response

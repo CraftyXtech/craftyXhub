@@ -1,8 +1,3 @@
-"""
-Authentication schemas for CraftyXhub API
-
-Following FastAPI OAuth2 with Password (and hashing), Bearer with JWT tokens tutorial exactly.
-"""
 
 from typing import Union, Optional, List
 from pydantic import BaseModel, EmailStr, field_validator

@@ -1,9 +1,3 @@
-"""
-API v1 Router Configuration
-
-Includes all API routers for version 1 endpoints.
-Organized by functional areas: authentication, editor modules, admin functions, and public web.
-"""
 
 from fastapi import APIRouter
 
@@ -30,77 +24,28 @@ try:
 except ImportError:
     admin_router = None
 
-# Note: public router removed to avoid duplicating web router functionality
-# The web_* routers already provide all public endpoints under /v1
-
 # Create main v1 router
 router = APIRouter(prefix="/v1")
 
-# Include authentication routes
+# Include authentication routes - let routers use their own tags
 router.include_router(auth_router)
 router.include_router(registration_router)
 router.include_router(password_router)
 
 # Include editor module routes (requires editor/admin permissions)
-router.include_router(
-    editor_categories_router,
-    prefix="/editor",
-    tags=["Editor - Categories"]
-)
-router.include_router(
-    editor_tags_router,
-    prefix="/editor",
-    tags=["Editor - Tags"]
-)
-router.include_router(
-    editor_posts_router,
-    prefix="/editor",
-    tags=["Editor - Posts"]
-)
-router.include_router(
-    editor_dashboard_router,
-    prefix="/editor",
-    tags=["Editor - Dashboard"]
-)
+router.include_router(editor_categories_router)
+router.include_router(editor_tags_router)
+router.include_router(editor_posts_router)
+router.include_router(editor_dashboard_router)
 
 # Include public web routes (accessible to all users)
-router.include_router(web_posts_router, tags=["Web - Posts"])
-router.include_router(web_comments_router, tags=["Web - Comments"])
-router.include_router(comment_router, tags=["Web - Comments"])  # Comment management without post_id
-router.include_router(web_interactions_router, tags=["Web - Interactions"])
-router.include_router(web_profile_router, tags=["Web - Profile"])
+router.include_router(web_posts_router)
+router.include_router(web_comments_router)
+router.include_router(comment_router)  # Has its own "Comment Management" tag
+router.include_router(web_interactions_router)
+router.include_router(web_profile_router)
 
-# Include admin routes if available
+
 if admin_router:
-    router.include_router(
-        admin_router,
-        prefix="/admin",
-        tags=["Admin"]
-    )
+    router.include_router(admin_router, prefix="/admin")
 
-# Available endpoints summary:
-# Authentication:
-#   - POST /v1/auth/login
-#   - POST /v1/auth/refresh
-#   - POST /v1/auth/logout
-#   - GET  /v1/auth/me
-#   - POST /v1/auth/register (User registration)
-#   - POST /v1/auth/verify-email (Email verification)
-#   - POST /v1/auth/password-reset-request (Password reset)
-#   - POST /v1/auth/password-change (Password change)
-
-# Editor Modules:
-#   - /v1/editor/categories/* (Category management)
-#   - /v1/editor/tags/* (Tag management)
-#   - /v1/editor/posts/* (Post management)
-#   - /v1/editor/dashboard/* (Dashboard analytics)
-
-# Public Web:
-#   - /v1/posts/* (Public post viewing)
-#   - /v1/posts/{post_id}/comments/* (Comment threads)
-#   - /v1/comments/* (Comment management)
-#   - /v1/interactions/* (User interactions)
-#   - /v1/profile/* (User profiles and preferences)
-
-# Admin (if available):
-#   - /v1/admin/* (Admin functions) 
