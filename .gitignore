@@ -4,3 +4,4 @@ venv/
 .cursor/
 /logs/
 .env
+.idea/
