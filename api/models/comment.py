@@ -44,9 +44,11 @@ class Comment(SQLModel, table=True):
         }
     )
     
-    liked_by_users: List["User"] = Relationship(
-        back_populates="liked_comments",
-        sa_relationship_kwargs={"secondary": "comment_likes"}
+    # Social interaction relationships
+    likes: List["CommentLike"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": "Comment.id == CommentLike.comment_id"
+        }
     )
     
     def __init__(self, **data):
@@ -106,11 +108,11 @@ class Comment(SQLModel, table=True):
     # Social interaction methods
     def is_liked_by(self, user: "User") -> bool:
         """Check if comment is liked by user."""
-        return user in self.liked_by_users
+        return any(like.user_id == user.id for like in self.likes)
     
     def get_likes_count(self) -> int:
         """Get count of likes for this comment."""
-        return len(self.liked_by_users)
+        return len(self.likes)
     
     # Author methods
     def get_author_name(self) -> str:

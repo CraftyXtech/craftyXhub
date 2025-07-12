@@ -18,6 +18,13 @@ from .web_comments import router as web_comments_router, comment_router
 from .web_interactions import router as web_interactions_router
 from .web_profile import router as web_profile_router
 
+# Social feature routers
+from .social_interactions import router as social_interactions_router
+from .social_profiles import router as social_profiles_router
+from .social_analytics import router as social_analytics_router
+from .activity_feeds import router as activity_feeds_router
+
+# Admin routers (if they exist)
 try:
     from .admin import router as admin_router
 except ImportError:
@@ -41,6 +48,11 @@ router.include_router(comment_router)  # Has its own "Comment Management" tag
 router.include_router(web_interactions_router)
 router.include_router(web_profile_router)
 
+# Include social feature routes
+router.include_router(social_interactions_router)
+router.include_router(social_profiles_router)
+router.include_router(social_analytics_router)
+router.include_router(activity_feeds_router)
 
 if admin_router:
     router.include_router(admin_router, prefix="/admin")

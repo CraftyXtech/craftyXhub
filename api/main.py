@@ -4,6 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
 from core.config import get_settings
 from core.exceptions import register_exception_handlers
 from routers.v1 import router as v1_router
@@ -12,6 +16,7 @@ from database.connection import db_health_check
 settings = get_settings()
 config = settings.config
 
+limiter = Limiter(key_func=get_remote_address)
 
 def include_routers(app: FastAPI) -> None:
     @app.get("/", include_in_schema=False)
@@ -71,12 +76,15 @@ def create_application() -> FastAPI:
         }
     )
     
-    
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     configure_middleware(app)
     register_exception_handlers(app)
     include_routers(app)
     
     return app
+
+
 app = create_application()
 
 

@@ -54,8 +54,8 @@ class BookmarkToggleRequest(BaseModel):
 class BookmarkToggleResponse(BaseModel):
     """Response for bookmark toggle operations"""
     bookmarked: bool
+    bookmark_count: int = 0
     message: str
-    collection: str
     post_id: UUID
 
     class Config:
@@ -68,7 +68,7 @@ class FollowToggleResponse(BaseModel):
     follower_count: int
     following_count: int
     message: str
-    user_id: UUID
+    followed_user_id: UUID
 
     class Config:
         from_attributes = True
@@ -84,6 +84,57 @@ class PostInteractionsResponse(BaseModel):
     view_count: int = 0
     comment_count: int = 0
     share_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class InteractionStatsResponse(BaseModel):
+    """Response for interaction statistics"""
+    post_id: UUID
+    likes: int = 0
+    bookmarks: int = 0
+    comments: int = 0
+    views: int = 0
+    unique_views: int = 0
+    reads: int = 0
+    completed_reads: int = 0
+    completion_rate: float = 0.0
+
+    class Config:
+        from_attributes = True
+
+
+class UserInteractionSummaryResponse(BaseModel):
+    """Response for user interaction summary"""
+    user_id: UUID
+    post_id: UUID
+    liked: bool = False
+    bookmarked: bool = False
+    viewed: bool = False
+    read_progress: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TrendingContentResponse(BaseModel):
+    """Response for trending content"""
+    trending_posts: List[Dict]
+    timeframe: str
+    category_filter: Optional[str] = None
+    total_count: int
+    last_updated: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PopularContentRequest(BaseModel):
+    """Request for popular content"""
+    content_type: str = Field(default="posts", description="Content type: posts, comments")
+    timeframe: str = Field(default="week", description="Timeframe: day, week, month, year, all")
+    limit: int = Field(default=20, ge=1, le=100, description="Number of items")
 
     class Config:
         from_attributes = True
@@ -250,8 +301,8 @@ class UserFollowListResponse(BaseModel):
         from_attributes = True
 
 
-class InteractionStatsResponse(BaseModel):
-    """Response for interaction statistics"""
+class UserStatsResponse(BaseModel):
+    """Response for user interaction statistics"""
     user_id: UUID
     total_likes_given: int = 0
     total_likes_received: int = 0

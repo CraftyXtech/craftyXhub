@@ -1,239 +1,249 @@
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from datetime import datetime, timezone
 
 from dependencies.database import get_db
-from dependencies.auth import get_current_user
-from models.user import User
+from services.auth.email_service import get_email_service, EmailService
+from services.auth.token_service import get_token_service, TokenService
+from services.auth.registration_service import RegistrationService
 from schemas.registration import (
-    UserRegistration,
-    RegistrationResponse,
-    EmailVerificationRequest,
-    EmailVerificationResponse,
+    UserRegistration, 
+    EmailVerificationRequest, 
     ResendVerificationRequest,
-    ResendVerificationResponse,
-    OnboardingPreferences,
-    OnboardingResponse
+    ResendVerificationResponse
 )
-from schemas.auth import LoginResponse
-from core.security import generate_verification_token
-
+from schemas.user import UserResponse
+from core.exceptions import UserAlreadyExistsError, UserNotFoundError, TokenValidationError, TokenExpiredError, TokenNotFoundError
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post(
-    "/register",
-    response_model=RegistrationResponse,
+    "/register", 
+    response_model=UserResponse, 
     status_code=status.HTTP_201_CREATED,
-    summary="User Registration",
-    description="Register new user account with email verification"
+    summary="Register a new user",
+    description="Register a new user account and send email verification",
+    responses={
+        201: {
+            "description": "User registered successfully",
+            "model": UserResponse
+        },
+        409: {
+            "description": "Email already registered",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Email already registered"}
+                }
+            }
+        },
+        422: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "loc": ["body", "password"],
+                                "msg": "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+                                "type": "value_error"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Registration failed"}
+                }
+            }
+        }
+    }
 )
 async def register_user(
-    registration_data: UserRegistration,
+    user_data: UserRegistration,
     db: AsyncSession = Depends(get_db),
-    request: Request = None
-) -> RegistrationResponse:
-    
-    # TODO: Implement rate limiting (3 attempts per IP per hour)
-    
-    # Check if email already exists
-    result = await db.execute(
-        select(User).where(User.email == registration_data.email)
-    )
-    existing_user = result.scalar_one_or_none()
-    
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email address already registered"
-        )
-    
-    # Create new user
-    user = User(
-        name=registration_data.name,
-        email=registration_data.email,
-        role="user",  # Default role
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc)
-        # email_verified_at will be None until verification
-    )
-    
-    user.password_hash = user.hash_password(registration_data.password)
-    
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
-    
-    
-    verification_token = generate_verification_token("email_verification")
-    
-   
-    # TODO: Send verification email
-    
-    # For now, return success response
-    return RegistrationResponse(
-        user=UserResponse.model_validate(user),
-        tokens=None,  # No tokens until email verified
-        email_verification_required=True,
-        message="Registration successful. Please check your email to verify your account."
-    )
-
-
-@router.post(
-    "/verify-email",
-    response_model=EmailVerificationResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Email Verification",
-    description="Verify email address with token and auto-login user"
-)
-async def verify_email(
-    verification_data: EmailVerificationRequest,
-    db: AsyncSession = Depends(get_db)
-) -> EmailVerificationResponse:
+    email_service: EmailService = Depends(get_email_service),
+    token_service: TokenService = Depends(get_token_service)
+):
     """
-    Verify user email address with verification token.
+    Register a new user account.
     
-    - **token**: Email verification token (32+ characters)
+    This endpoint:
+    - Validates user input (email format, password strength, etc.)
+    - Checks if email is already registered
+    - Creates a new user account
+    - Sends email verification link
+    - Returns user information (without sensitive data)
     
-    Verifies email and automatically logs in the user.
-    """
-    # TODO: Implement token validation from database/Redis
-    # For now, this is a placeholder implementation
-    
-    # In a real implementation, you would:
-    # 1. Look up the token in your verification token storage
-    # 2. Check if it's not expired (24 hours)
-    # 3. Get the associated user
-    # 4. Mark email as verified
-    # 5. Delete the verification token
-    
-    # Placeholder: assuming token is valid and finding user
-    # This should be replaced with actual token validation logic
-    
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Email verification not yet implemented. Requires email service setup."
-    )
-
-
-@router.post(
-    "/resend-verification",
-    response_model=ResendVerificationResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Resend Verification Email",
-    description="Resend email verification link"
-)
-async def resend_verification_email(
-    resend_data: ResendVerificationRequest,
-    db: AsyncSession = Depends(get_db)
-) -> ResendVerificationResponse:
-    """
-    Resend email verification link.
-    
-    - **email**: User email address
-    
-    Sends new verification email if user exists and is not verified.
-    """
-    # Get user by email
-    result = await db.execute(
-        select(User).where(User.email == resend_data.email)
-    )
-    user = result.scalar_one_or_none()
-    
-    if not user:
-        # Don't reveal if email exists or not for security
-        return ResendVerificationResponse(
-            message="If an account with this email exists and is not verified, a new verification email has been sent.",
-            email=resend_data.email
-        )
-    
-    if user.email_verified_at is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email address is already verified"
-        )
-    
-    # Generate new verification token
-    verification_token = generate_verification_token("email_verification")
-    
-    # TODO: Store new verification token and send email
-    
-    return ResendVerificationResponse(
-        message="Verification email sent successfully.",
-        email=resend_data.email
-    )
-
-
-@router.get(
-    "/verify/{token}",
-    response_model=EmailVerificationResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Email Verification Link",
-    description="Handle email verification link clicks"
-)
-async def verify_email_link(
-    token: str,
-    db: AsyncSession = Depends(get_db)
-) -> EmailVerificationResponse:
-    """
-    Handle email verification link clicks.
-    
-    This endpoint handles the verification links sent in emails.
-    Users click the link which includes the token as a URL parameter.
-    """
-    # TODO: Implement token validation and user verification
-    # This should mirror the verify_email endpoint but handle GET requests
-    
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Email verification link handling not yet implemented. Requires email service setup."
-    )
-
-
-@router.post(
-    "/onboarding",
-    response_model=OnboardingResponse,
-    status_code=status.HTTP_200_OK,
-    summary="User Onboarding",
-    description="Complete user onboarding with preferences and topic selection"
-)
-async def complete_onboarding(
-    preferences: OnboardingPreferences,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-) -> OnboardingResponse:
-    """
-    Complete user onboarding process.
-    
-    - **interested_categories**: List of category slugs user is interested in
-    - **followed_topics**: List of tag slugs user wants to follow
-    - **newsletter_frequency**: Newsletter frequency preference
-    - **notification_preferences**: Notification preference settings
-    
-    Sets up user preferences and topic subscriptions.
+    **Password Requirements:**
+    - Minimum 8 characters
+    - At least one uppercase letter
+    - At least one lowercase letter  
+    - At least one number
+    - At least one special character
     """
     try:
-        # TODO: Implement preference storage
-        # This would involve:
-        # 1. Creating UserPreference records
-        # 2. Creating UserTopic subscriptions for followed topics
-        # 3. Setting notification preferences
-        # 4. Updating user profile with onboarding completion
-        
-        # For now, just acknowledge the onboarding
-        preferences_saved = True
-        
-        return OnboardingResponse(
-            message="Onboarding completed successfully.",
-            user=UserResponse.model_validate(current_user),
-            preferences_saved=preferences_saved
+        return await RegistrationService.register_user(
+            db=db, 
+            user_data=user_data,
+            email_service=email_service,
+            token_service=token_service
         )
-        
+    except UserAlreadyExistsError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e)
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to save onboarding preferences"
+            detail="Registration failed"
+        )
+
+
+@router.post(
+    "/verify-email", 
+    response_model=UserResponse,
+    summary="Verify email address",
+    description="Verify user email address using verification token",
+    responses={
+        200: {
+            "description": "Email verified successfully",
+            "model": UserResponse
+        },
+        400: {
+            "description": "Invalid token format",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Invalid token format"}
+                }
+            }
+        },
+        404: {
+            "description": "Invalid verification token or user not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Invalid verification token"}
+                }
+            }
+        },
+        410: {
+            "description": "Verification token has expired",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Verification token has expired"}
+                }
+            }
+        }
+    }
+)
+async def verify_email(
+    verification_data: EmailVerificationRequest,
+    db: AsyncSession = Depends(get_db),
+    email_service: EmailService = Depends(get_email_service),
+    token_service: TokenService = Depends(get_token_service)
+):
+    """
+    Verify user email address.
+    
+    This endpoint:
+    - Validates the verification token
+    - Marks the user's email as verified
+    - Activates the user account
+    - Sends a welcome email
+    - Returns updated user information
+    
+    **Note:** Verification tokens expire after 24 hours.
+    """
+    try:
+        return await RegistrationService.verify_email(
+            db=db, 
+            token=verification_data.token,
+            token_service=token_service,
+            email_service=email_service
+        )
+    except TokenNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invalid verification token"
+        )
+    except TokenExpiredError:
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="Verification token has expired"
+        )
+    except TokenValidationError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid token format"
+        )
+    except UserNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+
+@router.post(
+    "/resend-verification", 
+    response_model=ResendVerificationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Resend verification email",
+    description="Resend email verification link to user",
+    responses={
+        200: {
+            "description": "Response about verification email status",
+            "model": ResendVerificationResponse
+        },
+        404: {
+            "description": "User not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "User not found"}
+                }
+            }
+        }
+    }
+)
+async def resend_verification(
+    resend_data: ResendVerificationRequest,
+    db: AsyncSession = Depends(get_db),
+    email_service: EmailService = Depends(get_email_service),
+    token_service: TokenService = Depends(get_token_service)
+):
+    """
+    Resend email verification link.
+    
+    This endpoint:
+    - Checks if user exists
+    - Revokes any existing verification tokens
+    - Generates a new verification token
+    - Sends new verification email
+    - Returns status message
+    
+    **Note:** If email is already verified, returns appropriate message.
+    """
+    try:
+        was_sent = await RegistrationService.resend_verification(
+            db=db, 
+            email=resend_data.email,
+            token_service=token_service,
+            email_service=email_service
+        )
+        if was_sent:
+            return ResendVerificationResponse(
+                message="Verification email sent successfully"
+            )
+        else:
+            return ResendVerificationResponse(
+                message="Email already verified"
+            )
+    except UserNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
         ) 
