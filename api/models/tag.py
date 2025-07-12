@@ -22,9 +22,13 @@ class Tag(SQLModel, table=True):
         back_populates="tags",
         sa_relationship_kwargs={"secondary": "post_tags"}
     )
+    
+    # Tag following relationship
     followers: List["User"] = Relationship(
-        back_populates="followed_topics",
-        sa_relationship_kwargs={"secondary": "user_topics"}
+        back_populates="followed_tags",
+        sa_relationship_kwargs={
+            "secondary": "user_topics"
+        }
     )
     
     def __init__(self, **data):

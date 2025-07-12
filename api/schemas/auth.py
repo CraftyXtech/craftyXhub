@@ -3,6 +3,7 @@ from typing import Union, Optional, List
 from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime
 from enum import Enum
+from uuid import UUID
 
 # User role enumeration - following FastAPI best practices
 class UserRole(str, Enum):
@@ -47,7 +48,7 @@ class UserUpdate(BaseModel):
     disabled: Optional[bool] = None
 
 class UserResponse(BaseModel):
-    id: int
+    id: UUID  # Changed from int to UUID
     username: str
     email: str
     full_name: Optional[str] = None

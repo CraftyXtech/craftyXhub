@@ -2,54 +2,41 @@
 from typing import Annotated, Union
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 import jwt
 from jwt.exceptions import InvalidTokenError
 
-from core.config import settings
+from core.config import get_settings
 from core.security import SECRET_KEY, ALGORITHM, TokenData
 from schemas.auth import User, UserInDB, UserRole
 from models.user import User as UserModel
 from dependencies.database import get_db
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
-fake_users_db = {
-    "testuser": {
-        "username": "testuser",
-        "full_name": "Test User",
-        "email": "testuser@example.com",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
-        "disabled": False,
-    }
-}
-
-def get_user(db: Session, username: str) -> Union[UserInDB, None]:
-    if username in fake_users_db:
-        user_dict = fake_users_db[username]
-        return UserInDB(**user_dict)
-    
-    if db is not None:
-        try:
-            statement = select(UserModel).where(UserModel.username == username)
-            user = db.exec(statement).first()
-            if user:
-                return UserInDB(
-                    username=user.username,
-                    email=user.email,
-                    full_name=user.name,
-                    disabled=not user.is_active,
-                    hashed_password=user.password_hash
-                )
-        except Exception:
-            pass
+async def get_user(db: AsyncSession, username: str) -> Union[UserInDB, None]:
+    try:
+        statement = select(UserModel).where(UserModel.email == username)
+        result = await db.execute(statement)
+        user = result.scalar_one_or_none()
+        if user:
+            return UserInDB(
+                username=user.email,
+                email=user.email,
+                full_name=user.name,
+                disabled=False,  # No is_active column, so always enabled
+                hashed_password=user.password_hash
+            )
+    except Exception:
+        pass
     
     return None
 
-def authenticate_user(db: Session, username: str, password: str) -> Union[UserInDB, bool]:
+async def authenticate_user(db: AsyncSession, username: str, password: str) -> Union[UserInDB, bool]:
     from core.security import verify_password
     
-    user = get_user(db, username)
+    user = await get_user(db, username)
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
@@ -58,7 +45,7 @@ def authenticate_user(db: Session, username: str, password: str) -> Union[UserIn
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], 
-    db: Annotated[Session, Depends(get_db)]
+    db: Annotated[AsyncSession, Depends(get_db)]
 ) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -74,7 +61,7 @@ async def get_current_user(
     except InvalidTokenError:
         raise credentials_exception
     
-    user = get_user(db, username=token_data.username)
+    user = await get_user(db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
@@ -86,16 +73,16 @@ async def get_current_active_user(
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
-
 async def get_current_user_legacy(
     token: Annotated[str, Depends(oauth2_scheme)],
-    db: Annotated[Session, Depends(get_db)]
+    db: Annotated[AsyncSession, Depends(get_db)]
 ) -> UserModel:
     user = await get_current_user(token, db)
     
     try:
-        statement = select(UserModel).where(UserModel.username == user.username)
-        db_user = db.exec(statement).first()
+        statement = select(UserModel).where(UserModel.email == user.username)
+        result = await db.execute(statement)
+        db_user = result.scalar_one_or_none()
         if db_user:
             return db_user
     except Exception:
@@ -107,7 +94,6 @@ async def get_current_user_legacy(
     )
 
 def require_role(required_role: UserRole):
-   
     async def role_checker(
         current_user: Annotated[UserModel, Depends(get_current_user_legacy)]
     ) -> UserModel:
@@ -120,7 +106,6 @@ def require_role(required_role: UserRole):
     return role_checker
 
 def require_roles(*allowed_roles: UserRole):
-   
     async def roles_checker(
         current_user: Annotated[UserModel, Depends(get_current_user_legacy)]
     ) -> UserModel:
@@ -134,11 +119,9 @@ def require_roles(*allowed_roles: UserRole):
         return current_user
     return roles_checker
 
-
 require_admin = require_role(UserRole.ADMIN)
 require_editor = require_role(UserRole.EDITOR)
 require_user = require_role(UserRole.USER)
-
 
 require_admin_or_editor = require_roles(UserRole.ADMIN, UserRole.EDITOR)
 require_any_role = require_roles(UserRole.USER, UserRole.EDITOR, UserRole.ADMIN)

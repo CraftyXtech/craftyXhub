@@ -4,12 +4,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from core.config import get_settings
 from core.logging import setup_logging, RequestLoggingMiddleware
 from core.exceptions import register_exception_handlers
 from database.connection import init_database, close_database
 
+limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -49,6 +53,8 @@ def create_application() -> FastAPI:
         terms_of_service="https://craftyhub.com/terms",
     )
     
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     
     configure_middleware(app, settings)
     

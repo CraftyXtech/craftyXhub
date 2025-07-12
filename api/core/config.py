@@ -110,8 +110,30 @@ class Settings:
     
     @property
     def secret_key(self) -> str:
-       
         return getattr(self.config, "secret_key", "")
+    
+    @property
+    def SECRET_KEY(self) -> str:
+        security_config = self.get_security_config()
+        return security_config.get("secret_key", "your-secret-key-here")
+    
+    @property
+    def JWT_ALGORITHM(self) -> str:
+        security_config = self.get_security_config()
+        auth_config = security_config.get("authentication", {})
+        return auth_config.get("algorithm", "HS256")
+    
+    @property
+    def ACCESS_TOKEN_EXPIRE_MINUTES(self) -> int:
+        security_config = self.get_security_config()
+        auth_config = security_config.get("authentication", {})
+        return auth_config.get("jwt_expire_minutes", 15)
+    
+    @property
+    def REFRESH_TOKEN_EXPIRE_DAYS(self) -> int:
+        security_config = self.get_security_config()
+        auth_config = security_config.get("authentication", {})
+        return auth_config.get("refresh_expire_days", 7)
     
     @property
     def database_url(self) -> str:

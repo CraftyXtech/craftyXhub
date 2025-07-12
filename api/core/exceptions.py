@@ -318,6 +318,72 @@ class AuthenticationError(AuthenticationException):
     pass
 
 
+class TokenValidationError(CraftyXHubException):
+    """Raised when token validation fails."""
+    
+    def __init__(
+        self,
+        message: str = "Token validation failed",
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            error_code="TOKEN_VALIDATION_ERROR",
+            details=details
+        )
+
+
+class TokenExpiredError(CraftyXHubException):
+    """Raised when token has expired."""
+    
+    def __init__(
+        self,
+        message: str = "Token has expired",
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            status_code=status.HTTP_410_GONE,
+            error_code="TOKEN_EXPIRED",
+            details=details
+        )
+
+
+class TokenNotFoundError(CraftyXHubException):
+    """Raised when token is not found."""
+    
+    def __init__(
+        self,
+        message: str = "Token not found",
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            status_code=status.HTTP_404_NOT_FOUND,
+            error_code="TOKEN_NOT_FOUND",
+            details=details
+        )
+
+
+class UserAlreadyExistsError(DuplicateResourceException):
+    """Raised when trying to create a user that already exists."""
+    
+    def __init__(
+        self,
+        email: str,
+        message: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            resource_type="User",
+            field="email",
+            value=email,
+            message=message or f"User with email '{email}' already exists",
+            details=details
+        )
+
+
 def create_error_response(
     message: str,
     status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,

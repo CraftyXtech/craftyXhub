@@ -3,9 +3,6 @@
 # Core models
 from .user import (
     User, 
-    Like, 
-    Bookmark, 
-    Follow, 
     UserTopic, 
     UserRead, 
     UserPreference, 
@@ -49,9 +46,6 @@ __all__ = [
     "View",
     
     # Link/Junction tables
-    "Like",
-    "Bookmark", 
-    "Follow",
     "UserTopic",
     "UserRead",
     "PostTag",

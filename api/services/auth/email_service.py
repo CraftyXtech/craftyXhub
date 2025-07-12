@@ -1,159 +1,157 @@
-import asyncio
 import logging
 import smtplib
-from datetime import datetime
-from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from pathlib import Path
-from typing import Dict, List, Optional, Any
-from jinja2 import Environment, FileSystemLoader, TemplateNotFound
-from pydantic import BaseModel, EmailStr, Field
+from email.mime.multipart import MIMEMultipart
+from typing import Optional
 import aiosmtplib
 
 from core.config import get_settings
-from core.exceptions import EmailServiceError, TemplateNotFoundError
 
 logger = logging.getLogger(__name__)
-
-
-class EmailTemplate(BaseModel):
-    subject: str
-    html_body: str
-    text_body: Optional[str] = None
-    attachments: List[str] = Field(default_factory=list)
-
-
-class EmailMessage(BaseModel):
-    to_email: EmailStr
-    subject: str
-    html_body: str
-    text_body: Optional[str] = None
-    attachments: List[str] = Field(default_factory=list)
 
 
 class EmailService:
     def __init__(self):
         self.settings = get_settings()
-        self.template_dir = Path(__file__).parent.parent.parent / "templates" / "emails"
-        self.jinja_env = Environment(
-            loader=FileSystemLoader(str(self.template_dir)),
-            autoescape=True
-        )
+        self.smtp_config = self.settings.get_email_config()
     
-    async def send_email(self, message: EmailMessage) -> bool:
-        """Send email using SMTP configuration."""
+    def _create_verification_email_content(self, user_name: str, verification_url: str) -> str:
+        """Create verification email content."""
+        return f"""CraftyXhub - Email Verification
+====================================
+
+Hi {user_name},
+
+Welcome to CraftyXhub! We're excited to have you join our community of creators and innovators.
+
+To get started, please verify your email address by clicking the link below:
+
+{verification_url}
+
+This verification link will expire in 24 hours for security reasons.
+
+If you didn't create an account with CraftyXhub, please ignore this email.
+
+Best regards,
+The CraftyXhub Team
+
+---
+This is an automated email. Please do not reply to this message."""
+
+    def _create_welcome_email_content(self, user_name: str) -> str:
+        """Create welcome email content."""
+        return f"""CraftyXhub - Welcome to the Community!
+=========================================
+
+Hi {user_name},
+
+Congratulations! Your email has been successfully verified and your CraftyXhub account is now active.
+
+Welcome to our community of creators, innovators, and craft enthusiasts! Here's what you can do next:
+
+• Explore featured posts and discover amazing content
+• Create your first post and share your projects
+• Follow other creators and topics you're interested in
+• Join discussions in the comments section
+• Customize your profile to showcase your work
+
+We're thrilled to have you as part of the CraftyXhub family. If you have any questions or need help getting started, feel free to reach out to our support team.
+
+Happy crafting!
+
+Best regards,
+The CraftyXhub Team
+
+---
+This is an automated email. Please do not reply to this message."""
+
+    def _create_password_reset_email_content(self, user_name: str, reset_url: str) -> str:
+        """Create password reset email content."""
+        return f"""CraftyXhub - Password Reset Request
+====================================
+
+Hi {user_name},
+
+We received a request to reset your password for your CraftyXhub account.
+
+To reset your password, click the link below:
+
+{reset_url}
+
+This password reset link will expire in 1 hour for security reasons.
+
+If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
+
+For security reasons, please ensure you:
+• Use a strong, unique password
+• Don't share your password with anyone
+• Log out from shared devices
+
+Best regards,
+The CraftyXhub Team
+
+---
+This is an automated email. Please do not reply to this message."""
+
+    async def send_email(self, to_email: str, subject: str, content: str) -> bool:
+        """Send email using SMTP."""
         try:
-            msg = MIMEMultipart("alternative")
-            msg["From"] = self.settings.SMTP_FROM_EMAIL
-            msg["To"] = message.to_email
-            msg["Subject"] = message.subject
-
-            if message.text_body:
-                text_part = MIMEText(message.text_body, "plain")
-                msg.attach(text_part)
-
-            html_part = MIMEText(message.html_body, "html")
-            msg.attach(html_part)
-
+            message = MIMEText(content, 'plain', 'utf-8')
+            message['Subject'] = subject
+            message['From'] = self.smtp_config.get('from_email', 'noreply@craftyxhub.com')
+            message['To'] = to_email
+            
+            # Send email using aiosmtplib for async support
             await aiosmtplib.send(
-                msg,
-                hostname=self.settings.SMTP_HOST,
-                port=self.settings.SMTP_PORT,
-                username=self.settings.SMTP_USERNAME,
-                password=self.settings.SMTP_PASSWORD,
-                use_tls=self.settings.SMTP_USE_TLS,
+                message,
+                hostname=self.smtp_config.get('server', 'localhost'),
+                port=self.smtp_config.get('port', 587),
+                username=self.smtp_config.get('username'),
+                password=self.smtp_config.get('password'),
+                start_tls=self.smtp_config.get('use_tls', True)
             )
             
-            logger.info(f"Email sent successfully to {message.to_email}")
+            logger.info(f"Email sent successfully to {to_email}")
             return True
             
         except Exception as e:
-            logger.error(f"Failed to send email to {message.to_email}: {str(e)}")
-            raise EmailServiceError(f"Failed to send email: {str(e)}")
-
-    def render_template(self, template_name: str, context: Dict[str, Any]) -> EmailTemplate:
-        """Render email template with context."""
-        try:
-            html_template = self.jinja_env.get_template(f"{template_name}.html")
-            html_body = html_template.render(context)
-            
-            subject_template = self.jinja_env.get_template(f"{template_name}_subject.txt")
-            subject = subject_template.render(context).strip()
-            
-            text_body = None
-            try:
-                text_template = self.jinja_env.get_template(f"{template_name}.txt")
-                text_body = text_template.render(context)
-            except TemplateNotFound:
-                pass
-
-            return EmailTemplate(
-                subject=subject,
-                html_body=html_body,
-                text_body=text_body
-            )
-            
-        except TemplateNotFound as e:
-            raise TemplateNotFoundError(f"Template not found: {template_name}")
-
+            logger.error(f"Failed to send email to {to_email}: {str(e)}")
+            return False
+    
     async def send_verification_email(self, email: str, token: str, user_name: str) -> bool:
-        """Send email verification email."""
-        context = {
-            "user_name": user_name,
-            "verification_url": f"{self.settings.FRONTEND_URL}/verify-email?token={token}",
-            "app_name": self.settings.APP_NAME,
-            "support_email": self.settings.SMTP_FROM_EMAIL
-        }
+        """Send email verification message."""
+        verification_url = f"{self.settings.frontend_url}/verify-email?token={token}"
+        content = self._create_verification_email_content(user_name, verification_url)
         
-        template = self.render_template("verification", context)
-        message = EmailMessage(
+        return await self.send_email(
             to_email=email,
-            subject=template.subject,
-            html_body=template.html_body,
-            text_body=template.text_body
+            subject="Verify Your CraftyXhub Account",
+            content=content
         )
-        
-        return await self.send_email(message)
-
+    
     async def send_welcome_email(self, email: str, user_name: str) -> bool:
         """Send welcome email after successful verification."""
-        context = {
-            "user_name": user_name,
-            "app_name": self.settings.APP_NAME,
-            "login_url": f"{self.settings.FRONTEND_URL}/login",
-            "support_email": self.settings.SMTP_FROM_EMAIL
-        }
+        content = self._create_welcome_email_content(user_name)
         
-        template = self.render_template("welcome", context)
-        message = EmailMessage(
+        return await self.send_email(
             to_email=email,
-            subject=template.subject,
-            html_body=template.html_body,
-            text_body=template.text_body
+            subject="Welcome to CraftyXhub!",
+            content=content
         )
-        
-        return await self.send_email(message)
-
+    
     async def send_password_reset_email(self, email: str, token: str, user_name: str) -> bool:
         """Send password reset email."""
-        context = {
-            "user_name": user_name,
-            "reset_url": f"{self.settings.FRONTEND_URL}/reset-password?token={token}",
-            "app_name": self.settings.APP_NAME,
-            "support_email": self.settings.SMTP_FROM_EMAIL
-        }
+        reset_url = f"{self.settings.frontend_url}/reset-password?token={token}"
+        content = self._create_password_reset_email_content(user_name, reset_url)
         
-        template = self.render_template("password_reset", context)
-        message = EmailMessage(
+        return await self.send_email(
             to_email=email,
-            subject=template.subject,
-            html_body=template.html_body,
-            text_body=template.text_body
+            subject="Reset Your CraftyXhub Password",
+            content=content
         )
-        
-        return await self.send_email(message)
 
 
-# Dependency injection
+# Dependency function
 async def get_email_service() -> EmailService:
+    """Dependency to get email service instance."""
     return EmailService() 

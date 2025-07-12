@@ -33,55 +33,52 @@ class User(SQLModel, table=True):
     posts: List["Post"] = Relationship(back_populates="author")
     comments: List["Comment"] = Relationship(back_populates="author")
     
-    # Social relationships (many-to-many)
-    liked_posts: List["Post"] = Relationship(
-        back_populates="liked_by_users",
-        sa_relationship_kwargs={"secondary": "user_likes"}
-    )
-    bookmarked_posts: List["Post"] = Relationship(
-        back_populates="bookmarked_by_users",
-        sa_relationship_kwargs={"secondary": "user_bookmarks"}
-    )
-    
-    # User following relationships
-    following: List["User"] = Relationship(
-        sa_relationship_kwargs={
-            "secondary": "user_follows",
-            "primaryjoin": "User.id == user_follows.c.follower_id",
-            "secondaryjoin": "User.id == user_follows.c.followed_id"
-        }
-    )
-    followers: List["User"] = Relationship(
-        sa_relationship_kwargs={
-            "secondary": "user_follows", 
-            "primaryjoin": "User.id == user_follows.c.followed_id",
-            "secondaryjoin": "User.id == user_follows.c.follower_id"
-        }
-    )
-    
-    # Topic following
-    followed_topics: List["Tag"] = Relationship(
-        back_populates="followers",
-        sa_relationship_kwargs={"secondary": "user_topics"}
-    )
-    
     # Media uploads
     media: List["Media"] = Relationship(back_populates="user")
     
-    # Reading history 
-    read_posts: List["Post"] = Relationship(
-        back_populates="readers",
-        sa_relationship_kwargs={"secondary": "user_reads"}
-    )
-    
-    # Comment likes
-    liked_comments: List["Comment"] = Relationship(
-        back_populates="liked_by_users",
-        sa_relationship_kwargs={"secondary": "comment_likes"}
-    )
-    
     # User preferences (one-to-one)
     preferences: Optional["UserPreference"] = Relationship(back_populates="user")
+    
+    # Social relationships
+    following: List["User"] = Relationship(
+        back_populates="followers",
+        sa_relationship_kwargs={
+            "secondary": "follows",
+            "primaryjoin": "User.id == Follow.follower_id",
+            "secondaryjoin": "User.id == Follow.followed_id",
+            "overlaps": "follower,followed"
+        }
+    )
+    
+    followers: List["User"] = Relationship(
+        back_populates="following",
+        sa_relationship_kwargs={
+            "secondary": "follows",
+            "primaryjoin": "User.id == Follow.followed_id", 
+            "secondaryjoin": "User.id == Follow.follower_id",
+            "overlaps": "follower,followed"
+        }
+    )
+    
+    # User interaction relationships
+    likes: List["Like"] = Relationship(back_populates="user")
+    bookmarks: List["Bookmark"] = Relationship(back_populates="user")
+    views: List["View"] = Relationship(back_populates="user")
+    
+    # Tag following relationship
+    followed_tags: List["Tag"] = Relationship(
+        back_populates="followers",
+        sa_relationship_kwargs={
+            "secondary": "user_topics"
+        }
+    )
+    
+    # Read tracking relationship
+    read_posts: List["UserRead"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": "User.id == UserRead.user_id"
+        }
+    )
     
     # Authentication and role methods
     def is_admin(self) -> bool:
@@ -131,32 +128,6 @@ class User(SQLModel, table=True):
 
 # Link tables for many-to-many relationships
 from sqlmodel import SQLModel
-
-class Like(SQLModel, table=True):
-    __tablename__ = "user_likes"
-    
-    user_id: UUID = Field(foreign_key="users.id", primary_key=True)
-    post_id: UUID = Field(foreign_key="posts.id", primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class Bookmark(SQLModel, table=True):
-    __tablename__ = "user_bookmarks"
-    
-    user_id: UUID = Field(foreign_key="users.id", primary_key=True)
-    post_id: UUID = Field(foreign_key="posts.id", primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class Follow(SQLModel, table=True):
-    __tablename__ = "user_follows"
-    
-    follower_id: UUID = Field(foreign_key="users.id", primary_key=True)
-    followed_id: UUID = Field(foreign_key="users.id", primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
 
 class UserTopic(SQLModel, table=True):
     __tablename__ = "user_topics"

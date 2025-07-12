@@ -30,7 +30,7 @@ class Like(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     # Relationships
-    user: Optional["User"] = Relationship()
+    user: Optional["User"] = Relationship(back_populates="likes")
     
     def __init__(self, **data):
         """Initialize like with validation."""
@@ -70,8 +70,8 @@ class Bookmark(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
     # Relationships
-    user: Optional["User"] = Relationship()
-    post: Optional["Post"] = Relationship()
+    user: Optional["User"] = Relationship(back_populates="bookmarks")
+    post: Optional["Post"] = Relationship(back_populates="bookmarks")
     
     model_config = {
         "table": True,
@@ -96,10 +96,18 @@ class Follow(SQLModel, table=True):
     
     # Relationships
     follower: Optional["User"] = Relationship(
-        sa_relationship_kwargs={"foreign_keys": "Follow.follower_id"}
+        back_populates="following",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Follow.follower_id]",
+            "overlaps": "following,followers"
+        }
     )
     followed: Optional["User"] = Relationship(
-        sa_relationship_kwargs={"foreign_keys": "Follow.followed_id"}
+        back_populates="followers", 
+        sa_relationship_kwargs={
+            "foreign_keys": "[Follow.followed_id]",
+            "overlaps": "following,followers"
+        }
     )
     
     def __init__(self, **data):
@@ -134,8 +142,8 @@ class View(SQLModel, table=True):
     viewed_at: datetime = Field(default_factory=datetime.utcnow, index=True)
     
     # Relationships
-    post: Optional["Post"] = Relationship()
-    user: Optional["User"] = Relationship()
+    post: Optional["Post"] = Relationship(back_populates="views")
+    user: Optional["User"] = Relationship(back_populates="views")
     
     def is_anonymous(self) -> bool:
         """Check if this is an anonymous view."""

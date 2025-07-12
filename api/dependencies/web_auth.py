@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from dependencies.database import get_db
-from dependencies.auth import get_current_user
+from dependencies.auth import get_current_user as auth_get_current_user
 from models.user import User
 from core.exceptions import AuthenticationError
 
@@ -18,15 +18,31 @@ async def get_optional_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_bearer),
     db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
-    
+    """Get current user if authenticated, None otherwise."""
     if not credentials:
         return None
     
     try:
-        user = await get_current_user(credentials.credentials, db)
+        user = await auth_get_current_user(credentials.credentials, db)
         return user
     except (AuthenticationError, HTTPException):
         return None
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+    db: AsyncSession = Depends(get_db)
+) -> User:
+    """Get current authenticated user (required)."""
+    try:
+        user = await auth_get_current_user(credentials.credentials, db)
+        return user
+    except (AuthenticationError, HTTPException) as e:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
 
 
 async def get_current_user_or_redirect(
@@ -34,7 +50,7 @@ async def get_current_user_or_redirect(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_bearer),
     db: AsyncSession = Depends(get_db)
 ) -> User:
-   
+    """Get current user or provide redirect information."""
     if not credentials:
         raise HTTPException(
             status_code=401,
@@ -46,7 +62,7 @@ async def get_current_user_or_redirect(
         )
     
     try:
-        user = await get_current_user(credentials.credentials, db)
+        user = await auth_get_current_user(credentials.credentials, db)
         return user
     except (AuthenticationError, HTTPException):
         raise HTTPException(
@@ -60,30 +76,29 @@ async def get_current_user_or_redirect(
 
 
 async def verify_user_can_comment(
-    user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ) -> User:
-    
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required to comment",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-    
-    # Check if user is active and can comment
-    if user.role == "banned":
+    """Verify user can create comments."""
+    if current_user.role == "banned":
         raise HTTPException(
             status_code=403,
-            detail="Your account has been restricted from commenting"
+            detail="Account is banned from commenting"
         )
     
-    return user
+    if not current_user.email_verified_at:
+        raise HTTPException(
+            status_code=403,
+            detail="Email verification required to comment"
+        )
+    
+    return current_user
 
 
 async def verify_user_can_interact(
     user: Optional[User] = Depends(get_optional_current_user)
 ) -> User:
-   
+    """Verify user can interact with posts."""
     if not user:
         raise HTTPException(
             status_code=401,
@@ -104,7 +119,7 @@ async def verify_user_can_interact(
 async def get_user_context(
     user: Optional[User] = Depends(get_optional_current_user)
 ) -> dict:
-   
+    """Get user context for frontend."""
     if not user:
         return {
             "is_authenticated": False,
@@ -127,14 +142,13 @@ async def get_user_context(
 
 async def verify_comment_ownership(
     comment_id: str,
-    user: User = Depends(get_current_user_or_redirect),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> User:
-   
+) -> dict:
+    """Verify user owns the comment or has admin privileges."""
     from models.comment import Comment
     from sqlalchemy import select
     
-    # Get comment
     stmt = select(Comment).where(Comment.id == comment_id)
     result = await db.execute(stmt)
     comment = result.scalar_one_or_none()
@@ -142,43 +156,47 @@ async def verify_comment_ownership(
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
     
-    # Check ownership or moderation rights
-    if comment.user_id != user.id and user.role not in ["admin", "editor"]:
+    is_owner = comment.user_id == current_user.id
+    is_admin = current_user.role == "admin"
+    
+    if not (is_owner or is_admin):
         raise HTTPException(
             status_code=403,
-            detail="You can only modify your own comments"
+            detail="Permission denied"
         )
     
-    return user
+    return {
+        "comment": comment,
+        "is_owner": is_owner,
+        "is_admin": is_admin
+    }
 
 
 async def get_rate_limit_info(
-    user: Optional[User] = Depends(get_optional_current_user)
+    request: Request,
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ) -> dict:
-   
-    if not user:
-        return {
-            "comment_limit": 5,  # Anonymous users get lower limits
-            "interaction_limit": 10,
-            "search_limit": 20
-        }
+    """Get rate limiting information for the request."""
+    client_ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
     
-    # Authenticated users get higher limits
-    base_limits = {
-        "comment_limit": 30,
-        "interaction_limit": 100,
-        "search_limit": 200
+    # Rate limits based on user type
+    if current_user:
+        if current_user.role == "admin":
+            rate_limit = {"requests": 1000, "window": 3600}  # 1000/hour
+        elif current_user.role == "editor":
+            rate_limit = {"requests": 500, "window": 3600}   # 500/hour
+        else:
+            rate_limit = {"requests": 100, "window": 3600}   # 100/hour
+    else:
+        rate_limit = {"requests": 20, "window": 3600}        # 20/hour for anonymous
+    
+    return {
+        "client_ip": client_ip,
+        "user_agent": user_agent,
+        "user_id": current_user.id if current_user else None,
+        "rate_limit": rate_limit
     }
-    
-    # Premium users or higher roles get even higher limits
-    if user.role in ["editor", "admin"]:
-        base_limits.update({
-            "comment_limit": 100,
-            "interaction_limit": 500,
-            "search_limit": 1000
-        })
-    
-    return base_limits
 
 
 async def check_post_access(
@@ -186,7 +204,7 @@ async def check_post_access(
     user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> dict:
-   
+    """Check user's access to a post."""
     from models.post import Post
     from sqlalchemy import select
     
