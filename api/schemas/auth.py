@@ -27,7 +27,7 @@ class User(BaseModel):
     disabled: Union[bool, None] = None
 
 class UserInDB(User):
-    hashed_password: str
+    password: str
 
 # Login request schema - for OAuth2PasswordRequestForm compatibility
 class UserLogin(BaseModel):

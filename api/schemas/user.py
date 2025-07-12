@@ -8,7 +8,6 @@ from schemas.auth import UserRole
 
 
 class UserSummaryResponse(BaseModel):
-    """Summary user information for responses"""
     id: UUID
     name: str
     email: EmailStr
@@ -21,7 +20,6 @@ class UserSummaryResponse(BaseModel):
 
 
 class UserResponse(BaseModel):
-    """Full user information for responses"""
     id: UUID
     name: str
     email: EmailStr
@@ -44,7 +42,6 @@ class UserResponse(BaseModel):
 
 
 class UserProfileResponse(BaseModel):
-    """Extended user profile information"""
     id: UUID
     name: str
     email: EmailStr
