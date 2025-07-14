@@ -1,4 +1,4 @@
- aiosmtplib==4.0.1
+aiosmtplib==4.0.1
 fastapi==0.116.0
 itsdangerous==2.2.0
 uvicorn==0.35.0
@@ -9,10 +9,10 @@ sqlalchemy==2.0.41
 asyncpg==0.30.0
 alembic==1.16.3
 PyJWT==2.10.1 
-python-multipart==0.0.20 
+python-multipart==0.0.20
+bcrypt==3.2.2
 passlib[bcrypt]==1.7.4 
 python-jose[cryptography]==3.3.0 
-bcrypt==4.2.0
 cryptography==45.0.5
 python-dotenv==1.1.1
 PyYAML==6.0.2

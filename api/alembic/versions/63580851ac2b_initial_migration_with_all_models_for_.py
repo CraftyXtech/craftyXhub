@@ -52,7 +52,7 @@ def upgrade() -> None:
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
     sa.Column('email_verified_at', sa.DateTime(), nullable=True),
-    sa.Column('password_hash', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
+    sa.Column('password', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
     sa.Column('avatar', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('bio', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False),

@@ -7,7 +7,6 @@ from sqlalchemy import select
 import jwt
 from jwt.exceptions import InvalidTokenError
 
-from core.config import get_settings
 from core.security import SECRET_KEY, ALGORITHM, TokenData
 from schemas.auth import User, UserInDB, UserRole
 from models.user import User as UserModel

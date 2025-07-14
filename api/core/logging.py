@@ -15,7 +15,6 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-from core.config import get_settings
 
 
 class StructuredFormatter(logging.Formatter):
@@ -368,25 +367,20 @@ def setup_logging() -> None:
     Configure application logging based on settings.
     Sets up loggers, handlers, and formatters.
     """
-    settings = get_settings()
-    config = settings.config
+ 
+  
     
-    # Get logging configuration from the environment config
-    logging_config_data = config.get_logging_config()
-    
-    # Create logs directory if it doesn't exist
-    log_file = logging_config_data.get("file_config", {}).get("filename", "logs/app.log")
+    log_file ="logs/development.log"
     log_file_path = Path(log_file)
     log_file_path.parent.mkdir(parents=True, exist_ok=True)
     
-    # Get log level and format from environment config
-    log_level = logging_config_data.get("level", "INFO")
-    log_format = logging_config_data.get("format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    log_level = "INFO"
+    log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     
     # Logging configuration
     logging_config = {
         "version": 1,
-        "disable_existing_loggers": logging_config_data.get("disable_existing_loggers", False),
+        "disable_existing_loggers":False,
         "formatters": {
             "structured": {
                 "()": StructuredFormatter,
@@ -399,14 +393,14 @@ def setup_logging() -> None:
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
-                "formatter": "simple" if settings.is_development else "structured",
+                "formatter": "simple",
                 "level": log_level,
             },
             "file": {
                 "class": "logging.handlers.RotatingFileHandler",
                 "filename": log_file,
-                "maxBytes": logging_config_data.get("file_config", {}).get("max_bytes", 10485760),
-                "backupCount": logging_config_data.get("file_config", {}).get("backup_count", 5),
+                "maxBytes": 10485760,
+                "backupCount":  5,
                 "formatter": "structured",
                 "level": log_level,
             },
@@ -459,7 +453,7 @@ def setup_logging() -> None:
         extra={
             "log_level": log_level,
             "log_file": log_file,
-            "environment": settings.environment,
+            "environment": "development",
         }
     )
 

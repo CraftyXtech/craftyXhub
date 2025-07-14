@@ -1,16 +1,17 @@
+import os
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlmodel import SQLModel
 import logging
-from core.config import get_settings
+from  dotenv import  load_dotenv
 
+load_dotenv()
 logger = logging.getLogger(__name__)
 
-settings = get_settings()
-DATABASE_URL = settings.get_database_config()["url"]
+DATABASE_URL = f"postgresql+asyncpg://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:5432/{os.getenv('DB_NAME')}"
 
 engine = create_async_engine(
     DATABASE_URL,
-    echo=settings.debug,
     pool_size=5,
     max_overflow=10,
     pool_timeout=30,
@@ -41,12 +42,9 @@ async def get_db_session():
             await session.close()
 
 async def init_db() -> None:
-    """
-    Initialize database by creating all tables defined in SQLModel models.
-    """
     try:
         async with engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.create_all)  # Use SQLModel.metadata
+            await conn.run_sync(SQLModel.metadata.create_all)
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
@@ -63,11 +61,9 @@ async def db_health_check() -> bool:
         return False
 
 
-async def drop_all_tables(self) -> None:
-    if not self._initialized:
-        raise RuntimeError("Database manager not initialized")
+async def drop_all_tables() -> None:
 
-    async with self.engine.begin() as conn:
+    async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
 
     logger.warning("All database tables dropped")
