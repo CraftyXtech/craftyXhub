@@ -1,8 +1,19 @@
-
+import logging
+from typing import Optional
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from routers.v1 import router as v1_router
 from database.connection import db_health_check, init_db, close_db, drop_all_tables
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("logs/development.log")
+    ]
+)
+logger = logging.getLogger(__name__)
 
 def include_routers(app: FastAPI) -> None:
     @app.get("/", include_in_schema=False)

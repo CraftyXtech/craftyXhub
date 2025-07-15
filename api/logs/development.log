@@ -1191,3 +1191,10 @@
 {"timestamp": "2025-07-12T07:06:23.386150", "level": "WARNING", "logger": "passlib.handlers.bcrypt", "message": "(trapped) error reading bcrypt version", "module": "bcrypt", "function": "_load_backend_mixin", "line": 622, "exception": "Traceback (most recent call last):\n  File \"C:\\xampp\\htdocs\\craftyXhub\\api\\venv\\Lib\\site-packages\\passlib\\handlers\\bcrypt.py\", line 620, in _load_backend_mixin\n    version = _bcrypt.__about__.__version__\n              ^^^^^^^^^^^^^^^^^\nAttributeError: module 'bcrypt' has no attribute '__about__'", "extra": {"taskName": "Task-5", "message": "(trapped) error reading bcrypt version", "asctime": "2025-07-12 17:06:23"}}
 {"timestamp": "2025-07-12T07:14:35.956449", "level": "WARNING", "logger": "core.exceptions", "message": "HTTP exception: 401 - Incorrect username or password", "module": "exceptions", "function": "http_exception_handler", "line": 484, "extra": {"taskName": "Task-7", "status_code": 401, "detail": "Incorrect username or password", "request_id": null, "path": "/v1/auth/token", "method": "POST", "message": "HTTP exception: 401 - Incorrect username or password", "asctime": "2025-07-12 17:14:35"}}
 {"timestamp": "2025-07-12T07:17:32.371699", "level": "WARNING", "logger": "core.exceptions", "message": "HTTP exception: 401 - Not authenticated", "module": "exceptions", "function": "http_exception_handler", "line": 484, "extra": {"taskName": "Task-5", "status_code": 401, "detail": "Not authenticated", "request_id": null, "path": "/v1/auth/users/me", "method": "GET", "message": "HTTP exception: 401 - Not authenticated", "asctime": "2025-07-12 17:17:32"}}
+2025-07-15 13:13:14,226 - INFO - Database tables created successfully
+2025-07-15 13:13:16,338 - INFO - Database engine closed
+2025-07-15 13:13:17,137 - INFO - Database tables created successfully
+2025-07-15 13:13:18,445 - INFO - Database engine closed
+2025-07-15 13:13:19,255 - INFO - Database tables created successfully
+2025-07-15 13:39:37,715 - INFO - Database engine closed
+2025-07-15 13:39:38,635 - INFO - Database tables created successfully
