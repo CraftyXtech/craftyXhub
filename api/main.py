@@ -1,16 +1,8 @@
 
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-
 from routers.v1 import router as v1_router
-from database.connection import db_health_check, init_db
-
-
-
-limiter = Limiter(key_func=get_remote_address)
+from database.connection import db_health_check, init_db, close_db, drop_all_tables
 
 def include_routers(app: FastAPI) -> None:
     @app.get("/", include_in_schema=False)
@@ -20,17 +12,15 @@ def include_routers(app: FastAPI) -> None:
     @app.get("/health", tags=["Health"])
     async def health_check():
         db_healthy = await db_health_check()
-        await init_db()
-
+        await drop_all_tables()
         return {
             "status": "Healthy" if db_healthy else "unhealthy",
             "version": "1.0.0",
             "environment": "development",
             "database": "connected" if db_healthy else "disconnected",
         }
+        
     app.include_router(v1_router)
-
-
 
 def create_application() -> FastAPI:
     app = FastAPI(
@@ -46,18 +36,20 @@ def create_application() -> FastAPI:
         }
     )
     
-    app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     include_routers(app)
-    
     return app
-
 
 app = create_application()
 
+@app.on_event("startup")
+async def startup_event():
+    await init_db()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await close_db()
 
 if __name__ == "__main__":
-   
     import uvicorn
 
     uvicorn.run(

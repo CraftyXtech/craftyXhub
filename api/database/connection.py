@@ -1,9 +1,10 @@
 import os
-
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, select
+from sqlalchemy import text
 import logging
-from  dotenv import  load_dotenv
+from dotenv import load_dotenv
+from typing import AsyncGenerator, Any, List
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -26,11 +27,7 @@ AsyncSessionLocal = async_sessionmaker(
     autocommit=False,
 )
 
-
-async def get_db_session():
-    """
-    Provide an async database session for dependency injection.
-    """
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -53,21 +50,16 @@ async def init_db() -> None:
 async def db_health_check() -> bool:
     try:
         async with AsyncSessionLocal() as session:
-            from sqlalchemy import text
             result = await session.execute(text("SELECT 1"))
             return result.scalar() == 1
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
         return False
 
-
 async def drop_all_tables() -> None:
-
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
-
     logger.warning("All database tables dropped")
-
 
 async def close_db() -> None:
     try:
@@ -76,18 +68,15 @@ async def close_db() -> None:
     except Exception as e:
         logger.error(f"Error closing database connections: {e}")
 
-
-class DatabaseTransaction:
-
+class DatabaseTransaction:    
     def __init__(self):
-        self.session = None
-
+        self.session: AsyncSession | None = None
+    
     async def __aenter__(self) -> AsyncSession:
-        self.session = await get_db_session()
+        self.session = AsyncSessionLocal()
         return self.session
-
+    
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Exit transaction context with proper cleanup."""
         if self.session:
             try:
                 if exc_type is None:
@@ -97,21 +86,28 @@ class DatabaseTransaction:
             finally:
                 await self.session.close()
 
-
-async def execute_query(query: str, **params) -> any:
+async def execute_query(query: str, params: dict = None) -> Any:
     async with DatabaseTransaction() as session:
-        result = await session.exec(query, params)
+        result = await session.execute(text(query), params or {})
         return result
 
-
-async def bulk_insert(objects: list) -> None:
+async def bulk_insert(objects: List[SQLModel]) -> None:
     async with DatabaseTransaction() as session:
         session.add_all(objects)
 
-
-async def bulk_update(model_class, updates: list) -> None:
+async def bulk_update(model_class: SQLModel, updates: List[dict]) -> None:
     async with DatabaseTransaction() as session:
         for update_data in updates:
-            await session.exec(
-                model_class.__table__.update().values(**update_data)
+            record_id = update_data.pop('id')
+            stmt = (
+                model_class.__table__.update()
+                .where(model_class.__table__.c.id == record_id)
+                .values(**update_data)
             )
+            await session.execute(stmt)
+
+async def get_session() -> AsyncSession:
+    return AsyncSessionLocal()
+
+async def execute_with_session(session: AsyncSession, query: str, params: dict = None) -> Any:
+    return await session.execute(text(query), params or {})

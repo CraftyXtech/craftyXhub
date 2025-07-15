@@ -1,18 +1,17 @@
-from datetime import datetime
+from sqlmodel import SQLModel, Field
 from typing import Optional
-from uuid import UUID, uuid4
-from sqlmodel import SQLModel, Field, Relationship
-
+from datetime import datetime
+import uuid
 
 class User(SQLModel, table=True):
-    __tablename__ = "users"
-
-    id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
-    name: str = Field(max_length=255)
-    email: str = Field(unique=True, max_length=255, index=True)
-    email_verified_at: Optional[datetime] = None
-    password: str = Field(max_length=255)
-
-    avatar: Optional[str] = Field(default=None, max_length=255)
-    bio: Optional[str] = None
-    role: str = Field(default="user", max_length=50, index=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    uuid: str = Field(default_factory=lambda: str(uuid.uuid4()), unique=True, index=True)
+    email: str = Field(unique=True, index=True)
+    username: str = Field(unique=True, index=True)
+    full_name: str
+    password: str 
+    is_active: bool = Field(default=True)
+    is_verified: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = Field(default=None)
+    last_login: Optional[datetime] = Field(default=None)
