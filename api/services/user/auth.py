@@ -7,7 +7,7 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
-from models.user import User
+from models import User
 from schemas.user import TokenData
 from database.connection import get_db_session
 

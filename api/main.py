@@ -1,19 +1,10 @@
 import logging
-from typing import Optional
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from routers.v1 import router as v1_router
 from database.connection import db_health_check, init_db, close_db, drop_all_tables
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("logs/development.log")
-    ]
-)
-logger = logging.getLogger(__name__)
 
 def include_routers(app: FastAPI) -> None:
     @app.get("/", include_in_schema=False)
@@ -23,7 +14,9 @@ def include_routers(app: FastAPI) -> None:
     @app.get("/health", tags=["Health"])
     async def health_check():
         db_healthy = await db_health_check()
-        await drop_all_tables()
+        await  init_db()
+
+        # await drop_all_tables()
         return {
             "status": "Healthy" if db_healthy else "unhealthy",
             "version": "1.0.0",
@@ -52,13 +45,6 @@ def create_application() -> FastAPI:
 
 app = create_application()
 
-@app.on_event("startup")
-async def startup_event():
-    await init_db()
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    await close_db()
 
 if __name__ == "__main__":
     import uvicorn

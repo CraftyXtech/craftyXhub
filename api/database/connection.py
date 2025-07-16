@@ -1,18 +1,17 @@
-import os
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlmodel import SQLModel, select
 from sqlalchemy import text
 import logging
-from dotenv import load_dotenv
+from core.config import settings
 from typing import AsyncGenerator, Any, List
+from sqlalchemy.ext.declarative import declarative_base
+from models import User, Profile, Post, Category, Tag
 
-load_dotenv()
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = f"postgresql+asyncpg://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:5432/{os.getenv('DB_NAME')}"
+Base = declarative_base()
 
 engine = create_async_engine(
-    DATABASE_URL,
+    settings.DATABASE_URL,
     pool_size=5,
     max_overflow=10,
     pool_timeout=30,
@@ -27,6 +26,7 @@ AsyncSessionLocal = async_sessionmaker(
     autocommit=False,
 )
 
+
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
@@ -38,14 +38,17 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
         finally:
             await session.close()
 
+
 async def init_db() -> None:
+    """Initialize database tables"""
     try:
         async with engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.create_all)
+            await conn.run_sync(Base.metadata.create_all)
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
         raise
+
 
 async def db_health_check() -> bool:
     try:
@@ -56,10 +59,12 @@ async def db_health_check() -> bool:
         logger.error(f"Database health check failed: {e}")
         return False
 
+
 async def drop_all_tables() -> None:
     async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
+        await conn.run_sync(Base.metadata.drop_all)
     logger.warning("All database tables dropped")
+
 
 async def close_db() -> None:
     try:
@@ -68,14 +73,15 @@ async def close_db() -> None:
     except Exception as e:
         logger.error(f"Error closing database connections: {e}")
 
-class DatabaseTransaction:    
+
+class DatabaseTransaction:
     def __init__(self):
         self.session: AsyncSession | None = None
-    
+
     async def __aenter__(self) -> AsyncSession:
         self.session = AsyncSessionLocal()
         return self.session
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.session:
             try:
@@ -86,16 +92,19 @@ class DatabaseTransaction:
             finally:
                 await self.session.close()
 
+
 async def execute_query(query: str, params: dict = None) -> Any:
     async with DatabaseTransaction() as session:
         result = await session.execute(text(query), params or {})
         return result
 
-async def bulk_insert(objects: List[SQLModel]) -> None:
+
+async def bulk_insert(objects: List[Any]) -> None:
     async with DatabaseTransaction() as session:
         session.add_all(objects)
 
-async def bulk_update(model_class: SQLModel, updates: List[dict]) -> None:
+
+async def bulk_update(model_class: Any, updates: List[dict]) -> None:
     async with DatabaseTransaction() as session:
         for update_data in updates:
             record_id = update_data.pop('id')
@@ -106,8 +115,10 @@ async def bulk_update(model_class: SQLModel, updates: List[dict]) -> None:
             )
             await session.execute(stmt)
 
+
 async def get_session() -> AsyncSession:
     return AsyncSessionLocal()
+
 
 async def execute_with_session(session: AsyncSession, query: str, params: dict = None) -> Any:
     return await session.execute(text(query), params or {})
