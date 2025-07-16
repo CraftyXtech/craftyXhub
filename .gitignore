@@ -1,3 +1,5 @@
 .idea
 api/venv
-client/node_modules
+frontend/admin/node_modules
+frontend/admin/dist
+frontend/litho/node_modules

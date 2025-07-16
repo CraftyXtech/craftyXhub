@@ -1,6 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from routers.v1 import router as v1_router
 from database.connection import db_health_check, init_db, close_db, drop_all_tables
@@ -38,6 +39,15 @@ def create_application() -> FastAPI:
             "name": "CraftyXhub Support",
             "email": "support@craftyhub.com",
         }
+    )
+    
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Allow all origins for development
+        allow_credentials=False,  # Set to False when using allow_origins=["*"]
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
     
     include_routers(app)

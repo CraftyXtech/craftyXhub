@@ -21,6 +21,7 @@
     "@react-jvectormap/world": "^1.1.2",
     "@tinymce/tinymce-react": "^5.1.1",
     "@yaireo/tagify": "4.17.3",
+    "axios": "^1.10.0",
     "bootstrap": "^5.3.3",
     "chart.js": "^4.4.6",
     "classnames": "^2.5.1",

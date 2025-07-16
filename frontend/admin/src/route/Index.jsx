@@ -123,7 +123,7 @@ import Success from "@/pages/auth/Success";
 import Layout from "@/layout/Index";
 import LayoutNoSidebar from "@/layout/Index-nosidebar";
 import ThemeProvider from "@/layout/provider/Theme";
-import PrivateRoute from "@/route/Privateroute";
+import PrivateRoute from "@/route/PrivateRoute";
 
 const ScrollToTop = (props) => {
   const location = useLocation();

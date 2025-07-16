@@ -3,7 +3,12 @@ import useAuth from '../api/useAuth';
 import { isTokenExpired } from '../api/isTokenExpired';
 
 const PrivateRoute = ({ children }) => {
-    const { auth, isAuthenticated } = useAuth();
+    const { auth, isAuthenticated, loading } = useAuth();
+
+    // Show loading while checking authentication
+    if (loading) {
+        return <div>Loading...</div>; // You can replace with a proper loading component
+    }
 
     if (!auth?.accessToken || isTokenExpired(auth?.accessToken)) {
         return <Navigate to="/login" replace />;

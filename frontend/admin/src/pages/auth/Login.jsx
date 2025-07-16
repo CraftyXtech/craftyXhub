@@ -17,27 +17,42 @@ import {
 import { Form, Spinner, Alert } from "reactstrap";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
+import useAuth from "@/api/useAuth";
+import axios from "@/api/axios";
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
   const [passState, setPassState] = useState(false);
   const [errorVal, setError] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const onFormSubmit = (formData) => {
+  const onFormSubmit = async (formData) => {
     setLoading(true);
-    const loginName = "info@softnio.com";
-    const pass = "123456";
-    if (formData.name === loginName && formData.passcode === pass) {
-      localStorage.setItem("accessToken", "token");
-      setTimeout(() => {
-        navigate('/');
-      }, 1000);
-    } else {
-      setTimeout(() => {
-        setError("Cannot login with credentials");
-        setLoading(false);
-      }, 1000);
+    setError("");
+    
+    try {
+      const response = await axios.post('auth/login', {
+        email: formData.name,
+        password: formData.passcode
+      });
+      
+      console.log('Login response:', response.data); 
+      
+      login(response.data.access_token, { 
+        email: formData.name,
+      });
+      
+      navigate('/');
+    } catch (error) {
+      console.error('Login error:', error);
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          "Login failed. Please check your credentials.";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,14 +73,14 @@ const Login = () => {
             <BlockContent>
               <BlockTitle tag="h4">Sign-In</BlockTitle>
               <BlockDes>
-                <p>Access Dashlite using your email and passcode.</p>
+                <p>Access Dashboard using your email and password.</p>
               </BlockDes>
             </BlockContent>
           </BlockHead>
           {errorVal && (
             <div className="mb-3">
               <Alert color="danger" className="alert-icon">
-                <Icon name="alert-circle" /> Unable to login with credentials{" "}
+                <Icon name="alert-circle" /> {errorVal}
               </Alert>
             </div>
           )}
@@ -81,8 +96,8 @@ const Login = () => {
                   type="text"
                   id="default-01"
                   {...register('name', { required: "This field is required" })}
-                  defaultValue="info@softnio.com"
-                  placeholder="Enter your email address or username"
+                  defaultValue="superadmin@craftyhub.com"
+                  placeholder="Enter your email address"
                   className="form-control-lg form-control" />
                 {errors.name && <span className="invalid">{errors.name.message}</span>}
               </div>
@@ -90,10 +105,10 @@ const Login = () => {
             <div className="form-group">
               <div className="form-label-group">
                 <label className="form-label" htmlFor="password">
-                  Passcode
+                  Password
                 </label>
                 <Link className="link link-primary link-sm" to={`/auth-reset`}>
-                  Forgot Code?
+                  Forgot Password?
                 </Link>
               </div>
               <div className="form-control-wrap">
@@ -113,7 +128,7 @@ const Login = () => {
                   type={passState ? "text" : "password"}
                   id="password"
                   {...register('passcode', { required: "This field is required" })}
-                  defaultValue="123456"
+                  defaultValue="superadmin123"
                   placeholder="Enter your passcode"
                   className={`form-control-lg form-control ${passState ? "is-hidden" : "is-shown"}`} />
                 {errors.passcode && <span className="invalid">{errors.passcode.message}</span>}
