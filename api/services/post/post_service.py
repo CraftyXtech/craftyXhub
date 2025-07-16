@@ -1,453 +1,331 @@
-
-
-from typing import Optional, List, Tuple
-from datetime import datetime
-from uuid import UUID
+from typing import List, Optional
+from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_, desc, asc, text
 from sqlalchemy.orm import selectinload
-
-from models.post import Post
-from models.user import User
-from models.category import Category
-from models.tag import Tag
-from models.interactions import Like, Bookmark, View
-from models.comment import Comment
+from datetime import datetime, timezone
+from models import Post, Category, Tag, User
+from models.base import  post_likes, post_tags
 from schemas.post import (
-    PostListQuery, 
-    PostSummaryResponse, 
-    PostDetailResponse, 
-    PaginationMeta,
-    PaginatedPostsResponse,
-    AuthorResponse,
-    CategoryResponse,
-    TagResponse,
-    PostStatsResponse
+    PostCreate,
+    PostUpdate,
+    CategoryCreate,
+    TagCreate
 )
+from fastapi import HTTPException, status
 
 
 class PostService:
-
-    def __init__(self, db: AsyncSession):
-        self.db = db
-
-    async def get_published_posts(
-        self, 
-        query: PostListQuery,
-        current_user: Optional[User] = None
-    ) -> PaginatedPostsResponse:
-        """
-        Get paginated list of published posts with filtering and search.
-        
-        Args:
-            query: Query parameters for filtering and pagination
-            current_user: Optional authenticated user for interaction status
-            
-        Returns:
-            PaginatedPostsResponse with posts and pagination metadata
-        """
-        # Build base query for published posts only
-        base_query = select(Post).where(
-            and_(
-                Post.status == "published",
-                Post.published_at.is_not(None)
+    @staticmethod
+    async def get_post_by_id(session: AsyncSession, post_id: int) -> Optional[Post]:
+        result = await session.execute(
+            select(Post)
+            .where(Post.id == post_id)
+            .options(
+                selectinload(Post.author),
+                selectinload(Post.category),
+                selectinload(Post.tags),
+                selectinload(Post.comments)
             )
         )
+        return result.scalar_one_or_none()
 
-        # Apply category filter
-        if query.category:
-            category_subquery = select(Category.id).where(Category.slug == query.category)
-            base_query = base_query.where(Post.category_id.in_(category_subquery))
-
-        # Apply search filter
-        if query.search:
-            search_term = f"%{query.search}%"
-            # Search across title, excerpt, body, and related tags/categories
-            search_conditions = or_(
-                Post.title.ilike(search_term),
-                Post.excerpt.ilike(search_term),
-                Post.body.ilike(search_term)
+    @staticmethod
+    async def get_post_by_slug(session: AsyncSession, slug: str) -> Optional[Post]:
+        result = await session.execute(
+            select(Post)
+            .where(Post.slug == slug)
+            .options(
+                selectinload(Post.author),
+                selectinload(Post.category),
+                selectinload(Post.tags),
+                selectinload(Post.comments)
             )
-            base_query = base_query.where(search_conditions)
+        )
+        return result.scalar_one_or_none()
 
-        # Apply sorting
-        if query.sort_by == "published_at":
-            sort_column = Post.published_at
-        elif query.sort_by == "created_at":
-            sort_column = Post.created_at
-        elif query.sort_by == "title":
-            sort_column = Post.title
-        else:
-            sort_column = Post.published_at
+    @staticmethod
+    async def create_post(
+            session: AsyncSession,
+            post_data: PostCreate,
+            author_id: int
+    ) -> Post:
+        existing_post = await PostService.get_post_by_slug(session, post_data.slug)
+        if existing_post:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Post with this slug already exists"
+            )
 
-        if query.sort_direction == "desc":
-            base_query = base_query.order_by(desc(sort_column))
-        else:
-            base_query = base_query.order_by(asc(sort_column))
+        db_post = Post(
+            **post_data.model_dump(exclude={"tag_ids"}),
+            author_id=author_id,
+            created_at=datetime.now(timezone.utc)
+        )
 
-        # Get total count for pagination
-        count_query = select(func.count()).select_from(base_query.subquery())
-        total_result = await self.db.execute(count_query)
-        total = total_result.scalar()
+        if post_data.tag_ids:
+            tags = await PostService.get_tags_by_ids(session, post_data.tag_ids)
+            db_post.tags.extend(tags)
 
-        # Apply pagination
-        offset = (query.page - 1) * query.per_page
-        posts_query = base_query.options(
+        if post_data.is_published:
+            db_post.published_at = datetime.now(timezone.utc)
+
+        session.add(db_post)
+        await session.commit()
+        await session.refresh(db_post)
+        return db_post
+
+    @staticmethod
+    async def update_post(
+            session: AsyncSession,
+            post_id: int,
+            post_data: PostUpdate,
+            current_user_id: int
+    ) -> Post:
+        db_post = await PostService.get_post_by_id(session, post_id)
+        if not db_post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Post not found"
+            )
+
+        if db_post.author_id != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to update this post"
+            )
+
+        update_data = post_data.model_dump(exclude_unset=True, exclude={"tag_ids"})
+
+        if post_data.tag_ids is not None:
+            tags = await PostService.get_tags_by_ids(session, post_data.tag_ids)
+            db_post.tags = tags
+
+        if post_data.is_published is not None:
+            if post_data.is_published and not db_post.is_published:
+                db_post.published_at = datetime.utcnow()
+            elif not post_data.is_published and db_post.is_published:
+                db_post.published_at = None
+
+        for field, value in update_data.items():
+            setattr(db_post, field, value)
+
+        db_post.updated_at = datetime.utcnow()
+        await session.commit()
+        await session.refresh(db_post)
+        return db_post
+
+    @staticmethod
+    async def delete_post(
+            session: AsyncSession,
+            post_id: int,
+            current_user_id: int
+    ) -> bool:
+        db_post = await PostService.get_post_by_id(session, post_id)
+        if not db_post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Post not found"
+            )
+
+        if db_post.author_id != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to delete this post"
+            )
+
+        await session.delete(db_post)
+        await session.commit()
+        return True
+
+    @staticmethod
+    async def get_posts(
+            session: AsyncSession,
+            skip: int = 0,
+            limit: int = 10,
+            published_only: bool = True,
+            author_id: Optional[int] = None,
+            category_id: Optional[int] = None,
+            tag_id: Optional[int] = None
+    ) -> List[Post]:
+        query = select(Post).options(
             selectinload(Post.author),
             selectinload(Post.category),
             selectinload(Post.tags)
-        ).offset(offset).limit(query.per_page)
-
-        # Execute query
-        result = await self.db.execute(posts_query)
-        posts = result.scalars().all()
-
-        # Get interaction counts for each post
-        post_summaries = []
-        for post in posts:
-            # Get like count
-            like_count_query = select(func.count(Like.id)).where(Like.post_id == post.id)
-            like_count_result = await self.db.execute(like_count_query)
-            like_count = like_count_result.scalar() or 0
-
-            # Get view count
-            view_count_query = select(func.count(View.id)).where(View.post_id == post.id)
-            view_count_result = await self.db.execute(view_count_query)
-            view_count = view_count_result.scalar() or 0
-
-            # Create response object
-            post_summary = PostSummaryResponse(
-                id=post.id,
-                title=post.title,
-                slug=post.slug,
-                excerpt=post.excerpt,
-                featured_image_path=post.generated_image_path,
-                published_at=post.published_at,
-                author=AuthorResponse(
-                    id=post.author.id,
-                    name=post.author.name,
-                    avatar=post.author.avatar
-                ),
-                category=CategoryResponse(
-                    id=post.category.id,
-                    name=post.category.name,
-                    slug=post.category.slug,
-                    description=post.category.description
-                ) if post.category else None,
-                tags=[
-                    TagResponse(
-                        id=tag.id,
-                        name=tag.name,
-                        slug=tag.slug
-                    ) for tag in post.tags
-                ],
-                like_count=like_count,
-                view_count=view_count,
-                difficulty_level=post.difficulty_level,
-                estimated_reading_time=self._calculate_reading_time(post.body)
-            )
-            post_summaries.append(post_summary)
-
-        # Create pagination metadata
-        pagination = PaginationMeta(
-            page=query.page,
-            per_page=query.per_page,
-            total=total,
-            total_pages=(total + query.per_page - 1) // query.per_page,
-            has_next=query.page * query.per_page < total,
-            has_prev=query.page > 1
         )
 
-        # Create applied filters dict
-        filters = {
-            "category": query.category,
-            "search": query.search,
-            "sort_by": query.sort_by,
-            "sort_direction": query.sort_direction
+        conditions = []
+        if published_only:
+            conditions.append(Post.is_published == True)
+        if author_id:
+            conditions.append(Post.author_id == author_id)
+        if category_id:
+            conditions.append(Post.category_id == category_id)
+        if tag_id:
+            conditions.append(Post.tags.any(Tag.id == tag_id))
+
+        if conditions:
+            query = query.where(and_(*conditions))
+
+        query = query.offset(skip).limit(limit).order_by(Post.created_at.desc())
+        result = await session.execute(query)
+        return result.scalars().all()
+
+    @staticmethod
+    async def get_posts_count(
+            session: AsyncSession,
+            published_only: bool = True,
+            author_id: Optional[int] = None,
+            category_id: Optional[int] = None,
+            tag_id: Optional[int] = None
+    ) -> int:
+        query = select(func.count(Post.id))
+
+        conditions = []
+        if published_only:
+            conditions.append(Post.is_published == True)
+        if author_id:
+            conditions.append(Post.author_id == author_id)
+        if category_id:
+            conditions.append(Post.category_id == category_id)
+        if tag_id:
+            conditions.append(Post.tags.any(Tag.id == tag_id))
+
+        if conditions:
+            query = query.where(and_(*conditions))
+
+        result = await session.execute(query)
+        return result.scalar_one()
+
+    @staticmethod
+    async def increment_view_count(session: AsyncSession, post_id: int) -> None:
+        db_post = await PostService.get_post_by_id(session, post_id)
+        if db_post:
+            db_post.view_count += 1
+            await session.commit()
+
+    @staticmethod
+    async def toggle_post_like(
+            session: AsyncSession,
+            post_id: int,
+            user_id: int
+    ) -> bool:
+        db_post = await PostService.get_post_by_id(session, post_id)
+        if not db_post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Post not found"
+            )
+
+        user = await session.execute(select(User).where(User.id == user_id))
+        user = user.scalar_one()
+
+        if user in db_post.liked_by:
+            db_post.liked_by.remove(user)
+            liked = False
+        else:
+            db_post.liked_by.append(user)
+            liked = True
+
+        await session.commit()
+        return liked
+
+    @staticmethod
+    async def get_category_by_id(session: AsyncSession, category_id: int) -> Optional[Category]:
+        result = await session.execute(
+            select(Category)
+            .where(Category.id == category_id)
+            .options(selectinload(Category.posts))
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_category_by_slug(session: AsyncSession, slug: str) -> Optional[Category]:
+        result = await session.execute(
+            select(Category)
+            .where(Category.slug == slug)
+            .options(selectinload(Category.posts))
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def create_category(session: AsyncSession, category_data: CategoryCreate) -> Category:
+        existing_category = await session.execute(
+            select(Category)
+            .where((Category.name == category_data.name) | (Category.slug == category_data.slug))
+        )
+        if existing_category.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Category with this name or slug already exists"
+            )
+
+        db_category = Category(**category_data.model_dump())
+        session.add(db_category)
+        await session.commit()
+        await session.refresh(db_category)
+        return db_category
+
+    @staticmethod
+    async def get_tag_by_id(session: AsyncSession, tag_id: int) -> Optional[Tag]:
+        result = await session.execute(
+            select(Tag)
+            .where(Tag.id == tag_id)
+            .options(selectinload(Tag.posts))
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_tag_by_slug(session: AsyncSession, slug: str) -> Optional[Tag]:
+        result = await session.execute(
+            select(Tag)
+            .where(Tag.slug == slug)
+            .options(selectinload(Tag.posts))
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_tags_by_ids(session: AsyncSession, tag_ids: List[int]) -> List[Tag]:
+        result = await session.execute(
+            select(Tag)
+            .where(Tag.id.in_(tag_ids))
+        )
+        return result.scalars().all()
+
+    @staticmethod
+    async def create_tag(session: AsyncSession, tag_data: TagCreate) -> Tag:
+        # Check if tag with same name or slug exists
+        existing_tag = await session.execute(
+            select(Tag)
+            .where((Tag.name == tag_data.name) | (Tag.slug == tag_data.slug))
+        )
+        if existing_tag.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tag with this name or slug already exists"
+            )
+
+        db_tag = Tag(**tag_data.model_dump())
+        session.add(db_tag)
+        await session.commit()
+        await session.refresh(db_tag)
+        return db_tag
+
+    @staticmethod
+    async def get_post_stats(session: AsyncSession) -> dict:
+        total_posts = await session.execute(select(func.count(Post.id)))
+        published_posts = await session.execute(
+            select(func.count(Post.id))
+            .where(Post.is_published == True)
+        )
+        total_views = await session.execute(select(func.sum(Post.view_count)))
+        total_likes = await session.execute(
+            select(func.count(post_likes.c.user_id))
+        )
+
+        return {
+            "total_posts": total_posts.scalar_one(),
+            "published_posts": published_posts.scalar_one(),
+            "draft_posts": total_posts.scalar_one() - published_posts.scalar_one(),
+            "total_views": total_views.scalar_one() or 0,
+            "total_likes": total_likes.scalar_one()
         }
-
-        return PaginatedPostsResponse(
-            data=post_summaries,
-            pagination=pagination,
-            filters=filters
-        )
-
-    async def get_post_by_id(
-        self, 
-        post_id: UUID,
-        current_user: Optional[User] = None
-    ) -> Optional[PostDetailResponse]:
-        """
-        Get individual post details with interaction status.
-        
-        Args:
-            post_id: UUID of the post to retrieve
-            current_user: Optional authenticated user for interaction status
-            
-        Returns:
-            PostDetailResponse if found and published, None otherwise
-        """
-        # Query for published post only
-        query = select(Post).where(
-            and_(
-                Post.id == post_id,
-                Post.status == "published",
-                Post.published_at.is_not(None)
-            )
-        ).options(
-            selectinload(Post.author),
-            selectinload(Post.category),
-            selectinload(Post.tags)
-        )
-
-        result = await self.db.execute(query)
-        post = result.scalar_one_or_none()
-
-        if not post:
-            return None
-
-        # Get interaction counts
-        like_count_query = select(func.count(Like.id)).where(Like.post_id == post.id)
-        like_count_result = await self.db.execute(like_count_query)
-        like_count = like_count_result.scalar() or 0
-
-        view_count_query = select(func.count(View.id)).where(View.post_id == post.id)
-        view_count_result = await self.db.execute(view_count_query)
-        view_count = view_count_result.scalar() or 0
-
-        # Check user interaction status if authenticated
-        is_liked = None
-        is_bookmarked = None
-        if current_user:
-            # Check if user liked the post
-            like_query = select(Like).where(
-                and_(Like.post_id == post.id, Like.user_id == current_user.id)
-            )
-            like_result = await self.db.execute(like_query)
-            is_liked = like_result.scalar_one_or_none() is not None
-
-            # Check if user bookmarked the post
-            bookmark_query = select(Bookmark).where(
-                and_(Bookmark.post_id == post.id, Bookmark.user_id == current_user.id)
-            )
-            bookmark_result = await self.db.execute(bookmark_query)
-            is_bookmarked = bookmark_result.scalar_one_or_none() is not None
-
-        # Create response object
-        post_detail = PostDetailResponse(
-            id=post.id,
-            title=post.title,
-            slug=post.slug,
-            body=post.body,
-            excerpt=post.excerpt,
-            featured_image_path=post.generated_image_path,
-            published_at=post.published_at,
-            author=AuthorResponse(
-                id=post.author.id,
-                name=post.author.name,
-                avatar=post.author.avatar
-            ),
-            category=CategoryResponse(
-                id=post.category.id,
-                name=post.category.name,
-                slug=post.category.slug,
-                description=post.category.description
-            ) if post.category else None,
-            tags=[
-                TagResponse(
-                    id=tag.id,
-                    name=tag.name,
-                    slug=tag.slug
-                ) for tag in post.tags
-            ],
-            like_count=like_count,
-            view_count=view_count,
-            is_liked=is_liked,
-            is_bookmarked=is_bookmarked,
-            comments_enabled=post.comments_enabled,
-            difficulty_level=post.difficulty_level,
-            estimated_reading_time=self._calculate_reading_time(post.body),
-            created_at=post.created_at,
-            updated_at=post.updated_at
-        )
-
-        return post_detail
-
-    async def get_post_stats(self, post_id: UUID) -> Optional[PostStatsResponse]:
-        """
-        Get detailed statistics for a post.
-        
-        Args:
-            post_id: UUID of the post
-            
-        Returns:
-            PostStatsResponse if post exists, None otherwise
-        """
-        # Check if post exists and is published
-        post_query = select(Post).where(
-            and_(
-                Post.id == post_id,
-                Post.status == "published",
-                Post.published_at.is_not(None)
-            )
-        )
-        post_result = await self.db.execute(post_query)
-        post = post_result.scalar_one_or_none()
-
-        if not post:
-            return None
-
-        # Get various counts
-        like_count_query = select(func.count(Like.id)).where(Like.post_id == post_id)
-        like_count_result = await self.db.execute(like_count_query)
-        like_count = like_count_result.scalar() or 0
-
-        view_count_query = select(func.count(View.id)).where(View.post_id == post_id)
-        view_count_result = await self.db.execute(view_count_query)
-        view_count = view_count_result.scalar() or 0
-
-        bookmark_count_query = select(func.count(Bookmark.id)).where(Bookmark.post_id == post_id)
-        bookmark_count_result = await self.db.execute(bookmark_count_query)
-        bookmark_count = bookmark_count_result.scalar() or 0
-
-        comment_count_query = select(func.count(Comment.id)).where(
-            and_(Comment.post_id == post_id, Comment.approved == True)
-        )
-        comment_count_result = await self.db.execute(comment_count_query)
-        comment_count = comment_count_result.scalar() or 0
-
-        # Get latest interaction timestamps
-        latest_view_query = select(func.max(View.created_at)).where(View.post_id == post_id)
-        latest_view_result = await self.db.execute(latest_view_query)
-        last_viewed_at = latest_view_result.scalar()
-
-        latest_like_query = select(func.max(Like.created_at)).where(Like.post_id == post_id)
-        latest_like_result = await self.db.execute(latest_like_query)
-        last_liked_at = latest_like_result.scalar()
-
-        return PostStatsResponse(
-            post_id=post_id,
-            like_count=like_count,
-            view_count=view_count,
-            comment_count=comment_count,
-            bookmark_count=bookmark_count,
-            share_count=0,  # To be implemented later
-            last_viewed_at=last_viewed_at,
-            last_liked_at=last_liked_at
-        )
-
-    async def search_posts(
-        self,
-        search_term: str,
-        category: Optional[str] = None,
-        limit: int = 10
-    ) -> List[PostSummaryResponse]:
-        """
-        Advanced search functionality for posts.
-        
-        Args:
-            search_term: Search query
-            category: Optional category filter
-            limit: Maximum number of results
-            
-        Returns:
-            List of matching posts
-        """
-        # Build search query
-        search_conditions = or_(
-            Post.title.ilike(f"%{search_term}%"),
-            Post.excerpt.ilike(f"%{search_term}%"),
-            Post.body.ilike(f"%{search_term}%")
-        )
-
-        query = select(Post).where(
-            and_(
-                Post.status == "published",
-                Post.published_at.is_not(None),
-                search_conditions
-            )
-        )
-
-        # Apply category filter if provided
-        if category:
-            category_subquery = select(Category.id).where(Category.slug == category)
-            query = query.where(Post.category_id.in_(category_subquery))
-
-        # Order by relevance (could be enhanced with full-text search)
-        query = query.order_by(desc(Post.published_at)).limit(limit)
-
-        # Load relationships
-        query = query.options(
-            selectinload(Post.author),
-            selectinload(Post.category),
-            selectinload(Post.tags)
-        )
-
-        result = await self.db.execute(query)
-        posts = result.scalars().all()
-
-        # Convert to response objects
-        post_summaries = []
-        for post in posts:
-            # Get interaction counts (simplified for search)
-            like_count_query = select(func.count(Like.id)).where(Like.post_id == post.id)
-            like_count_result = await self.db.execute(like_count_query)
-            like_count = like_count_result.scalar() or 0
-
-            view_count_query = select(func.count(View.id)).where(View.post_id == post.id)
-            view_count_result = await self.db.execute(view_count_query)
-            view_count = view_count_result.scalar() or 0
-
-            post_summary = PostSummaryResponse(
-                id=post.id,
-                title=post.title,
-                slug=post.slug,
-                excerpt=post.excerpt,
-                featured_image_path=post.generated_image_path,
-                published_at=post.published_at,
-                author=AuthorResponse(
-                    id=post.author.id,
-                    name=post.author.name,
-                    avatar=post.author.avatar
-                ),
-                category=CategoryResponse(
-                    id=post.category.id,
-                    name=post.category.name,
-                    slug=post.category.slug,
-                    description=post.category.description
-                ) if post.category else None,
-                tags=[
-                    TagResponse(
-                        id=tag.id,
-                        name=tag.name,
-                        slug=tag.slug
-                    ) for tag in post.tags
-                ],
-                like_count=like_count,
-                view_count=view_count,
-                difficulty_level=post.difficulty_level,
-                estimated_reading_time=self._calculate_reading_time(post.body)
-            )
-            post_summaries.append(post_summary)
-
-        return post_summaries
-
-    def _calculate_reading_time(self, content: str) -> int:
-        """
-        Calculate estimated reading time in minutes.
-        
-        Args:
-            content: Post content
-            
-        Returns:
-            Estimated reading time in minutes
-        """
-        if not content:
-            return 0
-        
-        # Average reading speed is 200-250 words per minute
-        words_per_minute = 225
-        word_count = len(content.split())
-        reading_time = max(1, round(word_count / words_per_minute))
-        
-        return reading_time 

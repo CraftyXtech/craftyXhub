@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, desc
 from sqlalchemy.dialects.postgresql import insert
 
-from models.interactions import View
 from models.user import User
 from models.post import Post
 

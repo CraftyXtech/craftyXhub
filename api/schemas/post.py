@@ -1,20 +1,8 @@
-from pydantic import BaseModel, EmailStr, Field, validator, root_validator
-from typing import Optional, List, Any
+from pydantic import BaseModel, Field, validator
+from typing import Optional, List
 from datetime import datetime
-from .user import  UserResponse
-
-
-class TimestampMixin(BaseModel):
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-
-class BaseSchema(BaseModel):
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+from .user import UserResponse
+from .base import BaseSchema, TimestampMixin
 
 
 class CategoryBase(BaseModel):
@@ -29,6 +17,7 @@ class CategoryCreate(CategoryBase):
 
 class CategoryUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
+    slug: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
 
 
@@ -97,7 +86,6 @@ class PostResponse(PostBase, TimestampMixin, BaseSchema):
     reading_time: Optional[int] = None
     featured_image: Optional[str] = None
     published_at: Optional[datetime] = None
-
     author: UserResponse
     category: Optional[CategoryResponse] = None
     tags: List[TagResponse] = []
@@ -105,34 +93,17 @@ class PostResponse(PostBase, TimestampMixin, BaseSchema):
     like_count: Optional[int] = 0
     is_liked: Optional[bool] = False
 
-class PostListResponse(BaseSchema):
+
+class PostListResponse(BaseModel):
     posts: List[PostResponse]
-
-class PaginatedResponse(BaseModel):
-    items: List[Any]
     total: int
     page: int
     size: int
-    pages: int
-    has_next: bool
-    has_prev: bool
 
 
-class PaginatedPostResponse(BaseModel):
-    items: List[PostListResponse]
-    total: int
-    page: int
-    size: int
-    pages: int
-    has_next: bool
-    has_prev: bool
-
-
-class PostStats(BaseModel):
+class PostStatsResponse(BaseModel):
     total_posts: int
     published_posts: int
     draft_posts: int
-    total_comments: int
-    total_users: int
     total_views: int
     total_likes: int
