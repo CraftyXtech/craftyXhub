@@ -2,6 +2,7 @@ from typing import List, Optional
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlmodel import select
 from datetime import datetime, timezone
 from models import Post, Category, Tag, User
 from models.base import  post_likes, post_tags
@@ -58,16 +59,12 @@ class PostService:
 
         db_post = Post(
             **post_data.model_dump(exclude={"tag_ids"}),
-            author_id=author_id,
-            created_at=datetime.now(timezone.utc)
+            author_id=author_id
         )
 
         if post_data.tag_ids:
             tags = await PostService.get_tags_by_ids(session, post_data.tag_ids)
             db_post.tags.extend(tags)
-
-        if post_data.is_published:
-            db_post.published_at = datetime.now(timezone.utc)
 
         session.add(db_post)
         await session.commit()

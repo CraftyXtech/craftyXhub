@@ -1,6 +1,7 @@
 # routes/post.py
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 from typing import Optional, List
 
 from services.post.post_service import PostService
@@ -17,7 +18,7 @@ from schemas.post import (
     TagResponse,
     PostStatsResponse
 )
-from models import User, Post
+from models import User, Post, Category, Tag
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
 
@@ -110,7 +111,6 @@ async def toggle_post_like(
     return await PostService.toggle_post_like(session, post_id, current_user.id)
 
 
-# Categories endpoints
 @router.get("/categories/", response_model=List[CategoryResponse])
 async def get_categories(
         session: AsyncSession = Depends(get_db_session)

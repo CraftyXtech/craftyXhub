@@ -54,8 +54,6 @@ class PostCreate(PostBase):
     slug: str = Field(..., min_length=1, max_length=200)
     category_id: Optional[int] = None
     tag_ids: Optional[List[int]] = []
-    is_published: bool = False
-    is_featured: bool = False
     featured_image: Optional[str] = None
     reading_time: Optional[int] = None
 
