@@ -140,6 +140,28 @@ const menu = [
     ],
   },
   {
+    icon: "file-text",
+    text: "Posts Management",
+    subMenu: [
+      {
+        text: "Posts List",
+        link: "/posts-list",
+      },
+      {
+        text: "Categories",
+        link: "/posts-categories",
+      },
+      {
+        text: "Tags",
+        link: "/posts-tags",
+      },
+      {
+        text: "Statistics",
+        link: "/posts-stats",
+      },
+    ],
+  },
+  {
     icon: "file-docs",
     text: "Invoice",
     subMenu: [
