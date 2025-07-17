@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field, validator, root_validator
-from typing import Optional, List, Any
+from pydantic import BaseModel, Field
+from typing import Optional, List
 from .base import  TimestampMixin, BaseSchema
 from enum import Enum
 from .user import  UserResponse
@@ -26,7 +26,7 @@ class CommentUpdate(BaseModel):
 
 
 class CommentResponse(CommentBase, TimestampMixin, BaseSchema):
-    id: int
+    uuid: str
     author_id: int
     post_id: int
     parent_id: Optional[int] = None

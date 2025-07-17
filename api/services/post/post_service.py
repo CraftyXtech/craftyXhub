@@ -12,7 +12,15 @@ from schemas.post import (
     CategoryCreate,
     TagCreate
 )
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, UploadFile
+from pathlib import Path
+import uuid
+import aiofiles
+
+UPLOAD_DIR = Path("uploads/posts")  
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
 
 class PostService:
@@ -21,6 +29,19 @@ class PostService:
         result = await session.execute(
             select(Post)
             .where(Post.id == post_id)
+            .options(
+                selectinload(Post.author),
+                selectinload(Post.category),
+                selectinload(Post.tags),
+                selectinload(Post.comments)
+            )
+        )
+        return result.scalar_one_or_none()
+    
+    async def get_post_by_uuid(session: AsyncSession, post_uuid: str) -> Optional[Post]:
+        result = await session.execute(
+            select(Post)
+            .where(Post.uuid == post_uuid)
             .options(
                 selectinload(Post.author),
                 selectinload(Post.category),
@@ -45,10 +66,23 @@ class PostService:
         return result.scalar_one_or_none()
 
     @staticmethod
+    async def get_post_with_relationships(session: AsyncSession, post_id: int) -> Post:
+        stmt = select(Post).options(
+            selectinload(Post.author),
+            selectinload(Post.category),
+            selectinload(Post.tags),
+            selectinload(Post.comments),
+            selectinload(Post.liked_by)
+        ).where(Post.id == post_id)
+        
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+    
+    @staticmethod
     async def create_post(
-            session: AsyncSession,
-            post_data: PostCreate,
-            author_id: int
+        session: AsyncSession,
+        post_data: PostCreate,
+        author_id: int
     ) -> Post:
         existing_post = await PostService.get_post_by_slug(session, post_data.slug)
         if existing_post:
@@ -56,29 +90,56 @@ class PostService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Post with this slug already exists"
             )
-
+        
         db_post = Post(
             **post_data.model_dump(exclude={"tag_ids"}),
             author_id=author_id
         )
-
+        
         if post_data.tag_ids:
             tags = await PostService.get_tags_by_ids(session, post_data.tag_ids)
             db_post.tags.extend(tags)
-
+        
         session.add(db_post)
         await session.commit()
-        await session.refresh(db_post)
-        return db_post
+        
+        return await PostService.get_post_with_relationships(session, db_post.id)
+
+    async def save_uploaded_file(file: UploadFile, upload_dir: Path) -> str:
+    
+        file_extension = Path(file.filename).suffix.lower()
+        if file_extension not in ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File type not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
+            )
+        
+        file_size = 0
+        content = await file.read()
+        file_size = len(content)
+        
+        if file_size > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File too large. Maximum size: {MAX_FILE_SIZE / (1024*1024):.1f}MB"
+            )
+        
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        file_path = upload_dir / unique_filename
+        
+        async with aiofiles.open(file_path, 'wb') as f:
+            await f.write(content)
+        
+        return f"uploads/images/{unique_filename}"
 
     @staticmethod
     async def update_post(
             session: AsyncSession,
-            post_id: int,
+            post_uuid: str,
             post_data: PostUpdate,
             current_user_id: int
     ) -> Post:
-        db_post = await PostService.get_post_by_id(session, post_id)
+        db_post = await PostService.get_post_by_uuid(session, post_uuid)
         if not db_post:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -97,11 +158,6 @@ class PostService:
             tags = await PostService.get_tags_by_ids(session, post_data.tag_ids)
             db_post.tags = tags
 
-        if post_data.is_published is not None:
-            if post_data.is_published and not db_post.is_published:
-                db_post.published_at = datetime.utcnow()
-            elif not post_data.is_published and db_post.is_published:
-                db_post.published_at = None
 
         for field, value in update_data.items():
             setattr(db_post, field, value)
@@ -114,10 +170,10 @@ class PostService:
     @staticmethod
     async def delete_post(
             session: AsyncSession,
-            post_id: int,
+            post_uuid: str,
             current_user_id: int
     ) -> bool:
-        db_post = await PostService.get_post_by_id(session, post_id)
+        db_post = await PostService.get_post_by_uuid(session, post_uuid)
         if not db_post:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -194,8 +250,8 @@ class PostService:
         return result.scalar_one()
 
     @staticmethod
-    async def increment_view_count(session: AsyncSession, post_id: int) -> None:
-        db_post = await PostService.get_post_by_id(session, post_id)
+    async def increment_view_count(session: AsyncSession, post_uuid: str) -> None:
+        db_post = await PostService.get_post_by_uuid(session, post_uuid)
         if db_post:
             db_post.view_count += 1
             await session.commit()
@@ -203,10 +259,10 @@ class PostService:
     @staticmethod
     async def toggle_post_like(
             session: AsyncSession,
-            post_id: int,
+            post_uuid: str,
             user_id: int
     ) -> bool:
-        db_post = await PostService.get_post_by_id(session, post_id)
+        db_post = await PostService.get_post_by_uuid(session, post_uuid)
         if not db_post:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

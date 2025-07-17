@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from .user import UserResponse
@@ -14,7 +14,6 @@ class CategoryBase(BaseModel):
 class CategoryCreate(CategoryBase):
     pass
 
-
 class CategoryUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     slug: Optional[str] = Field(None, min_length=1, max_length=100)
@@ -22,7 +21,7 @@ class CategoryUpdate(BaseModel):
 
 
 class CategoryResponse(CategoryBase, BaseSchema):
-    id: int
+    uuid: str
     created_at: datetime
     post_count: Optional[int] = 0
 
@@ -37,7 +36,7 @@ class TagCreate(TagBase):
 
 
 class TagResponse(TagBase, BaseSchema):
-    id: int
+    uuid: str
     created_at: datetime
     post_count: Optional[int] = 0
 
@@ -65,8 +64,6 @@ class PostUpdate(BaseModel):
     excerpt: Optional[str] = Field(None, max_length=500)
     category_id: Optional[int] = None
     tag_ids: Optional[List[int]] = None
-    is_published: Optional[bool] = None
-    is_featured: Optional[bool] = None
     featured_image: Optional[str] = None
     reading_time: Optional[int] = None
     meta_title: Optional[str] = Field(None, max_length=200)
@@ -74,10 +71,8 @@ class PostUpdate(BaseModel):
 
 
 class PostResponse(PostBase, TimestampMixin, BaseSchema):
-    id: int
+    uuid: str
     slug: str
-    author_id: int
-    category_id: Optional[int] = None
     is_published: bool
     is_featured: bool
     view_count: int

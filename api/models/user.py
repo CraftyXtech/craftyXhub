@@ -1,25 +1,21 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Table
+import uuid
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from datetime import datetime
-import uuid
+from datetime import datetime, timezone
 
-from .base import Base, post_likes
+from .base import BaseTable, post_likes
 
-class User(Base):
+class User(BaseTable):
 
     __tablename__ = 'users'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    uuid = Column(String(36), unique=True, index=True, default=lambda: str(uuid.uuid4()))
     email = Column(String(255), unique=True, index=True, nullable=False)
     username = Column(String(50), unique=True, index=True, nullable=False)
     full_name = Column(String(255), nullable=False)
     password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
 
     # Relationships
@@ -30,10 +26,9 @@ class User(Base):
 
 
 
-class Profile(Base):
+class Profile(BaseTable):
     __tablename__ = 'profiles'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.id'), unique=True, nullable=False)
     avatar = Column(String(500), nullable=True)
     bio = Column(Text, nullable=True)
@@ -43,6 +38,4 @@ class Profile(Base):
     github_handle = Column(String(50), nullable=True)
     linkedin_handle = Column(String(50), nullable=True)
     birth_date = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=datetime.utcnow)
     user = relationship("User", back_populates="profile")

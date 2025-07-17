@@ -1,8 +1,19 @@
+import uuid
+import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, ForeignKey, Table
+from sqlalchemy import Column, Integer, ForeignKey, Table, String
+from sqlalchemy import Column, DateTime, func
 
 
 Base = declarative_base()
+
+class BaseTable(Base):
+    __abstract__ = True
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(String(36), unique=True, index=True, default=lambda: str(uuid.uuid4()))
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 post_tags = Table(
     'post_tags',

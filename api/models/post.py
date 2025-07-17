@@ -1,36 +1,28 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Table
-from sqlalchemy.ext.declarative import declarative_base
+import uuid
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-from datetime import datetime
-from .base import  Base, post_tags, post_likes
+from .base import  BaseTable, post_tags, post_likes
 
-class Category(Base):
+class Category(BaseTable):
     __tablename__ = 'categories'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), unique=True, nullable=False)
     slug = Column(String(100), unique=True, nullable=False)
     description = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now())
     posts = relationship("Post", back_populates="category")
 
 
-class Tag(Base):
+class Tag(BaseTable):
     __tablename__ = 'tags'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(50), unique=True, nullable=False)
     slug = Column(String(50), unique=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now())
-
     posts = relationship("Post", secondary=post_tags, back_populates="tags")
 
 
-class Post(Base):
+class Post(BaseTable):
     __tablename__ = 'posts'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(200), nullable=False)
     slug = Column(String(200), unique=True, nullable=False)
     content = Column(Text, nullable=False)
@@ -45,8 +37,7 @@ class Post(Base):
     meta_title = Column(String(200), nullable=True)  
     meta_description = Column(String(300), nullable=True)  
     published_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=datetime.utcnow)
+   
 
     # Relationships
     author = relationship("User", back_populates="posts")
