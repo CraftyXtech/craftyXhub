@@ -163,7 +163,6 @@ async def update_post(
             detail="Post not found"
         )
     
-    featured_image_path = None
     old_image_path = existing_post.featured_image
     
     if featured_image and featured_image.filename:
@@ -231,7 +230,7 @@ async def delete_post(
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
 ):
-    await PostService.delete_post(session, post_uuid, current_user.id)
+    await PostService.soft_delete_post(session, post_uuid, current_user.id)
     return None
 
 
@@ -243,7 +242,7 @@ async def toggle_post_like(
 ):
     return await PostService.toggle_post_like(session, post_uuid, current_user.id)
 
-
+# Categories endpoints
 @router.get("/categories/", response_model=List[CategoryResponse])
 async def get_categories(
         session: AsyncSession = Depends(get_db_session)

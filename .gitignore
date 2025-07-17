@@ -1,3 +1,10 @@
-.idea
-api/venv
-client/node_modules
+# Python virtual environments
+api/venv/
+**/__pycache__/
+
+# IDE settings
+.idea/
+
+# Node.js dependencies
+client/node_modules/
+frontend/node_modules/

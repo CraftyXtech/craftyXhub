@@ -191,6 +191,50 @@ class PostService:
         return True
 
     @staticmethod
+    async def soft_delete_post(session, post_uuid: str, current_user_id: int):
+        db_post = await PostService.get_post_by_uuid(session, post_uuid)
+        if not db_post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Post not found"
+            )
+
+        if db_post.author_id != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to delete this post"
+            )
+
+        db_post.soft_delete()
+        await session.commit()
+        return {"message": "Post deleted successfully"}
+
+    @staticmethod
+    async def restore_post(session, post_uuid: str, current_user_id: int):
+        db_post = await PostService.get_post_by_uuid(session, post_uuid)
+        if not db_post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Post not found"
+            )
+
+        if not db_post.is_deleted:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Post is not deleted"
+            )
+
+        if db_post.author_id != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to delete this post"
+            )
+
+        db_post.restore()
+        await session.commit()
+        return db_post
+
+    @staticmethod
     async def get_posts(
             session: AsyncSession,
             skip: int = 0,
@@ -346,7 +390,6 @@ class PostService:
 
     @staticmethod
     async def create_tag(session: AsyncSession, tag_data: TagCreate) -> Tag:
-        # Check if tag with same name or slug exists
         existing_tag = await session.execute(
             select(Tag)
             .where((Tag.name == tag_data.name) | (Tag.slug == tag_data.slug))
