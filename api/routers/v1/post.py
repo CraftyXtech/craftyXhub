@@ -1,9 +1,9 @@
 import os
-import json
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
-from typing import Optional, List
+from typing import Optional
+from pydantic import BaseModel, Field, ValidationError
 
 from services.post.post_service import PostService, UPLOAD_DIR
 from services.user.auth import get_current_active_user
@@ -15,14 +15,15 @@ from schemas.post import (
     PostListResponse,
     CategoryCreate,
     CategoryResponse,
+    CategoryListResponse,
     TagCreate,
     TagResponse,
+    TagListResponse,
     PostStatsResponse
 )
-from models import User, Category, Tag
+from models import User, Category, Tag, Post
 from fastapi import Form, File, UploadFile
 from fastapi.responses import FileResponse
-
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
 
@@ -74,41 +75,46 @@ async def get_post(
         )
 
     await PostService.increment_view_count(session, post_uuid)
-    return  await PostService.get_post_with_relationships(session, post.id)
+    return await PostService.get_post_with_relationships(session, post.id)
 
 
 @router.post("/", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
 async def create_post(
         title: str = Form(...),
-        slug: str = Form(...),
+        slug: Optional[str] = Form(None),
         content: str = Form(...),
         excerpt: Optional[str] = Form(None),
         meta_title: Optional[str] = Form(None),
         meta_description: Optional[str] = Form(None),
         category_id: Optional[int] = Form(None),
-        tag_ids: Optional[str] = Form(None),  
+        tag_ids: Optional[str] = Form(None),
         reading_time: Optional[int] = Form(None),
         featured_image: Optional[UploadFile] = File(None),
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
-):    
+):
     featured_image_path = None
     if featured_image and featured_image.filename:
         featured_image_path = await PostService.save_uploaded_file(featured_image, UPLOAD_DIR)
-    
+
     parsed_tag_ids = []
     if tag_ids:
         try:
-            parsed_tag_ids = json.loads(tag_ids)
-        except json.JSONDecodeError:
+            parsed_tag_ids = [int(tag_id.strip()) for tag_id in tag_ids.split(",") if tag_id.strip()]
+        except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid tag_ids format. Must be valid JSON array."
+                detail="Invalid tag_ids format. Must be comma-separated integers."
             )
-    
+
+    if not slug or not slug.strip():
+        generated_slug = await PostService.generate_unique_slug(session, title, Post)
+    else:
+        generated_slug = slug.strip()
+
     post_data = PostCreate(
         title=title,
-        slug=slug,
+        slug=generated_slug,
         content=content,
         excerpt=excerpt,
         meta_title=meta_title,
@@ -118,7 +124,7 @@ async def create_post(
         reading_time=reading_time,
         featured_image=featured_image_path
     )
-    
+
     try:
         post = await PostService.create_post(session, post_data, current_user.id)
         return post
@@ -126,35 +132,35 @@ async def create_post(
         if featured_image_path and os.path.exists(featured_image_path):
             os.remove(featured_image_path)
         raise e
-    
+
 @router.get("/images/{filename}")
 async def get_image(filename: str):
     file_path = UPLOAD_DIR / filename
-    
+
     if not file_path.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Image not found"
         )
-    
+
     return FileResponse(file_path)
 
 
 @router.put("/{post_uuid}", response_model=PostResponse)
 async def update_post(
-    post_uuid: str,
-    title: Optional[str] = Form(None),
-    slug: Optional[str] = Form(None),
-    content: Optional[str] = Form(None),
-    excerpt: Optional[str] = Form(None),
-    meta_title: Optional[str] = Form(None),
-    meta_description: Optional[str] = Form(None),
-    category_id: Optional[int] = Form(None),
-    tag_ids: Optional[str] = Form(None),
-    reading_time: Optional[int] = Form(None),
-    featured_image: Optional[UploadFile] = File(None),
-    current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_db_session)
+        post_uuid: str,
+        title: Optional[str] = Form(None),
+        slug: Optional[str] = Form(None),
+        content: Optional[str] = Form(None),
+        excerpt: Optional[str] = Form(None),
+        meta_title: Optional[str] = Form(None),
+        meta_description: Optional[str] = Form(None),
+        category_id: Optional[int] = Form(None),
+        tag_ids: Optional[str] = Form(None),
+        reading_time: Optional[int] = Form(None),
+        featured_image: Optional[UploadFile] = File(None),
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
 ):
     existing_post = await PostService.get_post_by_uuid(session, post_uuid)
     if not existing_post:
@@ -162,65 +168,70 @@ async def update_post(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Post not found"
         )
-    
+
     old_image_path = existing_post.featured_image
-    
+
     if featured_image and featured_image.filename:
         featured_image_path = await PostService.save_uploaded_file(featured_image, UPLOAD_DIR)
     else:
         featured_image_path = existing_post.featured_image
-    
+
     parsed_tag_ids = None
     if tag_ids:
         try:
-            parsed_tag_ids = json.loads(tag_ids)
-        except json.JSONDecodeError:
+            parsed_tag_ids = [int(tag_id.strip()) for tag_id in tag_ids.split(",") if tag_id.strip()]
+        except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid tag_ids format. Must be valid JSON array."
+                detail="Invalid tag_ids format. Must be comma-separated integers."
             )
-    
-    update_data = {}
-    
-    if title is not None:
-        update_data['title'] = title
-    if slug is not None:
-        update_data['slug'] = slug
-    if content is not None:
-        update_data['content'] = content
-    if excerpt is not None:
-        update_data['excerpt'] = excerpt
-    if meta_title is not None:
-        update_data['meta_title'] = meta_title
-    if meta_description is not None:
-        update_data['meta_description'] = meta_description
-    if category_id is not None:
-        update_data['category_id'] = category_id
-    if parsed_tag_ids is not None:
-        update_data['tag_ids'] = parsed_tag_ids
-    if reading_time is not None:
-        update_data['reading_time'] = reading_time
-   
-    
-    if (featured_image and featured_image.filename):
-        update_data['featured_image'] = featured_image_path
-    
-    post_data = PostUpdate(**update_data)
-    
+
+    form_data = {
+        'title': title,
+        'slug': slug,
+        'content': content,
+        'excerpt': excerpt,
+        'meta_title': meta_title,
+        'meta_description': meta_description,
+        'category_id': category_id,
+        'tag_ids': parsed_tag_ids,
+        'reading_time': reading_time,
+    }
+
+    if featured_image and featured_image.filename:
+        form_data['featured_image'] = featured_image_path
+
+    update_data = {k: v for k, v in form_data.items() if v is not None}
+
+    try:
+        post_data = PostUpdate(**update_data)
+    except ValidationError as e:
+        if featured_image_path and featured_image_path != existing_post.featured_image:
+            PostService.delete_image_file(featured_image_path, UPLOAD_DIR)
+
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": "Validation failed",
+                "errors": [
+                    {
+                        "field": ".".join(str(loc) for loc in error["loc"]),
+                        "message": error["msg"],
+                        "type": error["type"]
+                    }
+                    for error in e.errors()
+                ]
+            }
+        )
+
     try:
         updated_post = await PostService.update_post(session, post_uuid, post_data, current_user.id)
-        
-        if old_image_path and old_image_path != featured_image_path:
-            old_file_path = UPLOAD_DIR / os.path.basename(old_image_path)
-            if old_file_path.exists():
-                os.remove(old_file_path)
-        
+        PostService.cleanup_old_image(old_image_path, featured_image_path, UPLOAD_DIR)
+
         return updated_post
     except Exception as e:
         if featured_image_path and featured_image_path != existing_post.featured_image:
-            new_file_path = UPLOAD_DIR / os.path.basename(featured_image_path)
-            if new_file_path.exists():
-                os.remove(new_file_path)
+            PostService.delete_image_file(featured_image_path, UPLOAD_DIR)
         raise e
 
 
@@ -242,13 +253,15 @@ async def toggle_post_like(
 ):
     return await PostService.toggle_post_like(session, post_uuid, current_user.id)
 
+
 # Categories endpoints
-@router.get("/categories/", response_model=List[CategoryResponse])
+@router.get("/categories/", response_model=CategoryListResponse)
 async def get_categories(
         session: AsyncSession = Depends(get_db_session)
 ):
     result = await session.execute(select(Category))
-    return result.scalars().all()
+    categories = result.scalars().all()
+    return {"categories": categories}
 
 
 @router.post("/categories/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
@@ -261,12 +274,13 @@ async def create_category(
 
 
 # Tags endpoints
-@router.get("/tags/", response_model=List[TagResponse])
+@router.get("/tags/", response_model=TagListResponse)
 async def get_tags(
         session: AsyncSession = Depends(get_db_session)
 ):
     result = await session.execute(select(Tag))
-    return result.scalars().all()
+    tags = result.scalars().all()
+    return {"tags": tags}
 
 
 @router.post("/tags/", response_model=TagResponse, status_code=status.HTTP_201_CREATED)

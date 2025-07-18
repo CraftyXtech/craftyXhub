@@ -7,7 +7,7 @@ from .base import BaseSchema, TimestampMixin
 
 class CategoryBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    slug: str = Field(..., min_length=1, max_length=100)
+    slug: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
 
 
@@ -21,14 +21,16 @@ class CategoryUpdate(BaseModel):
 
 
 class CategoryResponse(CategoryBase, BaseSchema):
-    uuid: str
+    id: int
     created_at: datetime
     post_count: Optional[int] = 0
 
+class CategoryListResponse(BaseModel):
+    categories: List[CategoryResponse]
 
 class TagBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=50)
-    slug: str = Field(..., min_length=1, max_length=50)
+    slug: Optional[str] = Field(None, min_length=1, max_length=50)
 
 
 class TagCreate(TagBase):
@@ -36,10 +38,12 @@ class TagCreate(TagBase):
 
 
 class TagResponse(TagBase, BaseSchema):
-    uuid: str
+    id: int
     created_at: datetime
     post_count: Optional[int] = 0
 
+class TagListResponse(BaseModel):
+    tags: List[TagResponse]
 
 class PostBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
