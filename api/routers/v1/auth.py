@@ -9,7 +9,7 @@ from services.user.auth import AuthService, get_current_active_user
 from database.connection import get_db_session
 
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/auth", tags=["authentication"])
 ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30) 
 
 

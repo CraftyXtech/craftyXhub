@@ -5,7 +5,7 @@ from sqlmodel import select
 from typing import Optional
 from pydantic import BaseModel, Field, ValidationError
 
-from services.post.post_service import PostService, UPLOAD_DIR
+from services.post.post import PostService, UPLOAD_DIR
 from services.user.auth import get_current_active_user
 from database.connection import get_db_session
 from schemas.post import (
@@ -25,7 +25,7 @@ from models import User, Category, Tag, Post
 from fastapi import Form, File, UploadFile
 from fastapi.responses import FileResponse
 
-router = APIRouter(prefix="/posts", tags=["Posts"])
+router = APIRouter(prefix="/posts", tags=["posts"])
 
 
 @router.get("/", response_model=PostListResponse)

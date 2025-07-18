@@ -1,9 +1,7 @@
-import logging
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from routers.v1 import router as v1_router
-from database.connection import db_health_check, init_db, close_db, drop_all_tables
+from database.connection import db_health_check, init_db
 
 
 def include_routers(app: FastAPI) -> None:
@@ -16,7 +14,6 @@ def include_routers(app: FastAPI) -> None:
         db_healthy = await db_health_check()
         await  init_db()
 
-        # await drop_all_tables()
         return {
             "status": "Healthy" if db_healthy else "unhealthy",
             "version": "1.0.0",

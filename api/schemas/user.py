@@ -74,8 +74,7 @@ class ProfileUpdate(ProfileBase):
     avatar: Optional[str] = None
 
 class ProfileResponse(ProfileBase, TimestampMixin, BaseSchema):
-    id: int
-    user_id: int
+    uuid: str
     avatar: Optional[str] = None
 
 

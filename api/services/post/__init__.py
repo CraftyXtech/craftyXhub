@@ -4,7 +4,7 @@ Posts Service Module
 Business logic services for post management and operations.
 """
 
-from .post_service import PostService
+from .post import PostService
 
 __all__ = [
     "PostService",
