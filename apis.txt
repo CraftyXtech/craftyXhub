@@ -1,0 +1,59 @@
+Content Management & Moderation
+
+PUT    /v1/posts/{post_uuid}/publish           # Publish draft post
+PUT    /v1/posts/{post_uuid}/unpublish         # Unpublish post
+PUT    /v1/posts/{post_uuid}/feature           # Feature/unfeature post
+GET    /v1/posts/drafts                        # Get user's draft posts
+POST   /v1/posts/{post_uuid}/report            # Report inappropriate content
+GET    /v1/admin/reports                       # Get content reports (admin)
+PUT    /v1/admin/posts/{post_uuid}/moderate    # Moderate posts (admin)
+
+Comments System
+
+POST   /v1/posts/{post_uuid}/comments          # Create comment
+GET    /v1/posts/{post_uuid}/comments          # Get post comments
+PUT    /v1/comments/{comment_uuid}             # Update comment
+DELETE /v1/comments/{comment_uuid}             # Delete comment
+POST   /v1/comments/{comment_uuid}/reply       # Reply to comment
+GET    /v1/comments/{comment_uuid}/replies     # Get comment replies
+PUT    /v1/comments/{comment_uuid}/approve     # Moderate comments
+
+Content Search & Discovery
+GET    /v1/search                              # Global search (posts, users, categories)
+GET    /v1/posts/trending                      # Trending posts
+GET    /v1/posts/featured                      # Featured posts
+GET    /v1/posts/recent                        # Recently published posts
+GET    /v1/posts/popular                       # Most liked/viewed posts
+GET    /v1/posts/{post_uuid}/related           # Related posts
+
+user engagement and social features
+
+POST   /v1/posts/{post_uuid}/bookmark          # Bookmark/save posts
+GET    /v1/users/me/bookmarks                  # Get user's saved posts
+DELETE /v1/posts/{post_uuid}/bookmark          # Remove bookmark
+POST   /v1/users/{user_uuid}/follow            # Follow user
+DELETE /v1/users/{user_uuid}/follow            # Unfollow user
+GET    /v1/users/{user_uuid}/followers         # Get user followers
+GET    /v1/users/{user_uuid}/following         # Get users being followed
+GET    /v1/users/me/feed                       # Personalized content feed
+
+analytics
+
+GET    /v1/analytics/posts/{post_uuid}         # Post analytics
+GET    /v1/analytics/users/me                  # User's content analytics
+GET    /v1/analytics/dashboard                 # Admin dashboard stats
+GET    /v1/analytics/engagement                # Engagement metrics
+
+Notifications System
+
+GET    /v1/notifications                       # Get user notifications
+PUT    /v1/notifications/{notification_id}/read # Mark as read
+PUT    /v1/notifications/mark-all-read         # Mark all as read
+DELETE /v1/notifications/{notification_id}     # Delete notification
+PUT    /v1/users/me/notification-settings      # Update notification preferences
+
+Media Management
+POST   /v1/media/upload                        # Upload media files
+GET    /v1/media                               # Get user's media files
+DELETE /v1/media/{media_id}                    # Delete media file
+PUT    /v1/media/{media_id}                    # Update media metadata
