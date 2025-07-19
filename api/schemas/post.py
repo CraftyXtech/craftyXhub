@@ -59,6 +59,8 @@ class PostCreate(PostBase):
     tag_ids: Optional[List[int]] = []
     featured_image: Optional[str] = None
     reading_time: Optional[int] = None
+    is_published: Optional[bool] = False
+    is_featured: Optional[bool] = False
 
 
 class PostUpdate(BaseModel):
