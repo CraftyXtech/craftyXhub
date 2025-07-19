@@ -3,10 +3,14 @@ import { Routes,Route, useLocation, BrowserRouter } from "react-router-dom";
 import { ProductContextProvider } from "@/pages/pre-built/products/ProductContext";
 import { UserContextProvider } from "@/pages/pre-built/user-manage/UserContext";
 
-import Homepage from "@/pages/Homepage";
-import Crypto from "@/pages/Crypto";
 import Analytics from "@/pages/Analytics";
-import Invest from "@/pages/Invest";
+
+// Posts Management Components
+import PostList from "@/pages/pre-built/posts/PostList";
+import CategoryManagement from "@/pages/pre-built/posts/CategoryManagement";
+import PostForm from "@/pages/pre-built/posts/PostForm";
+import PostDetail from "@/pages/pre-built/posts/PostDetail";
+
 
 import Component from "@/pages/components/Index";
 import Accordian from "@/pages/components/Accordions";
@@ -74,7 +78,6 @@ import UserProfileActivity from "@/pages/pre-built/user-manage/UserProfileActivi
 import KycListRegular from "@/pages/pre-built/kyc-list-regular/KycListRegular";
 import KycDetailsRegular from "@/pages/pre-built/kyc-list-regular/kycDetailsRegular";
 import TransListBasic from "@/pages/pre-built/trans-list/TransListBasic";
-import TransListCrypto from "@/pages/pre-built/trans-list/TransListCrypto";
 import ProductCard from "@/pages/pre-built/products/ProductCard";
 import ProductList from "@/pages/pre-built/products/ProductList";
 import ProductDetails from "@/pages/pre-built/products/ProductDetails";
@@ -144,10 +147,8 @@ const Router = () => {
         <Routes>
           <Route element={<ThemeProvider />}>
             <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
-              <Route index element={<Homepage />}></Route>
-              <Route path="crypto" element={<Crypto />}></Route>
+              <Route index element={<Analytics />}></Route>
               <Route path="analytics" element={<Analytics />}></Route>
-              <Route path="invest" element={<Invest />}></Route>
               <Route path="_blank" element={<Blank />}></Route>
 
               <Route path="project-card" element={<ProjectCardPage />}></Route>
@@ -171,13 +172,19 @@ const Router = () => {
               <Route path="kyc-list-regular" element={<KycListRegular />}></Route>
               <Route path="kyc-details-regular/:kycId" element={<KycDetailsRegular />}></Route>
               <Route path="transaction-basic" element={<TransListBasic />}></Route>
-              <Route path="transaction-crypto" element={<TransListCrypto />}></Route>
               <Route element={<ProductContextProvider />}>
                 <Route path="product-list" element={<ProductList />}></Route>
                 <Route path="product-card" element={<ProductCard />}></Route>
                 <Route path="product-details/:productId" element={<ProductDetails />}></Route>
               </Route>
 
+              {/* Posts Management Routes */}
+              <Route path="posts-list" element={<PostList />}></Route>
+              <Route path="posts-categories" element={<CategoryManagement />}></Route>
+              <Route path="posts-create" element={<PostForm />}></Route>
+              <Route path="posts-edit/:postId" element={<PostForm />}></Route>
+              <Route path="posts-detail" element={<PostDetail />}></Route>
+             
               <Route path="invoice-list" element={<InvoiceList />}></Route>
               <Route path="invoice-details/:invoiceId" element={<InvoiceDetails />}></Route>
               <Route path="pricing-table" element={<PricingTable />}></Route>

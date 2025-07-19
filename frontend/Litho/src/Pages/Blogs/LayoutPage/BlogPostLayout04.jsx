@@ -9,9 +9,9 @@ import { m } from "framer-motion";
 import Header, { HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from "../../../Components/Header/Header";
 import Buttons from '../../../Components/Button/Buttons';
 import SocialIcons from '../../../Components/SocialIcon/SocialIcons';
-import BlogClean from '../../../Components/Blogs/BlogClean';
+import BlogClassic from '../../../Components/Blogs/BlogClassic';
 import { TiltBox } from '../../../Components/FancyText/FancyText'
-import FooterStyle01 from '../../../Components/Footers/FooterStyle01';
+import FooterStyle05 from '../../../Components/Footers/FooterStyle05';
 import Overlap from '../../../Components/Overlap/Overlap'
 import SideButtons from "../../../Components/SideButtons";
 import { fadeIn, fadeInLeft, fadeInRight } from "../../../Functions/GlobalAnimations";
@@ -273,7 +273,7 @@ const BlogPostLayout04 = (props) => {
               <h5 className="font-serif font-medium text-darkgray -tracking-[1px]">Related posts</h5>
             </Col>
           </Row>
-          <BlogClean filter={false} overlay={["#0039e3", "#4132e0", "#5e28dd", "#741bd9", "#8600d4"]} pagination="false" grid="grid grid-3col xl-grid-3col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={blogCleanData.slice(0, 3)} />
+          <BlogClassic filter={false} overlay={["#0039e3", "#4132e0", "#5e28dd", "#741bd9", "#8600d4"]} pagination={false} grid="grid grid-3col xl-grid-3col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" />
         </Container>
       </section>
       {/* Section End */}
@@ -281,7 +281,7 @@ const BlogPostLayout04 = (props) => {
       <CommentBox />
 
       {/* Footer Start */}
-      <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+      <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
       {/* Footer End */}
     </div>
   )

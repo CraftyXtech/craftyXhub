@@ -3,3 +3,4 @@ api/venv
 frontend/admin/node_modules
 frontend/admin/dist
 frontend/litho/node_modules
+/node_modules

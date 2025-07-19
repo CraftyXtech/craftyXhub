@@ -19,7 +19,7 @@ import { fadeIn } from '../../Functions/GlobalAnimations';
 import PricingTable04 from '../../Components/PricingTable/PricingTable04';
 import Testimonials from '../../Components/Testimonials/Testimonials';
 import Clients from '../../Components/Clients/Clients';
-import FooterStyle01 from '../../Components/Footers/FooterStyle01';
+import FooterStyle05 from '../../Components/Footers/FooterStyle05';
 import Overlap from '../../Components/Overlap/Overlap';
 import SideButtons from "../../Components/SideButtons";
 
@@ -337,7 +337,7 @@ const OurServicesPage = (props) => {
           </Row>
         </Container>
         {/* footer Start */}
-        <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+        <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
         {/* footer End */}
       </m.section>
     </div >

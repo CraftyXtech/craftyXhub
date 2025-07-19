@@ -12,11 +12,11 @@ import Header, { HeaderNav, Menu, MobileMenu } from "../../../Components/Header/
 import BlogClassic from "../../../Components/Blogs/BlogClassic";
 import Buttons from '../../../Components/Button/Buttons'
 import IconWithText from '../../../Components/IconWithText/IconWithText'
-import PortfolioClassic from "../../../Components/Portfolio/PortfolioClassic";
+import PortfolioPlaceholder from "../../../Components/Portfolio/PortfolioPlaceholder";
 import Testimonials from "../../../Components/Testimonials/Testimonials";
 import SocialIcons from "../../../Components/SocialIcon/SocialIcons";
 import CustomModal from "../../../Components/CustomModal";
-import FooterStyle01 from "../../../Components/Footers/FooterStyle01";
+import FooterStyle05 from "../../../Components/Footers/FooterStyle05";
 import SideButtons from "../../../Components/SideButtons";
 
 // Data
@@ -163,12 +163,7 @@ const MobileMenuModernPage = (props) => {
           </Row>
         </Container>
         <Container fluid className="px-[6rem] md:px-[2rem] sm:px-[8px] xs:px-0">
-          <PortfolioClassic
-          className="m-0"
-            overlay={["#0039e3", "#4132e0", "#5e28dd", "#741bd9", "#8600d4"]}
-            grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col xs:mb-[30px]"
-            data={portfolioClassicData.slice(0, 8)}
-          />
+          <PortfolioPlaceholder data={portfolioClassicData.slice(0, 8)} />
         </Container>
       </m.section>
       {/* Portfolio End */}
@@ -248,7 +243,7 @@ const MobileMenuModernPage = (props) => {
       {/* Blog End */}
 
       {/* footer Start*/}
-      <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+      <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
       {/* footer End */}
     </div>
 

@@ -7,7 +7,7 @@ import { m } from "framer-motion";
 
 // Components
 import Header, { HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../Components/Header/Header';
-import FooterStyle01 from '../Components/Footers/FooterStyle01';
+import FooterStyle05 from '../Components/Footers/FooterStyle05';
 import { flash, fadeIn, fadeInUp, fadeInBlur, fadeInRight, fadeInLeft, zoomIn, zoomOut, bounce, rotateInDown, fadeInDown, pulse, rubberBand } from '../Functions/GlobalAnimations'
 const SideButtons = lazy(() => import("../Components/SideButtons"))
 
@@ -115,7 +115,7 @@ const AnimationPage = (props) => {
       {/* Section End */}
 
       {/* Footer start */}
-      <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+      <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
       {/* Footer End */}
     </>
   )

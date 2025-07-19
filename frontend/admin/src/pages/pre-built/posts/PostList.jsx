@@ -153,7 +153,7 @@ const PostList = () => {
 
   // Handle view post
   const handleViewPost = (post) => {
-    navigate(`/posts-view/${post.id}`);
+    navigate(`/posts-detail?id=${post.id}`);
   };
 
   if (loading) {

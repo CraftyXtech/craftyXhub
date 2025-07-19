@@ -6,12 +6,8 @@ import { Link } from 'react-router-dom'
 
 // Components
 import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from "../../Components/Header/Header";
-import PortfolioScattered from '../../Components/Portfolio/PortfolioScattered';
-import FooterStyle01 from '../../Components/Footers/FooterStyle01';
+import FooterStyle05 from '../../Components/Footers/FooterStyle05';
 import SideButtons from "../../Components/SideButtons";
-
-// Data
-import { portfolioScatteredData } from '../../Components/Portfolio/PortfolioData'
 
 const WhiteHeaderPage = (props) => {
   return (
@@ -68,15 +64,20 @@ const WhiteHeaderPage = (props) => {
       </section>
       {/* Section End */}
 
-      {/* Section Start */}
-      <section className="white-header-portfolio pt-[160px] lg:pt-[120px] md:pt-[95px] sm:pt-[80px] xs:pt-[50px]">
-        <Container fluid className="px-[7%] mb-[3.5rem] md:px-[3%] sm:px-[15px]">
-          <PortfolioScattered grid="row row-cols-1 row-cols-xl-4 row-cols-lg-2 row-cols-md-2 portfolio-scattered" data={portfolioScatteredData.slice(0, 8)} />
+      {/* Blog Section Start */}
+      <section className="pt-[160px] lg:pt-[120px] md:pt-[95px] sm:pt-[80px] xs:pt-[50px]">
+        <Container>
+          <Row className="justify-center text-center">
+            <Col lg={6} className="mb-[95px] md:mb-[75px]">
+              <span className="text-md font-serif font-medium uppercase inline-block text-gradient bg-gradient-to-r from-[#556fff] via-[#e05fc4] to-[#ff798e] mb-[15px]">Welcome to</span>
+              <h5 className="text-darkgray font-semibold font-serif -tracking-[1px] mb-0">CraftyX Hub Blog Platform</h5>
+            </Col>
+          </Row>
         </Container>
       </section>
-      {/* Section End */}
+      {/* Blog Section End */}
       {/* footer Start*/}
-      <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+      <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
       {/* footer End */}
     </>
   )

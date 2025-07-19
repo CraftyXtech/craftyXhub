@@ -9,7 +9,7 @@ import { Parallax } from 'react-scroll-parallax'
 import { m } from "framer-motion";
 
 // Components
-import FooterStyle01 from '../../Components/Footers/FooterStyle01';
+import FooterStyle05 from '../../Components/Footers/FooterStyle05';
 import { Input } from '../../Components/Form/Form'
 import Accordions from '../../Components/Accordion/Accordion'
 import Header, { HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
@@ -236,7 +236,7 @@ const FaqSPage = (props) => {
       {/* Section End */}
 
       {/* Footer Start */}
-      <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+      <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
       {/* Footer End */}
     </div>
   )

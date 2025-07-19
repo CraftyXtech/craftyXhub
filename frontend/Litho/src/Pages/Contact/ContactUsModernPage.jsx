@@ -15,7 +15,7 @@ import { ContactFormStyle02Schema } from '../../Components/Form/FormSchema';
 import { Input, TextArea } from '../../Components/Form/Form'
 import MessageBox from '../../Components/MessageBox/MessageBox';
 import GoogleMap from '../../Components/GoogleMap/GoogleMap';
-import FooterStyle01 from '../../Components/Footers/FooterStyle01';
+import FooterStyle05 from '../../Components/Footers/FooterStyle05';
 import { fadeIn } from "../../Functions/GlobalAnimations";
 import ReCAPTCHA from 'react-google-recaptcha';
 import { sendEmail, resetForm } from "../../Functions/Utilities";
@@ -245,7 +245,7 @@ const ContactUsModernPage = (props) => {
       </section>
 
       {/* Footer Start */}
-      <FooterStyle01 theme="dark" className="bg-[#262b35] text-slateblue" />
+      <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
       {/* Footer End */}
     </div>
   )

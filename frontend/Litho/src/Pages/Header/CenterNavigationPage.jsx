@@ -11,13 +11,9 @@ import { fadeIn } from "../../Functions/GlobalAnimations";
 import Buttons from '../../Components/Button/Buttons'
 import { Header, HeaderNav, Menu } from "../../Components/Header/Header";
 import IconWithText from '../../Components/IconWithText/IconWithText'
-import PortfolioClassic from "../../Components/Portfolio/PortfolioClassic";
 import CustomModal from "../../Components/CustomModal";
-import FooterStyle01 from "../../Components/Footers/FooterStyle01";
+import FooterStyle05 from "../../Components/Footers/FooterStyle05";
 import SideButtons from "../../Components/SideButtons";
-
-// Data
-import { portfolioClassicData } from "../../Components/Portfolio/PortfolioData";
 
 const IconWithTextData = [
   {
@@ -134,29 +130,8 @@ const CenterNavigationPage = (props) => {
       </section>
       {/* About End */}
 
-      {/* Portfolio Start */}
-      <m.section className="bg-[#f7f8fc] py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]" {...fadeIn}>
-        <Container>
-          <Row className="justify-center">
-            <Col xl={5} lg={6} md={8} className="font-serif text-center mb-[95px] md:mb-[75px]">
-              <span className="text-md font-serif font-medium uppercase inline-block text-gradient bg-gradient-to-r from-[#556fff] via-[#e05fc4] to-[#ff798e] mb-[20px]">recent portfolio</span>
-              <h5 className="text-darkgray font-semibold font-serif -tracking-[1px] mb-0">Hand crafted pixel perfect designs for your projects</h5>
-            </Col>
-          </Row>
-        </Container>
-        <Container fluid className="px-[6rem] md:px-[2rem] sm:px-[8px] xs:px-0">
-          <PortfolioClassic
-            className="m-0"
-            overlay={["#0039e3", "#4132e0", "#5e28dd", "#741bd9", "#8600d4"]}
-            grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col xs:mb-[30px]"
-            data={portfolioClassicData.slice(0, 8)}
-          />
-        </Container>
-      </m.section>
-      {/* Portfolio End */}
-
       {/* Footer Start */}
-      <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+      <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
       {/* Footer End */}
     </>
   );

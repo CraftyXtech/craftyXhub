@@ -7,7 +7,7 @@ import { PropTypes } from "prop-types";
 
 // Components
 import Pagination from './HelperComponents/Pagination';
-import Filter from "../Portfolio/Filter";
+import Filter from "./BlogFilter";
 
 // Data
 import { blogData } from './BlogData';

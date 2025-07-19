@@ -7,12 +7,8 @@ import { useLocation } from "react-router-dom";
 // Components
 import ReactCustomScrollbar from "./ReactCustomScrollbar";
 import Buttons from './Button/Buttons'
-import PortfolioSwitchImg from "./Portfolio/PortfolioSwitchImg";
 import { fadeIn } from "../Functions/GlobalAnimations";
 import useOnClickOutside from "../Functions/UseOnClickOutside";
-
-// Data
-import { LandingDemoData } from "../Pages/LandingData";
 
 const SideButtons = memo((props) => {
     const [show, setShow] = useState(false);
@@ -79,15 +75,17 @@ const SideButtons = memo((props) => {
                                     <div className="w-[95%] relative" style={{ maxHeight: `calc(100vh - 80px)` }}>
                                         <div className="text-center">
                                             <span className="font-serif font-semibold text-xmd text-gradient bg-gradient-to-r from-[#556fff] to-[#e65f9a] uppercase -tracking-[.5px] inline-block mb-[5px]">
-                                                Truly multipurpose
+                                                Blog Platform
                                             </span>
                                             <h2 className="heading-5 font-serif font-semibold text-darkgray -tracking-[1px] flex justify-center px-[20%] mb-[30px]">
-                                                37+ Unique demos
+                                                Welcome to CraftyX Hub
                                             </h2>
+                                            <p className="text-center px-[10%] mb-[30px]">
+                                                Discover amazing blog content and insights on our platform.
+                                            </p>
                                         </div>
-                                        <PortfolioSwitchImg grid="grid grid-3col xl-grid-3col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large text-center h-[760px] bg-white" data={LandingDemoData} />
                                         <m.div className="flex justify-center" {...fadeIn}>
-                                            <Buttons to="/" target="_blank" className="btn-fill font-medium btn-fancy mt-[45px] font-serif rounded-none uppercase" themeColor="#232323" color="#fff" size="lg" title="View all 37+ demos" />
+                                            <Buttons to="/" className="btn-fill font-medium btn-fancy mt-[45px] font-serif rounded-none uppercase" themeColor="#232323" color="#fff" size="lg" title="Explore Blog" />
                                         </m.div>
                                     </div>
                                 </ReactCustomScrollbar>

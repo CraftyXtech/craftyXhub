@@ -12,55 +12,10 @@ import GlobalContext from "./Context/Context";
 import ScrollToTopButton from "./Components/ScrollToTop";
 
 // Home
-import HomeStartupPage from "./Pages/Home/Startup/Startup";
-const HomeBusinessPage = lazy(() => import("./Pages/Home/Business"));
-const CorporatePage = lazy(() => import("./Pages/Home/Corporate"));
-const FinancePage = lazy(() => import("./Pages/Home/Finance"));
-const ApplicationPage = lazy(() => import("./Pages/Home/Application"));
-const ConsultingPage = lazy(() => import("./Pages/Home/Consulting"));
-const DigitalagencyPage = lazy(() => import("./Pages/Home/DigitalAgency"));
-const MarketingAgencyPage = lazy(() => import("./Pages/Home/MarketingAgency"));
-const EventsConferencePage = lazy(() =>
-  import("./Pages/Home/EventsConference")
-);
-const SeoAgencyPage = lazy(() => import("./Pages/Home/SeoAgency"));
-const DesignagencyPage = lazy(() => import("./Pages/Home/DesignAgency"));
-const WebagencyPage = lazy(() => import("./Pages/Home/WebAgency"));
-const CreativeAgencyPage = lazy(() => import("./Pages/Home/CreativeAgency"));
-const BrandingagencyPage = lazy(() => import("./Pages/Home/BrandingAgency"));
-const PhotographyPage = lazy(() => import("./Pages/Home/Photography"));
-const PersonalportfolioPage = lazy(() =>
-  import("./Pages/Home/PersonalPortfolio")
-);
-const InteractiveportfolioPage = lazy(() =>
-  import("./Pages/Home/InteractivePortfolio")
-);
-const CreativeportfolioPage = lazy(() =>
-  import("./Pages/Home/CreativePortfolio")
-);
-const VerticalportfolioPage = lazy(() =>
-  import("./Pages/Home/VerticalPortfolio")
-);
-const SplitPortfolioPage = lazy(() => import("./Pages/Home/SplitPortfolio"));
-const ArchitecturePage = lazy(() => import("./Pages/Home/Architecture"));
-const HotelResortPage = lazy(() => import("./Pages/Home/HotelResort"));
-const TravelAgencyPage = lazy(() => import("./Pages/Home/TravelAgency"));
-const YogaMeditationPage = lazy(() => import("./Pages/Home/YogaMeditation"));
-const RestaurantPage = lazy(() => import("./Pages/Home/Restaurant"));
-const GymFitnessPage = lazy(() => import("./Pages/Home/GymFitness"));
-const SpaSalonPage = lazy(() => import("./Pages/Home/Spasalon"));
-const CafePage = lazy(() => import("./Pages/Home/Cafe"));
-const HomeDecorPage = lazy(() => import("./Pages/Home/Decor"));
-const DentistPage = lazy(() => import("./Pages/Home/Dentist"));
-const InteriorDesignPage = lazy(() => import("./Pages/Home/InteriorDesign"));
-const FurnitureShopPage = lazy(() => import("./Pages/Home/FurnitureShop"));
-const FashionShopPage = lazy(() => import("./Pages/Home/FashionShop"));
-const LifestyleBlogPage = lazy(() => import("./Pages/Home/LifestyleBlog"));
-const ClassicBlogPage = lazy(() => import("./Pages/Home/ClassicBlog"));
 const MagazinePage = lazy(() => import("./Pages/Home/Magazine"));
 
 // Pages
-const LandingPage = lazy(() => import("./Pages/Landing"));
+
 const AccordionPage = lazy(() => import("./Pages/Elements/Accordion"));
 const ButtonPage = lazy(() => import("./Pages/Elements/Button"));
 const TeamPage = lazy(() => import("./Pages/Elements/Team"));
@@ -118,131 +73,7 @@ const SeparatorsPage = lazy(() => import("./Pages/Elements/Separators"));
 const PricingTablePage = lazy(() => import("./Pages/Elements/PricingTable"));
 const ElementPage = lazy(() => import("./Pages/Elements"));
 
-const PortfolioPage = lazy(() => import("./Pages/Portfolios"));
-const PortfolioClassicTwoColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioClassic/PortfolioClassicTwoColumn")
-);
-const PortfolioClassicThreeColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioClassic/PortfolioClassicThreeColumn")
-);
-const PortfolioClassicFourColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioClassic/PortfolioClassicFourColumn")
-);
-const PortfolioClassicMasonryPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioClassic/portfolioClassicMasonry")
-);
-const PortfolioClassicMetroPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioClassic/PortfolioClassicMetro")
-);
 
-const PortfolioBorderedTwoColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioBordered/PortfolioBorderedTwoColumn")
-);
-const PortfolioBorderedThreeColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioBordered/PortfolioBorderedThreeColumn")
-);
-const PortfolioBorderedFourColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioBordered/PortfolioBorderedFourColumn")
-);
-const PortfolioBorderedMasonryPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioBordered/PortfolioBorderedMasonry")
-);
-const PortfolioBorderedMetroPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioBordered/PortfolioBorderedMetro")
-);
-
-const PortfolioBoxedTwoColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioBoxed/PortfolioBoxedTwoColumn")
-);
-const PortfolioBoxedThreeColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioBoxed/PortfolioBoxedThreeColumn")
-);
-const PortfolioBoxedFourColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioBoxed/PortfolioBoxedFourColumn")
-);
-const PortfolioBoxedMasonryPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioBoxed/PortfolioBoxedMasonry")
-);
-const PortfolioBoxedMetroPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioBoxed/PortfolioBoxedMetro")
-);
-
-const PortfolioColorfulTwoColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioColorful/PortfolioColorfulTwoColumn")
-);
-const PortfolioColorfulThreeColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioColorful/PortfolioColorfulThreeColumn")
-);
-const PortfolioColorfulFourColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioColorful/PortfolioColorfulFourColumn")
-);
-const PortfolioColorfulMasonryPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioColorful/PortfolioColorfulMasonry")
-);
-const PortfolioColorfulMetroPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioColorful/PortfolioColorfulMetro")
-);
-
-const PortfolioOverlayTwoColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioOverlay/PortfolioOverlayTwoColumn")
-);
-const PortfolioOverlayThreeColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioOverlay/PortfolioOverlayThreeColumn")
-);
-const PortfolioOverlayFourColPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioOverlay/PortfolioOverlayFourColumn")
-);
-const PortfolioOverlayMetroPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioOverlay/PortfolioOverlayMetro")
-);
-const PortfolioOverlayMasonryPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioOverlay/PortfolioOverlayMasonry")
-);
-const PortfolioSwitchImgTwoColPage = lazy(() =>
-  import(
-    "./Pages/Portfolios/PortfolioSwitchImage/PortfolioSwitchImageTwoColumn"
-  )
-);
-const PortfolioSwitchImgThreeColPage = lazy(() =>
-  import(
-    "./Pages/Portfolios/PortfolioSwitchImage/PortfolioSwitchImageThreeColumn"
-  )
-);
-const PortfolioSwitchImgFourColPage = lazy(() =>
-  import(
-    "./Pages/Portfolios/PortfolioSwitchImage/PortfolioSwitchImageFourColumn"
-  )
-);
-const PortfolioSwitchImgMasonryPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioSwitchImage/PortfolioSwitchImageMasonry")
-);
-const PortfolioSwitchImgMetroPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioSwitchImage/PortfolioSwitchImageMetro")
-);
-const PortfolioScatteredPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioScattered")
-);
-const PortfolioJustifiedGalleryPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioJustifiedGallery")
-);
-const PortfolioSliderPage = lazy(() =>
-  import("./Pages/Portfolios/PortfolioSlider")
-);
-const SingleProjectPage01 = lazy(() =>
-  import("./Pages/Portfolios/SingleProjectPage01")
-);
-const SingleProjectPage02 = lazy(() =>
-  import("./Pages/Portfolios/SingleProjectPage02")
-);
-const SingleProjectPage03 = lazy(() =>
-  import("./Pages/Portfolios/SingleProjectPage03")
-);
-const SingleProjectPage04 = lazy(() =>
-  import("./Pages/Portfolios/SingleProjectPage04")
-);
-const SingleProjectPage05 = lazy(() =>
-  import("./Pages/Portfolios/SingleProjectPage05")
-);
 
 // Header
 const TransparentHeaderPage = lazy(() =>
@@ -302,41 +133,8 @@ const HamburgerMenuHalfPage = lazy(() =>
 );
 
 // Footer
-const FooterStyle01Page = lazy(() =>
-  import("./Pages/Footer/FooterStyle01Page")
-);
-const FooterStyle02Page = lazy(() =>
-  import("./Pages/Footer/FooterStyle02Page")
-);
-const FooterStyle03Page = lazy(() =>
-  import("./Pages/Footer/FooterStyle03Page")
-);
-const FooterStyle04Page = lazy(() =>
-  import("./Pages/Footer/FooterStyle04Page")
-);
 const FooterStyle05Page = lazy(() =>
   import("./Pages/Footer/FooterStyle05Page")
-);
-const FooterStyle06Page = lazy(() =>
-  import("./Pages/Footer/FooterStyle06Page")
-);
-const FooterStyle07Page = lazy(() =>
-  import("./Pages/Footer/FooterStyle07Page")
-);
-const FooterStyle08Page = lazy(() =>
-  import("./Pages/Footer/FooterStyle08Page")
-);
-const FooterStyle09Page = lazy(() =>
-  import("./Pages/Footer/FooterStyle09Page")
-);
-const FooterStyle10Page = lazy(() =>
-  import("./Pages/Footer/FooterStyle10Page")
-);
-const FooterStyle11Page = lazy(() =>
-  import("./Pages/Footer/FooterStyle11Page")
-);
-const FooterStyle12Page = lazy(() =>
-  import("./Pages/Footer/FooterStyle12Page")
 );
 
 // Model-Popup
@@ -404,23 +202,12 @@ const BigTypographyPage = lazy(() =>
 const PageTitle = lazy(() => import("./Pages/PageTitle"));
 
 // About Pages
-const AboutMePage = lazy(() => import("./Pages/About/AboutMePage"));
 const AboutUsPage = lazy(() => import("./Pages/About/AboutUsPage"));
-const OurStoryPage = lazy(() => import("./Pages/About/OurStoryPage"));
-const WhoWeArePage = lazy(() => import("./Pages/About/WhoWeArePage"));
 
 // Services Pages
 const OurServicesPage = lazy(() => import("./Pages/Services/OurServicesPage"));
-const WhatWeOfferPage = lazy(() => import("./Pages/Services/WhatWeOfferPage"));
-const OurProcessPage = lazy(() => import("./Pages/Services/OurProcessPage"));
 
 // Contact Pages
-const ContactUsSimplePage = lazy(() =>
-  import("./Pages/Contact/ContactUsSimplePage")
-);
-const ContactUsClassicPage = lazy(() =>
-  import("./Pages/Contact/ContactUsClassicPage")
-);
 const ContactUsModernPage = lazy(() =>
   import("./Pages/Contact/ContactUsModernPage")
 );
@@ -430,7 +217,7 @@ const LatestNewsPage = lazy(() =>
   import("./Pages/AdditionalPages/LatestNewsPage")
 );
 const OurTeamPage = lazy(() => import("./Pages/AdditionalPages/OurTeamPage"));
-const FreelancerPage = lazy(() => import("./Pages/Home/Freelancer"));
+
 const PricingPackagesPage = lazy(() =>
   import("./Pages/AdditionalPages/PricingPackagesPage")
 );
@@ -449,78 +236,23 @@ const SearchResultPage = lazy(() =>
   import("./Pages/AdditionalPages/SearchResultPage")
 );
 
-// Shop Pages
-const ShopWidePage = lazy(() => import("./Pages/Shop/ShopWide"));
-const HomeBlogMetroPage = lazy(() => import("./Pages/Home/BlogMetro"));
-const ShoppingCart = lazy(() => import("./Pages/Shop/ShoppingCart"));
-const Checkout = lazy(() => import("./Pages/Shop/Checkout"));
-const LoginRegister = lazy(() => import("./Pages/Shop/LoginRegister"));
-const SingleProduct = lazy(() => import("./Pages/Shop/SingleProduct"));
-const OnlyCategoriesPage = lazy(() => import("./Pages/Shop/OnlyCategories"));
-const RightSidebar = lazy(() => import("./Pages/Shop/RightSidebar"));
-const LeftSidebar = lazy(() => import("./Pages/Shop/LeftSideBar"));
+
 const Footer = lazy(() => import("./Pages/Footer"));
 const Privacy = lazy(() => import("./Pages/Privacy"));
 
 // Blogs
 const BlogPage = lazy(() => import("./Pages/Blogs"));
-const BlogGridPage = lazy(() => import("./Pages/Blogs/BlogGrid"));
-const BlogMasonryPage = lazy(() => import("./Pages/Blogs/BlogMasonry"));
-const BlogClassicPage = lazy(() => import("./Pages/Blogs/BlogClassic"));
-const BlogSimplePage = lazy(() => import("./Pages/Blogs/BlogSimple"));
-const BlogSideImPage = lazy(() => import("./Pages/Blogs/BlogSideImg"));
-const BlogMetroPage = lazy(() => import("./Pages/Blogs/BlogMetro"));
-const BlogModernPage = lazy(() => import("./Pages/Blogs/BlogModern"));
-const BlogCleanPage = lazy(() => import("./Pages/Blogs/BlogClean"));
-const BlogWidgetPage = lazy(() => import("./Pages/Blogs/BlogWidget"));
-const BlogOverlayImgPage = lazy(() => import("./Pages/Blogs/BlogOverlayImg"));
-const BlogStandardPage = lazy(() => import("./Pages/Blogs/BlogStandard"));
+const BlogListingPage = lazy(() => import("./Pages/Blogs/BlogListingPage"));
 const CategoryPage = lazy(() => import("./Pages/Blogs/CategoryPage"));
 const AuthorPage = lazy(() => import("./Pages/Blogs/AuthorPage"));
 
-const BlogPostLayout01 = lazy(() =>
-  import("./Pages/Blogs/LayoutPage/BlogPostLayout01")
-);
-const BlogPostLayout02 = lazy(() =>
-  import("./Pages/Blogs/LayoutPage/BlogPostLayout02")
-);
-const BlogPostLayout03 = lazy(() =>
-  import("./Pages/Blogs/LayoutPage/BlogPostLayout03")
-);
 const BlogPostLayout04 = lazy(() =>
   import("./Pages/Blogs/LayoutPage/BlogPostLayout04")
 );
-const BlogPostLayout05 = lazy(() =>
-  import("./Pages/Blogs/LayoutPage/BlogPostLayout05")
-);
 
 // Blogs Types
-const BlogGalleryPostPage = lazy(() =>
-  import("./Pages/Blogs/PostTypes/BlogGalleryPostPage")
-);
 const BlogStandardPostPage = lazy(() =>
   import("./Pages/Blogs/PostTypes/BlogStandardPostPage")
-);
-const BlogSliderPostPage = lazy(() =>
-  import("./Pages/Blogs/PostTypes/BlogSliderPostPage")
-);
-const BlogHtml5VideoPostPage = lazy(() =>
-  import("./Pages/Blogs/PostTypes/BlogHtml5VideoPostPage")
-);
-const BlogYoutubeVideoPostPage = lazy(() =>
-  import("./Pages/Blogs/PostTypes/BlogYoutubeVideoPostPage")
-);
-const BlogVimeoVideoPostPage = lazy(() =>
-  import("./Pages/Blogs/PostTypes/BlogVimeoVideoPostPage")
-);
-const BlogAudioPostPage = lazy(() =>
-  import("./Pages/Blogs/PostTypes/BlogAudioPostPage")
-);
-const BlogBlockquotePostPage = lazy(() =>
-  import("./Pages/Blogs/PostTypes/BlogBlockquotePostPage")
-);
-const BlogFullWidthPost = lazy(() =>
-  import("./Pages/Blogs/PostTypes/BlogFullWidthPost")
 );
 
 function App() {
@@ -592,7 +324,7 @@ function App() {
             <AnimatePresence mode="wait">
               <Suspense fallback={<></>}>
                 <Routes>
-                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/" element={<MagazinePage />} />
 
                   {/* Headers */}
                   <Route path="headers">
@@ -708,38 +440,6 @@ function App() {
                     element={<Footer style={{ "--base-color": "#0038e3" }} />}
                   >
                     <Route
-                      path="footer-style-01"
-                      element={
-                        <FooterStyle01Page
-                          style={{ "--base-color": "#0038e3" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="footer-style-02"
-                      element={
-                        <FooterStyle02Page
-                          style={{ "--base-color": "#0038e3" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="footer-style-03"
-                      element={
-                        <FooterStyle03Page
-                          style={{ "--base-color": "#0038e3" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="footer-style-04"
-                      element={
-                        <FooterStyle04Page
-                          style={{ "--base-color": "#0038e3" }}
-                        />
-                      }
-                    />
-                    <Route
                       path="footer-style-05"
                       element={
                         <FooterStyle05Page
@@ -747,309 +447,17 @@ function App() {
                         />
                       }
                     />
-                    <Route
-                      path="footer-style-06"
-                      element={
-                        <FooterStyle06Page
-                          style={{ "--base-color": "#0038e3" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="footer-style-07"
-                      element={
-                        <FooterStyle07Page
-                          style={{ "--base-color": "#0038e3" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="footer-style-08"
-                      element={
-                        <FooterStyle08Page
-                          style={{ "--base-color": "#0038e3" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="footer-style-09"
-                      element={
-                        <FooterStyle09Page style={{ "--base-color": "#fff" }} />
-                      }
-                    />
-                    <Route
-                      path="footer-style-10"
-                      element={
-                        <FooterStyle10Page
-                          style={{ "--base-color": "#0038e3" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="footer-style-10"
-                      element={
-                        <FooterStyle10Page
-                          style={{ "--base-color": "#0038e3" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="footer-style-11"
-                      element={
-                        <FooterStyle11Page
-                          style={{ "--base-color": "#0038e3" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="footer-style-12"
-                      element={
-                        <FooterStyle12Page
-                          style={{ "--base-color": "#0038e3" }}
-                        />
-                      }
-                    />
                   </Route>
 
-                  {/* Home Corporate*/}
-                  <Route
-                    path="/home-startup"
-                    element={
-                      <HomeStartupPage style={{ "--base-color": "#27ae60" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-business"
-                    element={
-                      <HomeBusinessPage style={{ "--base-color": "#3452ff" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-corporate"
-                    element={
-                      <CorporatePage style={{ "--base-color": "#2ed47c" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-finance"
-                    element={
-                      <FinancePage style={{ "--base-color": "#8bb867" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-application"
-                    element={
-                      <ApplicationPage style={{ "--base-color": "#502e95" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-consulting"
-                    element={
-                      <ConsultingPage style={{ "--base-color": "#bf8c4c" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-digital-agency"
-                    element={
-                      <DigitalagencyPage
-                        style={{ "--base-color": "#e6994e" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/home-seo-agency"
-                    element={
-                      <SeoAgencyPage style={{ "--base-color": "#374162" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-events-conference"
-                    element={
-                      <EventsConferencePage
-                        style={{ "--base-color": "#ff7a56" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/home-marketing-agency"
-                    element={
-                      <MarketingAgencyPage
-                        style={{ "--base-color": "#f4d956" }}
-                      />
-                    }
-                  />
-
-                  {/* Home Specialized */}
-                  <Route path="/home-restaurant" element={<RestaurantPage />} />
-                  <Route
-                    path="/home-architecture"
-                    element={
-                      <ArchitecturePage style={{ "--base-color": "#cee002" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-hotel-resort"
-                    element={
-                      <HotelResortPage style={{ "--base-color": "#c89965" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-travel-agency"
-                    element={
-                      <TravelAgencyPage style={{ "--base-color": "#ff7a56" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-yoga-meditation"
-                    element={
-                      <YogaMeditationPage
-                        style={{ "--base-color": "#EA9D8D" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/home-gym-fitness"
-                    element={
-                      <GymFitnessPage style={{ "--base-color": "#ff7a56" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-spa-salon"
-                    element={
-                      <SpaSalonPage style={{ "--base-color": "#ec606c" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-cafe"
-                    element={<CafePage style={{ "--base-color": "#cd9452" }} />}
-                  />
-                  <Route
-                    path="/home-decor"
-                    element={
-                      <HomeDecorPage style={{ "--base-color": "#bf8c4c" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-dentist"
-                    element={
-                      <DentistPage style={{ "--base-color": "#00b8b8" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-interior-design"
-                    element={
-                      <InteriorDesignPage
-                        style={{ "--base-color": "#c3964e" }}
-                      />
-                    }
-                  />
-
-                  {/* Home Specialized */}
-                  <Route
-                    path="/home-design-agency"
-                    element={
-                      <DesignagencyPage style={{ "--base-color": "#ffcc2e" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-web-agency"
-                    element={
-                      <WebagencyPage style={{ "--base-color": "#ffcc2e" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-creative-agency"
-                    element={
-                      <CreativeAgencyPage
-                        style={{ "--base-color": "#cc754c" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/home-branding-agency"
-                    element={
-                      <BrandingagencyPage
-                        style={{ "--base-color": "#cc754c" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/home-photography"
-                    element={
-                      <PhotographyPage style={{ "--base-color": "#c7da26" }} />
-                    }
-                  />
-                  <Route
-                    path="/home-personal-portfolio"
-                    element={
-                      <PersonalportfolioPage
-                        style={{ "--base-color": "#ffeb04" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/home-interactive-portfolio"
-                    element={
-                      <InteractiveportfolioPage
-                        style={{ "--base-color": "#ffeb04" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/home-creative-portfolio"
-                    element={<CreativeportfolioPage />}
-                  />
-                  <Route
-                    path="/home-vertical-portfolio"
-                    element={<VerticalportfolioPage />}
-                  />
-                  <Route
-                    path="/home-split-portfolio"
-                    element={<SplitPortfolioPage />}
-                  />
-                  <Route path="/home-freelancer" element={<FreelancerPage />} />
-
-                  {/* Home Other */}
-                  <Route
-                    path="/home-furniture-shop"
-                    element={
-                      <FurnitureShopPage
-                        style={{ "--base-color": "#ff6437" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/home-fashion-shop"
-                    element={
-                      <FashionShopPage style={{ "--base-color": "#000" }} />
-                    }
-                  />
+                  {/* Home Blog Pages */}
                   <Route
                     path="/home-magazine"
                     element={
                       <MagazinePage style={{ "--base-color": "#c89965" }} />
                     }
                   />
-                  <Route
-                    path="/home-lifestyle-blog"
-                    element={
-                      <LifestyleBlogPage
-                        style={{ "--base-color": "#FE7A56" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/home-classic-blog"
-                    element={<ClassicBlogPage />}
-                  />
-                  <Route
-                    path="/home-blog-metro"
-                    element={
-                      <HomeBlogMetroPage
-                        style={{ "--base-color": "#0038e3" }}
-                      />
-                    }
-                  />
+
+
 
                   {/* Elements */}
                   <Route
@@ -1140,363 +548,16 @@ function App() {
                     />
                   </Route>
 
-                  {/* Portfolios */}
-                  <Route
-                    path="portfolio"
-                    element={
-                      <PortfolioPage style={{ "--base-color": "#0038e3" }} />
-                    }
-                  >
-                    <Route
-                      path="portfolio-classic-two-column"
-                      element={
-                        <PortfolioClassicTwoColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-classic-three-column"
-                      element={
-                        <PortfolioClassicThreeColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-classic-four-column"
-                      element={
-                        <PortfolioClassicFourColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-classic-masonry"
-                      element={
-                        <PortfolioClassicMasonryPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-classic-metro"
-                      element={
-                        <PortfolioClassicMetroPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-boxed-two-column"
-                      element={
-                        <PortfolioBoxedTwoColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-boxed-three-column"
-                      element={
-                        <PortfolioBoxedThreeColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-boxed-four-column"
-                      element={
-                        <PortfolioBoxedFourColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-boxed-masonry"
-                      element={
-                        <PortfolioBoxedMasonryPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-boxed-metro"
-                      element={
-                        <PortfolioBoxedMetroPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-colorful-two-column"
-                      element={
-                        <PortfolioColorfulTwoColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-colorful-three-column"
-                      element={
-                        <PortfolioColorfulThreeColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-colorful-four-column"
-                      element={
-                        <PortfolioColorfulFourColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-colorful-masonry"
-                      element={
-                        <PortfolioColorfulMasonryPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-colorful-metro"
-                      element={
-                        <PortfolioColorfulMetroPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-bordered-two-column"
-                      element={
-                        <PortfolioBorderedTwoColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-bordered-three-column"
-                      element={
-                        <PortfolioBorderedThreeColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-bordered-four-column"
-                      element={
-                        <PortfolioBorderedFourColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-bordered-masonry"
-                      element={
-                        <PortfolioBorderedMasonryPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-bordered-metro"
-                      element={
-                        <PortfolioBorderedMetroPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-overlay-two-column"
-                      element={
-                        <PortfolioOverlayTwoColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-overlay-three-column"
-                      element={
-                        <PortfolioOverlayThreeColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-overlay-four-column"
-                      element={
-                        <PortfolioOverlayFourColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-overlay-masonry"
-                      element={
-                        <PortfolioOverlayMasonryPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-overlay-metro"
-                      element={
-                        <PortfolioOverlayMetroPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-switch-image-two-column"
-                      element={
-                        <PortfolioSwitchImgTwoColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-switch-image-three-column"
-                      element={
-                        <PortfolioSwitchImgThreeColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-switch-image-four-column"
-                      element={
-                        <PortfolioSwitchImgFourColPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-switch-image-masonry"
-                      element={
-                        <PortfolioSwitchImgMasonryPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-switch-image-metro"
-                      element={
-                        <PortfolioSwitchImgMetroPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-scattered"
-                      element={
-                        <PortfolioScatteredPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-justified-gallery"
-                      element={
-                        <PortfolioJustifiedGalleryPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="portfolio-slider"
-                      element={
-                        <PortfolioSliderPage
-                          style={{ "--base-color": "#fff" }}
-                        />
-                      }
-                    />
-                  </Route>
+               
 
-                  {/* SingleProjectPage*/}
-                  <Route
-                    path="/portfolio/single-project-page-01"
-                    element={
-                      <SingleProjectPage01
-                        style={{ "--base-color": "#0038e3" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/portfolio/single-project-page-02"
-                    element={
-                      <SingleProjectPage02
-                        style={{ "--base-color": "#0038e3" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/portfolio/single-project-page-03"
-                    element={
-                      <SingleProjectPage03
-                        style={{ "--base-color": "#0038e3" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/portfolio/single-project-page-04"
-                    element={
-                      <SingleProjectPage04
-                        style={{ "--base-color": "#fd961e" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/portfolio/single-project-page-05"
-                    element={
-                      <SingleProjectPage05
-                        style={{ "--base-color": "#0038e3" }}
-                      />
-                    }
-                  />
+                 
 
                   {/* Blogs */}
+                  <Route path="blog" element={<BlogListingPage />} />
                   <Route
                     path="blogs"
                     element={<BlogPage style={{ "--base-color": "#0038e3" }} />}
                   >
-                    <Route
-                      path="blog-grid"
-                      element={
-                        <BlogGridPage style={{ "--base-color": "#0038e3" }} />
-                      }
-                    />
-                    <Route
-                      path="blog-masonry"
-                      element={
-                        <BlogMasonryPage
-                          style={{ "--base-color": "#0038e3" }}
-                        />
-                      }
-                    />
-                    <Route path="blog-classic" element={<BlogClassicPage />} />
-                    <Route path="blog-simple" element={<BlogSimplePage />} />
-                    <Route
-                      path="blog-side-image"
-                      element={<BlogSideImPage />}
-                    />
-                    <Route path="blog-metro" element={<BlogMetroPage />} />
-                    <Route
-                      path="blog-overlay-image"
-                      element={<BlogOverlayImgPage />}
-                    />{" "}
-                    <Route
-                      path="blog-modern"
-                      element={
-                        <BlogModernPage style={{ "--base-color": "#0038e3" }} />
-                      }
-                    />
-                    <Route path="blog-clean" element={<BlogCleanPage />} />
-                    <Route path="blog-widget" element={<BlogWidgetPage />} />
-                    <Route
-                      path="blog-standard"
-                      element={<BlogStandardPage />}
-                    />
                     <Route path="category">
                       <Route path=":category" element={<CategoryPage />} />
                     </Route>
@@ -1517,86 +578,7 @@ function App() {
                         }
                       />
                     </Route>
-                    <Route path="blog-gallery-post">
-                      <Route
-                        path=":id"
-                        element={
-                          <BlogGalleryPostPage
-                            style={{ "--base-color": "#0038e3" }}
-                          />
-                        }
-                      />
-                    </Route>
-                    <Route path="blog-slider-post">
-                      <Route
-                        path=":id"
-                        element={
-                          <BlogSliderPostPage
-                            style={{ "--base-color": "#0038e3" }}
-                          />
-                        }
-                      />
-                    </Route>
-                    <Route path="blog-html5-video-post">
-                      <Route
-                        path=":id"
-                        element={
-                          <BlogHtml5VideoPostPage
-                            style={{ "--base-color": "#0038e3" }}
-                          />
-                        }
-                      />
-                    </Route>
-                    <Route path="blog-youtube-video-post">
-                      <Route
-                        path=":id"
-                        element={
-                          <BlogYoutubeVideoPostPage
-                            style={{ "--base-color": "#0038e3" }}
-                          />
-                        }
-                      />
-                    </Route>
-                    <Route path="blog-vimeo-video-post">
-                      <Route
-                        path=":id"
-                        element={
-                          <BlogVimeoVideoPostPage
-                            style={{ "--base-color": "#0038e3" }}
-                          />
-                        }
-                      />
-                    </Route>
-                    <Route path="blog-audio-post">
-                      <Route
-                        path=":id"
-                        element={
-                          <BlogAudioPostPage
-                            style={{ "--base-color": "#0038e3" }}
-                          />
-                        }
-                      />
-                    </Route>
-                    <Route path="blog-blockquote-post">
-                      <Route
-                        path=":id"
-                        element={
-                          <BlogBlockquotePostPage
-                            style={{ "--base-color": "#0038e3" }}
-                          />
-                        }
-                      />
-                    </Route>
-                    <Route path="blog-full-width-post">
-                      <Route
-                        path=":id"
-                        element={
-                          <BlogFullWidthPost
-                            style={{ "--base-color": "#0038e3" }}
-                          />
-                        }
-                      />
-                    </Route>
+
                   </Route>
 
                   {/* Model-Popup */}
@@ -1671,53 +653,15 @@ function App() {
 
                   {/* PostLayout */}
                   <Route
-                    path="/blogs/blog-post-layout-01"
-                    element={
-                      <BlogPostLayout01 style={{ "--base-color": "#ca7741" }} />
-                    }
-                  />
-                  <Route
-                    path="/blogs/blog-post-layout-02"
-                    element={
-                      <BlogPostLayout02 style={{ "--base-color": "#c3964e" }} />
-                    }
-                  />
-                  <Route
-                    path="/blogs/blog-post-layout-03"
-                    element={<BlogPostLayout03 />}
-                  />
-                  <Route
                     path="/blogs/blog-post-layout-04"
                     element={<BlogPostLayout04 />}
-                  />
-                  <Route
-                    path="/blogs/blog-post-layout-05"
-                    element={<BlogPostLayout05 />}
                   />
 
                   {/*About Pages */}
                   <Route
-                    path="/page/about-me"
-                    element={
-                      <AboutMePage style={{ "--base-color": "#0038e3" }} />
-                    }
-                  />
-                  <Route
                     path="/page/about-us"
                     element={
                       <AboutUsPage style={{ "--base-color": "#0038e3" }} />
-                    }
-                  />
-                  <Route
-                    path="/page/our-story"
-                    element={
-                      <OurStoryPage style={{ "--base-color": "#0038e3" }} />
-                    }
-                  />
-                  <Route
-                    path="/page/who-we-are"
-                    element={
-                      <WhoWeArePage style={{ "--base-color": "#0038e3" }} />
                     }
                   />
 
@@ -1728,36 +672,8 @@ function App() {
                       <OurServicesPage style={{ "--base-color": "#0038e3" }} />
                     }
                   />
-                  <Route
-                    path="/page/what-we-offer"
-                    element={
-                      <WhatWeOfferPage style={{ "--base-color": "#0038e3" }} />
-                    }
-                  />
-                  <Route
-                    path="/page/our-process"
-                    element={
-                      <OurProcessPage style={{ "--base-color": "#0038e3" }} />
-                    }
-                  />
 
                   {/* Contact Pages */}
-                  <Route
-                    path="/page/contact-simple"
-                    element={
-                      <ContactUsSimplePage
-                        style={{ "--base-color": "#0038e3" }}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/page/contact-classic"
-                    element={
-                      <ContactUsClassicPage
-                        style={{ "--base-color": "#0038e3" }}
-                      />
-                    }
-                  />
                   <Route
                     path="/page/contact-modern"
                     element={
@@ -1821,26 +737,6 @@ function App() {
                     path="/privacy"
                     element={<Privacy style={{ "--base-color": "#0038e3" }} />}
                   />
-
-                  {/* Shop Pages */}
-                  <Route path="shop">
-                    <Route path="shop-wide" element={<ShopWidePage />} />
-                    <Route path="left-sidebar" element={<LeftSidebar />} />
-                    <Route path="right-sidebar" element={<RightSidebar />} />
-                    <Route
-                      path="only-categories"
-                      element={<OnlyCategoriesPage />}
-                    />{" "}
-                    <Route path="single-product" element={<SingleProduct />} />
-                    <Route
-                      path="shopping-cart"
-                      element={
-                        <ShoppingCart style={{ "--base-color": "#0038e3" }} />
-                      }
-                    />
-                    <Route path="checkout" element={<Checkout />} />
-                    <Route path="login-register" element={<LoginRegister />} />
-                  </Route>
                 </Routes>
               </Suspense>
             </AnimatePresence>

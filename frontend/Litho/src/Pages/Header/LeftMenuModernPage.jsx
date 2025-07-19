@@ -9,7 +9,7 @@ import { Autoplay, Keyboard, Pagination } from "swiper/modules";
 //Component
 import LeftMenuModern from "../../Components/Header/LeftMenuModern";
 import InteractiveBanners06 from "../../Components/InteractiveBanners/InteractiveBanners06";
-import FooterStyle01 from "../../Components/Footers/FooterStyle01";
+import FooterStyle05 from "../../Components/Footers/FooterStyle05";
 import { fadeIn } from "../../Functions/GlobalAnimations";
 import SideButtons from "../../Components/SideButtons";
 
@@ -103,7 +103,7 @@ const LeftMenuModernPage = (props) => {
                 {/* Intrectivebanners End */}
 
                 {/* footer Start*/}
-                <FooterStyle01 theme="dark" className="text-[#828282] bg-black" />
+                <FooterStyle05 theme="dark" className="text-[#828282] bg-black" />
                 {/* footer End */}
             </div>
         </div>

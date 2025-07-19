@@ -6,7 +6,7 @@ import { Link, Outlet } from 'react-router-dom'
 
 // Components
 import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../Components/Header/Header'
-import FooterStyle01 from '../Components/Footers/FooterStyle01'
+import FooterStyle05 from '../Components/Footers/FooterStyle05'
 const SideButtons = lazy(() => import("../Components/SideButtons"))
 
 const BlogPage = (props) => {
@@ -45,7 +45,7 @@ const BlogPage = (props) => {
       {/* Header End */}
       <SideButtons />
       <Outlet />
-      <FooterStyle01 theme="dark" className="bg-[#262b35] text-slateblue" />
+              <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
     </div>
   )
 }

@@ -19,12 +19,10 @@ import Header, {
   SearchBar,
 } from "../../Components/Header/Header";
 import { fadeIn } from "../../Functions/GlobalAnimations";
-import BlogClean from "../../Components/Blogs/BlogClean";
-import BlogStandard from "../../Components/Blogs/BlogStandard";
-import BlogGrid from "../../Components/Blogs/BlogGrid";
+import BlogClassic from "../../Components/Blogs/BlogClassic";
 import MessageBox from "../../Components/MessageBox/MessageBox";
 import { Input } from "../../Components/Form/Form";
-import FooterStyle01 from "../../Components/Footers/FooterStyle01";
+import FooterStyle05 from "../../Components/Footers/FooterStyle05";
 import SideButtons from "../../Components/SideButtons";
 import { resetForm, sendEmail } from "../../Functions/Utilities";
 
@@ -79,7 +77,7 @@ const TestimonialsCarouselData = [
 ];
 
 // Filter the blog data category wise
-const blogCleanData = blogData.filter((item) => item.blogType === "clean");
+const blogClassicData = blogData.filter((item) => item.blogType === "classic");
 
 const LatestNewsPage = (props) => {
   const swiperRef = useRef(null);
@@ -294,17 +292,12 @@ const LatestNewsPage = (props) => {
         <Container fluid className="px-[7%] xl:px-[2%] lg:px-[3%] sm:px-[15px]">
           <Row>
             <Col className="sm:px-0">
-              <BlogClean
+              <BlogClassic
                 filter={false}
-                overlay={[
-                  "#0039e3",
-                  "#4132e0",
-                  "#5e28dd",
-                  "#741bd9",
-                  "#8600d4",
-                ]}
+                pagination={false}
                 grid="grid grid-5col xl-grid-5col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large"
-                data={blogCleanData.slice(0, 5)}
+                data={blogClassicData.slice(0, 5)}
+                link="/blog/post/"
               />
             </Col>
           </Row>
@@ -330,7 +323,7 @@ const LatestNewsPage = (props) => {
           </Row>
           <Row>
             <Col lg={8} className="md:mb-[60px] sm:mb-[40px] pr-[50px] md:pr-0">
-              <BlogStandard data={blogData.slice(0, 1)} />
+              <BlogClassic filter={false} pagination={false} data={blogData.slice(0, 1)} link="/blog/post/" grid="grid grid-1col" />
             </Col>
             <Col lg={4}>
               <ul>
@@ -587,10 +580,12 @@ const LatestNewsPage = (props) => {
           </Row>
           <Row>
             <Col className="px-0">
-              <BlogGrid
-                overlay="#374162"
+              <BlogClassic
+                filter={false}
+                pagination={false}
                 grid="grid grid-3col xl-grid-3col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large"
                 data={blogData.slice(0, 6)}
+                link="/blog/post/"
               />
             </Col>
           </Row>
@@ -685,7 +680,7 @@ const LatestNewsPage = (props) => {
       {/* Parallax Scrolling End */}
 
       {/* Footer Start */}
-      <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+      <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
       {/* Footer End */}
     </div>
   );

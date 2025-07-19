@@ -9,8 +9,7 @@ import { Link as ScrollTo } from "react-scroll"
 
 // Components
 import { CollapsibleMenu, HamburgerMenu, Header, HeaderNav } from '../../../Components/Header/Header'
-import PortfolioColorful from '../../../Components/Portfolio/PortfolioColorful'
-import FooterStyle01 from '../../../Components/Footers/FooterStyle01'
+import FooterStyle05 from '../../../Components/Footers/FooterStyle05'
 import { TextAnime } from '../../../Components/FancyText/FancyText'
 import ReactCustomScrollbar from "../../../Components/ReactCustomScrollbar";
 import SocialIcons from "../../../Components/SocialIcon/SocialIcons";
@@ -35,53 +34,6 @@ const data = [
     {
         icon: "feather-shopping-bag",
         title: "ECOMMERCE TOOL"
-    }
-]
-
-const portfolioColorfulData = [
-    {
-        title: "Mongolish",
-        img: "https://via.placeholder.com/1000x817",
-        category: [""],
-        subtitle: "Branding",
-        link: "/portfolio/single-project-page-01",
-        double_col: true
-    },
-    {
-        title: "Masscoating",
-        img: "https://via.placeholder.com/800x653",
-        category: [""],
-        subtitle: "Photography",
-        link: "/portfolio/single-project-page-02"
-    },
-    {
-        title: "Cortifiel",
-        img: "https://via.placeholder.com/800x653",
-        category: [""],
-        subtitle: "Brochure",
-        link: "/portfolio/single-project-page-03"
-    },
-    {
-        title: "Everyday",
-        img: "https://via.placeholder.com/1000x817",
-        category: [""],
-        subtitle: "Brochure",
-        link: "/portfolio/single-project-page-04",
-        double_col: true
-    },
-    {
-        title: "Scandinavian",
-        img: "https://via.placeholder.com/800x653",
-        category: [""],
-        subtitle: "Branding",
-        link: "/portfolio/single-project-page-05"
-    },
-    {
-        title: "The Simplest",
-        img: "https://via.placeholder.com/800x653",
-        category: [""],
-        subtitle: "Website",
-        link: "/portfolio/single-project-page-01"
     }
 ]
 
@@ -175,25 +127,8 @@ const HamburgerMenuHalfPage = (props) => {
             </section>
             {/* Section End */}
 
-            {/* Section Start */}
-            <section className="bg-darkgray">
-                <Container fluid>
-                    <Row>
-                        <Col className="sm:px-0">
-                            <PortfolioColorful
-                                className="m-0"
-                                overlay="#232323e6"
-                                grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large"
-                                data={portfolioColorfulData}
-                            />
-                        </Col>
-                    </Row>
-                </Container>
-            </section>
-            {/* Section End */}
-
             {/* Footer Start */}
-            <FooterStyle01 theme="dark" className="bg-darkgray text-[#828282]" />
+            <FooterStyle05 theme="dark" className="bg-darkgray text-[#828282]" />
             {/* Footer End */}
         </div>
     )

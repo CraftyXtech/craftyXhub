@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Row, Col, Button, Card } from "reactstrap";
+import { Button } from "reactstrap";
 import { useForm } from "react-hook-form";
 import { Editor } from "@tinymce/tinymce-react";
 import { useTheme } from '@/layout/provider/Theme';
@@ -16,9 +16,13 @@ import {
   Icon,
   RSelect,
   BackTo,
+  Row,
+  Col,
+  PreviewCard,
 } from "@/components/Component";
 import { useCreatePost, useUpdatePost, useGetPost, useGetCategories, useGetTags, useCreateCategory, useCreateTag } from "@/api/postService";
 import { toast } from "react-toastify";
+import { debounce } from 'lodash';
 
 // TinyMCE imports
 import 'tinymce/tinymce';
@@ -63,6 +67,24 @@ const PostForm = () => {
   // Loading state
   const isLoading = createLoading || updateLoading || postLoading;
 
+  const debouncedUpdate = useCallback(
+    debounce(async (data) => {
+      try {
+        await updatePost(postId, data);
+        toast.info('Post autosaved');
+      } catch (err) {
+        toast.error('Autosave failed');
+      }
+    }, 5000),
+    [updatePost, postId]
+  );
+
+  useEffect(() => {
+    if (isEditMode) {
+      debouncedUpdate(formData);
+    }
+  }, [formData, isEditMode, debouncedUpdate]);
+
   // Initialize form when editing
   useEffect(() => {
     if (isEditMode && editPost) {
@@ -82,14 +104,14 @@ const PostForm = () => {
       };
       setFormData(postData);
       
-      // Set form values
+        
       Object.keys(postData).forEach(key => {
         setValue(key, postData[key]);
       });
     }
   }, [editPost, isEditMode, setValue]);
 
-  // Auto-generate slug from title
+  
   const generateSlug = (title) => {
     return title
       .toLowerCase()
@@ -99,12 +121,12 @@ const PostForm = () => {
       .trim();
   };
 
-  // Handle title change and auto-generate slug
+  
   const handleTitleChange = (e) => {
     const title = e.target.value;
     setFormData(prev => ({ ...prev, title }));
     
-    // Auto-generate slug if not editing or if slug is empty
+    
     if (!isEditMode || !formData.slug) {
       const slug = generateSlug(title);
       setFormData(prev => ({ ...prev, slug }));
@@ -112,13 +134,26 @@ const PostForm = () => {
     }
   };
 
-  // Handle content change from TinyMCE
+  
+  const calculateReadingTime = (content) => {
+    if (!content) return null;
+    const wordsPerMinute = 200;
+    const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).length;
+    return Math.ceil(wordCount / wordsPerMinute);
+  };
+
+  
   const handleContentChange = (content) => {
     setFormData(prev => ({ ...prev, content }));
     setValue('content', content);
+    
+    
+    const readingTime = calculateReadingTime(content);
+    setFormData(prev => ({ ...prev, reading_time: readingTime }));
+    setValue('reading_time', readingTime);
   };
 
-  // Handle category creation
+  
   const handleCreateCategory = async (inputValue) => {
     try {
       const newCategory = await createCategory({
@@ -135,7 +170,7 @@ const PostForm = () => {
     }
   };
 
-  // Handle tag creation
+  
   const handleCreateTag = async (inputValue) => {
     try {
       const newTag = await createTag({
@@ -151,7 +186,7 @@ const PostForm = () => {
     }
   };
 
-  // Prepare options for selects
+  
   const categoryOptions = categories.map(cat => ({
     value: cat.id,
     label: cat.name
@@ -162,10 +197,10 @@ const PostForm = () => {
     label: tag.name
   }));
 
-  // Handle form submission
+  
   const onSubmit = async (data) => {
     try {
-      // Get content from TinyMCE editor
+      
       const content = editorRef.current?.getContent() || formData.content;
       
       const postData = {
@@ -184,14 +219,14 @@ const PostForm = () => {
         toast.success("Post created successfully");
       }
 
-      // Navigate back to posts list
+      
       navigate('/posts-list');
     } catch (error) {
       toast.error(isEditMode ? "Failed to update post" : "Failed to create post");
     }
   };
 
-  // Handle cancel
+  
   const handleCancel = () => {
     navigate('/posts-list');
   };
@@ -207,6 +242,8 @@ const PostForm = () => {
       </Content>
     );
   }
+
+  const initialContent = isEditMode ? (editPost?.content || "") : "";
 
   return (
     <>
@@ -233,17 +270,17 @@ const PostForm = () => {
         <Block>
           <form onSubmit={handleSubmit(onSubmit)}>
             <Row className="g-gs">
-              {/* Main Content Section */}
+              {/* Main Content Column */}
               <Col xxl="8">
-                <div className="gap gy-4">
-                  {/* Basic Information */}
-                  <Card className="card-bordered">
-                    <div className="card-inner">
+                <div className="gap gy-gs">
+                  {/* Post Information Section */}
+                  <PreviewCard className="card-bordered">
                       <div className="card-head">
                         <h5 className="card-title">Post Information</h5>
+                      <p className="card-text">Basic information about your post</p>
                       </div>
                       <Row className="g-4">
-                        <Col size="12">
+                      <Col lg="8">
                           <div className="form-group">
                             <label className="form-label" htmlFor="post-title">
                               Post Title *
@@ -265,8 +302,7 @@ const PostForm = () => {
                             </div>
                           </div>
                         </Col>
-
-                        <Col size="12">
+                      <Col lg="4">
                           <div className="form-group">
                             <label className="form-label" htmlFor="post-slug">
                               URL Slug *
@@ -288,13 +324,9 @@ const PostForm = () => {
                                 placeholder="post-url-slug"
                               />
                               {errors.slug && <span className="invalid">{errors.slug.message}</span>}
-                              <div className="form-note">
-                                This will be used in the post URL: /posts/{formData.slug}
-                              </div>
-                            </div>
+                          </div>
                           </div>
                         </Col>
-
                         <Col size="12">
                           <div className="form-group">
                             <label className="form-label" htmlFor="post-excerpt">
@@ -304,7 +336,7 @@ const PostForm = () => {
                               <textarea
                                 id="post-excerpt"
                                 className="form-control"
-                                rows="4"
+                              rows="3"
                                 {...register('excerpt', {
                                   maxLength: { value: 500, message: "Excerpt must be less than 500 characters" }
                                 })}
@@ -320,58 +352,49 @@ const PostForm = () => {
                           </div>
                         </Col>
                       </Row>
-                    </div>
-                  </Card>
+                  </PreviewCard>
 
-                  {/* Content Editor */}
-                  <Card className="card-bordered">
-                    <div className="card-inner">
-                      <div className="card-head">
-                        <h5 className="card-title">Post Content</h5>
+                  {/* Content Editor Section */}
+                  <PreviewCard className="card-bordered">
+                    <div className="card-head">
+                      <h5 className="card-title">Post Content</h5>
+                      <p className="card-text">Write your post content using the rich text editor</p>
                       </div>
                       <div className="form-group">
                         <div className="form-control-wrap">
                           <Editor
                             licenseKey="gpl"
                             onInit={(evt, editor) => editorRef.current = editor}
-                            initialValue={formData.content}
+                          initialValue={initialContent}
+                          value={formData.content}
                             init={{
                               height: 500,
-                              menubar: 'file edit view insert format tools table help',
-                              toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | ' +
-                                'link image media table mergetags | addcomment showcomments | ' +
-                                'spellcheckdialog a11ycheck typography | align lineheight | ' +
-                                'checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+                            menubar: 'file edit view format',
+                            toolbar: 'undo redo | formatselect | ' +
+                              'bold italic | alignleft aligncenter ' +
+                              'alignright alignjustify | outdent indent | ' +
+                              'bullist numlist | link image | removeformat',
                               content_style: theme.skin === 'dark' ? 
-                                'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; color: #fff; background-color: #1a1a1a; }' : 
-                                'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; color: #000; background-color: #fff; }',
-                              plugins: [
-                                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount',
-                                'emoticons', 'template', 'codesample'
-                              ],
-                              image_advtab: true,
-                              link_context_toolbar: true,
+                              'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; color: #fff; background-color: #1a1a1a; }' : 
+                              'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; color: #000; background-color: #fff; }',
                               branding: false,
+                            directionality: 'ltr',
                             }}
                             onEditorChange={handleContentChange}
                           />
                           {errors.content && <span className="invalid">{errors.content.message}</span>}
                         </div>
                       </div>
-                    </div>
-                  </Card>
+                  </PreviewCard>
 
-                  {/* SEO Settings */}
-                  <Card className="card-bordered">
-                    <div className="card-inner">
+                  {/* SEO Settings Section */}
+                  <PreviewCard className="card-bordered">
                       <div className="card-head">
                         <h5 className="card-title">SEO Settings</h5>
                         <p className="card-text">Optimize your post for search engines</p>
                       </div>
                       <Row className="g-4">
-                        <Col size="12">
+                      <Col lg="6">
                           <div className="form-group">
                             <label className="form-label" htmlFor="meta-title">
                               Meta Title
@@ -395,8 +418,7 @@ const PostForm = () => {
                             </div>
                           </div>
                         </Col>
-
-                        <Col size="12">
+                      <Col lg="6">
                           <div className="form-group">
                             <label className="form-label" htmlFor="meta-description">
                               Meta Description
@@ -421,17 +443,41 @@ const PostForm = () => {
                           </div>
                         </Col>
                       </Row>
-                    </div>
-                  </Card>
+                  </PreviewCard>
                 </div>
               </Col>
 
-              {/* Sidebar */}
+              {/* Sidebar Column */}
               <Col xxl="4">
-                <div className="gap gy-4">
+                <div className="gap gy-gs">
+                  {/* Quick Actions */}
+                  <PreviewCard className="card-bordered">
+                    <div className="card-head">
+                      <h5 className="card-title">Quick Actions</h5>
+                    </div>
+                    <div className="d-flex gap-2 flex-wrap">
+                      <Button color="light" size="sm" onClick={handleCancel} disabled={isLoading}>
+                        <Icon name="arrow-left" className="me-1" />
+                        Cancel
+                      </Button>
+                      <Button color="primary" size="sm" type="submit" disabled={isLoading}>
+                        {isLoading ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            {isEditMode ? 'Updating...' : 'Creating...'}
+                          </>
+                        ) : (
+                          <>
+                            <Icon name={isEditMode ? "edit" : "plus"} className="me-1" />
+                            {isEditMode ? 'Update Post' : 'Create Post'}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </PreviewCard>
+
                   {/* Publish Settings */}
-                  <Card className="card-bordered">
-                    <div className="card-inner">
+                  <PreviewCard className="card-bordered">
                       <div className="card-head">
                         <h5 className="card-title">Publish Settings</h5>
                       </div>
@@ -469,12 +515,10 @@ const PostForm = () => {
                           Featured posts appear prominently on the homepage
                         </div>
                       </div>
-                    </div>
-                  </Card>
+                  </PreviewCard>
 
                   {/* Categories and Tags */}
-                  <Card className="card-bordered">
-                    <div className="card-inner">
+                  <PreviewCard className="card-bordered">
                       <div className="card-head">
                         <h5 className="card-title">Categories & Tags</h5>
                       </div>
@@ -505,12 +549,10 @@ const PostForm = () => {
                           />
                         </div>
                       </div>
-                    </div>
-                  </Card>
+                  </PreviewCard>
 
                   {/* Featured Image */}
-                  <Card className="card-bordered">
-                    <div className="card-inner">
+                  <PreviewCard className="card-bordered">
                       <div className="card-head">
                         <h5 className="card-title">Featured Image</h5>
                       </div>
@@ -543,60 +585,41 @@ const PostForm = () => {
                           </div>
                         )}
                       </div>
-                    </div>
-                  </Card>
+                  </PreviewCard>
 
-                  {/* Additional Settings */}
-                  <Card className="card-bordered">
-                    <div className="card-inner">
-                      <div className="card-head">
-                        <h5 className="card-title">Additional Settings</h5>
+                  {/* Post Statistics */}
+                  <PreviewCard className="card-bordered">
+                    <div className="card-head">
+                      <h5 className="card-title">Post Statistics</h5>
+                    </div>
+                    <div className="form-group">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <span className="form-label">Reading Time</span>
+                        <span className="badge badge-dim badge-outline-primary">
+                          {formData.reading_time || 0} min{formData.reading_time !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="form-note">
+                        Automatically calculated from content length
+                      </div>
                       </div>
                       <div className="form-group">
-                        <label className="form-label" htmlFor="reading-time">
-                          Reading Time (minutes)
-                        </label>
-                        <div className="form-control-wrap">
-                          <input
-                            id="reading-time"
-                            type="number"
-                            className="form-control"
-                            {...register('reading_time', {
-                              min: { value: 1, message: "Reading time must be at least 1 minute" }
-                            })}
-                            value={formData.reading_time || ''}
-                            onChange={(e) => setFormData(prev => ({ ...prev, reading_time: parseInt(e.target.value) || null }))}
-                            placeholder="5"
-                          />
-                          {errors.reading_time && <span className="invalid">{errors.reading_time.message}</span>}
-                        </div>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <span className="form-label">Content Length</span>
+                        <span className="badge badge-dim badge-outline-info">
+                          {formData.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length} words
+                            </span>
                       </div>
                     </div>
-                  </Card>
-
-                  {/* Action Buttons */}
-                  <Card className="card-bordered">
-                    <div className="card-inner">
-                      <div className="d-flex justify-content-between">
-                        <Button color="light" onClick={handleCancel} disabled={isLoading}>
-                          Cancel
-                        </Button>
-                        <Button color="primary" type="submit" disabled={isLoading}>
-                          {isLoading ? (
-                            <>
-                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                              {isEditMode ? 'Updating...' : 'Creating...'}
-                            </>
-                          ) : (
-                            <>
-                              <Icon name={isEditMode ? "edit" : "plus"} />
-                              <span>{isEditMode ? 'Update Post' : 'Create Post'}</span>
-                            </>
-                          )}
-                        </Button>
+                    <div className="form-group">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <span className="form-label">Status</span>
+                        <span className={`badge badge-dim ${formData.is_published ? 'badge-success' : 'badge-warning'}`}>
+                          {formData.is_published ? 'Published' : 'Draft'}
+                        </span>
                       </div>
                     </div>
-                  </Card>
+                  </PreviewCard>
                 </div>
               </Col>
             </Row>

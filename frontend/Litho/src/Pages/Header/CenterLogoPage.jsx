@@ -15,7 +15,7 @@ import IconWithText from '../../Components/IconWithText/IconWithText'
 import Tab01 from "../../Components/Tab/Tab01";
 import Counter from '../../Components/Counters/Counter'
 import BlogClassic from "../../Components/Blogs/BlogClassic";
-import FooterStyle01 from "../../Components/Footers/FooterStyle01";
+import FooterStyle05 from "../../Components/Footers/FooterStyle05";
 import SideButtons from "../../Components/SideButtons";
 
 // Data
@@ -233,7 +233,7 @@ const CenterLogoPage = (props) => {
       {/* Blog End */}
 
       {/* Footer Start */}
-      <FooterStyle01 theme="dark" className="bg-[#262b35] text-slateblue" />
+      <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
       {/* Footer End */}
 
     </>

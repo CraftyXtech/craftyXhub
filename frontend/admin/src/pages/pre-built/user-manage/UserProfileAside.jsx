@@ -3,13 +3,26 @@ import { NavLink } from "react-router-dom";
 import { Icon, UserAvatar } from "@/components/Component";
 import { findUpper } from "@/utils/Utils";
 import {  DropdownItem, UncontrolledDropdown, DropdownMenu, DropdownToggle } from "reactstrap";
+import { useAuth } from "@/api/AuthProvider";
 
 const UserProfileAside = ({updateSm,sm}) => {
-  const [profileName, setProfileName] = useState("Abu Bin Ishtiak");
+  const { auth, isAuthenticated } = useAuth();
+  const [profileName, setProfileName] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
   
   useEffect(() => {
     sm ? document.body.classList.add("toggle-shown") : document.body.classList.remove("toggle-shown");
-  }, [sm])
+  }, [sm]);
+
+  useEffect(() => {
+    if (isAuthenticated && auth?.user) {
+      setProfileName(auth.user.full_name || "User");
+      setProfileEmail(auth.user.email || "");
+    } else {
+      setProfileName("Guest User");
+      setProfileEmail("Not signed in");
+    }
+  }, [isAuthenticated, auth]);
   
   return (
     <div className="card-inner-group">
@@ -18,7 +31,7 @@ const UserProfileAside = ({updateSm,sm}) => {
         <UserAvatar text={findUpper(profileName)} theme="primary" />
         <div className="user-info">
             <span className="lead-text">{profileName}</span>
-            <span className="sub-text">info@softnio.com</span>
+            <span className="sub-text">{profileEmail}</span>
         </div>
         <div className="user-action">
             <UncontrolledDropdown >
@@ -59,14 +72,26 @@ const UserProfileAside = ({updateSm,sm}) => {
     </div>
     <div className="card-inner">
         <div className="user-account-info py-0">
-        <h6 className="overline-title-alt">Nio Wallet Account</h6>
+        <h6 className="overline-title-alt">Account Status</h6>
         <div className="user-balance">
-            12.395769 <small className="currency currency-btc">BTC</small>
+            {isAuthenticated ? (
+              <>
+                <span className="text-success">Active</span>
+                {auth?.user?.is_verified && (
+                  <small className="text-info"> • Verified</small>
+                )}
+              </>
+            ) : (
+              <span className="text-warning">Not Signed In</span>
+            )}
         </div>
         <div className="user-balance-sub">
-            Locked{" "}
+            Member since{" "}
             <span>
-            0.344939 <span className="currency currency-btc">BTC</span>
+            {auth?.user?.created_at ? 
+              new Date(auth.user.created_at).toLocaleDateString() : 
+              "N/A"
+            }
             </span>
         </div>
         </div>

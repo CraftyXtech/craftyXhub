@@ -85,7 +85,7 @@ export const blogData = [
   },
   {
     id: 7,
-    category: ["FURNITURE"],
+    category: ["DESIGN"],
     blogType: "grid",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/800x560",
@@ -141,7 +141,7 @@ export const blogData = [
   },
   {
     id: 11,
-    category: ["BUSINESS"],
+    category: ["CREATIVE"],
     blogType: "grid",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/800x560",
@@ -173,7 +173,7 @@ export const blogData = [
     title: "The best way to predict the future is to create it",
     content:
       "Lorem ipsum is simply dummy text printing typesetting industry lorem ipsum has dummy...",
-    category: ["LIFESTYLE", "BUSINESS"],
+    category: ["LIFESTYLE"],
     blogType: "classic",
     tags: ["Development", "Events", "Media", "Mountains"],
     author: 1,
@@ -215,7 +215,7 @@ export const blogData = [
     title: "A company is only as good as the people it keeps",
     content:
       "Lorem ipsum is simply dummy text printing typesetting industry lorem ipsum has dummy...",
-    category: ["MODERN", "BUSINESS"],
+    category: ["MODERN"],
     blogType: "classic",
     tags: ["Development", "Events", "Media", "Mountains"],
     author: 4,
@@ -229,7 +229,7 @@ export const blogData = [
     title: "Reason and judgment are the qualities of leader",
     content:
       "Lorem ipsum is simply dummy text printing typesetting industry lorem ipsum has dummy...",
-    category: ["CORPORATE"],
+    category: ["CREATIVE"],
     blogType: "classic",
     tags: ["Development", "Events", "Media", "Mountains"],
     author: 5,
@@ -243,7 +243,7 @@ export const blogData = [
     title: "Business is combination of war and sport",
     content:
       "Lorem ipsum is simply dummy text printing typesetting industry lorem ipsum has dummy...",
-    category: ["FINANCE"],
+    category: ["CREATIVE"],
     blogType: "classic",
     tags: ["Development", "Events", "Media", "Mountains"],
     author: 6,
@@ -257,7 +257,7 @@ export const blogData = [
     title: "Look at usual things with unusual for eyes",
     content:
       "Lorem ipsum is simply dummy text printing typesetting industry lorem ipsum has dummy...",
-    category: ["BUSINESS"],
+    category: ["CREATIVE"],
     blogType: "classic",
     tags: ["Development", "Events", "Media", "Mountains"],
     author: 7,
@@ -405,7 +405,7 @@ export const blogData = [
   },
   {
     id: 31,
-    category: ["BUSINESS"],
+    category: ["CREATIVE"],
     blogType: "simple",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/800x970",
@@ -678,7 +678,7 @@ export const blogData = [
   },
   {
     id: 51,
-    category: ["BUSINESS"],
+    category: ["CREATIVE"],
     blogType: "sideImage",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/1200x840",
@@ -734,7 +734,7 @@ export const blogData = [
   },
   {
     id: 55,
-    category: ["FINANCE"],
+    category: ["CREATIVE"],
     blogType: "sideImage",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/1200x840",
@@ -793,7 +793,7 @@ export const blogData = [
   },
   {
     id: 59,
-    category: ["BUSINESS"],
+    category: ["CREATIVE"],
     blogType: "metro",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/940x940",
@@ -982,7 +982,7 @@ export const blogData = [
   },
   {
     id: 72,
-    category: ["fashion", "Business"],
+    category: ["fashion"],
     blogType: "clean",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/850x885",
@@ -996,7 +996,7 @@ export const blogData = [
   },
   {
     id: 73,
-    category: ["travel", "Business"],
+    category: ["travel"],
     blogType: "clean",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/850x885",
@@ -1024,7 +1024,7 @@ export const blogData = [
   },
   {
     id: 75,
-    category: ["Business"],
+    category: ["CREATIVE"],
     blogType: "clean",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/850x885",
@@ -1052,7 +1052,7 @@ export const blogData = [
   },
   {
     id: 77,
-    category: ["Lifestyle", "Business"],
+    category: ["Lifestyle"],
     blogType: "clean",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/850x885",
@@ -1144,7 +1144,7 @@ export const blogData = [
   },
   {
     id: 84,
-    category: ["FINANCE"],
+    category: ["CREATIVE"],
     blogType: "widget",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/480x300",
@@ -1157,7 +1157,7 @@ export const blogData = [
   },
   {
     id: 85,
-    category: ["BUSINESS"],
+    category: ["CREATIVE"],
     blogType: "widget",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/480x300",
@@ -1306,7 +1306,7 @@ export const blogData = [
   },
   {
     id: 96,
-    category: ["BUSINESS"],
+    category: ["CREATIVE"],
     blogType: "overlayImage",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/800x710",
@@ -1320,7 +1320,7 @@ export const blogData = [
   },
   {
     id: 97,
-    category: ["FINANCE"],
+    category: ["CREATIVE"],
     blogType: "overlayImage",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/800x710",
@@ -1446,7 +1446,7 @@ export const blogData = [
   },
   {
     id: 106,
-    category: ["CORPORATE"],
+    category: ["CREATIVE"],
     blogType: "modern",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/800x1010",
@@ -1460,7 +1460,7 @@ export const blogData = [
   },
   {
     id: 107,
-    category: ["FINANCE"],
+    category: ["CREATIVE"],
     blogType: "modern",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/800x1010",
@@ -1474,7 +1474,7 @@ export const blogData = [
   },
   {
     id: 108,
-    category: ["BUSINESS"],
+    category: ["CREATIVE"],
     blogType: "modern",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/800x1010",
@@ -1702,7 +1702,7 @@ export const blogData = [
     content:
       "Lorem ipsum is simply dummy text of printing and typesetting industry lorem ipsum been dummy...",
     author: 1,
-    category: ["LIFESTYLE", "BUSINESS"],
+    category: ["LIFESTYLE"],
     blogType: "masonry",
     tags: ["Development", "Events", "Media", "Mountains"],
     likes: 28,
@@ -1716,7 +1716,7 @@ export const blogData = [
     content:
       "Lorem ipsum is simply dummy text of printing and typesetting industry lorem ipsum been dummy...",
     author: 1,
-    category: ["FASHION", "startup"],
+    category: ["FASHION"],
     blogType: "masonry",
     tags: ["Development", "Events", "Media", "Mountains"],
     likes: 28,
@@ -1730,7 +1730,7 @@ export const blogData = [
     content:
       "Lorem ipsum is simply dummy text of printing and typesetting industry lorem ipsum been dummy...",
     author: 1,
-    category: ["LIFESTYLE", "startup"],
+    category: ["LIFESTYLE"],
     blogType: "masonry",
     tags: ["Development", "Events", "Media", "Mountains"],
     likes: 28,
@@ -1744,7 +1744,7 @@ export const blogData = [
     content:
       "Lorem ipsum is simply dummy text of printing and typesetting industry lorem ipsum been dummy...",
     author: 1,
-    category: ["DESIGN", "startup"],
+    category: ["DESIGN"],
     blogType: "masonry",
     tags: ["Development", "Events", "Media", "Mountains"],
     likes: 30,
@@ -1760,11 +1760,6 @@ export const blogData = [
     author: 1,
     category: [
       "DESIGN",
-      "business",
-      "finance",
-      "webagency",
-      "furnitureshop",
-      "fashionshop",
     ],
     blogType: "classic",
     tags: ["Development", "Events", "Media", "Mountains"],
@@ -1781,11 +1776,6 @@ export const blogData = [
     author: 1,
     category: [
       "DESIGN",
-      "business",
-      "finance",
-      "webagency",
-      "furnitureshop",
-      "fashionshop",
     ],
     blogType: "classic",
     tags: ["Development", "Events", "Media", "Mountains"],
@@ -1802,11 +1792,6 @@ export const blogData = [
     author: 1,
     category: [
       "DESIGN",
-      "business",
-      "finance",
-      "webagency",
-      "furnitureshop",
-      "fashionshop",
     ],
     blogType: "classic",
     tags: ["Development", "Events", "Media", "Mountains"],
@@ -1823,11 +1808,6 @@ export const blogData = [
     author: 1,
     category: [
       "DESIGN",
-      "business",
-      "finance",
-      "webagency",
-      "furnitureshop",
-      "fashionshop",
     ],
     blogType: "classic",
     tags: ["Development", "Events", "Media", "Mountains"],
@@ -1837,7 +1817,7 @@ export const blogData = [
   },
   {
     id: 131,
-    category: ["fashion", "consulting"],
+    category: ["fashion"],
     blogType: "clean",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/361x289",
@@ -1851,7 +1831,7 @@ export const blogData = [
   },
   {
     id: 132,
-    category: ["fashion", "consulting"],
+    category: ["fashion"],
     blogType: "clean",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/361x289",
@@ -1865,7 +1845,7 @@ export const blogData = [
   },
   {
     id: 133,
-    category: ["fashion", "consulting"],
+    category: ["fashion"],
     blogType: "clean",
     tags: ["Development", "Events", "Media", "Mountains"],
     img: "https://via.placeholder.com/361x289",
@@ -1883,7 +1863,7 @@ export const blogData = [
     title: "The best way to predict the future is to create it",
     content:
       "Lorem ipsum is simply dummy text printing typesetting industry lorem ipsum has dummy...",
-    category: ["LIFESTYLE", "conference"],
+    category: ["LIFESTYLE"],
     blogType: "classic",
     tags: ["Development", "Events", "Media", "Mountains"],
     author: 1,

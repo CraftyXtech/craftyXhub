@@ -10,11 +10,10 @@ import { m } from "framer-motion";
 // Components
 import Header, { HeaderLanguage, HeaderNav, Menu, SearchBar, Topbar } from '../../Components/Header/Header'
 import SocialIcons from '../../Components/SocialIcon/SocialIcons'
-import BlogMetro from '../../Components/Blogs/BlogMetro';
-import BlogGrid from '../../Components/Blogs/BlogGrid';
+import BlogClassic from '../../Components/Blogs/BlogClassic';
 import BlogCategory from "../../Components/Blogs/BlogCategory";
 import Instagram from '../../Components/Instagram/Instagram';
-import FooterStyle02 from '../../Components/Footers/FooterStyle02'
+import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import SideButtons from "../../Components/SideButtons";
 import { fadeIn } from '../../Functions/GlobalAnimations';
 
@@ -68,7 +67,7 @@ const BlogCategoryData = [
   },
 ]
 
-const blogMetroData = blogData.filter((item) => item.blogType === "metro");
+
 
 const MagazinePage = (props) => {
   const swiperRef = React.useRef(null)
@@ -172,7 +171,7 @@ const MagazinePage = (props) => {
               </Swiper>
             </Col>
             <Col xl={6} className="lg:px-[15px] sm:px-[5px] xs:px-0">
-              <BlogMetro overlay="#374162" grid="grid grid-2col xl-grid-2col lg-grid-2col md-grid-2col sm-grid-2col xs-grid-1col gutter-large" data={blogMetroData.slice(-2)} link="/blog-types/blog-standard-post/" />
+              <BlogClassic filter={false} grid="grid grid-2col xl-grid-2col lg-grid-2col md-grid-2col sm-grid-2col xs-grid-1col gutter-large" data={blogData.slice(-2)} link="/blog/post/" pagination={false} />
             </Col>
           </Row>
         </Container>
@@ -206,7 +205,7 @@ const MagazinePage = (props) => {
           </Row>
         </Container>
         <Container fluid>
-          <BlogGrid overlay="#374162" pagination={false} className="magazine-blog-grid" grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={blogData.slice(0, 10)} />
+          <BlogClassic filter={false} data={blogData.slice(0, 10)} link="/blog/post/" pagination={false} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" />
         </Container>
       </section>
       {/* Section End */}
@@ -229,7 +228,7 @@ const MagazinePage = (props) => {
       {/* Section End */}
 
       {/* Footer Start */}
-      <FooterStyle02 className="text-[#828282] bg-darkgray" theme="dark" />
+      <FooterStyle05 className="text-[#828282] bg-darkgray" theme="dark" />
     </div>
   )
 }

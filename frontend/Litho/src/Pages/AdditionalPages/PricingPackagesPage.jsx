@@ -12,7 +12,7 @@ import { m } from "framer-motion";
 import Header, { HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
 import IconWithText from '../../Components/IconWithText/IconWithText'
 import Accordions from '../../Components/Accordion/Accordion'
-import FooterStyle01 from "../../Components/Footers/FooterStyle01";
+import FooterStyle05 from "../../Components/Footers/FooterStyle05";
 import PricingTable01 from "../../Components/PricingTable/PricingTable01"
 import SideButtons from "../../Components/SideButtons";
 import { fadeIn } from '../../Functions/GlobalAnimations'
@@ -305,7 +305,7 @@ const PricingPackagesPage = (props) => {
       {/* Section End */}
 
       {/* Footer Start */}
-      <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+      <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
       {/* Footer End */}
     </div >
   )

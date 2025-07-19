@@ -15,7 +15,7 @@ import CustomModal from '../../Components/CustomModal'
 import { fadeIn } from '../../Functions/GlobalAnimations';
 import Team from '../../Components/Team/Team';
 import InteractiveBanners05 from '../../Components/InteractiveBanners/InteractiveBanners05';
-import FooterStyle01 from '../../Components/Footers/FooterStyle01';
+import FooterStyle05 from '../../Components/Footers/FooterStyle05';
 import Buttons from '../../Components/Button/Buttons'
 import SideButtons from "../../Components/SideButtons";
 
@@ -522,7 +522,7 @@ const OurTeamPage = (props) => {
       {/* Section end */}
 
       {/* Footer Start */}
-      <FooterStyle01 theme="dark" className="bg-[#262b35] text-slateblue" />
+      <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
       {/* Footer End */}
 
 

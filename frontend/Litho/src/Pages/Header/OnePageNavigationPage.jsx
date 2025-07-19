@@ -11,7 +11,7 @@ import { Link as ScrollTo } from "react-scroll"
 import { fadeIn } from "../../Functions/GlobalAnimations";
 import { Header, HeaderNav } from "../../Components/Header/Header";
 import InteractiveBanners04 from "../../Components/InteractiveBanners/InteractiveBanners04";
-import PortfolioColorful from "../../Components/Portfolio/PortfolioColorful";
+import PortfolioPlaceholder from "../../Components/Portfolio/PortfolioPlaceholder";
 import TestimonialsCarousel03 from "../../Components/TestimonialCarousel/TestimonialsCarousel03";
 import SocialIcons from "../../Components/SocialIcon/SocialIcons";
 import FancyTextBox from '../../Components/FancyTextBox/FancyTextBox'
@@ -297,12 +297,7 @@ const OnePageNavigationPage = (props) => {
         <Container fluid>
           <Row>
             <Col className="sm:px-0">
-              <PortfolioColorful
-                className="m-0"
-                overlay="#232323e6"
-                grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large"
-                data={portfolioColorfulData}
-              />
+              <PortfolioPlaceholder data={portfolioColorfulData} />
             </Col>
           </Row>
         </Container>

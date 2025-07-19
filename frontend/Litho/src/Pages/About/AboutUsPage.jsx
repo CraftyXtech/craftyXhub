@@ -7,7 +7,7 @@ import Buttons from '../../Components/Button/Buttons'
 import Clients from '../../Components/Clients/Clients'
 import FancyTextBox from '../../Components/FancyTextBox/FancyTextBox'
 import Team from '../../Components/Team/Team'
-import FooterStyle01 from '../../Components/Footers/FooterStyle01'
+import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import IconWithText from '../../Components/IconWithText/IconWithText'
 import Lists from '../../Components/Lists/Lists'
 import Counter from '../../Components/Counters/Counter'
@@ -400,7 +400,7 @@ const AboutUsPage = (props) => {
       {/* Section End */}
 
       {/* Footer start */}
-      <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+              <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
       {/* Footer end */}
     </div>
   )

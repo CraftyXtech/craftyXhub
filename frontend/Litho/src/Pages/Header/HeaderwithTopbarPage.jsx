@@ -9,16 +9,12 @@ import { m } from "framer-motion";
 
 // Components
 import Header, { HeaderCart, HeaderNav, Menu, SearchBar, Topbar } from '../../Components/Header/Header';
-import FooterStyle01 from '../../Components/Footers/FooterStyle01'
-import PortfolioBoxed from '../../Components/Portfolio/PortfolioBoxed'
+import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import Buttons from '../../Components/Button/Buttons'
 import IconWithText from '../../Components/IconWithText/IconWithText'
 import { fadeIn } from '../../Functions/GlobalAnimations'
 import SocialIcons from '../../Components/SocialIcon/SocialIcons';
 import SideButtons from "../../Components/SideButtons";
-
-// Data
-import { portfolioBoxedData } from "../../Components/Portfolio/PortfolioData"
 
 const IconWithTextData = [
     {
@@ -233,32 +229,9 @@ const HeaderwithTopbarPage = (props) => {
                 </Container>
             </section>
             {/* About End */}
-            {/* Section Start */}
-            <section className="py-[130px] overflow-hidden bg-[#f7f8fc] lg:py-[90px] md:py-[75px] sm:py-[50px]">
-                <Container>
-                    <Row className="justify-center">
-                        <Col xl={5} lg={6} sm={8} className="text-center font-serif mb-20">
-                            <span className="block justify-center text-md text-gradient bg-gradient-to-r from-[#556fff] via-[#e05fc4] via-[#e05fc4] to-[#ff798e] uppercase font-medium mb-[20px] sm:mb-[15px]">Recent portfolio</span>
-                            <h5 className="text-darkgray text-center font-semibold tracking-[-1px]">Hand crafted pixel perfect designs for your projects</h5>
-                        </Col>
-                    </Row>
-                </Container>
-                <Container fluid className="px-[6rem] md:px-[2rem] xs:px-[15px]">
-                    <Row>
-                        <Col className="sm:px-0">
-                            <PortfolioBoxed
-                                className="m-0"
-                                data={portfolioBoxedData.slice(0, 8)}
-                                grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-large text-center"
-                            />
-                        </Col>
-                    </Row>
-                </Container>
-            </section>
-            {/* Section End */}
 
             {/* Footer Start */}
-            <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+            <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
             {/* Footer End */}
         </div>
     )

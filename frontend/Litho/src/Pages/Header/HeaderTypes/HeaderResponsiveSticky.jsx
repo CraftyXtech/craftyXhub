@@ -9,8 +9,8 @@ import { Link as ScrollTo } from "react-scroll"
 
 // Components
 import Header, { HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../../../Components/Header/Header'
-import PortfolioColorful from '../../../Components/Portfolio/PortfolioColorful'
-import FooterStyle01 from '../../../Components/Footers/FooterStyle01'
+import PortfolioPlaceholder from '../../../Components/Portfolio/PortfolioPlaceholder'
+import FooterStyle05 from '../../../Components/Footers/FooterStyle05'
 import { TextAnime } from '../../../Components/FancyText/FancyText'
 import { fadeIn } from "../../../Functions/GlobalAnimations";
 import SideButtons from "../../../Components/SideButtons";
@@ -177,12 +177,7 @@ const HeaderResponsiveSticky = (props) => {
                 <Container fluid>
                     <Row>
                         <Col className="sm:px-0">
-                            <PortfolioColorful
-                                className="m-0"
-                                overlay="#232323e6"
-                                grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large"
-                                data={portfolioColorfulData}
-                            />
+                            <PortfolioPlaceholder data={portfolioColorfulData} />
                         </Col>
                     </Row>
                 </Container>
@@ -190,7 +185,7 @@ const HeaderResponsiveSticky = (props) => {
             {/* Section End */}
 
             {/* Footer Start */}
-            <FooterStyle01 theme="dark" className="bg-black text-[#828282]" />
+            <FooterStyle05 theme="dark" className="bg-black text-[#828282]" />
             {/* Footer End */}
         </div>
     )

@@ -6,7 +6,7 @@ import { useParams } from "react-router-dom";
 import { Parallax } from "react-scroll-parallax";
 
 // Components
-import BlogGrid from "../../Components/Blogs/BlogGrid";
+import BlogClassic from "../../Components/Blogs/BlogClassic";
 
 // Data
 import { blogData, authorData } from "../../Components/Blogs/BlogData";
@@ -58,13 +58,12 @@ const AuthorPage = (props) => {
             <Col>
               {data ? (
                 data.length > 0 ? (
-                  <BlogGrid
-                    link="/blog-types/blog-standard-post/"
-                    overlay="#374162"
+                  <BlogClassic
+                    link="/blog/post/"
                     data={data}
                     pagination={true}
                     grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large"
-                   
+                    filter={false}
                   />
                 ) : (
                   <div className="text-center">

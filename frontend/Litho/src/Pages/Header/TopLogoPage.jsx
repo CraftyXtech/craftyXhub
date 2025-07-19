@@ -13,7 +13,7 @@ import { fadeIn } from "../../Functions/GlobalAnimations";
 import Buttons from '../../Components/Button/Buttons'
 import SocialIcons from "../../Components/SocialIcon/SocialIcons";
 import CustomIconWithText from '../../Components/CustomIconWithText/CustomIconWithText'
-import FooterStyle01 from "../../Components/Footers/FooterStyle01";
+import FooterStyle05 from "../../Components/Footers/FooterStyle05";
 import Team from "../../Components/Team/Team";
 import Header, { HeaderCart, HeaderNav, Menu, SearchBar } from "../../Components/Header/Header";
 import CustomModal from '../../Components/CustomModal'
@@ -244,7 +244,7 @@ const TopLogoPage = (props) => {
       {/* Team Style 02 End */}
 
       {/* Footer Style 01 Start */}
-      <FooterStyle01 theme="dark" className="bg-[#262b35] text-slateblue" />
+      <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
       {/* Footer Style 01 End */}
     </div>
   );

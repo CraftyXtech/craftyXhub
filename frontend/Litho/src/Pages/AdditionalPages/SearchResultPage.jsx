@@ -5,9 +5,9 @@ import { Link, useLocation } from "react-router-dom";
 import { Col, Container, Navbar, Row } from "react-bootstrap";
 
 // Components
-import BlogGrid from '../../Components/Blogs/BlogGrid';
+import BlogClassic from '../../Components/Blogs/BlogClassic';
 import Header, { HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar, } from "../../Components/Header/Header";
-import FooterStyle01 from '../../Components/Footers/FooterStyle01';
+import FooterStyle05 from '../../Components/Footers/FooterStyle05';
 import SideButtons from "../../Components/SideButtons";
 
 // Data
@@ -73,7 +73,7 @@ const SearchResultPage = (props) => {
         <Container fluid>
           <Row>
             <Col xs={12} className="xs:px-0">
-              <BlogGrid overlay="#374162" pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={blogData.slice(0, 12)} />
+                                          <BlogClassic filter={false} pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={blogData.slice(0, 12)} link="/blog/post/" />
             </Col>
           </Row>
         </Container>
@@ -81,7 +81,7 @@ const SearchResultPage = (props) => {
       {/* Section Start */}
 
       {/* Footer Start */}
-      <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+      <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
       {/* Footer End */}
     </div>
   )

@@ -18,7 +18,7 @@ import { Form, Spinner, Alert } from "reactstrap";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import useAuth from "@/api/useAuth";
-import axios from "@/api/axios";
+import { axiosPrivate } from "@/api/axios";
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
@@ -32,16 +32,26 @@ const Login = () => {
     setError("");
     
     try {
-      const response = await axios.post('auth/login', {
+      // Step 1: Login to get token
+      const loginResponse = await axiosPrivate.post('auth/login', {
         email: formData.name,
         password: formData.passcode
       });
       
-      console.log('Login response:', response.data); 
+      console.log('Login response:', loginResponse.data);
       
-      login(response.data.access_token, { 
-        email: formData.name,
+      // Step 2: Fetch user data using the token
+      const token = loginResponse.data.access_token;
+      const userResponse = await axiosPrivate.get('auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
+      
+      console.log('User data:', userResponse.data);
+      
+      // Step 3: Store both token and user data
+      login(token, userResponse.data);
       
       navigate('/');
     } catch (error) {

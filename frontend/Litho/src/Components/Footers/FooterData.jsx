@@ -32,10 +32,6 @@ const FooterData = [
                 link: "/page/pricing-packages"
             },
             {
-                title: "Company history",
-                link: "/page/our-story"
-            },
-            {
                 title: "Our process",
                 link: "/page/our-process"
             },
@@ -44,14 +40,6 @@ const FooterData = [
     {
         title: "Additional",
         submenu: [
-            {
-                title: "Our story",
-                link: "/page/our-story"
-            },
-            {
-                title: "Who we are",
-                link: "/page/who-we-are"
-            },
             {
                 title: "Our process",
                 link: "/page/our-process"
@@ -98,10 +86,6 @@ const FooterData = [
             {
                 title: "What we offer",
                 link: "/page/what-we-offer"
-            },
-            {
-                title: "Company history",
-                link: "/page/our-story"
             },
         ]
     },

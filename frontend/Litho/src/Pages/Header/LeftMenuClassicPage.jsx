@@ -12,15 +12,13 @@ import ReactCustomScrollbar from "../../Components/ReactCustomScrollbar";
 import Buttons from '../../Components/Button/Buttons'
 import Header, { CollapsibleMenu, HamburgerMenu, HeaderNav } from "../../Components/Header/Header";
 import IconWithText from '../../Components/IconWithText/IconWithText'
-import PortfolioBoxed from '../../Components/Portfolio/PortfolioBoxed'
 import Testimonials from '../../Components/Testimonials/Testimonials';
-import FooterStyle01 from "../../Components/Footers/FooterStyle01";
+import FooterStyle05 from "../../Components/Footers/FooterStyle05";
 import SocialIcons from "../../Components/SocialIcon/SocialIcons";
 import SideButtons from "../../Components/SideButtons";
 
 // Data
 import { TestimonialsData03 } from '../../Components/Testimonials/TestimonialsData';
-import { portfolioBoxedData } from '../../Components/Portfolio/PortfolioData';
 import CustomModal from '../../Components/CustomModal';
 
 const IconWithTextData = [
@@ -166,30 +164,6 @@ const LeftMenuClassicPage = () => {
             </section>
             {/* About End */}
 
-            {/*Portfolio Section Start */}
-            <section className="py-[130px] overflow-hidden bg-[#f7f8fc] lg:py-[90px] md:py-[75px] sm:py-[50px]">
-                <Container>
-                    <Row className="justify-center">
-                        <Col xl={5} lg={6} sm={8} className="font-serif text-center mb-20">
-                            <span className="block text-md text-gradient bg-gradient-to-r from-[#556fff] via-[#e05fc4] via-[#e05fc4] to-[#ff798e] uppercase font-medium mb-[20px] sm:mb-[15px]">Recent portfolio</span>
-                            <h5 className="text-darkgray font-semibold -tracking-[1px]">Hand crafted pixel perfect designs for your projects</h5>
-                        </Col>
-                    </Row>
-                </Container>
-                <Container fluid className="px-[6rem] lg:px-8 md:px-[2rem] xs:px-[15px]">
-                    <Row>
-                        <Col xs={12} className="xs:px-0">
-                            <PortfolioBoxed
-                                className="m-0"
-                                data={portfolioBoxedData.slice(0, 8)}
-                                grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-large text-center"
-                                />
-                        </Col>
-                    </Row>
-                </Container>
-            </section>
-            {/*Portfolio Section End */}
-
             {/* Info Banner Start */}
             <m.section className="relative bg-cover bg-center py-[160px] lg:py-[120px] md:py-[95px] sm:py-[80px] xs:py-[50px]" style={{ backgroundImage: `url("https://via.placeholder.com/1920x1100")` }} {...fadeIn}>
                 <div className="absolute top-0 left-0 w-full h-full opacity-60 bg-darkslateblue"></div>
@@ -246,7 +220,7 @@ const LeftMenuClassicPage = () => {
             </section>
             {/* Section End */}
             {/* footer Start*/}
-            <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+            <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
             {/* footer End */}
         </div>
     )

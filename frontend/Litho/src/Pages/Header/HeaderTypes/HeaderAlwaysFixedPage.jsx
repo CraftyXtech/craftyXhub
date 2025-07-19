@@ -7,12 +7,8 @@ import { Link } from 'react-router-dom'
 // Components
 import Header, { HeaderNav, Menu, SearchBar } from '../../../Components/Header/Header'
 import Buttons from '../../../Components/Button/Buttons'
-import PortfolioScattered from '../../../Components/Portfolio/PortfolioScattered'
-import FooterStyle01 from '../../../Components/Footers/FooterStyle01'
+import FooterStyle05 from '../../../Components/Footers/FooterStyle05'
 import SideButtons from "../../../Components/SideButtons";
-
-// Data
-import { portfolioScatteredData } from '../../../Components/Portfolio/PortfolioData'
 
 const HeaderAlwaysFixedPage = (props) => {
     return (
@@ -67,19 +63,8 @@ const HeaderAlwaysFixedPage = (props) => {
             </section>
             {/* Section End */}
 
-            {/* Section Start */}
-            <section className="headeralwaysfixed-portfolio pt-[160px] lg:pt-[120px] md:pt-[95px] sm:pt-[80px] xs:pt-[50px]">
-                <Container fluid className="px-[7%] mb-[3.5rem] md:px-[3%] sm:px-[15px]">
-                    <PortfolioScattered
-                        grid="row row-cols-1 row-cols-xl-4 row-cols-lg-2 row-cols-md-2 portfolio-scattered"
-                        data={portfolioScatteredData.slice(0, 8)}
-                        />
-                </Container>
-            </section>
-            {/* Section End */}
-
             {/* Footer Start */}
-            <FooterStyle01 theme="dark" className="bg-[#262b35] text-slateblue" />
+            <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
             {/* Footer End */}
         </>
     )

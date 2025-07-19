@@ -15,7 +15,7 @@ export const useGetPosts = (params = {}) => {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const response = await axiosPrivate.get('/posts', { params }); 
+        const response = await axiosPrivate.get('/posts/', { params }); 
         setPosts(response.data.posts);
         setTotal(response.data.total);
         setPage(response.data.page);
@@ -73,7 +73,7 @@ export const useCreatePost = () => {
       try {
       setLoading(true);
       setError(null);
-      const response = await axiosPrivate.post('/posts', postData);
+      const response = await axiosPrivate.post('/posts/', postData);
         return response.data;
     } catch (err) {
       setError(err.response?.data?.detail || err.message);

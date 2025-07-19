@@ -1,23 +1,8 @@
 const menu = [
   {
-    icon: "dashlite",
-    text: "Default Dashboard",
+    icon: "home",
+    text: "Dashboard",
     link: "/",
-  },
-  {
-    icon: "bitcoin-cash",
-    text: "Crypto Dashboard",
-    link: "/crypto",
-  },
-  {
-    icon: "growth",
-    text: "Analytics Dashboard",
-    link: "/analytics",
-  },
-  {
-    icon: "coins",
-    text: "Invest Dashboard",
-    link: "/invest",
   },
   {
     heading: "Pre-built Pages",
@@ -83,10 +68,6 @@ const menu = [
       {
         text: "Trans List - Basic",
         link: "/transaction-basic",
-      },
-      {
-        text: "Trans List - Crypto",
-        link: "/transaction-crypto",
       },
     ],
   },

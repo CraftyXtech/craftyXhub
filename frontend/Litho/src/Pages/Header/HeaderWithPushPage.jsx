@@ -3,7 +3,7 @@ import React from 'react'
 // Components
 import { fadeIn } from '../../Functions/GlobalAnimations'
 import Buttons from '../../Components/Button/Buttons'
-import FooterStyle01 from '../../Components/Footers/FooterStyle01'
+import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import Header, { HamburgerMenu, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
 import IconWithText from '../../Components/IconWithText/IconWithText'
 import { TiltBox } from '../../Components/FancyText/FancyText'
@@ -192,7 +192,7 @@ const HeaderWithPushPage = (props) => {
         </section>
         {/* About End */}
         {/* Footer Start */}
-        <FooterStyle01 theme="dark" className="bg-darkgray" />
+        <FooterStyle05 theme="dark" className="bg-darkgray" />
         {/* Footer End */}
       </div>
     </>

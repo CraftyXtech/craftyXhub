@@ -8,11 +8,11 @@ import { Link, useParams } from 'react-router-dom'
 import AuthorBox from "../../../Components/Blogs/HelperComponents/AuthorBox"
 import CommentBox from "../../../Components/Blogs/HelperComponents/CommentBox"
 import { Header, HeaderNav, Menu } from "../../../Components/Header/Header"
-import BlogClean from "../../../Components/Blogs/BlogClean";
+import BlogClassic from "../../../Components/Blogs/BlogClassic";
 import SocialIcons from "../../../Components/SocialIcon/SocialIcons"
 import Blockquote from '../../../Components/BlockQuote/Blockquote'
 import Dropcaps from '../../../Components/Dropcaps/Dropcaps'
-import FooterStyle01 from "../../../Components/Footers/FooterStyle01"
+import FooterStyle05 from "../../../Components/Footers/FooterStyle05"
 import SideButtons from "../../../Components/SideButtons";
 import Sidebar from '../../../Components/Blogs/HelperComponents/Sidebar';
 
@@ -180,7 +180,7 @@ const BlogStandardPostPage = (props) => {
                   <h5 className="font-serif font-medium text-darkgray -tracking-[1px]">Related Posts</h5>
                 </Col>
               </Row>
-              <BlogClean filter={false} overlay={["#0039e3", "#4132e0", "#5e28dd", "#741bd9", "#8600d4"]} pagination="false" grid="grid grid-3col xl-grid-3col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={blogData.slice(0, 3)} />
+              <BlogClassic filter={false} pagination={false} grid="grid grid-3col xl-grid-3col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={blogData.slice(0, 3)} link="/blog/post/" />
             </Container>
           </section>
           {/* Section End */}
@@ -188,7 +188,7 @@ const BlogStandardPostPage = (props) => {
           <CommentBox />
 
           {/* Section Start */}
-          <FooterStyle01 theme="dark" className="bg-[#262b35] text-slateblue" />
+          <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
           {/* Section End */}
         </>
       ) : undefined}

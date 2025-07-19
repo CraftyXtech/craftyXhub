@@ -4,21 +4,21 @@ const serviceData1 = [
         icon: "fas fa-arrow-right",
         title: "FINANCE SERVICES",
         content: "Lorem ipsum consectetur adipiscing elit do eiusmod tempor incididunt.",
-        link: "/page/our-story"
+        link: "/page/about-us"
     },
     {
         img: "https://via.placeholder.com/800x618",
         icon: "fas fa-arrow-right",
         title: "BUSINESS PLANNING",
         content: "Lorem ipsum consectetur adipiscing elit do eiusmod tempor incididunt.",
-        link: "/page/our-story"
+        link: "/page/about-us"
     },
     {
         img: "https://via.placeholder.com/800x618",
         icon: "fas fa-arrow-right",
         title: "MARKETING STRATEGY",
         content: "Lorem ipsum consectetur adipiscing elit do eiusmod tempor incididunt.",
-        link: "/page/our-story"
+        link: "/page/about-us"
     }
 ]
 
@@ -105,21 +105,21 @@ const serviceData5 = [
         title: "Developing strategy",
         icon: "feather-arrow-right",
         content: "Lorem ipsum is simply dummy text of the printing typesetting lorem ipsum been dummy text.",
-        link: "/page/about-me",
+        link: "/page/about-us",
         linkTitle: "More Info"
     },
     {
         title: "Blazing performance",
         icon: "feather-arrow-right",
         content: "Lorem ipsum is simply dummy text of the printing typesetting lorem ipsum been dummy text.",
-        link: "/page/about-me",
+        link: "/page/about-us",
         linkTitle: "More Info"
     },
     {
         title: "Customer satisfaction",
         icon: "feather-arrow-right",
         content: "Lorem ipsum is simply dummy text of the printing typesetting lorem ipsum been dummy text.",
-        link: "/page/about-me",
+        link: "/page/about-us",
         linkTitle: "More Info"
     }
 ]

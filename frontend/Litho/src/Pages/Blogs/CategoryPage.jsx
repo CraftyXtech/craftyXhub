@@ -6,7 +6,7 @@ import { useParams } from 'react-router-dom';
 import { Parallax } from "react-scroll-parallax";
 
 // Components
-import BlogGrid from '../../Components/Blogs/BlogGrid'
+import BlogClassic from '../../Components/Blogs/BlogClassic'
 
 // Data
 import { blogData } from '../../Components/Blogs/BlogData'
@@ -24,7 +24,7 @@ const CategoryPage = (props) => {
         <div style={props.style}>
             {/* Parallax Section Start */}
             <div className="py-[80px] h-auto overflow-hidden md:relative md:py-[40px]">
-                <Parallax className="lg-no-parallax bg-cover absolute -top-[100px] landscape:md:top-[-20px] left-0 w-full h-[100vh]" translateY={[-40, 40]} style={{ backgroundImage: `url(/assets/img/webp/portfolio-bg2.webp)` }}></Parallax>
+                <Parallax className="lg-no-parallax bg-cover absolute -top-[100px] landscape:md:top-[-20px] left-0 w-full h-[100vh]" translateY={[-40, 40]} style={{ backgroundImage: `url(https://via.placeholder.com/1920x1080)` }}></Parallax>
                 <Container className="h-full relative">
                     <Row className="justify-center h-[300px] sm:h-[250px]">
                         <Col xl={6} lg={6} md={8} className="text-center flex justify-center flex-col font-serif">
@@ -44,14 +44,14 @@ const CategoryPage = (props) => {
                             {
                                 data ? (
                                     data.length > 0 ? (
-                                        <BlogGrid link="/blog-types/blog-standard-post/" overlay="#374162" data={data} pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" />
+                                        <BlogClassic link="/blog/post/" data={data} pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" filter={false} />
                                     ) : (
                                         <div className="text-center">
                                             <img src="/assets/img/no-data-bro.svg" className="w-[500px] mx-auto opacity-70" alt="no-data" width="" height="" />
                                         </div>
                                     )
                                 ) : (
-                                    <BlogGrid link="/blog-types/blog-standard-post/" overlay="#374162" pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" />
+                                    <BlogClassic link="/blog/post/" pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" filter={false} />
                                 )
                             }
                         </Col>

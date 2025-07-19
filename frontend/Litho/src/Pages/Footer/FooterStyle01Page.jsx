@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { m } from "framer-motion";
 
 // Components
-import FooterStyle01 from "../../Components/Footers/FooterStyle01";
+import FooterStyle05 from "../../Components/Footers/FooterStyle05";
 import { fadeIn } from "../../Functions/GlobalAnimations";
 import IconWithText from '../../Components/IconWithText/IconWithText'
 import Testimonials from "../../Components/Testimonials/Testimonials";

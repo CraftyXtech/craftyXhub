@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 
 // Components
 import Header, { HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header';
-import FooterStyle01 from '../../Components/Footers/FooterStyle01';
+import FooterStyle05 from '../../Components/Footers/FooterStyle05';
 import SideButtons from "../../Components/SideButtons";
 
 // Data
@@ -88,7 +88,7 @@ const FontAwesomeIconPage = (props) => {
       </section>
       {/* Section End */}
 
-      <FooterStyle01 theme="dark" className="text-slateblue bg-[#262b35]" />
+      <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
     </>
   )
 }

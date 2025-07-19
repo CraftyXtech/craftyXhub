@@ -9,8 +9,7 @@ import { m } from "framer-motion";
 
 // Components
 import Header, { HamburgerMenu, HeaderNav } from '../../../Components/Header/Header';
-import PortfolioColorful from '../../../Components/Portfolio/PortfolioColorful';
-import FooterStyle01 from '../../../Components/Footers/FooterStyle01';
+import FooterStyle05 from '../../../Components/Footers/FooterStyle05';
 import ReactCustomScrollbar from '../../../Components/ReactCustomScrollbar';
 import { TextAnime } from '../../../Components/FancyText/FancyText'
 import { fadeIn } from "../../../Functions/GlobalAnimations";
@@ -22,19 +21,19 @@ const sliderData = [
         img: "https://via.placeholder.com/1920x1160",
         title: "Black",
         subtitle: "shade",
-        link: "/portfolio/single-project-page-01"
+        link: "/"
     },
     {
         img: "https://via.placeholder.com/1920x1160",
         title: "Browne",
         subtitle: "coffee",
-        link: "/portfolio/single-project-page-02"
+        link: "/"
     },
     {
         img: "https://via.placeholder.com/1920x1160",
         title: "Nature",
         subtitle: "travel",
-        link: "/portfolio/single-project-page-03"
+        link: "/"
     },
 ];
 
@@ -54,53 +53,6 @@ const data = [
     {
         icon: "feather-shopping-bag",
         title: "ECOMMERCE TOOL"
-    }
-]
-
-const portfolioColorfulData = [
-    {
-        title: "Mongolish",
-        img: "https://via.placeholder.com/1000x817",
-        category: [""],
-        subtitle: "Branding",
-        link: "/portfolio/single-project-page-01",
-        double_col: true
-    },
-    {
-        title: "Masscoating",
-        img: "https://via.placeholder.com/800x653",
-        category: [""],
-        subtitle: "Photography",
-        link: "/portfolio/single-project-page-02"
-    },
-    {
-        title: "Cortifiel",
-        img: "https://via.placeholder.com/800x653",
-        category: [""],
-        subtitle: "Brochure",
-        link: "/portfolio/single-project-page-03"
-    },
-    {
-        title: "Everyday",
-        img: "https://via.placeholder.com/1000x817",
-        category: [""],
-        subtitle: "Brochure",
-        link: "/portfolio/single-project-page-04",
-        double_col: true
-    },
-    {
-        title: "Scandinavian",
-        img: "https://via.placeholder.com/800x653",
-        category: [""],
-        subtitle: "Branding",
-        link: "/portfolio/single-project-page-05"
-    },
-    {
-        title: "The Simplest",
-        img: "https://via.placeholder.com/800x653",
-        category: [""],
-        subtitle: "Website",
-        link: "/portfolio/single-project-page-01"
     }
 ]
 
@@ -132,7 +84,6 @@ const HamburgerMenuModernPage = (props) => {
                                                         <li className="py-[13px] px-0 relative sm:text-center"><Link aria-label="link for" to="/">home</Link></li>
                                                         <li className="py-[13px] px-0 relative sm:text-center"><Link aria-label="link for" to="/page/about-us">about</Link></li>
                                                         <li className="py-[13px] px-0 relative sm:text-center"><Link aria-label="link for" to="/page/our-services">services</Link></li>
-                                                        <li className="py-[13px] px-0 relative sm:text-center"><Link aria-label="link for" to="/portfolio/portfolio-colorful-metro">portfolio</Link></li>
                                                         <li className="py-[13px] px-0 relative sm:text-center"><Link aria-label="link for" to="/blogs/blog-grid">blog</Link></li>
                                                         <li className="py-[13px] px-0 relative sm:text-center"><Link aria-label="link for" to="/page/contact-modern">contact</Link></li>
                                                     </ul>
@@ -236,25 +187,8 @@ const HamburgerMenuModernPage = (props) => {
                 </Container>
             </section>
             {/* Section End */}
-
-            {/* Section Start */}
-            <section className="bg-darkgray">
-                <Container fluid>
-                    <Row>
-                        <Col className="sm:px-0">
-                            <PortfolioColorful
-                                className="m-0"
-                                overlay="#232323e6"
-                                grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large"
-                                data={portfolioColorfulData}
-                            />
-                        </Col>
-                    </Row>
-                </Container>
-            </section>
-            {/* Section End */}
             {/* Footer Start */}
-            <FooterStyle01 className="bg-darkgray text-[#828282]" theme="dark" />
+            <FooterStyle05 className="bg-darkgray text-[#828282]" theme="dark" />
             {/* Footer End */}
         </div>
     )
