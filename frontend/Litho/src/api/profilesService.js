@@ -1,9 +1,6 @@
 import { axiosInstance, axiosPrivate } from './axios';
 
-// CLIENT-SIDE APIs for Profiles
 
-// PUBLIC APIs (no authentication required)
-// Get profile by user UUID (public author info)
 export const getProfile = async (userUuid) => {
     try {
         const response = await axiosInstance.get(`/profiles/${userUuid}`);
@@ -13,11 +10,8 @@ export const getProfile = async (userUuid) => {
     }
 };
 
-// AUTHENTICATED APIs (requires login)
-// Create a new profile for the current user
 export const createProfile = async (profileData) => {
     try {
-        // Create FormData for file upload support
         const formData = new FormData();
         
         // Add profile fields
