@@ -1,6 +1,5 @@
 import { axiosInstance, axiosPrivate } from './axios';
 
-
 export const getPosts = async (params = {}) => {
     try {
         const clientParams = { ...params, published: true };
@@ -28,6 +27,7 @@ export const getPostImage = async (filename) => {
         throw error;
     }
 };
+
 
 export const togglePostLike = async (postUuid) => {
     try {

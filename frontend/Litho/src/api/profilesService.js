@@ -1,6 +1,9 @@
 import { axiosInstance, axiosPrivate } from './axios';
 
+// CLIENT-SIDE APIs for Profiles
 
+// PUBLIC APIs (no authentication required)
+// Get profile by user UUID (public author info)
 export const getProfile = async (userUuid) => {
     try {
         const response = await axiosInstance.get(`/profiles/${userUuid}`);
@@ -10,10 +13,14 @@ export const getProfile = async (userUuid) => {
     }
 };
 
+// AUTHENTICATED APIs (requires login)
+// Create a new profile for the current user
 export const createProfile = async (profileData) => {
     try {
+        // Create FormData for file upload support
         const formData = new FormData();
         
+        // Add profile fields
         if (profileData.bio) formData.append('bio', profileData.bio);
         if (profileData.location) formData.append('location', profileData.location);
         if (profileData.website) formData.append('website', profileData.website);
@@ -22,11 +29,12 @@ export const createProfile = async (profileData) => {
         if (profileData.linkedin_handle) formData.append('linkedin_handle', profileData.linkedin_handle);
         if (profileData.birth_date) formData.append('birth_date', profileData.birth_date);
         
+        // Add avatar file if provided
         if (profileData.avatar) {
             formData.append('avatar', profileData.avatar);
         }
 
-        const response = await axiosPrivate.post('/profiles/', formData, {
+        const response = await axiosPrivate.post('/profiles', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
