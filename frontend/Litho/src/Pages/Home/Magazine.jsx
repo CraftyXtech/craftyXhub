@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 
 // Libraries
 import { Col, Container, Navbar, Row } from 'react-bootstrap'
@@ -15,10 +15,16 @@ import BlogCategory from "../../Components/Blogs/BlogCategory";
 import Instagram from '../../Components/Instagram/Instagram';
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import SideButtons from "../../Components/SideButtons";
+import Buttons from '../../Components/Button/Buttons'
+import LoginModal from '../../Components/auth/LoginModal'
+import RegisterModal from '../../Components/auth/RegisterModal'
 import { fadeIn } from '../../Functions/GlobalAnimations';
 
+// Hooks & API
+import useAuth from '../../api/useAuth';
+import { usePosts, useCategories } from '../../api';
+
 // Data
-import { blogData } from '../../Components/Blogs/BlogData';
 import HeaderData from '../../Components/Header/HeaderData';
 
 const SocialIconsData = [
@@ -44,33 +50,34 @@ const SocialIconsData = [
   }
 ]
 
-const BlogCategoryData = [
-  {
-    category: "FOODS",
-    img: "https://via.placeholder.com/800x614",
-
-  },
-  {
-    category: "SUMMER",
-    img: "https://via.placeholder.com/800x614",
-
-  },
-  {
-    category: "LIFESTYLE",
-    img: "https://via.placeholder.com/800x614",
-
-  },
-  {
-    category: "FASHION",
-    img: "https://via.placeholder.com/800x614",
-
-  },
-]
-
 
 
 const MagazinePage = (props) => {
   const swiperRef = React.useRef(null)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [showRegisterModal, setShowRegisterModal] = useState(false)
+  
+  const { isAuthenticated, user, logout } = useAuth()
+  
+  // API hooks
+  const { posts: allPosts, loading: postsLoading, error: postsError } = usePosts({ published: true })
+  const { categories, loading: categoriesLoading, error: categoriesError } = useCategories()
+  
+  // Prepare data for components
+  const recentPosts = allPosts?.slice(0, 2) || []
+  const latestPosts = allPosts?.slice(0, 10) || []
+  const featuredCategories = categories?.slice(0, 4) || []
+
+  const handleSwitchToRegister = () => {
+    setShowLoginModal(false)
+    setShowRegisterModal(true)
+  }
+
+  const handleSwitchToLogin = () => {
+    setShowRegisterModal(false)
+    setShowLoginModal(true)
+  }
+
   return (
     <div style={props.style}>
       <SideButtons />
@@ -86,7 +93,7 @@ const MagazinePage = (props) => {
               </Col>
               <Col className="col-12 col-md-6 text-center px-md-0 sm-padding-5px-tb line-height-normal">
                 <span className="text-sm font-serif uppercase -tracking-[0.5px] inline-block">
-                  Free delivery on orders over £120. Don't miss discount.
+                  Discover, Learn & Stay Inspired
                 </span>
               </Col>
               <Col className="col-auto col-md-3 text-right">
@@ -96,8 +103,9 @@ const MagazinePage = (props) => {
             </Row>
           </Container>
         </Topbar>
-        <HeaderNav bg="white" theme="light" containerClass="!px-0" className="py-[0px] md:py-[18px] md:px-[15px] sm:px-0">
-          <Col lg={6} xs={"auto"} className="px-lg-0 position-absolute left-0 right-0 mx-lg-auto text-center md:!relative mr-auto">
+        <HeaderNav bg="white" theme="light" expand="lg" containerClass="!px-0" className="py-[0px] md:py-[18px] md:px-[15px] sm:px-0">
+          {/* Logo – Left */}
+          <Col sm={6} lg={2} className="col-auto me-auto ps-lg-0">
             <Link aria-label="header logo" className="inline-block relative z-10" to="/">
               <Navbar.Brand className="inline-block p-0 m-0 align-middle">
                 <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-yellow-ochre.webp' data-rjs='/assets/img/webp/logo-yellow-ochre@2x.webp' alt='logo' />
@@ -106,23 +114,63 @@ const MagazinePage = (props) => {
               </Navbar.Brand>
             </Link>
           </Col>
-          <Col className="md:flex md:justify-end md:px-[15px]">
-            <Navbar.Toggle className="order-last md:ml-[17px]">
+
+          {/* Toggler */}
+          <div className="order-last px-[15px] md:block">
+            <Navbar.Toggle className="ml-[10px]">
               <span className="navbar-toggler-line"></span>
               <span className="navbar-toggler-line"></span>
               <span className="navbar-toggler-line"></span>
               <span className="navbar-toggler-line"></span>
             </Navbar.Toggle>
-            <div className="hidden md:block">
-              <Navbar.Collapse className="col-auto justify-center">
-                <Menu {...props} />
-              </Navbar.Collapse>
-            </div>
-            <div className="flex justify-between md:hidden col-lg-8 col-xl-8 mx-auto !pl-[25px] !pr-[12px] lg:!pl-[15px] lg:!pr-0">
-              <Menu data={HeaderData.slice(0, Math.floor(HeaderData.length / 2))} />
-              <Menu data={HeaderData.slice(Math.floor(HeaderData.length / 2), (HeaderData.length - 1))} />
-            </div>
+          </div>
+
+          {/* Menu – Center */}
+          <Navbar.Collapse className="col-auto col-lg-8 justify-center">
+            <Menu {...props} />
+          </Navbar.Collapse>
+
+          {/* Auth Buttons – Right (desktop) */}
+          <Col className="col-auto col-lg-2 text-end pe-0">
+            {!isAuthenticated ? (
+              <div className="flex items-center justify-end space-x-3">
+                <Buttons
+                  onClick={() => setShowLoginModal(true)}
+                  className="btn-transparent btn-fancy font-medium tracking-[1px] rounded-[4px]"
+                  themeColor="#232323"
+                  color="#232323"
+                  size="xs"
+                  title="Login"
+                />
+                <Buttons
+                  onClick={() => setShowRegisterModal(true)}
+                  className="btn-fill btn-fancy font-medium tracking-[1px] rounded-[4px]"
+                  themeColor="#232323"
+                  color="#fff"
+                  size="xs"
+                  title="Sign Up"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-end space-x-3">
+                <span className="text-sm text-darkgray">
+                  Welcome, {user?.full_name || user?.username}!
+                </span>
+                <Buttons
+                  onClick={logout}
+                  className="btn-transparent btn-fancy font-medium tracking-[1px] rounded-[4px]"
+                  themeColor="#232323"
+                  color="#232323"
+                  size="xs"
+                  title="Logout"
+                />
+              </div>
+            )}
           </Col>
+
+          {/* Mobile Navigation – handled by Bootstrap collapse; duplicate block removed */}
+
+          {/* Auth Buttons – Mobile block removed to avoid duplication */}
         </HeaderNav>
       </Header>
       {/* Header End */}
@@ -140,7 +188,7 @@ const MagazinePage = (props) => {
                   <div className="flex items-center bg-[#000000b3] absolute left-0 bottom-0 w-full py-[55px] xl:py-[20px] lg:py-[55px] md:py-[40px] xs:py-[30px] px-[60px] xl:px-[50px] xs:pl-[30px] xs:pr-[50px] xs:flex-col xs:items-start">
                     <Link aria-label="link for" to="/blogs/blog-grid" className="uppercase ps-0 pr-8 mr-8 border-r border-[#ffffff33] text-[#c89965] tracking-[2px] text-md font-medium tracking-2px font-serif md:border-0 md:mb-[10px] hover:text-white xs:mb-[5px]">Lifestyle</Link>
                     <h2 className="heading-6 m-0">
-                      <Link aria-label="link for" to="/blogs/blog-post-layout-01/" className="text-white font-light"> Things to know before dyeing your hair</Link>
+                      <Link aria-label="link for" to="/blogs/blog-post-layout-04/" className="text-white font-light"> Things to know before dyeing your hair</Link>
                     </h2>
                   </div>
                 </SwiperSlide>
@@ -148,7 +196,7 @@ const MagazinePage = (props) => {
                   <div className="flex items-center bg-[#000000b3] absolute left-0 bottom-0 w-full py-[55px] xl:py-[20px] lg:py-[55px] md:py-[40px] xs:py-[30px] px-[60px] xl:px-[50px] xs:pl-[30px] xs:pr-[50px] xs:flex-col xs:items-start">
                     <Link aria-label="link for" to="blogs/blog-grid" className="col-auto uppercase ps-0 pr-8 mr-8 border-r border-[#ffffff33] text-[#c89965] tracking-[2px] text-md font-medium tracking-2px font-serif md:border-0 md:mb-[10px] hover:text-white xs:mb-[5px]">Fashion</Link>
                     <h2 className="heading-6 m-0">
-                      <Link aria-label="link for" to="/blogs/blog-post-layout-02/" className="text-white font-300"> Simplicity is the ultimate sophistication</Link>
+                      <Link aria-label="link for" to="/blogs/blog-post-layout-04/" className="text-white font-300"> Simplicity is the ultimate sophistication</Link>
                     </h2>
                   </div>
                 </SwiperSlide>
@@ -156,7 +204,7 @@ const MagazinePage = (props) => {
                   <div className="flex items-center bg-[#000000b3] absolute left-0 bottom-0 w-full py-[55px] xl:py-[20px] lg:py-[55px] md:py-[40px] xs:py-[30px] px-[60px] xl:px-[50px] xs:pl-[30px] xs:pr-[50px] xs:flex-col xs:items-start">
                     <Link aria-label="link for" to="/blogs/blog-grid" className="col-auto uppercase ps-0 pr-8 mr-8 border-r border-[#ffffff33] text-[#c89965] tracking-[2px] text-md font-medium tracking-2px font-serif md:border-0 md:mb-[10px] hover:text-white xs:mb-[5px]">Wildlife</Link>
                     <h2 className="heading-6 m-0">
-                      <Link aria-label="link for" to="/blogs/blog-post-layout-03/" className="text-white font-300">The best comfort food will always be greens</Link>
+                      <Link aria-label="link for" to="/blogs/blog-post-layout-04/" className="text-white font-300">The best comfort food will always be greens</Link>
                     </h2>
                   </div>
                 </SwiperSlide>
@@ -171,7 +219,18 @@ const MagazinePage = (props) => {
               </Swiper>
             </Col>
             <Col xl={6} className="lg:px-[15px] sm:px-[5px] xs:px-0">
-              <BlogClassic filter={false} grid="grid grid-2col xl-grid-2col lg-grid-2col md-grid-2col sm-grid-2col xs-grid-1col gutter-large" data={blogData.slice(-2)} link="/blog/post/" pagination={false} />
+              {postsLoading ? (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                  <p className="mt-2 text-gray-600">Loading latest articles...</p>
+                </div>
+              ) : postsError ? (
+                <div className="text-center py-8 text-red-600">
+                  <p>Error loading articles. Please try again later.</p>
+                </div>
+              ) : (
+                <BlogClassic filter={false} grid="grid grid-2col xl-grid-2col lg-grid-2col md-grid-2col sm-grid-2col xs-grid-1col gutter-large" data={recentPosts} link="/blog/post/" pagination={false} />
+              )}
             </Col>
           </Row>
         </Container>
@@ -189,7 +248,18 @@ const MagazinePage = (props) => {
           </Row>
         </Container>
         <Container fluid className="lg:px-0">
-          <BlogCategory grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={BlogCategoryData} animation={fadeIn} />
+          {categoriesLoading ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <p className="mt-2 text-gray-600">Loading categories...</p>
+            </div>
+          ) : categoriesError ? (
+            <div className="text-center py-8 text-red-600">
+              <p>Error loading categories. Please try again later.</p>
+            </div>
+          ) : (
+            <BlogCategory grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={featuredCategories} animation={fadeIn} />
+          )}
         </Container>
       </section>
       {/* Section End */}
@@ -205,7 +275,18 @@ const MagazinePage = (props) => {
           </Row>
         </Container>
         <Container fluid>
-          <BlogClassic filter={false} data={blogData.slice(0, 10)} link="/blog/post/" pagination={false} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" />
+          {postsLoading ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <p className="mt-2 text-gray-600">Loading latest articles...</p>
+            </div>
+          ) : postsError ? (
+            <div className="text-center py-8 text-red-600">
+              <p>Error loading articles. Please try again later.</p>
+            </div>
+          ) : (
+            <BlogClassic filter={false} data={latestPosts} link="/blog/post/" pagination={false} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" />
+          )}
         </Container>
       </section>
       {/* Section End */}
@@ -229,6 +310,18 @@ const MagazinePage = (props) => {
 
       {/* Footer Start */}
       <FooterStyle05 className="text-[#828282] bg-darkgray" theme="dark" />
+
+      {/* Auth Modals */}
+      <LoginModal 
+        show={showLoginModal}
+        onHide={() => setShowLoginModal(false)}
+        onSwitchToRegister={handleSwitchToRegister}
+      />
+      <RegisterModal 
+        show={showRegisterModal}
+        onHide={() => setShowRegisterModal(false)}
+        onSwitchToLogin={handleSwitchToLogin}
+      />
     </div>
   )
 }

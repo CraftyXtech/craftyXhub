@@ -7,6 +7,7 @@ import { AnimatePresence } from "framer-motion";
 
 // Context
 import GlobalContext from "./Context/Context";
+import { AuthProvider } from "./Components/auth/AuthProvider";
 
 // Components
 import ScrollToTopButton from "./Components/ScrollToTop";
@@ -255,6 +256,11 @@ const BlogStandardPostPage = lazy(() =>
   import("./Pages/Blogs/PostTypes/BlogStandardPostPage")
 );
 
+// Auth Pages
+const LoginPage = lazy(() => import("./Pages/auth/Login"));
+const RegisterPage = lazy(() => import("./Pages/auth/Register"));
+const ForgotPasswordPage = lazy(() => import("./Pages/auth/ForgotPassword"));
+
 function App() {
   const [headerHeight, setHeaderHeight] = useState(0);
   const [footerHeight, setFooterHeight] = useState(0);
@@ -305,19 +311,20 @@ function App() {
   }, [location]);
 
   return (
-    <GlobalContext.Provider
-      value={{
-        headerHeight,
-        setHeaderHeight,
-        footerHeight,
-        setFooterHeight,
-        isModalOpen,
-        setIsModalOpen,
-        customModal,
-        setCustomModal,
-      }}
-    >
-      <div className="App" style={{ "--header-height": `${headerHeight}px` }}>
+    <AuthProvider>
+      <GlobalContext.Provider
+        value={{
+          headerHeight,
+          setHeaderHeight,
+          footerHeight,
+          setFooterHeight,
+          isModalOpen,
+          setIsModalOpen,
+          customModal,
+          setCustomModal,
+        }}
+      >
+        <div className="App" style={{ "--header-height": `${headerHeight}px` }}>
         {
           <main style={{ marginTop: headerHeight, marginBottom: footerHeight }}>
             <ScrollToTopButton />
@@ -554,17 +561,22 @@ function App() {
 
                   {/* Blogs */}
                   <Route path="blog" element={<BlogListingPage />} />
-                  <Route
-                    path="blogs"
-                    element={<BlogPage style={{ "--base-color": "#0038e3" }} />}
-                  >
-                    <Route path="category">
-                      <Route path=":category" element={<CategoryPage />} />
-                    </Route>
-                    <Route path="author">
-                      <Route path=":author" element={<AuthorPage />} />
-                    </Route>
+                                  <Route
+                  path="blogs"
+                  element={<BlogPage style={{ "--base-color": "#0038e3" }} />}
+                >
+                  <Route path="category">
+                    <Route path=":category" element={<CategoryPage />} />
                   </Route>
+                  <Route path="author">
+                    <Route path=":author" element={<AuthorPage />} />
+                  </Route>
+                </Route>
+                
+                {/* Direct category routes */}
+                <Route path="category">
+                  <Route path=":categorySlug" element={<CategoryPage />} />
+                </Route>
 
                   {/* Blogs Types */}
                   <Route path="blog-types">
@@ -683,6 +695,13 @@ function App() {
                     }
                   />
 
+                  {/* Auth Pages */}
+                  <Route path="/auth">
+                    <Route path="login" element={<LoginPage />} />
+                    <Route path="register" element={<RegisterPage />} />
+                    <Route path="forgot-password" element={<ForgotPasswordPage />} />
+                  </Route>
+
                   {/* Additional Pages */}
                   <Route
                     path="/page/our-team"
@@ -744,6 +763,7 @@ function App() {
         }
       </div>
     </GlobalContext.Provider>
+    </AuthProvider>
   );
 }
 
