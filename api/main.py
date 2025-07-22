@@ -1,7 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Query
 from fastapi.responses import RedirectResponse
 from routers.v1 import router as v1_router
-from database.connection import db_health_check, init_db
+from database.connection import db_health_check, init_db, get_db_session
+from sqlalchemy.orm import Session
+from sqlalchemy import select, or_
+from database.connection import get_db_session
+from models import Post, User, Category
+
 
 
 def include_routers(app: FastAPI) -> None:
@@ -20,7 +25,42 @@ def include_routers(app: FastAPI) -> None:
             "environment": "development",
             "database": "connected" if db_healthy else "disconnected",
         }
-        
+
+
+    @app.get("/search", tags=["Global Search"], summary="Global Search",)
+    async def global_search(q: str = Query(..., min_length=1), db = Depends(get_db_session)):
+        query = f"%{q}%"
+
+        posts_stmt = select(Post).filter(
+            or_(
+                Post.title.ilike(query),
+                Post.content.ilike(query),
+                Post.excerpt.ilike(query)
+            )
+        )
+        users_stmt = select(User).filter(
+            or_(
+                User.username.ilike(query),
+                User.full_name.ilike(query)
+            )
+        )
+        categories_stmt = select(Category).filter(
+            or_(
+                Category.name.ilike(query),
+                Category.description.ilike(query)
+            )
+        )
+
+        posts_result = await db.execute(posts_stmt)
+        users_result = await db.execute(users_stmt)
+        categories_result = await db.execute(categories_stmt)
+
+        return {
+            "posts": posts_result.scalars().all(),
+            "users": users_result.scalars().all(),
+            "categories": categories_result.scalars().all()
+        }
+            
     app.include_router(v1_router)
 
 def create_application() -> FastAPI:

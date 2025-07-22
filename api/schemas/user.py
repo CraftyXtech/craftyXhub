@@ -43,6 +43,7 @@ class UserResponse(UserBase, TimestampMixin, BaseSchema):
     is_verified: bool
     role: UserRole
     last_login: Optional[datetime] = None
+    is_following: Optional[bool] = None
     
     class Config:
         from_attributes = True
@@ -101,6 +102,13 @@ class FollowResponse(BaseModel):
     user: UserResponse
     followed_at: datetime
 
+
+class FollowActionResponse(BaseModel):
+    success: bool
+    message: str
+    is_following: bool
+    follower_count: int
+    
 class UserFollowersResponse(BaseModel):
     followers: List[UserResponse]
     total: int
@@ -111,16 +119,10 @@ class UserFollowersResponse(BaseModel):
     has_prev: bool
 
 class UserFollowingResponse(BaseModel):
-    following: List[UserResponse] 
+    following: List[UserResponse]
     total: int
     page: int
     size: int
     pages: int
     has_next: bool
     has_prev: bool
-
-class FollowActionResponse(BaseModel):
-    success: bool
-    message: str
-    is_following: bool
-    follower_count: int

@@ -306,6 +306,31 @@ class PostService:
         query = query.offset(skip).limit(limit).order_by(Post.created_at.desc())
         result = await session.execute(query)
         return result.scalars().all()
+    
+    @staticmethod
+    async def get_reports(
+        session: AsyncSession,
+        skip: int = 0,
+        limit: int = 10
+    ) -> List[Report]:
+        query = select(Report).options(selectinload(Report.post), selectinload(Report.user))
+        query = query.offset(skip).limit(limit).order_by(Report.created_at.desc())
+        result = await session.execute(query)
+        return result.scalars().all()
+    
+    @staticmethod
+    async def get_reports_count(
+        session: AsyncSession,
+        post_id: Optional[int] = None,
+        user_id: Optional[int] = None
+    ) -> int:
+        query = select(func.count(Report.id))
+        if post_id:
+            query = query.where(Report.post_id == post_id)
+        if user_id:
+            query = query.where(Report.user_id == user_id)
+        result = await session.execute(query)
+        return result.scalar_one()
 
     @staticmethod
     async def report_post(

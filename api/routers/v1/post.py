@@ -131,6 +131,15 @@ async def get_draft_posts(
     }
 
 
+@router.get("/reports", response_model=List[ReportResponse])
+async def get_reports(
+        skip: int = Query(0, ge=0),
+        limit: int = Query(10, ge=1, le=100),
+        session: AsyncSession = Depends(get_db_session)
+):
+    reports = await PostService.get_reports(session, skip=skip, limit=limit)
+    return  reports
+
 @router.get("/", response_model=PostListResponse)
 async def get_posts(
         skip: int = Query(0, ge=0),
