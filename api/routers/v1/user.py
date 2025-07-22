@@ -39,7 +39,7 @@ async def follow_user(
         followed_uuid=str(user_uuid)
     )
 
-@router.put(
+@router.post(
     "/{user_uuid}/follow", 
     response_model=FollowActionResponse,
     status_code=status.HTTP_200_OK,
@@ -49,6 +49,7 @@ async def follow_user(
         404: {"description": "User not found"}
     }
 )
+
 async def unfollow_user(
     user_uuid: UUID,
     current_user: User = Depends(get_current_active_user),
