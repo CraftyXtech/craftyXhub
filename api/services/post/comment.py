@@ -58,3 +58,69 @@ class CommentService:
         
         result = await session.execute(query)
         return result.scalars().all()
+    
+    @staticmethod
+    async def get_comment_by_uuid(
+        session: AsyncSession,
+        comment_uuid: str
+    ) -> Comment:
+        query = select(Comment).where(Comment.uuid == comment_uuid).options(
+            selectinload(Comment.author),
+            selectinload(Comment.replies).selectinload(Comment.author)
+        )
+        result = await session.execute(query)
+        db_comment = result.scalar_one_or_none()
+        
+        if not db_comment:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+        
+        return db_comment
+    
+    @staticmethod
+    async def update_comment(
+        session: AsyncSession,
+        db_comment: Comment,
+        comment_data: CommentCreate
+    ) -> Comment:
+        if comment_data.content is not None:
+            db_comment.content = comment_data.content
+        
+        if comment_data.parent_id is not None:
+            db_comment.parent_id = comment_data.parent_id
+        
+        session.add(db_comment)
+        await session.commit()
+        
+        result = await session.execute(
+            select(Comment).where(Comment.id == db_comment.id).options(
+                selectinload(Comment.author),
+                selectinload(Comment.replies).selectinload(Comment.author)
+            )
+        )
+        return result.scalar_one()
+
+    @staticmethod
+    async def approve_comment(
+        session: AsyncSession,
+        db_comment: Comment
+    ) -> Comment:
+        db_comment.is_approved = True
+        session.add(db_comment)
+        await session.commit()
+        
+        result = await session.execute(
+            select(Comment).where(Comment.id == db_comment.id).options(
+                selectinload(Comment.author),
+                selectinload(Comment.replies).selectinload(Comment.author)
+            )
+        )
+        return result.scalar_one()
+    
+    @staticmethod
+    async def delete_comment(
+        session: AsyncSession,
+        db_comment: Comment
+    ) -> bool:
+        await session.delete(db_comment)
+        await session.commit()
+        return True

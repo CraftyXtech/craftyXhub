@@ -1,16 +1,24 @@
-from pydantic import BaseModel, EmailStr, validator, Field
-from .base import TimestampMixin, BaseSchema
-from typing import Optional
+from pydantic import BaseModel, EmailStr, validator, Field, EmailStr
+from typing import Optional, List
 from datetime import datetime
+from enum import Enum
+from .base import TimestampMixin, BaseSchema
+
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    MODERATOR = "moderator" 
+    CREATOR = "creator"
+    USER = "user"
 
 class UserBase(BaseModel):
     email: EmailStr
-    username: str = Field(..., min_length=3, max_length=50)
+    username: str = Field(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")
     full_name: str = Field(..., min_length=1, max_length=255)
 
 class UserCreate(UserBase):
     password: str
     confirm_password: str
+    role: Optional[UserRole] = UserRole.USER
     
     @validator('confirm_password')
     def passwords_match(cls, v, values):
@@ -28,12 +36,13 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class UserResponse(UserBase):
-    uuid: str  
+
+class UserResponse(UserBase, TimestampMixin, BaseSchema):
+    uuid: str
     is_active: bool
     is_verified: bool
-    created_at: datetime
-    last_login: Optional[datetime]
+    role: UserRole
+    last_login: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -50,22 +59,25 @@ class ResetPasswordRequest(BaseModel):
     current_password: str
     new_password: str
     confirm_new_password: str
-
-
+    
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
-    username: Optional[str] = Field(None, min_length=3, max_length=50)
+    username: Optional[str] = Field(None, min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")
     full_name: Optional[str] = Field(None, min_length=1, max_length=255)
     is_active: Optional[bool] = None
+    is_verified: Optional[bool] = None
+    role: Optional[UserRole] = None
 
 class ProfileBase(BaseModel):
-    bio: Optional[str] = Field(None, max_length=1000)
+    avatar: Optional[str] = Field(None, max_length=500)
+    bio: Optional[str] = Field(None, max_length=500)
     location: Optional[str] = Field(None, max_length=100)
     website: Optional[str] = Field(None, max_length=200)
     twitter_handle: Optional[str] = Field(None, max_length=50)
     github_handle: Optional[str] = Field(None, max_length=50)
     linkedin_handle: Optional[str] = Field(None, max_length=50)
     birth_date: Optional[datetime] = None
+    follower_notifications: Optional[bool] = True
 
 class ProfileCreate(ProfileBase):
     pass
@@ -75,6 +87,40 @@ class ProfileUpdate(ProfileBase):
 
 class ProfileResponse(ProfileBase, TimestampMixin, BaseSchema):
     uuid: str
-    avatar: Optional[str] = None
 
+class ProfileCreate(ProfileBase):
+    pass
 
+class ProfileUpdate(ProfileBase):
+    pass
+
+class UserWithProfileResponse(UserResponse):
+    profile: Optional[ProfileResponse] = None
+
+class FollowResponse(BaseModel):
+    user: UserResponse
+    followed_at: datetime
+
+class UserFollowersResponse(BaseModel):
+    followers: List[UserResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
+    has_next: bool
+    has_prev: bool
+
+class UserFollowingResponse(BaseModel):
+    following: List[UserResponse] 
+    total: int
+    page: int
+    size: int
+    pages: int
+    has_next: bool
+    has_prev: bool
+
+class FollowActionResponse(BaseModel):
+    success: bool
+    message: str
+    is_following: bool
+    follower_count: int

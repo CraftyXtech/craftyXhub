@@ -409,7 +409,7 @@ async def publish_post(
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
 ):
-    return await PostService.publish_post(session, post_uuid, current_user.id)
+    return await PostService.publish_post(session, post_uuid, current_user)
 
 
 @router.put("/{post_uuid}/unpublish", response_model=PostResponse)
@@ -418,7 +418,7 @@ async def unpublish_post(
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
 ):
-    return await PostService.unpublish_post(session, post_uuid, current_user.id)
+    return await PostService.unpublish_post(session, post_uuid, current_user)
 
 
 @router.put("/{post_uuid}/feature", response_model=PostResponse)
@@ -439,26 +439,6 @@ async def report_post(
         session: AsyncSession = Depends(get_db_session)
 ):
     return await PostService.report_post(session, post_uuid, report_data, current_user.id)
-
-
-@router.post("/{post_uuid}/comments", response_model=CommentResponse)
-async def create_comment(
-        post_uuid: str,
-        comment_data: CommentCreate,
-        current_user: User = Depends(get_current_active_user),
-        session: AsyncSession = Depends(get_db_session)
-):
-    return await CommentService.create_comment(session, post_uuid, comment_data, current_user.id)
-
-
-@router.get("/{post_uuid}/comments", response_model=List[CommentResponse])
-async def get_post_comments(
-        post_uuid: str,
-        skip: int = Query(0, ge=0),
-        limit: int = Query(10, ge=1, le=100),
-        session: AsyncSession = Depends(get_db_session)
-):
-    return await CommentService.get_post_comments(session, post_uuid, skip=skip, limit=limit)
 
 
 @router.post("/{post_uuid}/bookmark", response_model=bool)

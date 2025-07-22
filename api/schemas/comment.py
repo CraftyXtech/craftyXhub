@@ -26,12 +26,15 @@ class CommentUpdate(BaseModel):
 
 class CommentResponse(CommentBase, TimestampMixin, BaseSchema):
     uuid: str
+    post_id: int
     parent_id: Optional[int] = None
     is_approved: bool
 
     author: UserResponse
     replies: List['CommentResponse'] = []
-
+    
+class CommentListResponse(BaseModel):
+    comments: List[CommentResponse]
 
 class PaginatedCommentResponse(BaseModel):
     items: List[CommentResponse]

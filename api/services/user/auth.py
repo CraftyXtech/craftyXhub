@@ -54,6 +54,12 @@ class AuthService:
         return result.scalar_one_or_none()
     
     @staticmethod
+    async def get_user_by_uuid(session: AsyncSession, uuid: str) -> Optional[User]:
+        statement = select(User).where(User.uuid == uuid)
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+    
+    @staticmethod
     async def authenticate_user(session: AsyncSession, email: str, password: str) -> Optional[User]:
         user = await AuthService.get_user_by_email(session, email)
         if not user:

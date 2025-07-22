@@ -35,3 +35,10 @@ post_bookmarks = Table(
     Column('post_id', Integer, ForeignKey('posts.id'), primary_key=True),
     Column('user_id', Integer, ForeignKey('users.id'), primary_key=True)
 )
+
+user_follows = Table(
+    'user_follows',
+    BaseTable.metadata,
+    Column('follower_id', Integer, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
+    Column('followed_id', Integer, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+)
