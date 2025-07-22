@@ -1,7 +1,7 @@
 from  datetime import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from .base import  BaseTable, post_tags, post_likes
+from .base import  BaseTable, post_tags, post_likes, post_bookmarks
 
 class Category(BaseTable):
     __tablename__ = 'categories'
@@ -45,6 +45,7 @@ class Post(BaseTable):
     tags = relationship("Tag", secondary=post_tags, back_populates="posts")
     comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
     liked_by = relationship("User", secondary=post_likes, back_populates="liked_posts")
+    bookmarked_by = relationship("User", secondary=post_bookmarks, back_populates="bookmarked_posts")
 
     def soft_delete(self):
         self.deleted_at = datetime.utcnow()

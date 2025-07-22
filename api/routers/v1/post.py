@@ -1,11 +1,13 @@
 import os
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func
 from sqlmodel import select
-from typing import Optional
-from pydantic import BaseModel, Field, ValidationError
+from typing import Optional, List
+from pydantic import ValidationError
 
 from services.post.post import PostService, UPLOAD_DIR
+from services.post.comment import  CommentService
 from services.user.auth import get_current_active_user
 from database.connection import get_db_session
 from schemas.post import (
@@ -19,13 +21,114 @@ from schemas.post import (
     TagCreate,
     TagResponse,
     TagListResponse,
-    PostStatsResponse
+    PostStatsResponse,
+    ReportCreate,
+    ReportResponse
 )
 from models import User, Category, Tag, Post
 from fastapi import Form, File, UploadFile
 from fastapi.responses import FileResponse
+from models.base import post_bookmarks
+from schemas.comment import CommentCreate, CommentResponse
 
 router = APIRouter(prefix="/posts", tags=["posts"])
+
+
+
+@router.get("/trending/", response_model=PostListResponse)
+async def get_trending_posts(
+        skip: int = Query(0, ge=0),
+        limit: int = Query(10, ge=1, le=100),
+        session: AsyncSession = Depends(get_db_session)
+):
+    posts = await PostService.get_trending_posts(session, skip=skip, limit=limit)
+    total = await PostService.get_posts_count(session, published_only=True)
+    return {
+        "posts": posts,
+        "total": total,
+        "page": skip // limit + 1,
+        "size": limit
+    }
+
+
+@router.get("/featured", response_model=PostListResponse)
+async def get_featured_posts(
+        skip: int = Query(0, ge=0),
+        limit: int = Query(10, ge=1, le=100),
+        session: AsyncSession = Depends(get_db_session)
+):
+    posts = await PostService.get_featured_posts(session, skip=skip, limit=limit)
+    total = await PostService.get_posts_count(session, published_only=True, is_featured=True)
+    return {
+        "posts": posts,
+        "total": total,
+        "page": skip // limit + 1,
+        "size": limit
+    }
+
+
+@router.get("/recent", response_model=PostListResponse)
+async def get_recent_posts(
+        skip: int = Query(0, ge=0),
+        limit: int = Query(10, ge=1, le=100),
+        session: AsyncSession = Depends(get_db_session)
+):
+    posts = await PostService.get_recent_posts(session, skip=skip, limit=limit)
+    total = await PostService.get_posts_count(session, published_only=True)
+    return {
+        "posts": posts,
+        "total": total,
+        "page": skip // limit + 1,
+        "size": limit
+    }
+
+
+@router.get("/popular", response_model=PostListResponse)
+async def get_popular_posts(
+        skip: int = Query(0, ge=0),
+        limit: int = Query(10, ge=1, le=100),
+        session: AsyncSession = Depends(get_db_session)
+):
+    posts = await PostService.get_popular_posts(session, skip=skip, limit=limit)
+    total = await PostService.get_posts_count(session, published_only=True)
+    return {
+        "posts": posts,
+        "total": total,
+        "page": skip // limit + 1,
+        "size": limit
+    }
+
+
+@router.get("/{post_uuid}/related", response_model=PostListResponse)
+async def get_related_posts(
+        post_uuid: str,
+        limit: int = Query(5, ge=1, le=10),
+        session: AsyncSession = Depends(get_db_session)
+):
+    posts = await PostService.get_related_posts(session, post_uuid, limit=limit)
+    return {
+        "posts": posts,
+        "total": len(posts),
+        "page": 1,
+        "size": limit
+    }
+
+
+@router.get("/drafts", response_model=PostListResponse)
+async def get_draft_posts(
+        skip: int = Query(0, ge=0),
+        limit: int = Query(10, ge=1, le=100),
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    posts = await PostService.get_draft_posts(session, current_user.id, skip=skip, limit=limit)
+    total = await PostService.get_posts_count(session, published_only=False, author_id=current_user.id)
+    return {
+        "posts": posts,
+        "total": total,
+        "page": skip // limit + 1,
+        "size": limit
+    }
 
 
 @router.get("/", response_model=PostListResponse)
@@ -298,3 +401,91 @@ async def get_post_stats(
 ):
     stats = await PostService.get_post_stats(session)
     return stats
+
+
+@router.put("/{post_uuid}/publish", response_model=PostResponse)
+async def publish_post(
+        post_uuid: str,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    return await PostService.publish_post(session, post_uuid, current_user.id)
+
+
+@router.put("/{post_uuid}/unpublish", response_model=PostResponse)
+async def unpublish_post(
+        post_uuid: str,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    return await PostService.unpublish_post(session, post_uuid, current_user.id)
+
+
+@router.put("/{post_uuid}/feature", response_model=PostResponse)
+async def feature_post(
+        post_uuid: str,
+        feature: bool = True,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    return await PostService.feature_post(session, post_uuid, current_user.id, feature=feature)
+
+
+@router.post("/{post_uuid}/report", response_model=ReportResponse)
+async def report_post(
+        post_uuid: str,
+        report_data: ReportCreate,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    return await PostService.report_post(session, post_uuid, report_data, current_user.id)
+
+
+@router.post("/{post_uuid}/comments", response_model=CommentResponse)
+async def create_comment(
+        post_uuid: str,
+        comment_data: CommentCreate,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    return await CommentService.create_comment(session, post_uuid, comment_data, current_user.id)
+
+
+@router.get("/{post_uuid}/comments", response_model=List[CommentResponse])
+async def get_post_comments(
+        post_uuid: str,
+        skip: int = Query(0, ge=0),
+        limit: int = Query(10, ge=1, le=100),
+        session: AsyncSession = Depends(get_db_session)
+):
+    return await CommentService.get_post_comments(session, post_uuid, skip=skip, limit=limit)
+
+
+@router.post("/{post_uuid}/bookmark", response_model=bool)
+async def bookmark_post(
+        post_uuid: str,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    return await PostService.toggle_bookmark_post(session, post_uuid, current_user.id)
+
+
+
+@router.get("/users/me/bookmarks", response_model=PostListResponse)
+async def get_user_bookmarks(
+        skip: int = Query(0, ge=0),
+        limit: int = Query(10, ge=1, le=100),
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    posts = await PostService.get_user_bookmarks(session, current_user.id, skip=skip, limit=limit)
+    result = await session.execute(
+    select(func.count()).select_from(post_bookmarks).where(post_bookmarks.c.user_id == current_user.id)
+)
+    total = result.scalar_one()
+    return {
+        "posts": posts,
+        "total": total,
+        "page": skip // limit + 1,
+        "size": limit
+    }

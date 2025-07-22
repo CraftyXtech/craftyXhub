@@ -16,7 +16,6 @@ class CommentBase(BaseModel):
 
 
 class CommentCreate(CommentBase):
-    post_id: int
     parent_id: Optional[int] = None
 
 
@@ -27,8 +26,6 @@ class CommentUpdate(BaseModel):
 
 class CommentResponse(CommentBase, TimestampMixin, BaseSchema):
     uuid: str
-    author_id: int
-    post_id: int
     parent_id: Optional[int] = None
     is_approved: bool
 

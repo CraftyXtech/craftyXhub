@@ -1,16 +1,17 @@
 from typing import List, Optional
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
-from datetime import datetime, timezone
-from models import Post, Category, Tag, User
-from models.base import post_likes, post_tags
+from datetime import datetime, timezone, timedelta
+from models import Post, Category, Tag, User, Report, Comment
+from models.base import post_likes, post_bookmarks
 from schemas.post import (
     PostCreate,
     PostUpdate,
     CategoryCreate,
-    TagCreate
+    TagCreate,
+    ReportCreate
 )
 from utils.slug_generator import generate_slug, generate_random_slug
 from fastapi import HTTPException, status, UploadFile
@@ -28,8 +29,20 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
-
 class PostService:
+    
+    @staticmethod
+    def _apply_post_relationships(query):
+        """Apply common relationship loading options for Post queries."""
+        return query.options(
+            selectinload(Post.author),
+            selectinload(Post.category),
+            selectinload(Post.tags),
+            selectinload(Post.comments).selectinload(Comment.replies),
+            selectinload(Post.liked_by),
+            selectinload(Post.bookmarked_by)
+        )
+        
     @staticmethod
     def _add_soft_delete_filter(query, include_deleted: bool = False):
         if not include_deleted:
@@ -38,22 +51,17 @@ class PostService:
 
     @staticmethod
     async def get_post_by_uuid(session: AsyncSession, post_uuid: str, include_deleted: bool = False) -> Optional[Post]:
-        query = select(Post).where(Post.uuid == post_uuid).options(
-            selectinload(Post.author),
-            selectinload(Post.category),
-            selectinload(Post.tags),
-            selectinload(Post.comments)
-        )
-
+        query = select(Post).where(Post.uuid == post_uuid)
+        query = PostService._apply_post_relationships(query)
         query = PostService._add_soft_delete_filter(query, include_deleted)
         result = await session.execute(query)
         return result.scalar_one_or_none()
 
-
+    @staticmethod
     async def generate_unique_slug(
             session: AsyncSession,
             title: str,
-            model: type,
+            model: Post | Category | Tag,
             max_length: int = 50,
             random_slug_length: int = 50,
             max_attempts: int = 5
@@ -80,88 +88,304 @@ class PostService:
 
     @staticmethod
     async def get_post_by_slug(session: AsyncSession, slug: str, include_deleted: bool = False) -> Optional[Post]:
-        query = select(Post).where(Post.slug == slug).options(
-            selectinload(Post.author),
-            selectinload(Post.category),
-            selectinload(Post.tags),
-            selectinload(Post.comments)
-        )
-
+        query = select(Post).where(Post.slug == slug)
+        query = PostService._apply_post_relationships(query)
         query = PostService._add_soft_delete_filter(query, include_deleted)
         result = await session.execute(query)
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def get_post_with_relationships(session: AsyncSession, post_id: int, include_deleted: bool = False) -> \
-            Optional[Post]:
-        query = select(Post).options(
-            selectinload(Post.author),
-            selectinload(Post.category),
-            selectinload(Post.tags),
-            selectinload(Post.comments),
-            selectinload(Post.liked_by)
-        ).where(Post.id == post_id)
-
+    async def get_post_with_relationships(
+        session: AsyncSession,
+        post_id: int,
+        include_deleted: bool = False
+    ) -> Optional[Post]:
+        query = select(Post).where(Post.id == post_id)
+        query = PostService._apply_post_relationships(query)
         query = PostService._add_soft_delete_filter(query, include_deleted)
         result = await session.execute(query)
         return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_trending_posts(
+        session: AsyncSession,
+        skip: int = 0,
+        limit: int = 10,
+        include_deleted: bool = False
+    ) -> List[Post]:
+        like_count_subquery = (
+            select(post_likes.c.post_id, func.count(post_likes.c.user_id).label("like_count"))
+            .group_by(post_likes.c.post_id)
+            .subquery()
+        )
+
+        query = select(Post).where(Post.is_published == True)
+        query = PostService._apply_post_relationships(query)
+        query = PostService._add_soft_delete_filter(query, include_deleted)
+        query = query.where(Post.created_at >= datetime.now(timezone.utc) - timedelta(days=7))
+        query = query.outerjoin(like_count_subquery, Post.id == like_count_subquery.c.post_id)
+        query = query.order_by((Post.view_count + func.coalesce(like_count_subquery.c.like_count, 0)).desc())
+        query = query.offset(skip).limit(limit)
+        
+        result = await session.execute(query)
+        return result.scalars().all()
+    
+    @staticmethod
+    async def get_featured_posts(
+        session: AsyncSession,
+        skip: int = 0,
+        limit: int = 10,
+        include_deleted: bool = False
+    ) -> List[Post]:
+        query = select(Post).where(and_(Post.is_published == True, Post.is_featured == True))
+        query = PostService._apply_post_relationships(query)
+        query = PostService._add_soft_delete_filter(query, include_deleted)
+        query = query.offset(skip).limit(limit).order_by(Post.created_at.desc())
+        result = await session.execute(query)
+        return result.scalars().all()
+    
+    @staticmethod
+    async def get_recent_posts(
+        session: AsyncSession,
+        skip: int = 0,
+        limit: int = 10,
+        include_deleted: bool = False
+    ) -> List[Post]:
+        query = select(Post).where(Post.is_published == True)
+        query = PostService._apply_post_relationships(query)
+        query = PostService._add_soft_delete_filter(query, include_deleted)
+        query = query.offset(skip).limit(limit).order_by(Post.published_at.desc())
+        result = await session.execute(query)
+        return result.scalars().all()
+
+    @staticmethod
+    async def get_popular_posts(
+        session: AsyncSession,
+        skip: int = 0,
+        limit: int = 10,
+        include_deleted: bool = False
+    ) -> List[Post]:
+        query = select(Post).where(Post.is_published == True)
+        query = PostService._apply_post_relationships(query)
+        query = PostService._add_soft_delete_filter(query, include_deleted)
+        query = query.order_by(Post.view_count.desc())
+        query = query.offset(skip).limit(limit)
+        result = await session.execute(query)
+        return result.scalars().all()
+
+    @staticmethod
+    async def get_related_posts(
+        session: AsyncSession,
+        post_uuid: str,
+        limit: int = 5,
+        include_deleted: bool = False
+    ) -> List[Post]:
+        db_post = await PostService.get_post_by_uuid(session, post_uuid)
+        if not db_post:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+        query = select(Post).where(and_(
+            Post.is_published == True,
+            Post.id != db_post.id,
+            or_(Post.category_id == db_post.category_id, Post.tags.any(Tag.id.in_([tag.id for tag in db_post.tags])))
+        ))
+        query = PostService._apply_post_relationships(query)
+        query = PostService._add_soft_delete_filter(query, include_deleted)
+        query = query.order_by(Post.created_at.desc()).limit(limit)
+        result = await session.execute(query)
+        return result.scalars().all()
+
+    @staticmethod
+    async def publish_post(
+        session: AsyncSession,
+        post_uuid: str,
+        current_user_id: int
+    ) -> Post:
+        db_post = await PostService.get_post_by_uuid(session, post_uuid)
+        if not db_post:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+        
+        if db_post.author_id != current_user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to publish this post")
+
+        db_post.is_published = True
+        db_post.published_at = datetime.utcnow()
+        await session.commit()
+        await session.refresh(db_post)
+        return db_post
+
+    @staticmethod
+    async def unpublish_post(
+        session: AsyncSession,
+        post_uuid: str,
+        current_user_id: int
+    ) -> Post:
+        db_post = await PostService.get_post_by_uuid(session, post_uuid)
+        if not db_post:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+        
+        if db_post.author_id != current_user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to unpublish this post")
+
+        db_post.is_published = False
+        db_post.published_at = None
+        await session.commit()
+        await session.refresh(db_post)
+        return db_post
+
+    @staticmethod
+    async def feature_post(
+        session: AsyncSession,
+        post_uuid: str,
+        current_user_id: int,
+        feature: bool = True
+    ) -> Post:
+        db_post = await PostService.get_post_by_uuid(session, post_uuid)
+        if not db_post:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+        if db_post.author_id != current_user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to feature this post")
+
+        db_post.is_featured = feature
+        await session.commit()
+        await session.refresh(db_post)
+        return db_post
+
+    @staticmethod
+    async def get_draft_posts(
+        session: AsyncSession,
+        user_id: int,
+        skip: int = 0,
+        limit: int = 10,
+        include_deleted: bool = False
+    ) -> List[Post]:
+        query = select(Post).where(and_(
+            Post.author_id == user_id,
+            Post.is_published == False
+        ))
+        query = PostService._apply_post_relationships(query)
+        query = PostService._add_soft_delete_filter(query, include_deleted)
+        query = query.offset(skip).limit(limit).order_by(Post.created_at.desc())
+        result = await session.execute(query)
+        return result.scalars().all()
+    
+    @staticmethod
+    async def toggle_bookmark_post(
+        session: AsyncSession,
+        post_uuid: str,
+        user_id: int
+    ) -> bool:
+        db_post = await PostService.get_post_by_uuid(session, post_uuid)
+        if not db_post:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+        user = await session.execute(select(User).where(User.id == user_id))
+        user = user.scalar_one()
+
+        if user in db_post.bookmarked_by:
+            db_post.bookmarked_by.remove(user)
+            bookmarked = False
+        else:
+            db_post.bookmarked_by.append(user)
+            bookmarked = True
+
+        await session.commit()
+        return bookmarked
+
+    @staticmethod
+    async def get_user_bookmarks(
+        session: AsyncSession,
+        user_id: int,
+        skip: int = 0,
+        limit: int = 10
+    ) -> List[Post]:
+        query = select(Post).join(post_bookmarks).where(post_bookmarks.c.user_id == user_id)
+        query = PostService._apply_post_relationships(query)
+        query = PostService._add_soft_delete_filter(query, include_deleted=False)
+        query = query.offset(skip).limit(limit).order_by(Post.created_at.desc())
+        result = await session.execute(query)
+        return result.scalars().all()
+
+    @staticmethod
+    async def report_post(
+        session: AsyncSession,
+        post_uuid: str,
+        report_data: ReportCreate,
+        user_id: int
+    ) -> Report:
+        db_post = await PostService.get_post_by_uuid(session, post_uuid)
+        if not db_post:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+        db_report = Report(
+            post_id=db_post.id,
+            user_id=user_id,
+            reason=report_data.reason,
+            description=report_data.description
+        )
+        session.add(db_report)
+        await session.commit()
+        await session.refresh(db_report)
+        return db_report
 
     @staticmethod
     async def get_posts(
-            session: AsyncSession,
-            skip: int = 0,
-            limit: int = 10,
-            published_only: bool = True,
-            author_id: Optional[int] = None,
-            category_id: Optional[int] = None,
-            tag_id: Optional[int] = None,
-            include_deleted: bool = False
+        session: AsyncSession,
+        skip: int = 0,
+        limit: int = 10,
+        published_only: bool = True,
+        author_id: Optional[int] = None,
+        category_id: Optional[int] = None,
+        tag_id: Optional[int] = None,
+        include_deleted: bool = False
     ) -> List[Post]:
-        query = select(Post).options(
-            selectinload(Post.author),
-            selectinload(Post.category),
-            selectinload(Post.tags)
-        )
+        query = select(Post)
+        query = PostService._apply_post_relationships(query)
+        query = PostService._add_soft_delete_filter(query, include_deleted)
 
         conditions = []
-
-        if not include_deleted:
-            conditions.append(Post.deleted_at.is_(None))
-
         if published_only:
             conditions.append(Post.is_published == True)
+        else:
+            conditions.append(Post.is_published == False)
+        
         if author_id:
             conditions.append(Post.author_id == author_id)
         if category_id:
             conditions.append(Post.category_id == category_id)
         if tag_id:
             conditions.append(Post.tags.any(Tag.id == tag_id))
-
+            
         if conditions:
             query = query.where(and_(*conditions))
-
+            
         query = query.offset(skip).limit(limit).order_by(Post.created_at.desc())
         result = await session.execute(query)
         return result.scalars().all()
 
     @staticmethod
     async def get_posts_count(
-            session: AsyncSession,
-            published_only: bool = True,
-            author_id: Optional[int] = None,
-            category_id: Optional[int] = None,
-            tag_id: Optional[int] = None,
-            include_deleted: bool = False
+        session: AsyncSession,
+        published_only: bool = True,
+        is_featured: Optional[bool] = None,
+        author_id: Optional[int] = None,
+        category_id: Optional[int] = None,
+        tag_id: Optional[int] = None,
+        include_deleted: bool = False
     ) -> int:
         query = select(func.count(Post.id))
+        query = PostService._add_soft_delete_filter(query, include_deleted)
 
         conditions = []
-
-        if not include_deleted:
-            conditions.append(Post.deleted_at.is_(None))
-
         if published_only:
             conditions.append(Post.is_published == True)
+        else:
+            conditions.append(Post.is_published == False)
+        if is_featured:
+            conditions.append(Post.is_featured == is_featured)
+        elif is_featured is not None:
+            conditions.append(Post.is_featured == False)
         if author_id:
             conditions.append(Post.author_id == author_id)
         if category_id:
@@ -175,12 +399,11 @@ class PostService:
         result = await session.execute(query)
         return result.scalar_one()
 
-
     @staticmethod
     async def create_post(
-            session: AsyncSession,
-            post_data: PostCreate,
-            author_id: int
+        session: AsyncSession,
+        post_data: PostCreate,
+        author_id: int
     ) -> Post:
         existing_post = await PostService.get_post_by_slug(session, post_data.slug, include_deleted=True)
         if existing_post:
@@ -200,15 +423,14 @@ class PostService:
 
         session.add(db_post)
         await session.commit()
-
         return await PostService.get_post_with_relationships(session, db_post.id)
 
     @staticmethod
     async def update_post(
-            session: AsyncSession,
-            post_uuid: str,
-            post_data: PostUpdate,
-            current_user_id: int
+        session: AsyncSession,
+        post_uuid: str,
+        post_data: PostUpdate,
+        current_user_id: int
     ) -> Post:
         db_post = await PostService.get_post_by_uuid(session, post_uuid, include_deleted=False)
         if not db_post:
@@ -239,9 +461,9 @@ class PostService:
 
     @staticmethod
     async def delete_post(
-            session: AsyncSession,
-            post_uuid: str,
-            current_user_id: int
+        session: AsyncSession,
+        post_uuid: str,
+        current_user_id: int
     ) -> bool:
         db_post = await PostService.get_post_by_uuid(session, post_uuid, include_deleted=False)
         if not db_post:
@@ -261,7 +483,11 @@ class PostService:
         return True
 
     @staticmethod
-    async def soft_delete_post(session: AsyncSession, post_uuid: str, current_user_id: int):
+    async def soft_delete_post(
+        session: AsyncSession,
+        post_uuid: str,
+        current_user_id: int
+    ) -> dict:
         db_post = await PostService.get_post_by_uuid(session, post_uuid, include_deleted=False)
         if not db_post:
             raise HTTPException(
@@ -280,7 +506,11 @@ class PostService:
         return {"message": "Post deleted successfully"}
 
     @staticmethod
-    async def restore_post(session: AsyncSession, post_uuid: str, current_user_id: int):
+    async def restore_post(
+        session: AsyncSession,
+        post_uuid: str,
+        current_user_id: int
+    ) -> Post:
         db_post = await PostService.get_post_by_uuid(session, post_uuid, include_deleted=True)
         if not db_post:
             raise HTTPException(
@@ -305,7 +535,10 @@ class PostService:
         return db_post
 
     @staticmethod
-    async def increment_view_count(session: AsyncSession, post_uuid: str) -> None:
+    async def increment_view_count(
+        session: AsyncSession,
+        post_uuid: str
+    ) -> None:
         db_post = await PostService.get_post_by_uuid(session, post_uuid, include_deleted=False)
         if db_post:
             db_post.view_count += 1
@@ -313,9 +546,9 @@ class PostService:
 
     @staticmethod
     async def toggle_post_like(
-            session: AsyncSession,
-            post_uuid: str,
-            user_id: int
+        session: AsyncSession,
+        post_uuid: str,
+        user_id: int
     ) -> bool:
         db_post = await PostService.get_post_by_uuid(session, post_uuid, include_deleted=False)
         if not db_post:
@@ -337,9 +570,11 @@ class PostService:
         await session.commit()
         return liked
 
-
     @staticmethod
-    async def create_category(session: AsyncSession, category_data: CategoryCreate) -> Category:
+    async def create_category(
+        session: AsyncSession,
+        category_data: CategoryCreate
+    ) -> Category:
         if not category_data.slug or not category_data.slug.strip():
             generated_slug = await PostService.generate_unique_slug(session, category_data.name, Category)
         else:
@@ -365,7 +600,10 @@ class PostService:
         return db_category
 
     @staticmethod
-    async def get_tag_by_id(session: AsyncSession, tag_id: int) -> Optional[Tag]:
+    async def get_tag_by_id(
+        session: AsyncSession,
+        tag_id: int
+    ) -> Optional[Tag]:
         result = await session.execute(
             select(Tag)
             .where(Tag.id == tag_id)
@@ -374,7 +612,10 @@ class PostService:
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def get_tag_by_slug(session: AsyncSession, slug: str) -> Optional[Tag]:
+    async def get_tag_by_slug(
+        session: AsyncSession,
+        slug: str
+    ) -> Optional[Tag]:
         result = await session.execute(
             select(Tag)
             .where(Tag.slug == slug)
@@ -383,7 +624,10 @@ class PostService:
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def get_tags_by_ids(session: AsyncSession, tag_ids: List[int]) -> List[Tag]:
+    async def get_tags_by_ids(
+        session: AsyncSession,
+        tag_ids: List[int]
+    ) -> List[Tag]:
         result = await session.execute(
             select(Tag)
             .where(Tag.id.in_(tag_ids))
@@ -391,7 +635,10 @@ class PostService:
         return result.scalars().all()
 
     @staticmethod
-    async def create_tag(session: AsyncSession, tag_data: TagCreate) -> Tag:
+    async def create_tag(
+        session: AsyncSession,
+        tag_data: TagCreate
+    ) -> Tag:
         if not tag_data.slug or not tag_data.slug.strip():
             generated_slug = await PostService.generate_unique_slug(session, tag_data.name, Tag)
         else:
@@ -417,7 +664,10 @@ class PostService:
         return db_tag
 
     @staticmethod
-    async def get_post_stats(session: AsyncSession, include_deleted: bool = False) -> dict:
+    async def get_post_stats(
+        session: AsyncSession,
+        include_deleted: bool = False
+    ) -> dict:
         total_posts_query = select(func.count(Post.id))
         published_posts_query = select(func.count(Post.id)).where(Post.is_published == True)
         total_views_query = select(func.sum(Post.view_count))
@@ -449,26 +699,24 @@ class PostService:
 
     @staticmethod
     async def get_deleted_posts(
-            session: AsyncSession,
-            skip: int = 0,
-            limit: int = 10,
-            author_id: Optional[int] = None
+        session: AsyncSession,
+        skip: int = 0,
+        limit: int = 10,
+        author_id: Optional[int] = None
     ) -> List[Post]:
-        query = select(Post).options(
-            selectinload(Post.author),
-            selectinload(Post.category),
-            selectinload(Post.tags)
-        ).where(Post.deleted_at.is_not(None))
-
+        query = select(Post).where(Post.deleted_at.is_not(None))
+        query = PostService._apply_post_relationships(query)
         if author_id:
             query = query.where(Post.author_id == author_id)
-
         query = query.offset(skip).limit(limit).order_by(Post.deleted_at.desc())
         result = await session.execute(query)
         return result.scalars().all()
 
     @staticmethod
-    async def save_uploaded_file(file: UploadFile, upload_dir: Path) -> str:
+    async def save_uploaded_file(
+        file: UploadFile,
+        upload_dir: Path
+    ) -> str:
         file_extension = Path(file.filename).suffix.lower()
         if file_extension not in ALLOWED_EXTENSIONS:
             raise HTTPException(
@@ -495,7 +743,11 @@ class PostService:
         return f"uploads/images/{unique_filename}"
 
     @staticmethod
-    async def cleanup_old_image(old_image_path: Optional[str], new_image_path: Optional[str], upload_dir: Path) -> bool:
+    async def cleanup_old_image(
+        old_image_path: Optional[str],
+        new_image_path: Optional[str],
+        upload_dir: Path
+    ) -> bool:
         if not old_image_path:
             return True
 
@@ -505,7 +757,10 @@ class PostService:
         return await PostService.delete_image_file(old_image_path, upload_dir)
 
     @staticmethod
-    async def delete_image_file(image_path: Optional[str], upload_dir: Path) -> bool:
+    async def delete_image_file(
+        image_path: Optional[str],
+        upload_dir: Path
+    ) -> bool:
         if not image_path:
             return False
 

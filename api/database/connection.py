@@ -93,7 +93,7 @@ class DatabaseTransaction:
                 await self.session.close()
 
 
-async def execute_query(query: str, params: dict = None) -> Any:
+async def execute_query(query: str, params: dict | None = None) -> Any:
     async with DatabaseTransaction() as session:
         result = await session.execute(text(query), params or {})
         return result
@@ -120,5 +120,5 @@ async def get_session() -> AsyncSession:
     return AsyncSessionLocal()
 
 
-async def execute_with_session(session: AsyncSession, query: str, params: dict = None) -> Any:
+async def execute_with_session(session: AsyncSession, query: str, params: dict | None = None) -> Any:
     return await session.execute(text(query), params or {})

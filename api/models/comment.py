@@ -1,8 +1,7 @@
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from datetime import datetime, timezone
 from .base import Base
 import uuid
 
@@ -17,8 +16,8 @@ class Comment(Base):
     post_id = Column(Integer, ForeignKey('posts.id'), nullable=False)
     parent_id = Column(Integer, ForeignKey('comments.id'), nullable=True)
     is_approved = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc), server_default=func.now())
-    updated_at = Column(DateTime, onupdate=datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     author = relationship("User", back_populates="comments")

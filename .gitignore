@@ -5,6 +5,7 @@ api/venv/
 # IDE settings
 .idea/
 .vscode/
+.mypy_cache/
 
 # Node.js dependencies
 client/node_modules/

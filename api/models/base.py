@@ -28,3 +28,10 @@ post_likes = Table(
     Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
     Column('post_id', Integer, ForeignKey('posts.id'), primary_key=True)
 )
+
+post_bookmarks = Table(
+    'post_bookmarks',
+    BaseTable.metadata,
+    Column('post_id', Integer, ForeignKey('posts.id'), primary_key=True),
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True)
+)

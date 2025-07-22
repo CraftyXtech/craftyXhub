@@ -1,10 +1,7 @@
-import uuid
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-from datetime import datetime, timezone
 
-from .base import BaseTable, post_likes
+from .base import BaseTable, post_likes, post_bookmarks
 
 class User(BaseTable):
 
@@ -23,6 +20,7 @@ class User(BaseTable):
     posts = relationship("Post", back_populates="author", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")
     liked_posts = relationship("Post", secondary=post_likes, back_populates="liked_by")
+    bookmarked_posts = relationship("Post", secondary=post_bookmarks, back_populates="bookmarked_by")
 
 
 

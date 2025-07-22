@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from .user import UserResponse
+from .comment import CommentResponse
 from .base import BaseSchema, TimestampMixin
 
 
@@ -75,22 +76,33 @@ class PostUpdate(BaseModel):
     meta_title: Optional[str] = Field(None, max_length=200)
     meta_description: Optional[str] = Field(None, max_length=300)
 
-
-class PostResponse(PostBase, TimestampMixin, BaseSchema):
+    
+class PostResponse(BaseModel):
     uuid: str
+    title: str
     slug: str
+    content: str
+    excerpt: Optional[str]
+    featured_image: Optional[str]
     is_published: bool
     is_featured: bool
     view_count: int
-    reading_time: Optional[int] = None
-    featured_image: Optional[str] = None
-    published_at: Optional[datetime] = None
-    author: UserResponse
-    category: Optional[CategoryResponse] = None
-    tags: List[TagResponse] = []
-    comment_count: Optional[int] = 0
-    like_count: Optional[int] = 0
-    is_liked: Optional[bool] = False
+    reading_time: Optional[int]
+    meta_title: Optional[str]
+    meta_description: Optional[str]
+    published_at: Optional[datetime]
+    created_at: datetime
+    updated_at: Optional[datetime]
+    deleted_at: Optional[datetime]
+    author: Optional[UserResponse]
+    category: Optional[CategoryResponse]
+    tags: List[TagResponse]
+    comments: List[CommentResponse]
+    liked_by: List[UserResponse]
+    bookmarked_by: List[UserResponse]  
+
+    class Config:
+        from_attributes = True
 
 
 class PostListResponse(BaseModel):
@@ -106,3 +118,18 @@ class PostStatsResponse(BaseModel):
     draft_posts: int
     total_views: int
     total_likes: int
+    
+class ReportCreate(BaseModel):
+    reason: str
+    description: Optional[str] = None
+
+class ReportResponse(BaseModel):
+    uuid: str
+    post: Optional[PostResponse]
+    user_id: Optional[UserResponse]
+    reason: str
+    description: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
