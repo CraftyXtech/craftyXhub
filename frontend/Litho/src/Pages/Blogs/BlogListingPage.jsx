@@ -7,13 +7,12 @@ import { Parallax } from "react-scroll-parallax";
 // Components
 import BlogClassic from '../../Components/Blogs/BlogClassic'
 
-// Data
-import { blogData } from '../../Components/Blogs/BlogData'
-
-// Filter the blog data category wise
-const blogClassicdData = blogData.filter((item) => item.blogType === "classic");
+// API
+import { usePosts } from '../../api';
 
 const BlogListingPage = () => {
+  const { posts, loading, error } = usePosts({ published: true })
+  
   return (
     <>
       {/* Parallax Section Start */}
@@ -33,7 +32,18 @@ const BlogListingPage = () => {
       {/* Section Start */}
       <section className="overflow-hidden relative px-[11%] xl:px-[2%] pb-[130px] lg:px-0 lg:pb-[90px] md:pb-[75px] sm:pb-[50px]">
         <Container fluid className="xs:px-0">
-          <BlogClassic link="/blog/post/" data={blogClassicdData} pagination={true} grid="grid grid-5col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-double-extra-large" />
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+              <p className="mt-4 text-gray-600 text-lg">Loading articles...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12 text-red-600">
+              <p className="text-lg">Error loading articles. Please try again later.</p>
+            </div>
+          ) : (
+            <BlogClassic link="/blog/post/" data={posts} pagination={true} grid="grid grid-5col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-double-extra-large" />
+          )}
         </Container>
       </section>
       {/* Section End */}

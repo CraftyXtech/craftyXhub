@@ -16,3 +16,7 @@ frontend/admin/node_modules
 frontend/admin/dist
 frontend/litho/node_modules
 /node_modules
+frontend/litho/.cursor 
+frontend/admin/.cursor
+api/.cursor
+frontend/litho/build

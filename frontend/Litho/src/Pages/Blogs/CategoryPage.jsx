@@ -8,17 +8,20 @@ import { Parallax } from "react-scroll-parallax";
 // Components
 import BlogClassic from '../../Components/Blogs/BlogClassic'
 
-// Data
-import { blogData } from '../../Components/Blogs/BlogData'
+// API
+import { usePostsByCategory, useCategories } from '../../api'
 
 const CategoryPage = (props) => {
     const { category } = useParams();
-    const [data, setData] = useState(null)
-
-    useEffect(() => {
-        const filteredData = blogData.filter((item) => item.category.toString().split(" ").join("").toLowerCase().includes(category))
-        setData(filteredData)
-    }, [category])
+    const { categories } = useCategories();
+    
+    // Find the category ID based on the category slug/name
+    const categoryData = categories?.find(cat => 
+        cat.name?.toLowerCase().replace(/\s+/g, '').includes(category?.toLowerCase()) ||
+        cat.slug?.toLowerCase() === category?.toLowerCase()
+    );
+    
+    const { posts, loading, error } = usePostsByCategory(categoryData?.id, { published: true });
 
     return (
         <div style={props.style}>
@@ -41,19 +44,24 @@ const CategoryPage = (props) => {
                 <Container fluid>
                     <Row>
                         <Col>
-                            {
-                                data ? (
-                                    data.length > 0 ? (
-                                        <BlogClassic link="/blog/post/" data={data} pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" filter={false} />
-                                    ) : (
-                                        <div className="text-center">
-                                            <img src="/assets/img/no-data-bro.svg" className="w-[500px] mx-auto opacity-70" alt="no-data" width="" height="" />
-                                        </div>
-                                    )
-                                ) : (
-                                    <BlogClassic link="/blog/post/" pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" filter={false} />
-                                )
-                            }
+                            {loading ? (
+                                <div className="text-center py-12">
+                                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+                                    <p className="mt-4 text-gray-600 text-lg">Loading {category} articles...</p>
+                                </div>
+                            ) : error ? (
+                                <div className="text-center py-12 text-red-600">
+                                    <p className="text-lg">Error loading articles. Please try again later.</p>
+                                </div>
+                            ) : posts && posts.length > 0 ? (
+                                <BlogClassic link="/blog/post/" data={posts} pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" filter={false} />
+                            ) : (
+                                <div className="text-center py-12">
+                                    <img src="/assets/img/no-data-bro.svg" className="w-[500px] mx-auto opacity-70" alt="no-data" width="" height="" />
+                                    <h3 className="text-xl text-gray-600 mt-4">No articles found in this category</h3>
+                                    <p className="text-gray-500">Check back later for new content!</p>
+                                </div>
+                            )}
                         </Col>
                     </Row>
                 </Container>
