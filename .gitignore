@@ -12,6 +12,7 @@ client/node_modules/
 frontend/node_modules/
 .idea
 api/venv
+api/.env
 frontend/admin/node_modules
 frontend/admin/dist
 frontend/litho/node_modules

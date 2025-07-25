@@ -86,7 +86,21 @@ async def login(
 async def get_current_user_info(
     current_user: User = Depends(get_current_active_user)
 ):
-    return current_user
+    
+    user_data = {
+        "id": current_user.id,
+        "uuid": current_user.uuid,
+        "email": current_user.email,
+        "username": current_user.username,
+        "full_name": current_user.full_name,
+        "is_active": current_user.is_active,
+        "is_verified": current_user.is_verified,
+        "role": current_user.role,
+        "last_login": current_user.last_login,
+        "created_at": current_user.created_at,
+        "updated_at": current_user.updated_at
+    }
+    return user_data
 
 @router.get("/user/{user_uuid}", response_model=UserResponse)
 async def get_user_by_uuid(

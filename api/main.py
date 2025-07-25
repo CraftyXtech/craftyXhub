@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, Query
-from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse, JSONResponse, JSONResponse
 from routers.v1 import router as v1_router
 from database.connection import db_health_check, init_db, get_db_session
 from sqlalchemy.orm import Session
@@ -76,7 +77,16 @@ def create_application() -> FastAPI:
             "email": "support@craftyhub.com",
         }
     )
-    
+    # Enable CORS for development
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+       
     include_routers(app)
     return app
 

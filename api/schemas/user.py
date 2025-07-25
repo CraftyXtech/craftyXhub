@@ -6,8 +6,7 @@ from .base import TimestampMixin, BaseSchema
 
 class UserRole(str, Enum):
     ADMIN = "admin"
-    MODERATOR = "moderator" 
-    CREATOR = "creator"
+    MODERATOR = "moderator"
     USER = "user"
 
 class UserBase(BaseModel):

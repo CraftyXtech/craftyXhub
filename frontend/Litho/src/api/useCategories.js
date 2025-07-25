@@ -10,7 +10,8 @@ export const useCategories = () => {
         try {
             setLoading(true);
             const data = await getCategories();
-            setCategories(data);
+            // Extract the categories array from the response
+            setCategories(Array.isArray(data.categories) ? data.categories : []);
             setError(null);
         } catch (err) {
             setError(err.response?.data?.detail || err.message);
@@ -42,7 +43,8 @@ export const useSubcategories = (categoryId) => {
             try {
                 setLoading(true);
                 const data = await getSubcategories(categoryId);
-                setSubcategories(data);
+                // Extract subcategories array if it exists in the response
+                setSubcategories(Array.isArray(data.subcategories) ? data.subcategories : Array.isArray(data) ? data : []);
                 setError(null);
             } catch (err) {
                 setError(err.response?.data?.detail || err.message);
