@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, validator, Field, EmailStr
+from pydantic import BaseModel, EmailStr, validator, Field, EmailStr, computed_field
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -37,14 +37,21 @@ class UserLogin(BaseModel):
     password: str
 
 
-class UserResponse(UserBase, TimestampMixin, BaseSchema):
-    uuid: str
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    email: str
     is_active: bool
-    is_verified: bool
-    role: UserRole
-    last_login: Optional[datetime] = None
-    is_following: Optional[bool] = None
-    
+    role: str
+    created_at: datetime
+    updated_at: datetime
+
+    @computed_field
+    @property
+    def is_following(self) -> bool:
+        return False
+
     class Config:
         from_attributes = True
 
