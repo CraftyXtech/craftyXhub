@@ -19,7 +19,8 @@ export const usePosts = (params = {}) => {
         try {
             setLoading(true);
             const data = await getPosts(params);
-            setPosts(data);
+            // Extract the posts array from the paginated response
+            setPosts(Array.isArray(data.posts) ? data.posts : []);
             setError(null);
         } catch (err) {
             setError(err.response?.data?.detail || err.message);
@@ -85,7 +86,8 @@ export const usePostsByCategory = (categoryId, params = {}) => {
         try {
             setLoading(true);
             const data = await getPostsByCategory(categoryId, params);
-            setPosts(data);
+            // Extract the posts array from the paginated response
+            setPosts(Array.isArray(data.posts) ? data.posts : []);
             setError(null);
         } catch (err) {
             setError(err.response?.data?.detail || err.message);
@@ -118,7 +120,8 @@ export const usePostsByAuthor = (authorId, params = {}) => {
         try {
             setLoading(true);
             const data = await getPostsByAuthor(authorId, params);
-            setPosts(data);
+            // Extract the posts array from the paginated response
+            setPosts(Array.isArray(data.posts) ? data.posts : []);
             setError(null);
         } catch (err) {
             setError(err.response?.data?.detail || err.message);

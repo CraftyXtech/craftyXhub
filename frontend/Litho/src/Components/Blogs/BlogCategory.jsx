@@ -30,18 +30,18 @@ const BlogCategory = (props) => {
                 <li className="grid-sizer"></li>
                 {props.data.map((item, i) => {
                     return (
-                        <li key={i} className={`grid-item ${item.category}`} >
+                        <li key={i} className={`grid-item ${item.name || item.category || ''}`} >
                             <m.div className="blog-category xs:block" style={style}
                                 initial={{ opacity: 0 }}
                                 whileInView={!loading && { opacity: 1 }}
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.6, ease: "easeOut" }} >
-                                <Link aria-label="link" to={`/blogs/category/${[item.category.toString().split(" ").join("").toLowerCase()]}`}>
+                                <Link aria-label="link" to={`/blogs/category/${item.slug || (item.name || item.category || '').toLowerCase().split(" ").join("-")}`}>
                                     <div className="blog-post relative overflow-hidden">
                                         <div className="blog-image bg-darkgray">
-                                            <img height={341} width={444} src={item.img} alt="blog-category" />
+                                            <img height={341} width={444} src={item.img || 'https://via.placeholder.com/444x341'} alt="blog-category" />
                                         </div>
-                                        <div className="bg-darkgray font-serif text-sm font-medium py-2 px-[22px] uppercase text-[#fff] absolute bottom-[45px] left-1/2 -translate-x-1/2 inline-flex justify-center">{item.category}</div>
+                                        <div className="bg-darkgray font-serif text-sm font-medium py-2 px-[22px] uppercase text-[#fff] absolute bottom-[45px] left-1/2 -translate-x-1/2 inline-flex justify-center">{item.name || item.category}</div>
                                     </div>
                                 </Link>
                             </m.div>
@@ -62,12 +62,18 @@ BlogCategory.propTypes = {
     grid: PropTypes.string,
     link: PropTypes.string,
     data: PropTypes.arrayOf(
-        PropTypes.exact({
+        PropTypes.shape({
             id: PropTypes.number,
+            name: PropTypes.string,
+            slug: PropTypes.string,
+            description: PropTypes.string,
+            img: PropTypes.string,
+            created_at: PropTypes.string,
+            post_count: PropTypes.number,
+            // Legacy fields for backward compatibility
             category: PropTypes.string,
             tags: PropTypes.array,
             blogType: PropTypes.string,
-            img: PropTypes.string,
             title: PropTypes.string,
             content: PropTypes.string,
             author: PropTypes.number,
