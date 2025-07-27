@@ -38,7 +38,7 @@ class UserLogin(BaseModel):
 
 
 class UserResponse(BaseModel):
-    id: int
+    uuid: str
     username: str
     full_name: str
     email: str
