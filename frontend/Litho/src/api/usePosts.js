@@ -6,7 +6,8 @@ import {
     togglePostLike, 
     getPostStats,
     getPostsByCategory,
-    getPostsByAuthor
+    getPostsByAuthor,
+    getPopularPosts
 } from './postsService';
 
 // Hook to get all posts with optional filters
@@ -163,4 +164,32 @@ export const usePostStats = () => {
     }, []);
 
     return { stats, loading, error };
-}; 
+};
+
+// Hook to get popular posts
+export const usePopularPosts = (params = {}) => {
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchPopularPosts = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getPopularPosts(params);
+            // Extract the posts array from the paginated response
+            setPosts(Array.isArray(data.posts) ? data.posts : []);
+            setError(null);
+        } catch (err) {
+            setError(err.response?.data?.detail || err.message);
+            setPosts([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [JSON.stringify(params)]);
+
+    useEffect(() => {
+        fetchPopularPosts();
+    }, [fetchPopularPosts]);
+
+    return { posts, loading, error, refetch: fetchPopularPosts };
+};

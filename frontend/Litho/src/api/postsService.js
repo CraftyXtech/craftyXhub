@@ -65,4 +65,13 @@ export const getPostsByAuthor = async (authorId, params = {}) => {
     } catch (error) {
         throw error;
     }
+};
+
+export const getPopularPosts = async (params = {}) => {
+    try {
+        const response = await axiosInstance.get('/posts/popular', { params });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
 }; 

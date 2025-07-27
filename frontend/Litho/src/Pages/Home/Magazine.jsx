@@ -22,7 +22,7 @@ import { fadeIn } from '../../Functions/GlobalAnimations';
 
 // Hooks & API
 import useAuth from '../../api/useAuth';
-import { usePosts, useCategories } from '../../api';
+import { usePosts, useCategories, usePopularPosts } from '../../api';
 
 // Data
 import HeaderData from '../../Components/Header/HeaderData';
@@ -62,6 +62,7 @@ const MagazinePage = (props) => {
   // API hooks
   const { posts: allPosts, loading: postsLoading, error: postsError } = usePosts({ published: true })
   const { categories, loading: categoriesLoading, error: categoriesError } = useCategories()
+  const { posts: popularPosts, loading: popularLoading, error: popularError } = usePopularPosts({ limit: 6 })
   
   // Prepare data for components
   const recentPosts = allPosts?.slice(0, 2) || []
@@ -290,6 +291,33 @@ const MagazinePage = (props) => {
         </Container>
       </section>
       {/* Section End */}
+
+      {/* Popular Posts Section Start */}
+      <section className="py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px] px-[75px] xl:px-[30px] lg:px-[15px] sm:px-0">
+        <Container>
+          <Row className="justify-center">
+            <Col lg={6} className="text-center mb-10 sm:mb-6">
+              <h2 className="heading-5 font-serif font-semibold text-darkgray mb-[5px]">Popular Articles</h2>
+              <p className="mb-[25px]">Most liked and viewed articles from our community</p>
+            </Col>
+          </Row>
+        </Container>
+        <Container fluid>
+          {popularLoading ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <p className="mt-2 text-gray-600">Loading popular articles...</p>
+            </div>
+          ) : popularError ? (
+            <div className="text-center py-8 text-red-600">
+              <p>Error loading popular articles. Please try again later.</p>
+            </div>
+          ) : (
+            <BlogClassic filter={false} data={popularPosts} link="/blog/post/" pagination={false} grid="grid grid-3col xl-grid-3col lg-grid-2col md-grid-2col sm-grid-1col xs-grid-1col gutter-extra-large" />
+          )}
+        </Container>
+      </section>
+      {/* Popular Posts Section End */}
 
       {/* Section Start */}
       <m.section className="py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]" {...fadeIn}>

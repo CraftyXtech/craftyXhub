@@ -8,6 +8,7 @@ export { default as useAuth } from './useAuth';
 // Posts services and hooks
 export * from './postsService';
 export * from './usePosts';
+export { usePopularPosts } from './usePosts';
 
 // Categories services and hooks
 export * from './categoriesService';
