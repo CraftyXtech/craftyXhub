@@ -297,7 +297,7 @@ const LatestNewsPage = (props) => {
                 pagination={false}
                 grid="grid grid-5col xl-grid-5col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large"
                 data={blogClassicData.slice(0, 5)}
-                link="/blog/post/"
+                link="/posts/"
               />
             </Col>
           </Row>
@@ -323,7 +323,7 @@ const LatestNewsPage = (props) => {
           </Row>
           <Row>
             <Col lg={8} className="md:mb-[60px] sm:mb-[40px] pr-[50px] md:pr-0">
-              <BlogClassic filter={false} pagination={false} data={blogData.slice(0, 1)} link="/blog/post/" grid="grid grid-1col" />
+              <BlogClassic filter={false} pagination={false} data={blogData.slice(0, 1)} link="/posts/" grid="grid grid-1col" />
             </Col>
             <Col lg={4}>
               <ul>
@@ -585,7 +585,7 @@ const LatestNewsPage = (props) => {
                 pagination={false}
                 grid="grid grid-3col xl-grid-3col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large"
                 data={blogData.slice(0, 6)}
-                link="/blog/post/"
+                link="/posts/"
               />
             </Col>
           </Row>

@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useState, memo } from 'react'
+import PropTypes from 'prop-types'
 
 // Libraries
 import { Form, Formik } from "formik"
@@ -8,129 +9,294 @@ import { m, AnimatePresence } from 'framer-motion'
 import { Link as ScrollTo } from "react-scroll"
 
 // Components
-import { ContactFormStyle02Schema } from "../../Form/FormSchema"
+import { CommentFormSchema } from "../../Form/FormSchema"
 import { Input } from '../../Form/Form'
 import Buttons from '../../Button/Buttons'
 import MessageBox from "../../MessageBox/MessageBox"
 import { fadeIn } from '../../../Functions/GlobalAnimations'
-import { resetForm } from '../../../Functions/Utilities'
 
-const CommentBox = () => {
+// API Hooks
+import { useComments, useCreateComment, useCommentLike, useAuth } from '../../../api'
+
+// Utils
+import { formatDate } from '../../../utils/dateUtils'
+
+const CommentBox = ({ postUuid, postData }) => {
+    const [replyingTo, setReplyingTo] = useState(null)
+    const { user, isAuthenticated } = useAuth()
+    
+    // Fetch comments for this post
+    const { comments, loading: commentsLoading, error: commentsError, totalComments, refreshComments } = useComments(postUuid)
+    
+    // Comment creation hook
+    const { createNewComment, loading: creatingComment, error: createError } = useCreateComment()
+    
+    // Comment like hook
+    const { toggleLike, loading: likingComment } = useCommentLike()
+
+    // Handle comment submission
+    const handleCommentSubmit = async (values, actions) => {
+        if (!isAuthenticated) {
+            actions.setStatus({ type: 'error', message: 'Please log in to comment.' })
+            return
+        }
+
+        try {
+            const commentData = {
+                post_uuid: postUuid,
+                content: values.comment,
+                parent_id: replyingTo
+            }
+
+            await createNewComment(commentData)
+            
+            // Reset form and state
+            actions.resetForm()
+            setReplyingTo(null)
+            refreshComments()
+            
+            actions.setStatus({ type: 'success', message: 'Comment posted successfully!' })
+        } catch (error) {
+            actions.setStatus({ type: 'error', message: createError || 'Failed to post comment' })
+        }
+    }
+
+    // Handle comment like
+    const handleCommentLike = async (commentUuid) => {
+        if (!isAuthenticated) {
+            return
+        }
+
+        try {
+            await toggleLike(commentUuid)
+            refreshComments() // Refresh to get updated like counts
+        } catch (error) {
+            console.error('Failed to toggle like:', error)
+        }
+    }
+
+    // Handle reply
+    const handleReply = (commentUuid, authorName) => {
+        setReplyingTo(commentUuid)
+        // Scroll to comment form
+        document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' })
+    }
+
+    // Render individual comment
+    const renderComment = (comment, isChild = false) => {
+        const hasReplies = comment.replies && comment.replies.length > 0
+        const isLikedByUser = comment.liked_by?.some(user_like => user_like.uuid === user?.uuid)
+
+        return (
+            <li key={comment.uuid} className={isChild ? "mt-[60px]" : ""}>
+                <div className={`flex w-full md:items-start sm:block ${isChild && comment.is_highlighted ? 'bg-lightgray rounded-[5px] p-[40px] md:p-[30px] sm:p-[20px]' : ''}`}>
+                    <div className="inline-block w-[75px] sm:w-[50px] sm:mb-[10px]">
+                        <img 
+                            height="75" 
+                            width="75" 
+                            src={comment.author?.profile_picture || "https://via.placeholder.com/125x125"} 
+                            className="rounded-full w-[95%] sm:w-full" 
+                            alt={comment.author?.full_name || 'User'} 
+                        />
+                    </div>
+                    <div className="w-full pl-[25px] sm:pl-0">
+                        <div className="flex items-center justify-between flex-wrap mb-[10px]">
+                            <div className="flex items-center gap-[10px] flex-wrap">
+                                <Link 
+                                    aria-label="author" 
+                                    to={`/blogs/author/${comment.author?.uuid}`} 
+                                    className="text-darkgray font-serif font-medium text-md hover:text-fastblue"
+                                >
+                                    {comment.author?.full_name || comment.author?.username || 'Anonymous'}
+                                </Link>
+                                {isAuthenticated && (
+                                    <button
+                                        onClick={() => handleReply(comment.uuid, comment.author?.full_name)}
+                                        className="btn-reply py-[7px] px-[16px] text-spanishgray uppercase hover:text-fastblue transition-colors"
+                                    >
+                                        Reply
+                                    </button>
+                                )}
+                            </div>
+                            
+                            {/* Like button */}
+                            {isAuthenticated && (
+                                <button
+                                    onClick={() => handleCommentLike(comment.uuid)}
+                                    disabled={likingComment}
+                                    className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors ${isLikedByUser ? 'text-red-500' : 'text-gray-500'}`}
+                                >
+                                    <svg className="w-4 h-4" fill={isLikedByUser ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                    <span className="text-sm">{comment.like_count || 0}</span>
+                                </button>
+                            )}
+                        </div>
+                        
+                        <div className="text-md text-spanishgray mb-[15px]">
+                            {formatDate(comment.created_at)}
+                        </div>
+                        
+                        <div className="w-[85%] prose prose-sm max-w-none">
+                            <p>{comment.content}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Render replies */}
+                {hasReplies && (
+                    <ul className="child-comment ml-[70px]">
+                        {comment.replies.map(reply => renderComment(reply, true))}
+                    </ul>
+                )}
+            </li>
+        )
+    }
+
     return (
         <>
+            {/* Comments List Section */}
             <m.section {...fadeIn} className="py-[130px] overflow-hidden lg:py-[90px] md:py-[75px] sm:py-[50px]">
                 <Container>
                     <Row className="justify-center">
                         <Col md={6} className="text-center mb-20">
-                            <h6 className="font-serif text-darkgray font-medium">4 Comments</h6>
+                            <h6 className="font-serif text-darkgray font-medium">
+                                {commentsLoading ? 'Loading comments...' : `${totalComments || 0} Comment${totalComments !== 1 ? 's' : ''}`}
+                            </h6>
                         </Col>
                     </Row>
                     <Row>
                         <Col lg={9} className="mx-auto">
-                            <ul className="blog-comment">
-                                <li>
-                                    <div className="flex w-full md:items-start sm:block">
-                                        <div className="inline-block w-[75px] sm:w-[50px] sm:mb-[10px]">
-                                            <img height="" width="" src="https://via.placeholder.com/125x125" className="rounded-full w-[95%] sm:w-full" alt="" />
-                                        </div>
-                                        <div className="w-full pl-[25px] sm:pl-0">
-                                            <Link aria-label="link" to="#" className="text-darkgray font-serif font-medium text-md hover:text-fastblue">Herman Miller</Link>
-                                            <ScrollTo to="comments" offset={-100} delay={0} spy={true} smooth={true} duration={800} className="btn-reply py-[7px] px-[16px] text-spanishgray uppercase">Reply</ScrollTo>
-                                            <div className="text-md text-spanishgray mb-[15px]">17 July 2020, 6:05 PM</div>
-                                            <p className="w-[85%]">Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry's standard dummy text ever since the make a type specimen book.</p>
-                                        </div>
-                                    </div>
-                                    <ul className="child-comment ml-[70px]">
-                                        <li className="mt-[60px]">
-                                            <div className="flex w-full md:items-start sm:block">
-                                                <div className="inline-block w-[75px] sm:w-[50px] sm:mb-[10px]">
-                                                    <img height="" width="" src="https://via.placeholder.com/125x125" className="rounded-full w-[95%] sm:w-full" alt="" />
-                                                </div>
-                                                <div className="w-full pl-[25px] sm:pl-0">
-                                                    <Link aria-label="link" to="#" className="text-darkgray font-serif font-medium text-md hover:text-fastblue">Wilbur Haddock</Link>
-                                                    <ScrollTo to="comments" offset={-100} delay={0} spy={true} smooth={true} duration={800} className="btn-reply py-[7px] px-[16px] text-spanishgray uppercase">Reply</ScrollTo>
-                                                    <div className="text-md text-spanishgray mb-[15px">18 July 2020, 10:19 PM</div>
-                                                    <p className="w-[85%]">Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry's standard dummy text ever since.</p>
-                                                </div>
-                                            </div>
-                                        </li>
-                                        <li className="mt-[60px] pb-[65px]">
-                                            <div className="bg-lightgray flex w-full rounded-[5px] p-[40px] md:items-start md:p-[30px] sm:p-[20px] sm:block">
-                                                <div className="w-[75px] sm:w-[50px] sm:mb-[10px]">
-                                                    <img height="" width="" src="https://via.placeholder.com/125x125" className="rounded-full w-[95%] sm:w-full" alt="" />
-                                                </div>
-                                                <div className="w-full pl-[25px] sm:pl-0">
-                                                    <Link aria-label="link" to="#" className="text-darkgray font-serif font-medium text-md hover:text-fastblue">Colene Landin</Link>
-                                                    <ScrollTo to="comments" offset={-100} delay={0} spy={true} smooth={true} duration={800} className="btn-reply py-[7px] px-[16px] text-spanishgray uppercase">Reply</ScrollTo>
-                                                    <div className="text-md text-spanishgray mb-[15px]">18 July 2020, 12:39 PM</div>
-                                                    <p className="w-[85%]">Lorem ipsum is simply dummy text of the printing and typesetting industry. Ipsum has been the industry's standard dummy text ever since.</p>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li className="">
-                                    <div className="flex w-full md:items-start  sm:block ">
-                                        <div className="w-[75px] sm:w-[50px] sm:mb-[10px]">
-                                            <img height="" width="" src="https://via.placeholder.com/125x125" className="rounded-full w-[95%] sm:w-full" alt="" />
-                                        </div>
-                                        <div className="w-full pl-[25px] sm:pl-0">
-                                            <Link aria-label="link" to="#" className="text-darkgray font-serif font-medium text-md hover:text-fastblue">Jennifer Freeman</Link>
-                                            <ScrollTo to="comments" offset={-100} delay={0} spy={true} smooth={true} duration={800} className="btn-reply py-[7px] px-[16px] text-spanishgray uppercase">Reply</ScrollTo>
-                                            <div className="text-md text-spanishgray mb-[15px]">19 July 2020, 8:25 PM</div>
-                                            <p className="w-[85%]">Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry's standard dummy text ever since the make a type specimen book.</p>
-                                        </div>
-                                    </div>
-                                </li>
-                            </ul>
+                            {commentsError && (
+                                <div className="text-center mb-8">
+                                    <MessageBox 
+                                        theme="message-box01" 
+                                        variant="error" 
+                                        message={`Error loading comments: ${commentsError}`} 
+                                    />
+                                </div>
+                            )}
+                            
+                            {commentsLoading ? (
+                                <div className="text-center py-12">
+                                    <div className="inline-block w-6 h-6 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+                                    <p className="mt-4 text-gray-500">Loading comments...</p>
+                                </div>
+                            ) : comments.length > 0 ? (
+                                <ul className="blog-comment">
+                                    {comments.map(comment => renderComment(comment))}
+                                </ul>
+                            ) : (
+                                <div className="text-center py-12">
+                                    <p className="text-gray-500 text-lg">No comments yet. Be the first to comment!</p>
+                                </div>
+                            )}
                         </Col>
                     </Row>
                 </Container>
             </m.section>
+
+            {/* Comment Form Section */}
             <m.section {...fadeIn} id="comments" className="pt-0 py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px] overflow-hidden">
                 <Container>
                     <Row className="justify-center">
                         <Col lg={9} className="mb-16 sm:mb-8">
-                            <h6 className="font-serif text-darkgray font-medium mb-[5px]">Write a comments</h6>
-                            <div className="mb-[5px]">Your email address will not be published. Required fields are marked <span className="text-[#fb4f58]">*</span></div>
+                            <h6 className="font-serif text-darkgray font-medium mb-[5px]">
+                                {replyingTo ? 'Write a reply' : 'Write a comment'}
+                            </h6>
+                            {replyingTo && (
+                                <div className="mb-4 p-3 bg-blue-50 rounded border-l-4 border-blue-400">
+                                    <p className="text-sm text-blue-700">
+                                        Replying to comment. 
+                                        <button 
+                                            onClick={() => setReplyingTo(null)}
+                                            className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                                        >
+                                            Cancel reply
+                                        </button>
+                                    </p>
+                                </div>
+                            )}
+                            {!isAuthenticated ? (
+                                <div className="mb-[5px] p-4 bg-yellow-50 border border-yellow-200 rounded">
+                                    <p className="text-yellow-800">
+                                        You must be <Link to="/login" className="text-blue-600 hover:underline">logged in</Link> to post a comment.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="mb-[5px]">
+                                    Your email address will not be published. Required fields are marked <span className="text-[#fb4f58]">*</span>
+                                </div>
+                            )}
                         </Col>
                     </Row>
-                    <Row className="justify-center">
-                        <Col lg={9}>
-                            <Formik
-                                initialValues={{ name: '', email: '', comment: '' }}
-                                validationSchema={ContactFormStyle02Schema}
-                                onSubmit={async (values, actions) => {
-                                    await new Promise((r) => setTimeout(r, 500));
-                                    resetForm(actions)
-                                }}>
-                                {({ isSubmitting, status }) => (
-                                    <Form className="row mb-[30px]">
-                                        <Col md={6} sm={12} xs={12}>
-                                            <Input showErrorMsg={false} label={<span className="inline-block mb-[15px]">Your name <span className="text-red-500">*</span> </span>} type="text" name="name" labelClass="mb-[25px]" className="rounded-[5px] py-[15px] px-[20px] w-full border-[1px] border-solid border-[#dfdfdf]" placeholder="Enter your name" />
-                                        </Col>
-                                        <Col md={6} sm={12} xs={12}>
-                                            <Input showErrorMsg={false} label={<span className="inline-block mb-[15px]">Your email address <span className="text-red-500">*</span> </span>} type="email" name="email" labelClass="mb-[25px]" className="rounded-[5px] py-[15px] px-[20px] w-full border-[1px] border-solid border-[#dfdfdf]" placeholder="Enter your email" />
-                                        </Col>
-                                        <Col md={12} sm={12} xs={12}>
-                                            <label className="mb-[15px]">Your comment</label>
-                                            <textarea className="mb-[2.5rem] rounded-[4px] py-[15px] px-[20px] h-[120px] w-full bg-transparent border border-[#dfdfdf] text-md resize-none" rows="6" name="comment" placeholder="Enter your comment"></textarea>
-                                        </Col>
-                                        <Col>
-                                            <Buttons type="submit" className={`tracking-[0.5px] btn-fill rounded-[2px] font-medium uppercase${isSubmitting ? " loading" : ""}`} themeColor="#232323" size="md" color="#fff" title="Post comment" />
-                                        </Col>
-                                        <AnimatePresence>
-                                            {status && <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><MessageBox className="mt-[20px] py-[10px]" theme="message-box01" variant="success" message="Your message has been sent successfully!" /></m.div>}
-                                        </AnimatePresence>
-                                    </Form>
-                                )}
-                            </Formik>
-                        </Col>
-                    </Row>
+                    
+                    {isAuthenticated && (
+                        <Row className="justify-center">
+                            <Col lg={9}>
+                                <Formik
+                                    initialValues={{ comment: '' }}
+                                    validationSchema={CommentFormSchema}
+                                    onSubmit={handleCommentSubmit}
+                                >
+                                    {({ isSubmitting, status, values, setFieldValue }) => (
+                                        <Form className="row mb-[30px]">
+                                            <Col md={12} sm={12} xs={12}>
+                                                <label className="mb-[15px]">Your comment <span className="text-red-500">*</span></label>
+                                                <textarea 
+                                                    className="mb-[2.5rem] rounded-[4px] py-[15px] px-[20px] h-[120px] w-full bg-transparent border border-[#dfdfdf] text-md resize-none" 
+                                                    rows="6" 
+                                                    name="comment" 
+                                                    value={values.comment}
+                                                    onChange={(e) => setFieldValue('comment', e.target.value)}
+                                                    placeholder="Enter your comment"
+                                                    required
+                                                />
+                                            </Col>
+                                            <Col>
+                                                <Buttons 
+                                                    type="submit" 
+                                                    className={`tracking-[0.5px] btn-fill rounded-[2px] font-medium uppercase${isSubmitting || creatingComment ? " loading" : ""}`} 
+                                                    themeColor="#232323" 
+                                                    size="md" 
+                                                    color="#fff" 
+                                                    title={replyingTo ? "Post reply" : "Post comment"}
+                                                    disabled={isSubmitting || creatingComment || !values.comment.trim()}
+                                                />
+                                            </Col>
+                                            <AnimatePresence>
+                                                {status && (
+                                                    <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                                        <MessageBox 
+                                                            className="mt-[20px] py-[10px]" 
+                                                            theme="message-box01" 
+                                                            variant={status.type === 'success' ? 'success' : 'error'} 
+                                                            message={status.message} 
+                                                        />
+                                                    </m.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </Form>
+                                    )}
+                                </Formik>
+                            </Col>
+                        </Row>
+                    )}
                 </Container>
             </m.section>
         </>
     )
 }
 
-export default CommentBox
+CommentBox.defaultProps = {
+    postUuid: null,
+    postData: null,
+}
+
+CommentBox.propTypes = {
+    postUuid: PropTypes.string.isRequired,
+    postData: PropTypes.object,
+}
+
+export default memo(CommentBox)

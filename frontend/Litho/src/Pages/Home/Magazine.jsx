@@ -230,7 +230,7 @@ const MagazinePage = (props) => {
                   <p>Error loading articles. Please try again later.</p>
                 </div>
               ) : (
-                <BlogClassic filter={false} grid="grid grid-2col xl-grid-2col lg-grid-2col md-grid-2col sm-grid-2col xs-grid-1col gutter-large" data={recentPosts} link="/blog/post/" pagination={false} />
+                <BlogClassic filter={false} animation={fadeIn} animationDelay={0.1} className="blog-clean px-[6%] xl:px-[3%] lg:px-[15px]" grid="grid grid-1col justify-center gutter-large" data={recentPosts} link="/posts/" pagination={false} />
               )}
             </Col>
           </Row>
@@ -286,7 +286,7 @@ const MagazinePage = (props) => {
               <p>Error loading articles. Please try again later.</p>
             </div>
           ) : (
-            <BlogClassic filter={false} data={latestPosts} link="/blog/post/" pagination={false} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" />
+            <BlogClassic filter={false} data={latestPosts} link="/posts/" pagination={false} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" />
           )}
         </Container>
       </section>
@@ -313,7 +313,7 @@ const MagazinePage = (props) => {
               <p>Error loading popular articles. Please try again later.</p>
             </div>
           ) : (
-            <BlogClassic filter={false} data={popularPosts} link="/blog/post/" pagination={false} grid="grid grid-3col xl-grid-3col lg-grid-2col md-grid-2col sm-grid-1col xs-grid-1col gutter-extra-large" />
+            <BlogClassic filter={false} data={popularPosts} link="/posts/" pagination={false} grid="grid grid-3col xl-grid-3col lg-grid-2col md-grid-2col sm-grid-1col xs-grid-1col gutter-extra-large" />
           )}
         </Container>
       </section>

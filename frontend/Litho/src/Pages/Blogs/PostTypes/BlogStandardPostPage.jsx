@@ -180,7 +180,7 @@ const BlogStandardPostPage = (props) => {
                   <h5 className="font-serif font-medium text-darkgray -tracking-[1px]">Related Posts</h5>
                 </Col>
               </Row>
-              <BlogClassic filter={false} pagination={false} grid="grid grid-3col xl-grid-3col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={blogData.slice(0, 3)} link="/blog/post/" />
+              <BlogClassic filter={false} pagination={false} grid="grid grid-3col xl-grid-3col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={blogData.slice(0, 3)} link="/posts/" />
             </Container>
           </section>
           {/* Section End */}

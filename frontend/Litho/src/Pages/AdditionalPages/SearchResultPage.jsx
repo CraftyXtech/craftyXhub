@@ -73,7 +73,7 @@ const SearchResultPage = (props) => {
         <Container fluid>
           <Row>
             <Col xs={12} className="xs:px-0">
-                                          <BlogClassic filter={false} pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={blogData.slice(0, 12)} link="/blog/post/" />
+                                          <BlogClassic filter={false} pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={blogData.slice(0, 12)} link="/posts/" />
             </Col>
           </Row>
         </Container>

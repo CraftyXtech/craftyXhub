@@ -54,7 +54,7 @@ const CategoryPage = (props) => {
                                     <p className="text-lg">Error loading articles. Please try again later.</p>
                                 </div>
                             ) : posts && posts.length > 0 ? (
-                                <BlogClassic link="/blog/post/" data={posts} pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" filter={false} />
+                                <BlogClassic link="/posts/" data={posts} pagination={true} grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" filter={false} />
                             ) : (
                                 <div className="text-center py-12">
                                     <img src="/assets/img/no-data-bro.svg" className="w-[500px] mx-auto opacity-70" alt="no-data" width="" height="" />

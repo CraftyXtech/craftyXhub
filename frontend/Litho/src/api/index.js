@@ -5,19 +5,6 @@ export { axiosInstance, axiosPrivate } from './axios';
 export * from './authService';
 export { default as useAuth } from './useAuth';
 
-// Posts services and hooks
-export * from './postsService';
-export * from './usePosts';
-export { usePopularPosts } from './usePosts';
-
-// Categories services and hooks
-export * from './categoriesService';
-export * from './useCategories';
-
-// Tags services and hooks
-export * from './tagsService';
-export * from './useTags';
-
-// Profiles services and hooks
-export * from './profilesService';
-export * from './useProfiles'; 
+// Posts services and hooks 
+export * from './postsService'; 
+export * from './usePosts';     

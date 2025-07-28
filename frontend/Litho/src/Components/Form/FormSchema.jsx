@@ -25,3 +25,7 @@ export const ContactFormStyle04Schema = Yup.object().shape({
     phone: Yup.string().required().matches(phoneRegex, "Invalid phone"),
     comment: Yup.string().required("Field is required."),
 });
+
+export const CommentFormSchema = Yup.object().shape({
+    comment: Yup.string().required("Please enter your comment.").min(3, "Comment must be at least 3 characters long."),
+});

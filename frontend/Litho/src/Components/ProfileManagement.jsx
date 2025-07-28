@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useProfile, useCreateProfile, useUpdateProfile, useDeleteProfile } from '../api/useProfiles';
+import { useProfile, useCreateProfile, useUpdateProfile, useDeleteProfile } from '../api';
 import Buttons from './Button/Buttons';
 import { Input, TextArea } from './Form/Form';
 

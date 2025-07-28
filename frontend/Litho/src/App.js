@@ -252,8 +252,8 @@ const BlogPostLayout04 = lazy(() =>
 );
 
 // Blogs Types
-const BlogStandardPostPage = lazy(() =>
-  import("./Pages/Blogs/PostTypes/BlogStandardPostPage")
+const PostDetails = lazy(() =>
+  import("./Pages/Blogs/PostDetail/PostDetails")
 );
 
 // Auth Pages
@@ -584,14 +584,33 @@ function App() {
                       <Route
                         path=":id"
                         element={
-                          <BlogStandardPostPage
+                          <PostDetails
                             style={{ "--base-color": "#0038e3" }}
                           />
                         }
                       />
                     </Route>
-
                   </Route>
+
+                  {/* New Post Detail Route - Primary route for all blog posts */}
+                  <Route 
+                    path="posts/:slug" 
+                    element={
+                      <PostDetails
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
+
+                  {/* Legacy blog post route */}
+                  <Route 
+                    path="blog/post/:slug" 
+                    element={
+                      <PostDetails
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
 
                   {/* Model-Popup */}
                   <Route path="model-popup" element={<ModalPopupPage />}>

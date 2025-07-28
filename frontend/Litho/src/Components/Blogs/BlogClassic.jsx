@@ -42,19 +42,35 @@ const BlogClassic = (props) => {
         {
           props.data.map((item, i) => {
             return (
-              <li key={i} className={`grid-item${item.double_col ? " grid-item-double" : ""} ${item.category.map(item => item.split(" ").join("")).toString().split(",").join(" ").toLowerCase()}`}>
+              <li key={i} className={`grid-item${item.double_col ? " grid-item-double" : ""} ${(() => {
+                let categories = Array.isArray(item.category) ? item.category : (item.category && item.category.name ? [item.category.name] : []);
+                return categories.map(cat => cat.split(" ").join("")).join(" ").toLowerCase();
+              })()}`}>
                 <m.div className="blog-classic"
                   initial={{ opacity: 0 }}
                   whileInView={!loading && { opacity: 1 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.6, ease: "easeOut" }}>
                   <div className="blog-post-image">
-                    <Link aria-label="blog post image" to={`${props.link}${[item.id]}`}>
-                      <img height="179" width="255" className="w-full" src={item.img} alt="blog" />
+                    <Link 
+                      aria-label="link" 
+                      to={`${props.link}${item.uuid}`}
+                    >
+                      <img 
+                        loading="lazy" 
+                        src={item.featured_image || item.img} 
+                        alt={item.title} 
+                        className="rounded-[4px] md:mb-[40px] sm:mb-[33px] xs:mb-[28px]" 
+                      />
                     </Link>
                   </div>
                   <div className="post-details">
-                    <Link aria-label="blog post title" to={`${props.link}${[item.id]}`} className="blog-title">{item.title}</Link>
+                    <Link 
+                      aria-label="link" 
+                      to={`${props.link}${item.uuid}`}
+                    >
+                      {item.title}
+                    </Link>
                     <p>{item.content}</p>
                   </div>
                 </m.div>
@@ -78,7 +94,7 @@ BlogClassic.defaultProps = {
   filter: false,
   data: blogClassicData,
   readMoreButton: "Continue reading",
-  link: "/blog-types/blog-standard-post/"
+  link: "/posts/"
 }
 
 BlogClassic.propTypes = {

@@ -42,7 +42,7 @@ const BlogListingPage = () => {
               <p className="text-lg">Error loading articles. Please try again later.</p>
             </div>
           ) : (
-            <BlogClassic link="/blog/post/" data={posts} pagination={true} grid="grid grid-5col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-double-extra-large" />
+            <BlogClassic link="/posts/" data={posts} pagination={true} grid="grid grid-5col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-double-extra-large" />
           )}
         </Container>
       </section>

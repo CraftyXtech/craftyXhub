@@ -1,13 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
-import { 
-    getPosts, 
-    getPost, 
+import {
+    getPosts,
+    getPost,
     getPostImage,
-    togglePostLike, 
+    togglePostLike,
     getPostStats,
     getPostsByCategory,
     getPostsByAuthor,
-    getPopularPosts
+    getPopularPosts,
+    getRecentPosts,
+    getRelatedPosts,
+    getCategories,
+    getTags,
+    getProfile,
+    createProfile,
+    updateProfile,
+    deleteProfile,
+    getComments,
+    getComment,
+    createComment,
+    updateComment,
+    deleteComment,
+    toggleCommentLike,
+    reportComment
 } from './postsService';
 
 // Hook to get all posts with optional filters
@@ -20,7 +35,6 @@ export const usePosts = (params = {}) => {
         try {
             setLoading(true);
             const data = await getPosts(params);
-            // Extract the posts array from the paginated response
             setPosts(Array.isArray(data.posts) ? data.posts : []);
             setError(null);
         } catch (err) {
@@ -87,7 +101,6 @@ export const usePostsByCategory = (categoryId, params = {}) => {
         try {
             setLoading(true);
             const data = await getPostsByCategory(categoryId, params);
-            // Extract the posts array from the paginated response
             setPosts(Array.isArray(data.posts) ? data.posts : []);
             setError(null);
         } catch (err) {
@@ -121,7 +134,6 @@ export const usePostsByAuthor = (authorId, params = {}) => {
         try {
             setLoading(true);
             const data = await getPostsByAuthor(authorId, params);
-            // Extract the posts array from the paginated response
             setPosts(Array.isArray(data.posts) ? data.posts : []);
             setError(null);
         } catch (err) {
@@ -176,7 +188,6 @@ export const usePopularPosts = (params = {}) => {
         try {
             setLoading(true);
             const data = await getPopularPosts(params);
-            // Extract the posts array from the paginated response
             setPosts(Array.isArray(data.posts) ? data.posts : []);
             setError(null);
         } catch (err) {
@@ -192,4 +203,326 @@ export const usePopularPosts = (params = {}) => {
     }, [fetchPopularPosts]);
 
     return { posts, loading, error, refetch: fetchPopularPosts };
+};
+
+export const useCategories = () => {
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchCategories = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getCategories();
+            setCategories(data.categories || []);
+            setError(null);
+        } catch (err) {
+            setError(err.response?.data?.detail || err.message);
+            setCategories([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
+    return { categories, loading, error, refetch: fetchCategories };
+};
+
+export const useTags = () => {
+    const [tags, setTags] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchTags = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getTags();
+            setTags(data.tags || []);
+            setError(null);
+        } catch (err) {
+            setError(err.response?.data?.detail || err.message);
+            setTags([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchTags();
+    }, [fetchTags]);
+
+    return { tags, loading, error, refetch: fetchTags };
+};
+
+export const useRecentPosts = (params = {}) => {
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchRecentPosts = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getRecentPosts(params);
+            setPosts(data.posts || []);
+            setError(null);
+        } catch (err) {
+            setError(err.response?.data?.detail || err.message);
+            setPosts([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [JSON.stringify(params)]);
+
+    useEffect(() => {
+        fetchRecentPosts();
+    }, [fetchRecentPosts]);
+
+    return { posts, loading, error, refetch: fetchRecentPosts };
+};
+
+export const useProfile = (userUuid) => {
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (!userUuid) {
+            setProfile(null);
+            setLoading(false);
+            return;
+        }
+
+        const fetchProfile = async () => {
+            try {
+                setLoading(true);
+                const data = await getProfile(userUuid);
+                setProfile(data);
+                setError(null);
+            } catch (err) {
+                setError(err.response?.data?.detail || err.message);
+                setProfile(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, [userUuid]);
+
+    return { profile, loading, error };
+};
+
+// Hook to get related posts based on current post
+export const useRelatedPosts = (postUuid, options = { limit: 3 }) => {
+    const [relatedPosts, setRelatedPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (!postUuid) {
+            console.log('useRelatedPosts: No postUuid provided');
+            setLoading(false);
+            return;
+        }
+
+        const fetchRelatedPosts = async () => {
+            try {
+                console.log('useRelatedPosts: Fetching related posts for', postUuid);
+                setLoading(true);
+                setError(null);
+
+                // Use the dedicated related posts endpoint
+                const response = await getRelatedPosts(postUuid, { limit: options.limit });
+                console.log('useRelatedPosts: Response from /related endpoint', response);
+                
+                setRelatedPosts(response.posts || []);
+                console.log('useRelatedPosts: Set related posts', response.posts || []);
+            } catch (err) {
+                console.error('useRelatedPosts: Error fetching related posts', err);
+                setError(err.response?.data?.detail || err.message || 'Failed to fetch related posts');
+                setRelatedPosts([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRelatedPosts();
+    }, [postUuid, options.limit]);
+
+    return { relatedPosts, loading, error };
+};
+
+// ===== COMMENTS HOOKS =====
+
+// Hook to get comments for a post
+export const useComments = (postUuid, params = {}) => {
+    const [comments, setComments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [totalComments, setTotalComments] = useState(0);
+
+    const fetchComments = useCallback(async () => {
+        if (!postUuid) {
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await getComments({
+                post_uuid: postUuid,
+                ...params
+            });
+            
+            setComments(response.comments || []);
+            setTotalComments(response.total || 0);
+        } catch (err) {
+            console.error('Error fetching comments:', err);
+            setError(err.response?.data?.detail || err.message || 'Failed to fetch comments');
+            setComments([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [postUuid, params]);
+
+    useEffect(() => {
+        fetchComments();
+    }, [fetchComments]);
+
+    // Function to refresh comments (useful after creating/updating/deleting)
+    const refreshComments = useCallback(() => {
+        fetchComments();
+    }, [fetchComments]);
+
+    return { comments, loading, error, totalComments, refreshComments };
+};
+
+// Hook to create a new comment
+export const useCreateComment = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const createNewComment = useCallback(async (commentData) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await createComment(commentData);
+            return response;
+        } catch (err) {
+            console.error('Error creating comment:', err);
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to create comment';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { createNewComment, loading, error };
+};
+
+// Hook to update a comment
+export const useUpdateComment = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const updateExistingComment = useCallback(async (commentUuid, commentData) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await updateComment(commentUuid, commentData);
+            return response;
+        } catch (err) {
+            console.error('Error updating comment:', err);
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to update comment';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { updateExistingComment, loading, error };
+};
+
+// Hook to delete a comment
+export const useDeleteComment = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const deleteExistingComment = useCallback(async (commentUuid) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await deleteComment(commentUuid);
+            return response;
+        } catch (err) {
+            console.error('Error deleting comment:', err);
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to delete comment';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { deleteExistingComment, loading, error };
+};
+
+// Hook to toggle comment like
+export const useCommentLike = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const toggleLike = useCallback(async (commentUuid) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await toggleCommentLike(commentUuid);
+            return response;
+        } catch (err) {
+            console.error('Error toggling comment like:', err);
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to toggle like';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { toggleLike, loading, error };
+};
+
+// Hook to report a comment
+export const useReportComment = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const reportCommentAction = useCallback(async (commentUuid, reportData) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await reportComment(commentUuid, reportData);
+            return response;
+        } catch (err) {
+            console.error('Error reporting comment:', err);
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to report comment';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { reportCommentAction, loading, error };
 };
