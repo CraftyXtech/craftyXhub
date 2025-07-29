@@ -1,5 +1,14 @@
 import { axiosInstance, axiosPrivate } from './axios';
 
+// ===== IMAGE UTILITIES =====
+export const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
+    
+    const filename = imagePath.split('/').pop();
+    return `/v1/posts/images/${filename}`;
+};
+
 // ===== POSTS SERVICES =====
 export const getPosts = async (params = {}) => {
     try {

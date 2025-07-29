@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 
 // Libraries
 import { Form, Formik } from 'formik';
@@ -16,6 +16,7 @@ import { useCategories, useTags, useRecentPosts } from '../../../api';
 
 // Data (for fallback only)
 import { fadeIn } from "../../../Functions/GlobalAnimations";
+import { getImageUrl } from '../../../api';
 
 const SocialIconsData = [
     {
@@ -155,7 +156,7 @@ const Sidebar = (props) => {
                                         <img 
                                             height="" 
                                             width="" 
-                                            src={post.featured_image || "https://via.placeholder.com/800x800"} 
+                                            src={getImageUrl(post.featured_image) || "https://via.placeholder.com/800x800"} 
                                             alt={post.title} 
                                             className='rounded-[3px]' 
                                         />

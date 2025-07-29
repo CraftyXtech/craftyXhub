@@ -17,7 +17,7 @@ import SideButtons from "../../../Components/SideButtons";
 import Sidebar from '../../../Components/Blogs/HelperComponents/Sidebar';
 
 // API Hooks
-import { usePost, useRelatedPosts } from '../../../api'
+import { usePost, useRelatedPosts, getImageUrl } from '../../../api'
 
 // Utils
 import { formatDate } from '../../../utils/dateUtils'
@@ -273,7 +273,7 @@ const PostDetails = (props) => {
                         <img 
                           width="" 
                           height="" 
-                          src={data[0].featured_image || data[0].img} 
+                          src={getImageUrl(data[0].featured_image) || data[0].img} 
                           alt={data[0]?.title || "Post image"} 
                           className="w-full rounded-[6px] mb-[4.5rem]"
                         />

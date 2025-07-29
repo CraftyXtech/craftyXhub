@@ -22,7 +22,8 @@ import {
     updateComment,
     deleteComment,
     toggleCommentLike,
-    reportComment
+    reportComment,
+    getImageUrl
 } from './postsService';
 
 // Hook to get all posts with optional filters

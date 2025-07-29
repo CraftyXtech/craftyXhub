@@ -165,102 +165,6 @@ export const useTogglePostLike = () => {
   return { toggleLike, loading, error };
 };
 
-// Hook to publish a post
-export const usePublishPost = () => {
-  const axiosPrivate = useAxiosPrivate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const publishPost = async (postUuid) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await axiosPrivate.put(`/posts/${postUuid}/publish`);
-      return response.data;
-    } catch (err) {
-      setError(err.response?.data?.detail || err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return { publishPost, loading, error };
-};
-
-// Hook to unpublish a post
-export const useUnpublishPost = () => {
-  const axiosPrivate = useAxiosPrivate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const unpublishPost = async (postUuid) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await axiosPrivate.put(`/posts/${postUuid}/unpublish`);
-      return response.data;
-    } catch (err) {
-      setError(err.response?.data?.detail || err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return { unpublishPost, loading, error };
-};
-
-// Hook to feature/unfeature a post
-export const useFeaturePost = () => {
-  const axiosPrivate = useAxiosPrivate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const featurePost = async (postUuid, feature = true) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await axiosPrivate.put(`/posts/${postUuid}/feature?feature=${feature}`);
-      return response.data;
-    } catch (err) {
-      setError(err.response?.data?.detail || err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return { featurePost, loading, error };
-};
-
-// Hook to get image URL from backend path
-export const useImageUrl = () => {
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return "";
-    
-    // If already a full URL, return as-is
-    if (imagePath.startsWith('http')) return imagePath;
-    
-    // Handle backend relative paths like "uploads/images/filename.jpg"
-    if (imagePath.startsWith('uploads/images/')) {
-      // Extract filename from path
-      const filename = imagePath.split('/').pop();
-      
-      // Get base URL from environment or default to localhost
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-      
-      // Construct full image URL using the backend endpoint
-      return `${baseUrl}/v1/posts/images/${filename}`;
-    }
-    
-    // For any other format, return as-is
-    return imagePath;
-  };
-
-  return { getImageUrl };
-};
-
 // Hook to fetch categories
 export const useGetCategories = () => {
   const axiosPrivate = useAxiosPrivate();
@@ -386,4 +290,90 @@ export const useGetPostStats = () => {
   }, [axiosPrivate]);
 
   return { stats, loading, error, refetch: () => fetchStats() };
+};
+
+// Hook to publish a post
+export const usePublishPost = () => {
+  const axiosPrivate = useAxiosPrivate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const publishPost = async (postId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axiosPrivate.put(`/posts/${postId}/publish`);
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { publishPost, loading, error };
+};
+
+// Hook to unpublish a post
+export const useUnpublishPost = () => {
+  const axiosPrivate = useAxiosPrivate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const unpublishPost = async (postId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axiosPrivate.put(`/posts/${postId}/unpublish`);
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { unpublishPost, loading, error };
+};
+
+// Hook to feature/unfeature a post
+export const useFeaturePost = () => {
+  const axiosPrivate = useAxiosPrivate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const featurePost = async (postId, feature = true) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axiosPrivate.put(`/posts/${postId}/feature?feature=${feature}`);
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { featurePost, loading, error };
+};
+
+// Hook to get image URL from backend path
+export const useImageUrl = () => {
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return "";
+    if (imagePath.startsWith('http')) return imagePath;
+    if (imagePath.startsWith('uploads/images/')) {
+      const filename = imagePath.split('/').pop();
+      // For image display, we need the full URL
+      const baseUrl = import.meta.env.VITE_APP_API_URL || 'http://127.0.0.1:8000/v1';
+      return `${baseUrl}/posts/images/${filename}`;
+    }
+    return imagePath;
+  };
+
+  return { getImageUrl };
 };

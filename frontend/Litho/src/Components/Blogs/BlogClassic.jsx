@@ -12,6 +12,9 @@ import Filter from "./BlogFilter";
 // Data
 import { blogData } from './BlogData';
 
+// API
+import { getImageUrl } from '../../api';
+
 // Filter the blog data category wise
 const blogClassicData = blogData.filter((item) => item.blogType === "classic");
 
@@ -58,7 +61,7 @@ const BlogClassic = (props) => {
                     >
                       <img 
                         loading="lazy" 
-                        src={item.featured_image || item.img} 
+                        src={getImageUrl(item.featured_image) || item.img} 
                         alt={item.title} 
                         className="rounded-[4px] md:mb-[40px] sm:mb-[33px] xs:mb-[28px]" 
                       />

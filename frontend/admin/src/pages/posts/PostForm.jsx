@@ -21,16 +21,15 @@ import {
   Col,
   PreviewCard,
 } from "@/components/Component";
-import { useCreatePost, useUpdatePost, useGetPost, useGetCategories, useGetTags, useCreateCategory, useCreateTag } from "@/api/postService";
+import { useCreatePost, useUpdatePost, useGetPost, useGetCategories, useGetTags, useCreateCategory, useCreateTag, useImageUrl } from "@/api/postService";
 import { toast } from "react-toastify";
-import { debounce } from 'lodash';
-
-// TinyMCE imports
+import { debounce } from 'lodash';  
 import 'tinymce/tinymce';
 import 'tinymce/models/dom/model';
 import 'tinymce/themes/silver';
 import 'tinymce/icons/default';
 import 'tinymce/skins/content/default/content';
+import useAxiosPrivate from "@/api/useAxiosPrivate";
 
 const PostForm = () => {
   const navigate = useNavigate();
@@ -49,8 +48,6 @@ const PostForm = () => {
     excerpt: "",
     category_id: null,
     tag_ids: [],
-    is_published: false,
-    is_featured: false,
     featured_image: "",
     reading_time: null,
     meta_title: "",
@@ -69,7 +66,14 @@ const PostForm = () => {
   const { tags, refetch: refetchTags } = useGetTags();
   const { createCategory } = useCreateCategory();
   const { createTag } = useCreateTag();
+  const { getImageUrl } = useImageUrl();
 
+  // Separate loading states for autosave vs manual save
+  const [autosaveLoading, setAutosaveLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Separate axios instance for autosave to avoid interfering with manual save
+  const axiosPrivate = useAxiosPrivate();
   
   useEffect(() => {
     }, [createLoading, updateLoading, postLoading]);
@@ -78,6 +82,7 @@ const PostForm = () => {
   const debouncedUpdate = useCallback(
     debounce(async (data) => {
       try {
+        setAutosaveLoading(true);
         const jsonData = {
           title: data.title,
           slug: data.slug,
@@ -87,24 +92,26 @@ const PostForm = () => {
           meta_description: data.meta_description,
           reading_time: data.reading_time,
           category_id: data.category_id,
-          tag_ids: data.tag_ids,
-          is_published: data.is_published,
-          is_featured: data.is_featured
+          tag_ids: data.tag_ids
         };
-        await updatePost(postId, jsonData);
+        
+        // Use separate axios call for autosave to avoid interfering with manual save
+        await axiosPrivate.put(`/posts/${postId}`, jsonData);
         toast.info('Post autosaved');
       } catch (err) {
         toast.error('Autosave failed');
+      } finally {
+        setAutosaveLoading(false);
       }
     }, 5000),
-    [updatePost, postId]
+    [axiosPrivate, postId]
   );
 
   useEffect(() => {
-    if (isEditMode) {
+    if (isEditMode && !isSubmitting) {
       debouncedUpdate(formData);
     }
-  }, [formData, isEditMode, debouncedUpdate]);
+  }, [formData, isEditMode, debouncedUpdate, isSubmitting]);
 
   // Initialize form when editing
   useEffect(() => {
@@ -116,21 +123,26 @@ const PostForm = () => {
         excerpt: editPost.excerpt || "",
         category_id: editPost.category_id || null,
         tag_ids: editPost.tags?.map(tag => tag.id) || [],
-        is_published: editPost.is_published || false,
-        is_featured: editPost.is_featured || false,
         featured_image: editPost.featured_image || "",
         reading_time: editPost.reading_time || null,
         meta_title: editPost.meta_title || "",
         meta_description: editPost.meta_description || "",
       };
       setFormData(postData);
-      setPreview(editPost.featured_image || "");
+      
+      
+      if (editPost.featured_image) {
+        const imageUrl = getImageUrl(editPost.featured_image);
+        setPreview(imageUrl);
+      } else {
+        setPreview(""); 
+      }
       
       Object.keys(postData).forEach(key => {
         setValue(key, postData[key]);
       });
     }
-  }, [editPost, isEditMode, setValue]);
+  }, [editPost, isEditMode, setValue, getImageUrl]);
 
   
   const generateSlug = (title) => {
@@ -221,7 +233,7 @@ const PostForm = () => {
   
   const onSubmit = async (data) => {
     try {
-      
+      setIsSubmitting(true);
       
       const content = editorRef.current?.getContent() || formData.content;
       
@@ -235,10 +247,6 @@ const PostForm = () => {
       if (formData.meta_description) formDataToSend.append('meta_description', formData.meta_description);
       if (formData.reading_time) formDataToSend.append('reading_time', formData.reading_time.toString());
       
-      // Add boolean flags (backend expects string 'true'/'false' or just the field presence)
-      formDataToSend.append('is_published', formData.is_published ? 'true' : 'false');
-      formDataToSend.append('is_featured', formData.is_featured ? 'true' : 'false');
-      
       if (formData.category_id) {
         formDataToSend.append('category_id', formData.category_id.toString());
       }
@@ -250,8 +258,7 @@ const PostForm = () => {
       if (selectedFile) {
         formDataToSend.append('featured_image', selectedFile);
       }
-      
-      // Log FormData contents (convert to object for visibility)
+
       const formDataObj = {};
       formDataToSend.forEach((value, key) => {
         if (key === 'featured_image') {
@@ -273,10 +280,10 @@ const PostForm = () => {
       navigate('/posts-list');
     } catch (error) {
       if (error.response) {
-        console.error('[DEBUG] Error response data:', error.response.data);
-        console.error('[DEBUG] Error response status:', error.response.status); 
       }
       toast.error(isEditMode ? "Failed to update post" : "Failed to create post");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -323,9 +330,9 @@ const PostForm = () => {
             <BlockHeadContent>
               <div className="d-flex gap-2 align-items-center">
                 {isEditMode && (
-                  <div className="badge badge-pill badge-success-soft px-3 py-2">
-                    <Icon name="save" className="me-1" />
-                    Auto-saving
+                  <div className={`badge badge-pill px-3 py-2 ${autosaveLoading ? 'badge-warning-soft' : 'badge-success-soft'}`}>
+                    <Icon name={autosaveLoading ? "loader" : "save"} className={`me-1 ${autosaveLoading ? 'fa-spin' : ''}`} />
+                    {autosaveLoading ? 'Auto-saving...' : 'Auto-saved'}
                   </div>
                 )}
                 <BackTo link="/posts-list" icon="arrow-left" className="btn btn-outline-primary">
@@ -615,68 +622,6 @@ const PostForm = () => {
                     </div>
                   </PreviewCard>
 
-                  {/* Publish Settings - Enhanced */}
-                  <PreviewCard className="card-bordered shadow-sm">
-                    <div className="card-head border-bottom pb-3">
-                      <div className="d-flex align-items-center">
-                        <div className="icon-circle icon-circle-sm bg-primary-soft me-3">
-                          <Icon name="share" className="text-primary" />
-                        </div>
-                        <h5 className="card-title mb-0">Publish Settings</h5>
-                      </div>
-                    </div>
-                    <div className="card-body">
-                      <div className="form-group mb-4">
-                        <div className="d-flex align-items-center justify-content-between p-3 bg-light rounded-3">
-                          <div className="d-flex align-items-center">
-                            <Icon name={formData.is_published ? "check-circle" : "clock"} 
-                                  className={`me-2 ${formData.is_published ? 'text-success' : 'text-warning'}`} />
-                            <div>
-                              <span className="fw-medium">Published</span>
-                              <div className="form-note text-sm mb-0">
-                                {formData.is_published ? "Visible to public" : "Saved as draft"}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="custom-control custom-switch">
-                            <input
-                              type="checkbox"
-                              className="custom-control-input"
-                              id="is-published"
-                              checked={formData.is_published}
-                              onChange={(e) => setFormData(prev => ({ ...prev, is_published: e.target.checked }))}
-                            />
-                            <label className="custom-control-label" htmlFor="is-published"></label>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="form-group">
-                        <div className="d-flex align-items-center justify-content-between p-3 bg-light rounded-3">
-                          <div className="d-flex align-items-center">
-                            <Icon name={formData.is_featured ? "star-fill" : "star"} 
-                                  className={`me-2 ${formData.is_featured ? 'text-warning' : 'text-muted'}`} />
-                            <div>
-                              <span className="fw-medium">Featured</span>
-                              <div className="form-note text-sm mb-0">
-                                Appears prominently on homepage
-                              </div>
-                            </div>
-                          </div>
-                          <div className="custom-control custom-switch">
-                            <input
-                              type="checkbox"
-                              className="custom-control-input"
-                              id="is-featured"
-                              checked={formData.is_featured}
-                              onChange={(e) => setFormData(prev => ({ ...prev, is_featured: e.target.checked }))}
-                            />
-                            <label className="custom-control-label" htmlFor="is-featured"></label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </PreviewCard>
-
                   {/* Categories and Tags - Enhanced */}
                   <PreviewCard className="card-bordered shadow-sm">
                     <div className="card-head border-bottom pb-3">
@@ -786,23 +731,6 @@ const PostForm = () => {
                             )}
                           </Dropzone>
                           
-                          {/* Fallback URL input if no file selected */}
-                          {!selectedFile && (
-                            <input
-                              id="featured-image"
-                              type="url"
-                              className="form-control mt-2"
-                              {...register('featured_image')}
-                              value={formData.featured_image}
-                              onChange={(e) => {
-                                setFormData(prev => ({ ...prev, featured_image: e.target.value }));
-                                setPreview(e.target.value);
-                              }}
-                              placeholder="Or paste image URL: https://example.com/image.jpg"
-                              style={{ borderRadius: '8px' }}
-                            />
-                          )}
-                          
                           {/* Clear selection button */}
                           {(selectedFile || preview) && (
                             <div className="mt-2">
@@ -832,7 +760,7 @@ const PostForm = () => {
                               textAlign: 'center'
                             }}>
                               <img 
-                                src={preview || formData.featured_image} 
+                                src={preview || getImageUrl(formData.featured_image)} 
                                 alt="Featured preview" 
                                 className="img-fluid rounded"
                                 style={{ maxWidth: '100%', height: 'auto', maxHeight: '200px' }}
@@ -849,6 +777,14 @@ const PostForm = () => {
                                 <div className="mt-2">
                                   <small className="text-muted">
                                     Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                                  </small>
+                                </div>
+                              )}
+                              {!selectedFile && formData.featured_image && (
+                                <div className="mt-2">
+                                  <small className="text-success">
+                                    <Icon name="check-circle" className="me-1" />
+                                    Current featured image
                                   </small>
                                 </div>
                               )}
@@ -893,19 +829,6 @@ const PostForm = () => {
                           </div>
                           <span className="badge badge-pill badge-info-soft px-3 py-2">
                             {formData.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length} words
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="form-group">
-                        <div className="d-flex align-items-center justify-content-between p-3 bg-light rounded-3">
-                          <div className="d-flex align-items-center">
-                            <Icon name={formData.is_published ? "check-circle" : "clock"} 
-                                  className={`me-2 ${formData.is_published ? 'text-success' : 'text-warning'}`} />
-                            <span className="fw-medium">Status</span>
-                          </div>
-                          <span className={`badge badge-pill ${formData.is_published ? 'badge-success-soft' : 'badge-warning-soft'} px-3 py-2`}>
-                            {formData.is_published ? 'Published' : 'Draft'}
                           </span>
                         </div>
                       </div>
