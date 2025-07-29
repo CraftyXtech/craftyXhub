@@ -6,10 +6,10 @@ import { UserContextProvider } from "@/pages/pre-built/user-manage/UserContext";
 import Analytics from "@/pages/Analytics";
 
 // Posts Management Components
-import PostList from "@/pages/pre-built/posts/PostList";
-import CategoryManagement from "@/pages/pre-built/posts/CategoryManagement";
-import PostForm from "@/pages/pre-built/posts/PostForm";
-import PostDetail from "@/pages/pre-built/posts/PostDetail";
+import PostList from "@/pages/posts/PostList";
+import CategoryManagement from "@/pages/posts/CategoryManagement";
+import PostForm from "@/pages/posts/PostForm";
+import PostDetail from "@/pages/posts/PostDetail";
 
 
 import Component from "@/pages/components/Index";

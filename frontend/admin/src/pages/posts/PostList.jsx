@@ -19,7 +19,7 @@ import {
   PaginationComponent,
 } from "@/components/Component";
 import { Card, DropdownItem, UncontrolledDropdown, DropdownMenu, DropdownToggle, Badge } from "reactstrap";
-import { useGetPosts, useDeletePost, useTogglePostLike, useGetCategories, useGetTags } from "@/api/postService";
+import { useGetPosts, useDeletePost, useTogglePostLike, useGetCategories, useGetTags, usePublishPost, useUnpublishPost, useFeaturePost } from "@/api/postService";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
@@ -29,23 +29,46 @@ const PostList = () => {
   const [itemPerPage] = useState(10);
   const [searchText, setSearchText] = useState("");
   const [filters, setFilters] = useState({
-    published_only: false,
+    published: false, // false = show all posts (drafts + published), true = published only
     category_id: null,
     tag_id: null,
   });
   const [sm, updateSm] = useState(false);
   const [selectedPosts, setSelectedPosts] = useState([]);
 
+  // Auto-refresh when component mounts (useful when navigating back from post creation)
+  useEffect(() => {
+    console.log('[DEBUG] PostList component mounted, refreshing posts...');
+  }, []);
+
   // API hooks
-  const { posts, total, loading, error, refetch } = useGetPosts({
+  const apiParams = {
     skip: (currentPage - 1) * itemPerPage,
     limit: itemPerPage,
     ...filters,
-  });
+  };
+  
+  console.log('[DEBUG] PostList API params:', apiParams);
+  
+  const { posts, total, loading, error, refetch } = useGetPosts(apiParams);
   const { categories } = useGetCategories();
   const { tags } = useGetTags();
   const { deletePost, loading: deleteLoading } = useDeletePost();
   const { toggleLike } = useTogglePostLike();
+  const { publishPost } = usePublishPost();
+  const { unpublishPost } = useUnpublishPost();
+  const { featurePost } = useFeaturePost();
+
+  // Debug posts data
+  useEffect(() => {
+    console.log('[DEBUG] PostList received:', { 
+      posts: posts, 
+      total, 
+      postsCount: posts?.length,
+      loading, 
+      error 
+    });
+  }, [posts, total, loading, error]);
 
   // Handle search
   const onFilterChange = (e) => {
@@ -63,12 +86,12 @@ const PostList = () => {
   };
 
   // Handle post selection
-  const onSelectChange = (e, id) => {
+  const onSelectChange = (e, uuid) => {
     let newSelection = [...selectedPosts];
     if (e.target.checked) {
-      newSelection.push(id);
+      newSelection.push(uuid);
     } else {
-      newSelection = newSelection.filter(item => item !== id);
+      newSelection = newSelection.filter(item => item !== uuid);
     }
     setSelectedPosts(newSelection);
   };
@@ -76,20 +99,22 @@ const PostList = () => {
   // Handle select all
   const onSelectAllChange = (e) => {
     if (e.target.checked) {
-      setSelectedPosts(posts.map(post => post.id));
+      setSelectedPosts(posts.map(post => post.uuid)); // Use UUID instead of integer ID
     } else {
       setSelectedPosts([]);
     }
   };
 
   // Handle delete post
-  const handleDeletePost = async (postId) => {
+  const handleDeletePost = async (postUuid) => {
+    console.log('[DEBUG] Delete post:', { postUuid });
     if (window.confirm("Are you sure you want to delete this post?")) {
       try {
-        await deletePost(postId);
+        await deletePost(postUuid); // Use UUID instead of integer ID
         toast.success("Post deleted successfully");
         refetch();
       } catch (error) {
+        console.error('[DEBUG] Delete error:', error);
         toast.error("Failed to delete post");
       }
     }
@@ -101,23 +126,61 @@ const PostList = () => {
     
     if (window.confirm(`Are you sure you want to delete ${selectedPosts.length} posts?`)) {
       try {
-        await Promise.all(selectedPosts.map(id => deletePost(id)));
+        await Promise.all(selectedPosts.map(uuid => deletePost(uuid))); // Use UUID instead of integer ID
         toast.success(`${selectedPosts.length} posts deleted successfully`);
         setSelectedPosts([]);
         refetch();
       } catch (error) {
+        console.error('[DEBUG] Bulk delete error:', error);
         toast.error("Failed to delete posts");
       }
     }
   };
 
   // Handle like toggle
-  const handleLikeToggle = async (postId) => {
+  const handleLikeToggle = async (postUuid) => {
     try {
-      await toggleLike(postId);
+      await toggleLike(postUuid); // Use UUID instead of integer ID
       refetch();
     } catch (error) {
+      console.error('[DEBUG] Like toggle error:', error);
       toast.error("Failed to toggle like");
+    }
+  };
+
+  // Handle publish post
+  const handlePublishPost = async (postUuid) => {
+    try {
+      await publishPost(postUuid);
+      toast.success("Post published successfully");
+      refetch();
+    } catch (error) {
+      console.error('[DEBUG] Publish error:', error);
+      toast.error("Failed to publish post");
+    }
+  };
+
+  // Handle unpublish post
+  const handleUnpublishPost = async (postUuid) => {
+    try {
+      await unpublishPost(postUuid);
+      toast.success("Post unpublished successfully");
+      refetch();
+    } catch (error) {
+      console.error('[DEBUG] Unpublish error:', error);
+      toast.error("Failed to unpublish post");
+    }
+  };
+
+  // Handle feature toggle
+  const handleFeatureToggle = async (postUuid, currentlyFeatured) => {
+    try {
+      await featurePost(postUuid, !currentlyFeatured);
+      toast.success(currentlyFeatured ? "Post unfeatured successfully" : "Post featured successfully");
+      refetch();
+    } catch (error) {
+      console.error('[DEBUG] Feature toggle error:', error);
+      toast.error("Failed to update featured status");
     }
   };
 
@@ -148,12 +211,14 @@ const PostList = () => {
 
   // Handle edit post
   const handleEditPost = (post) => {
-    navigate(`/posts-edit/${post.id}`);
+    console.log('[DEBUG] Edit post:', { id: post.id, uuid: post.uuid });
+    navigate(`/posts-edit/${post.uuid}`); // Use UUID instead of integer ID
   };
 
   // Handle view post
   const handleViewPost = (post) => {
-    navigate(`/posts-detail?id=${post.id}`);
+    console.log('[DEBUG] View post:', { id: post.id, uuid: post.uuid });
+    navigate(`/posts-detail?id=${post.uuid}`); // Use UUID instead of integer ID
   };
 
   if (loading) {
@@ -226,14 +291,14 @@ const PostList = () => {
                           <ul className="link-list-opt no-bdr">
                             <li>
                               <DropdownItem
-                                onClick={() => onFilterUpdate('published_only', false)}
+                                onClick={() => onFilterUpdate('published', false)}
                               >
-                                <span>All Posts</span>
+                                <span>Drafts</span>
                               </DropdownItem>
                             </li>
                             <li>
                               <DropdownItem
-                                onClick={() => onFilterUpdate('published_only', true)}
+                                onClick={() => onFilterUpdate('published', true)}
                               >
                                 <span>Published Only</span>
                               </DropdownItem>
@@ -357,17 +422,17 @@ const PostList = () => {
                   </DataTableHead>
                   {posts.length > 0 ? (
                     posts.map((post) => (
-                      <DataTableItem key={post.id}>
+                                              <DataTableItem key={post.uuid}>
                         <DataTableRow className="nk-tb-col-check">
                           <div className="custom-control custom-control-sm custom-checkbox notext">
                             <input
                               type="checkbox"
                               className="custom-control-input"
-                              checked={selectedPosts.includes(post.id)}
-                              onChange={(e) => onSelectChange(e, post.id)}
-                              id={`post_${post.id}`}
+                              checked={selectedPosts.includes(post.uuid)}
+                              onChange={(e) => onSelectChange(e, post.uuid)}
+                              id={`post_${post.uuid}`}
                             />
-                            <label className="custom-control-label" htmlFor={`post_${post.id}`}></label>
+                            <label className="custom-control-label" htmlFor={`post_${post.uuid}`}></label>
                           </div>
                         </DataTableRow>
                         <DataTableRow>
@@ -399,7 +464,7 @@ const PostList = () => {
                             <Button
                               size="sm"
                               color={post.is_liked ? "danger" : "light"}
-                              onClick={() => handleLikeToggle(post.id)}
+                              onClick={() => handleLikeToggle(post.uuid)}
                             >
                               <Icon name="heart" />
                               {post.like_count}
@@ -452,10 +517,40 @@ const PostList = () => {
                                     <li>
                                       <DropdownItem
                                         tag="a"
+                                        href="#publish"
+                                        onClick={(ev) => {
+                                          ev.preventDefault();
+                                          if (post.is_published) {
+                                            handleUnpublishPost(post.uuid);
+                                          } else {
+                                            handlePublishPost(post.uuid);
+                                          }
+                                        }}
+                                      >
+                                        <Icon name={post.is_published ? "eye-off" : "eye"} />
+                                        <span>{post.is_published ? "Unpublish" : "Publish"}</span>
+                                      </DropdownItem>
+                                    </li>
+                                    <li>
+                                      <DropdownItem
+                                        tag="a"
+                                        href="#feature"
+                                        onClick={(ev) => {
+                                          ev.preventDefault();
+                                          handleFeatureToggle(post.uuid, post.is_featured);
+                                        }}
+                                      >
+                                        <Icon name={post.is_featured ? "star-fill" : "star"} />
+                                        <span>{post.is_featured ? "Unfeature" : "Feature"}</span>
+                                      </DropdownItem>
+                                    </li>
+                                    <li>
+                                      <DropdownItem
+                                        tag="a"
                                         href="#delete"
                                         onClick={(ev) => {
                                           ev.preventDefault();
-                                          handleDeletePost(post.id);
+                                          handleDeletePost(post.uuid);
                                         }}
                                       >
                                         <Icon name="trash" />

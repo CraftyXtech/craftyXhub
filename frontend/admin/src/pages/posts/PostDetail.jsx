@@ -15,62 +15,74 @@ import {
   Button,
   PreviewCard,
 } from "@/components/Component";
-import { useGetPost, useDeletePost, useTogglePostLike } from "@/api/postService";
+import { useGetPost, useDeletePost, useTogglePostLike, useImageUrl } from "@/api/postService";
 import { toast } from "react-toastify";
 import { Badge } from "reactstrap";
 
 const PostDetail = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const postId = searchParams.get('id');
+  const postUuid = searchParams.get('id'); // This should be UUID from URL
   
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  console.log('[DEBUG] PostDetail UUID from URL:', postUuid);
+
   // API hooks
-  const { post: fetchedPost, loading: postLoading } = useGetPost(postId);
+  const { post: fetchedPost, loading: postLoading } = useGetPost(postUuid);
   const { deletePost, loading: deleteLoading } = useDeletePost();
   const { toggleLike } = useTogglePostLike();
+  const { getImageUrl } = useImageUrl();
+
+
 
   useEffect(() => {
-    if (!postId) {
-      setError("No post ID provided");
+    if (!postUuid) {
+      setError("No post UUID provided");
       setLoading(false);
       return;
     }
 
     if (fetchedPost) {
+      console.log('[DEBUG] PostDetail received post data:', fetchedPost);
+      console.log('[DEBUG] Featured image path:', fetchedPost.featured_image);
+      if (fetchedPost.featured_image) {
+        console.log('[DEBUG] Constructed image URL:', getImageUrl(fetchedPost.featured_image));
+      }
       setPost(fetchedPost);
       setLoading(false);
     }
-  }, [postId, fetchedPost]);
+  }, [postUuid, fetchedPost]);
 
   // Handle delete post
   const handleDeletePost = async () => {
     if (window.confirm("Are you sure you want to delete this post?")) {
       try {
-        await deletePost(postId);
+        console.log('[DEBUG] Deleting post with UUID:', postUuid);
+        await deletePost(postUuid); // Use UUID instead of postId
         toast.success("Post deleted successfully");
         navigate('/posts-list');
       } catch (error) {
+        console.error('[DEBUG] Delete post error:', error);
         toast.error("Failed to delete post");
       }
     }
   };
 
-
   const handleEditPost = () => {
-    navigate(`/posts-edit/${postId}`);
+    console.log('[DEBUG] Edit post with UUID:', postUuid);
+    navigate(`/posts-edit/${postUuid}`); // Use UUID instead of postId
   };
-
 
   const handleLikeToggle = async () => {
     try {
-      await toggleLike(postId);
-    
+      console.log('[DEBUG] Toggle like for post UUID:', postUuid);
+      await toggleLike(postUuid); // Use UUID instead of postId
       window.location.reload();
     } catch (error) {
+      console.error('[DEBUG] Toggle like error:', error);
       toast.error("Failed to toggle like");
     }
   };
@@ -244,7 +256,7 @@ const PostDetail = () => {
                     </div>
                     <div className="card-inner">
                       <img 
-                        src={post.featured_image} 
+                        src={getImageUrl(post.featured_image)} 
                         alt={post.title}
                         className="img-fluid rounded"
                         style={{ maxWidth: '100%', height: 'auto' }}
