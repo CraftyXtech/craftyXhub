@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr, validator, Field, EmailStr, computed_f
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
+from uuid import UUID
 from .base import TimestampMixin, BaseSchema
 
 class UserRole(str, Enum):
@@ -132,3 +133,15 @@ class UserFollowingResponse(BaseModel):
     pages: int
     has_next: bool
     has_prev: bool
+    
+class MediaResponse(BaseModel):
+    uuid: UUID
+    file_path: str
+    file_name: str
+    file_type: str
+    file_size: int
+    mime_type: str
+    description: Optional[str]
+    
+class MediaUpdateRequest(BaseModel):
+    description: Optional[str]

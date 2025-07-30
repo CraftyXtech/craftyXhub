@@ -4,6 +4,14 @@ from enum import Enum as PyEnum
 from .base import BaseTable, post_likes, post_bookmarks, user_follows
 
 
+
+class MediaType(PyEnum):
+    IMAGE = "image"
+    VIDEO = "video"
+    DOCUMENT = "document"
+    OTHER = "other"
+
+
 class UserRole(PyEnum):
     ADMIN = "admin"
     MODERATOR = "moderator"
@@ -85,3 +93,17 @@ class Profile(BaseTable):
     birth_date = Column(DateTime, nullable=True)
     follower_notifications = Column(Boolean, default=True)  # Email notifications for new followers
     user = relationship("User", back_populates="profile")
+    
+
+class Media(BaseTable):
+    __tablename__ = 'media'
+
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    file_path = Column(String(500), nullable=False)
+    file_name = Column(String(255), nullable=False)
+    file_type = Column(Enum(MediaType), nullable=False)
+    file_size = Column(Integer, nullable=False)  # Size in bytes
+    mime_type = Column(String(100), nullable=False)
+    description = Column(String(500), nullable=True)
+
+    user = relationship("User", backref="media")

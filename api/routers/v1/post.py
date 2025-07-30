@@ -7,7 +7,6 @@ from typing import Optional, List
 from pydantic import ValidationError
 
 from services.post.post import PostService, UPLOAD_DIR
-from services.post.comment import  CommentService
 from services.user.auth import get_current_active_user
 from database.connection import get_db_session
 from schemas.post import (
@@ -28,7 +27,6 @@ from schemas.post import (
 from models import User, Category, Tag, Post
 from fastapi import Form, File, UploadFile
 from models.base import post_bookmarks
-from schemas.comment import CommentCreate, CommentResponse
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 

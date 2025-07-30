@@ -64,7 +64,7 @@ def include_routers(app: FastAPI) -> None:
         
     @app.get("/v1/uploads/images/{filename}", tags=["Get Images"], summary="Get Image")
     async def get_image(filename: str, folder: str = Query(..., description="Folder category (e.g., 'posts', 'avatars')")):
-        if folder not in ["posts", "avatars"]:
+        if folder not in ["posts", "avatars", "media"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid folder category"
