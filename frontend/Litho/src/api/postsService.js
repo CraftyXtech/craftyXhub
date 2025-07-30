@@ -1,12 +1,12 @@
 import { axiosInstance, axiosPrivate } from './axios';
 
 // ===== IMAGE UTILITIES =====
-export const getImageUrl = (imagePath) => {
+export const getImageUrl = (imagePath, folder) => {
     if (!imagePath) return null;
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
     
     const filename = imagePath.split('/').pop();
-    return `/v1/posts/images/${filename}`;
+    return `/v1/uploads/images/${filename}?folder=${folder || 'posts'}`;
 };
 
 // ===== POSTS SERVICES =====
@@ -31,7 +31,7 @@ export const getPost = async (postUuid) => {
 
 export const getPostImage = async (filename) => {
     try {
-        const response = await axiosInstance.get(`/posts/images/${filename}`);
+        const response = await axiosInstance.get(`/uploads/images/${filename}?folder=posts`);
         return response.data;
     } catch (error) {
         throw error;

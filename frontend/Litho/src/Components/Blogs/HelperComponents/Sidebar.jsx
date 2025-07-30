@@ -156,7 +156,7 @@ const Sidebar = (props) => {
                                         <img 
                                             height="" 
                                             width="" 
-                                            src={getImageUrl(post.featured_image) || "https://via.placeholder.com/800x800"} 
+                                            src={getImageUrl(post.featured_image, "posts") || "https://via.placeholder.com/800x800"} 
                                             alt={post.title} 
                                             className='rounded-[3px]' 
                                         />

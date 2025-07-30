@@ -132,7 +132,7 @@ const PostForm = () => {
       
       
       if (editPost.featured_image) {
-        const imageUrl = getImageUrl(editPost.featured_image);
+        const imageUrl = getImageUrl(editPost.featured_image, "posts");
         setPreview(imageUrl);
       } else {
         setPreview(""); 
@@ -760,7 +760,7 @@ const PostForm = () => {
                               textAlign: 'center'
                             }}>
                               <img 
-                                src={preview || getImageUrl(formData.featured_image)} 
+                                src={preview || getImageUrl(formData.featured_image, "posts")} 
                                 alt="Featured preview" 
                                 className="img-fluid rounded"
                                 style={{ maxWidth: '100%', height: 'auto', maxHeight: '200px' }}

@@ -273,7 +273,7 @@ const PostDetails = (props) => {
                         <img 
                           width="" 
                           height="" 
-                          src={getImageUrl(data[0].featured_image) || data[0].img} 
+                          src={getImageUrl(data[0].featured_image, "posts") || data[0].img} 
                           alt={data[0]?.title || "Post image"} 
                           className="w-full rounded-[6px] mb-[4.5rem]"
                         />

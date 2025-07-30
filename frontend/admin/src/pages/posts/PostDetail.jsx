@@ -49,7 +49,7 @@ const PostDetail = () => {
       console.log('[DEBUG] PostDetail received post data:', fetchedPost);
       console.log('[DEBUG] Featured image path:', fetchedPost.featured_image);
       if (fetchedPost.featured_image) {
-        console.log('[DEBUG] Constructed image URL:', getImageUrl(fetchedPost.featured_image));
+        console.log('[DEBUG] Constructed image URL:', getImageUrl(fetchedPost.featured_image, "posts"));
       }
       setPost(fetchedPost);
       setLoading(false);
@@ -256,7 +256,7 @@ const PostDetail = () => {
                     </div>
                     <div className="card-inner">
                       <img 
-                        src={getImageUrl(post.featured_image)} 
+                        src={getImageUrl(post.featured_image, "posts")} 
                         alt={post.title}
                         className="img-fluid rounded"
                         style={{ maxWidth: '100%', height: 'auto' }}
