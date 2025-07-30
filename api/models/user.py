@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Table, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
 from .base import BaseTable, post_likes, post_bookmarks, user_follows

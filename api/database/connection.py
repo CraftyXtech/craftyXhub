@@ -4,7 +4,6 @@ import logging
 from core.config import settings
 from typing import AsyncGenerator, Any, List
 from sqlalchemy.ext.declarative import declarative_base
-from models import User, Profile, Post, Category, Tag
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +21,7 @@ AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
     expire_on_commit=False,
-    autoflush=True,
-    autocommit=False,
+    autoflush=True
 )
 
 
@@ -37,17 +35,6 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
-
-
-async def init_db() -> None:
-    """Initialize database tables"""
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        logger.info("Database tables created successfully")
-    except Exception as e:
-        logger.error(f"Database initialization failed: {e}")
-        raise
 
 
 async def db_health_check() -> bool:

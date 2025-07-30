@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, Query, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from routers.v1 import router as v1_router
-from database.connection import db_health_check, init_db, get_db_session
+from database.connection import db_health_check, get_db_session
 from fastapi.responses import FileResponse
 from sqlalchemy import select, or_
 from database.connection import get_db_session
@@ -18,7 +18,6 @@ def include_routers(app: FastAPI) -> None:
     @app.get("/health", tags=["Health"])
     async def health_check():
         db_healthy = await db_health_check()
-        await  init_db()
 
         return {
             "status": "Healthy" if db_healthy else "unhealthy",

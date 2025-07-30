@@ -88,7 +88,6 @@ async def get_current_user_info(
 ):
     
     user_data = {
-        "id": current_user.id,
         "uuid": current_user.uuid,
         "email": current_user.email,
         "username": current_user.username,
@@ -170,13 +169,13 @@ async def reset_password(
             detail="New passwords do not match"
         )
     
-    if not AuthService.verify_password(request.current_password, current_user.hashed_password):
+    if not AuthService.verify_password(request.current_password, current_user.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Incorrect current password"
         )
     
-    current_user.hashed_password = AuthService.get_password_hash(request.new_password)
+    current_user.password = AuthService.get_password_hash(request.new_password)
     current_user.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     await session.commit()
     

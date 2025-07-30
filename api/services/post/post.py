@@ -237,14 +237,14 @@ class PostService:
     async def feature_post(
         session: AsyncSession,
         post_uuid: str,
-        current_user_id: int,
+        current_user: User,
         feature: bool = True
     ) -> Post:
         db_post = await PostService.get_post_by_uuid(session, post_uuid)
         if not db_post:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
-        if db_post.author_id != current_user_id:
+        if db_post.author_id != current_user.id or not current_user.is_moderator:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to feature this post")
 
         db_post.is_featured = feature
@@ -407,10 +407,12 @@ class PostService:
             conditions.append(Post.is_published == True)
         else:
             conditions.append(Post.is_published == False)
+            
         if is_featured:
             conditions.append(Post.is_featured == is_featured)
         elif is_featured is not None:
             conditions.append(Post.is_featured == False)
+            
         if author_id:
             conditions.append(Post.author_id == author_id)
         if category_id:
