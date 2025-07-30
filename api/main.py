@@ -1,13 +1,13 @@
-from fastapi import FastAPI, Depends, Query
+from fastapi import FastAPI, Depends, Query, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, JSONResponse, JSONResponse
+from fastapi.responses import RedirectResponse
 from routers.v1 import router as v1_router
 from database.connection import db_health_check, init_db, get_db_session
-from sqlalchemy.orm import Session
+from fastapi.responses import FileResponse
 from sqlalchemy import select, or_
 from database.connection import get_db_session
 from models import Post, User, Category
-
+from pathlib import Path
 
 
 def include_routers(app: FastAPI) -> None:
@@ -61,6 +61,26 @@ def include_routers(app: FastAPI) -> None:
             "users": users_result.scalars().all(),
             "categories": categories_result.scalars().all()
         }
+        
+    @app.get("/v1/uploads/images/{filename}", tags=["Get Images"], summary="Get Image")
+    async def get_image(filename: str, folder: str = Query(..., description="Folder category (e.g., 'posts', 'avatars')")):
+        if folder not in ["posts", "avatars"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid folder category"
+            )
+        
+        directory = Path(f"uploads/{folder}")
+        file_path = directory / filename
+        
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Image not found"
+            )
+        
+        return FileResponse(file_path)
+
             
     app.include_router(v1_router)
 

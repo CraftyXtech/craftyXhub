@@ -27,7 +27,6 @@ from schemas.post import (
 )
 from models import User, Category, Tag, Post
 from fastapi import Form, File, UploadFile
-from fastapi.responses import FileResponse
 from models.base import post_bookmarks
 from schemas.comment import CommentCreate, CommentResponse
 
@@ -244,18 +243,6 @@ async def create_post(
         if featured_image_path and os.path.exists(featured_image_path):
             os.remove(featured_image_path)
         raise e
-
-@router.get("/images/{filename}")
-async def get_image(filename: str):
-    file_path = UPLOAD_DIR / filename
-
-    if not file_path.exists():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Image not found"
-        )
-
-    return FileResponse(file_path)
 
 
 @router.put("/{post_uuid}", response_model=PostResponse)
