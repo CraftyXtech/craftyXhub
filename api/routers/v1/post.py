@@ -216,7 +216,7 @@ async def create_post(
                 detail="Invalid tag_ids format. Must be comma-separated integers."
             )
 
-    if not slug or not slug.strip():
+    if not slug:
         generated_slug = await PostService.generate_unique_slug(session, title, Post)
     else:
         generated_slug = slug.strip()
@@ -422,7 +422,7 @@ async def feature_post(
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
 ):
-    return await PostService.feature_post(session, post_uuid, current_user.id, feature=feature)
+    return await PostService.feature_post(session, post_uuid, current_user, feature=feature)
 
 
 @router.post("/{post_uuid}/report", response_model=ReportResponse)

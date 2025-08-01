@@ -1,8 +1,6 @@
 import uuid
-import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, ForeignKey, Table, String
-from sqlalchemy import Column, DateTime, func
+from sqlalchemy import Column, Integer, ForeignKey, Table, String, DateTime, func
 
 
 Base = declarative_base()
