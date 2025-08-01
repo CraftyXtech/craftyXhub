@@ -18,11 +18,14 @@ import SideButtons from "../../Components/SideButtons";
 import Buttons from '../../Components/Button/Buttons'
 import LoginModal from '../../Components/auth/LoginModal'
 import RegisterModal from '../../Components/auth/RegisterModal'
+import PasswordResetModal from '../../Components/auth/PasswordResetModal'
 import { fadeIn } from '../../Functions/GlobalAnimations';
 
 // Hooks & API
 import useAuth from '../../api/useAuth';
 import { usePosts, useCategories, usePopularPosts } from '../../api';
+
+
 
 // Data
 import HeaderData from '../../Components/Header/HeaderData';
@@ -56,6 +59,7 @@ const MagazinePage = (props) => {
   const swiperRef = React.useRef(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showRegisterModal, setShowRegisterModal] = useState(false)
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false)
   
   const { isAuthenticated, user, logout } = useAuth()
   
@@ -76,7 +80,14 @@ const MagazinePage = (props) => {
 
   const handleSwitchToLogin = () => {
     setShowRegisterModal(false)
+    setShowPasswordResetModal(false)
     setShowLoginModal(true)
+  }
+
+  const handleSwitchToPasswordReset = () => {
+    setShowLoginModal(false)
+    setShowRegisterModal(false)
+    setShowPasswordResetModal(true)
   }
 
   return (
@@ -187,25 +198,17 @@ const MagazinePage = (props) => {
                 loop={true} >
                 <SwiperSlide className="overflow-hidden cover-background relative" style={{ backgroundImage: `url(https://via.placeholder.com/1000x710)` }}>
                   <div className="flex items-center bg-[#000000b3] absolute left-0 bottom-0 w-full py-[55px] xl:py-[20px] lg:py-[55px] md:py-[40px] xs:py-[30px] px-[60px] xl:px-[50px] xs:pl-[30px] xs:pr-[50px] xs:flex-col xs:items-start">
-                    <Link aria-label="link for" to="/blogs/blog-grid" className="uppercase ps-0 pr-8 mr-8 border-r border-[#ffffff33] text-[#c89965] tracking-[2px] text-md font-medium tracking-2px font-serif md:border-0 md:mb-[10px] hover:text-white xs:mb-[5px]">Lifestyle</Link>
+                    <Link aria-label="link for" to="/featured-articles" className="uppercase ps-0 pr-8 mr-8 border-r border-[#ffffff33] text-[#c89965] tracking-[2px] text-md font-medium tracking-2px font-serif md:border-0 md:mb-[10px] hover:text-white xs:mb-[5px]">Featured</Link>
                     <h2 className="heading-6 m-0">
-                      <Link aria-label="link for" to="/blogs/blog-post-layout-04/" className="text-white font-light"> Things to know before dyeing your hair</Link>
+                      <Link aria-label="link for" to="/featured-articles" className="text-white font-light">Featured Articles</Link>
                     </h2>
                   </div>
                 </SwiperSlide>
                 <SwiperSlide className="overflow-hidden cover-background relative" style={{ backgroundImage: `url(https://via.placeholder.com/1000x710)` }}>
                   <div className="flex items-center bg-[#000000b3] absolute left-0 bottom-0 w-full py-[55px] xl:py-[20px] lg:py-[55px] md:py-[40px] xs:py-[30px] px-[60px] xl:px-[50px] xs:pl-[30px] xs:pr-[50px] xs:flex-col xs:items-start">
-                    <Link aria-label="link for" to="blogs/blog-grid" className="col-auto uppercase ps-0 pr-8 mr-8 border-r border-[#ffffff33] text-[#c89965] tracking-[2px] text-md font-medium tracking-2px font-serif md:border-0 md:mb-[10px] hover:text-white xs:mb-[5px]">Fashion</Link>
+                    <Link aria-label="link for" to="/trending-articles" className="col-auto uppercase ps-0 pr-8 mr-8 border-r border-[#ffffff33] text-[#c89965] tracking-[2px] text-md font-medium tracking-2px font-serif md:border-0 md:mb-[10px] hover:text-white xs:mb-[5px]">Trending</Link>
                     <h2 className="heading-6 m-0">
-                      <Link aria-label="link for" to="/blogs/blog-post-layout-04/" className="text-white font-300"> Simplicity is the ultimate sophistication</Link>
-                    </h2>
-                  </div>
-                </SwiperSlide>
-                <SwiperSlide className="overflow-hidden cover-background relative" style={{ backgroundImage: `url(https://via.placeholder.com/1000x710)` }}>
-                  <div className="flex items-center bg-[#000000b3] absolute left-0 bottom-0 w-full py-[55px] xl:py-[20px] lg:py-[55px] md:py-[40px] xs:py-[30px] px-[60px] xl:px-[50px] xs:pl-[30px] xs:pr-[50px] xs:flex-col xs:items-start">
-                    <Link aria-label="link for" to="/blogs/blog-grid" className="col-auto uppercase ps-0 pr-8 mr-8 border-r border-[#ffffff33] text-[#c89965] tracking-[2px] text-md font-medium tracking-2px font-serif md:border-0 md:mb-[10px] hover:text-white xs:mb-[5px]">Wildlife</Link>
-                    <h2 className="heading-6 m-0">
-                      <Link aria-label="link for" to="/blogs/blog-post-layout-04/" className="text-white font-300">The best comfort food will always be greens</Link>
+                      <Link aria-label="link for" to="/trending-articles" className="text-white font-300">Trending Articles</Link>
                     </h2>
                   </div>
                 </SwiperSlide>
@@ -265,8 +268,10 @@ const MagazinePage = (props) => {
       </section>
       {/* Section End */}
 
+
+
       {/* Section Start */}
-      <section className="py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px] bg-[#f8f4f0] px-[75px] xl:px-[30px] lg:px-[15px] sm:px-0">
+      <section className="py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px] bg-white px-[75px] xl:px-[30px] lg:px-[15px] sm:px-0">
         <Container>
           <Row className="justify-center">
             <Col lg={6} className="text-center mb-10 sm:mb-6">
@@ -344,10 +349,16 @@ const MagazinePage = (props) => {
         show={showLoginModal}
         onHide={() => setShowLoginModal(false)}
         onSwitchToRegister={handleSwitchToRegister}
+        onSwitchToPasswordReset={handleSwitchToPasswordReset}
       />
       <RegisterModal 
         show={showRegisterModal}
         onHide={() => setShowRegisterModal(false)}
+        onSwitchToLogin={handleSwitchToLogin}
+      />
+      <PasswordResetModal 
+        show={showPasswordResetModal}
+        onHide={() => setShowPasswordResetModal(false)}
         onSwitchToLogin={handleSwitchToLogin}
       />
     </div>

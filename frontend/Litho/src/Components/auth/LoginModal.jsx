@@ -7,7 +7,7 @@ import useAuth from '../../api/useAuth'
 import { axiosInstance } from '../../api/axios'
 import { fadeIn } from '../../Functions/GlobalAnimations'
 
-const LoginModal = ({ show, onHide, onSwitchToRegister }) => {
+const LoginModal = ({ show, onHide, onSwitchToRegister, onSwitchToPasswordReset }) => {
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -53,10 +53,23 @@ const LoginModal = ({ show, onHide, onSwitchToRegister }) => {
             setError('')
         } catch (error) {
             console.error('Login error:', error)
-            const errorMessage = error.response?.data?.detail || 
-                              error.response?.data?.message || 
-                              error.message || 
-                              "Login failed. Please check your credentials."
+            let errorMessage = "Login failed. Please check your credentials."
+            
+            if (error.response?.data?.detail) {
+                if (Array.isArray(error.response.data.detail)) {
+                    // Handle validation errors from FastAPI
+                    errorMessage = error.response.data.detail
+                        .map(err => err.msg || err.message || 'Validation error')
+                        .join(', ')
+                } else if (typeof error.response.data.detail === 'string') {
+                    errorMessage = error.response.data.detail
+                }
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message
+            } else if (error.message) {
+                errorMessage = error.message
+            }
+            
             setError(errorMessage)
         } finally {
             setLoading(false)
@@ -140,13 +153,13 @@ const LoginModal = ({ show, onHide, onSwitchToRegister }) => {
                                     <input type="checkbox" className="mr-[8px]" />
                                     <span className="text-sm">Remember me</span>
                                 </label>
-                                <Link 
-                                    to="/auth/forgot-password" 
-                                    className="text-sm hover:text-darkgray"
-                                    onClick={handleClose}
+                                <button
+                                    type="button"
+                                    onClick={onSwitchToPasswordReset}
+                                    className="text-sm hover:text-darkgray bg-transparent border-0 p-0 underline decoration-[1px] underline-offset-[4px]"
                                 >
-                                    Forgot Password?
-                                </Link>
+                                    Change Password
+                                </button>
                             </div>
                         </div>
                         <div className="mb-[20px]">

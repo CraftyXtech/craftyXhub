@@ -18,7 +18,10 @@ import ReactCustomScrollbar from "../ReactCustomScrollbar";
 import GlobalContext from "../../Context/Context";
 
 // Data
-import HeaderData from "./HeaderData";
+import HeaderData, { DashboardMenuData } from "./HeaderData";
+
+// API & Auth
+import useAuth from "../../api/useAuth";
 
 // css
 import "../../Assets/scss/layouts/_header.scss"
@@ -184,6 +187,17 @@ export const Menu = memo((props) => {
   const [isMenuActive, setMenuActive] = useState(null);
   const [isHover, setIsHover] = useState(false)
   const handleMenuClick = (e, index) => setMenuActive(index !== isMenuActive ? index : null);
+  
+  // Get authentication state
+  const { isAuthenticated } = useAuth();
+  
+  // Conditionally add Dashboard menu for authenticated users
+  const menuData = React.useMemo(() => {
+    if (isAuthenticated) {
+      return [DashboardMenuData, ...props.data];
+    }
+    return props.data;
+  }, [isAuthenticated, props.data]);
 
   // set Active Menu
   const location = useLocation()
@@ -214,7 +228,7 @@ export const Menu = memo((props) => {
   return (
     <div className={`${props.mobileMenu ? `mobile-menu-${props.mobileMenu}` : ""}${props.className ? ` ${props.className}` : ""}`}>
       <ul className="navbar-nav">
-        {props.data.map((item, i) => {
+        {menuData.map((item, i) => {
           return (
             <li className={`nav-item${item.dropdown || item.megamenu ? ` dropdown` : ""}${isMenuActive === i ? " open" : ""}`} key={i}>
               {

@@ -56,8 +56,8 @@ const Register = (props) => {
         }
 
         // Validate password length
-        if (formData.password.length < 6) {
-            setError('Password must be at least 6 characters long')
+        if (formData.password.length < 8) {
+            setError('Password must be at least 8 characters long')
             setLoading(false)
             return
         }
@@ -68,7 +68,9 @@ const Register = (props) => {
                 full_name: formData.full_name,
                 username: formData.username,
                 email: formData.email,
-                password: formData.password
+                password: formData.password,
+                confirm_password: formData.confirmPassword,
+                role: 'user'
             })
 
             // Step 2: Auto login after successful registration
@@ -93,10 +95,23 @@ const Register = (props) => {
             navigate('/')
         } catch (error) {
             console.error('Registration error:', error)
-            const errorMessage = error.response?.data?.detail || 
-                              error.response?.data?.message || 
-                              error.message || 
-                              "Registration failed. Please try again."
+            let errorMessage = "Registration failed. Please try again."
+            
+            if (error.response?.data?.detail) {
+                if (Array.isArray(error.response.data.detail)) {
+                    // Handle validation errors from FastAPI
+                    errorMessage = error.response.data.detail
+                        .map(err => err.msg || err.message || 'Validation error')
+                        .join(', ')
+                } else if (typeof error.response.data.detail === 'string') {
+                    errorMessage = error.response.data.detail
+                }
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message
+            } else if (error.message) {
+                errorMessage = error.message
+            }
+            
             setError(errorMessage)
         } finally {
             setLoading(false)

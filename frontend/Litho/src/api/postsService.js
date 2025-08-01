@@ -6,7 +6,7 @@ export const getImageUrl = (imagePath, folder) => {
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
     
     const filename = imagePath.split('/').pop();
-    return `/v1/uploads/images/${filename}?folder=${folder || 'posts'}`;
+    return `/uploads/images/${filename}?folder=${folder || 'posts'}`;
 };
 
 // ===== POSTS SERVICES =====
@@ -87,7 +87,7 @@ export const getPopularPosts = async (params = {}) => {
 
 export const getRecentPosts = async (params = {}) => {
     try {
-        const response = await axiosInstance.get('/v1/posts/recent', { params });
+        const response = await axiosInstance.get('/posts/recent', { params });
         return response.data;
     } catch (error) {
         console.error('Error fetching recent posts:', error);
@@ -98,7 +98,7 @@ export const getRecentPosts = async (params = {}) => {
 // Get related posts for a specific post
 export const getRelatedPosts = async (postUuid, params = {}) => {
     try {
-        const response = await axiosInstance.get(`/v1/posts/${postUuid}/related`, { params });
+        const response = await axiosInstance.get(`/posts/${postUuid}/related`, { params });
         return response.data;
     } catch (error) {
         console.error('Error fetching related posts:', error);
@@ -111,7 +111,7 @@ export const getRelatedPosts = async (postUuid, params = {}) => {
 // Get comments for a post or all comments with filters
 export const getComments = async (params = {}) => {
     try {
-        const response = await axiosInstance.get('/v1/comments/', { params });
+        const response = await axiosInstance.get('/comments/', { params });
         return response.data;
     } catch (error) {
         console.error('Error fetching comments:', error);
@@ -122,7 +122,7 @@ export const getComments = async (params = {}) => {
 // Get a single comment by UUID
 export const getComment = async (commentUuid) => {
     try {
-        const response = await axiosInstance.get(`/v1/comments/${commentUuid}`);
+        const response = await axiosInstance.get(`/comments/${commentUuid}`);
         return response.data;
     } catch (error) {
         console.error('Error fetching comment:', error);
@@ -133,7 +133,7 @@ export const getComment = async (commentUuid) => {
 // Create a new comment
 export const createComment = async (commentData) => {
     try {
-        const response = await axiosPrivate.post('/v1/comments/', commentData);
+        const response = await axiosPrivate.post('/comments/', commentData);
         return response.data;
     } catch (error) {
         console.error('Error creating comment:', error);
@@ -144,7 +144,7 @@ export const createComment = async (commentData) => {
 // Update a comment
 export const updateComment = async (commentUuid, commentData) => {
     try {
-        const response = await axiosPrivate.put(`/v1/comments/${commentUuid}`, commentData);
+        const response = await axiosPrivate.put(`/comments/${commentUuid}`, commentData);
         return response.data;
     } catch (error) {
         console.error('Error updating comment:', error);
@@ -155,7 +155,7 @@ export const updateComment = async (commentUuid, commentData) => {
 // Delete a comment
 export const deleteComment = async (commentUuid) => {
     try {
-        const response = await axiosPrivate.delete(`/v1/comments/${commentUuid}`);
+        const response = await axiosPrivate.delete(`/comments/${commentUuid}`);
         return response.data;
     } catch (error) {
         console.error('Error deleting comment:', error);
@@ -166,7 +166,7 @@ export const deleteComment = async (commentUuid) => {
 // Toggle like on a comment
 export const toggleCommentLike = async (commentUuid) => {
     try {
-        const response = await axiosPrivate.post(`/v1/comments/${commentUuid}/like`);
+        const response = await axiosPrivate.post(`/comments/${commentUuid}/like`);
         return response.data;
     } catch (error) {
         console.error('Error toggling comment like:', error);
@@ -177,13 +177,15 @@ export const toggleCommentLike = async (commentUuid) => {
 // Report a comment
 export const reportComment = async (commentUuid, reportData) => {
     try {
-        const response = await axiosPrivate.post(`/v1/comments/${commentUuid}/report`, reportData);
+        const response = await axiosPrivate.post(`/comments/${commentUuid}/report`, reportData);
         return response.data;
     } catch (error) {
         console.error('Error reporting comment:', error);
         throw error;
     }
 };
+
+
 
 
 // ===== CATEGORIES SERVICES =====
@@ -229,7 +231,6 @@ export const createProfile = async (profileData) => {
     try {
         const formData = new FormData();
         
-        // Add profile fields
         if (profileData.bio) formData.append('bio', profileData.bio);
         if (profileData.location) formData.append('location', profileData.location);
         if (profileData.website) formData.append('website', profileData.website);
@@ -286,6 +287,195 @@ export const deleteProfile = async (userUuid) => {
         const response = await axiosPrivate.delete(`/profiles/${userUuid}`);
         return response.data;
     } catch (error) {
+        throw error;
+    }
+};
+
+// ===== SEARCH SERVICES =====
+export const searchContent = async (query) => {
+    try {
+        const response = await axiosInstance.get('/search', { 
+            params: { q: query } 
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error searching content:', error);
+        throw error;
+    }
+};
+
+// ===== TRENDING & FEATURED POSTS SERVICES =====
+export const getTrendingPosts = async (params = {}) => {
+    try {
+        const response = await axiosInstance.get('/posts/trending/', { params });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching trending posts:', error);
+        throw error;
+    }
+};
+
+export const getFeaturedPosts = async (params = {}) => {
+    try {
+        const response = await axiosInstance.get('/posts/featured', { params });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching featured posts:', error);
+        throw error;
+    }
+};
+
+// ===== BOOKMARK SERVICES =====
+export const bookmarkPost = async (postUuid) => {
+    try {
+        const response = await axiosPrivate.post(`/posts/${postUuid}/bookmark`);
+        return response.data;
+    } catch (error) {
+        console.error('Error bookmarking post:', error);
+        throw error;
+    }
+};
+
+export const getUserBookmarks = async (params = {}) => {
+    try {
+        const response = await axiosPrivate.get('/posts/users/me/bookmarks', { params });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching user bookmarks:', error);
+        throw error;
+    }
+};
+
+// ===== REPORT SERVICES =====
+export const reportPost = async (postUuid, reportData) => {
+    try {
+        const response = await axiosPrivate.post(`/posts/${postUuid}/report`, reportData);
+        return response.data;
+    } catch (error) {
+        console.error('Error reporting post:', error);
+        throw error;
+    }
+};
+
+// ===== USER POST CREATION SERVICES =====
+export const createUserPost = async (postData) => {
+    try {
+        // Create FormData for multipart/form-data submission (supports file uploads)
+        const formData = new FormData();
+        
+        // Add all post fields
+        formData.append('title', postData.title);
+        formData.append('content', postData.content);
+        
+        if (postData.excerpt) formData.append('excerpt', postData.excerpt);
+        if (postData.meta_title) formData.append('meta_title', postData.meta_title);
+        if (postData.meta_description) formData.append('meta_description', postData.meta_description);
+        if (postData.slug) formData.append('slug', postData.slug);
+        if (postData.category_id) formData.append('category_id', postData.category_id);
+        if (postData.reading_time) formData.append('reading_time', postData.reading_time);
+        
+        // Handle tag_ids as comma-separated string
+        if (postData.tag_ids && postData.tag_ids.length > 0) {
+            formData.append('tag_ids', postData.tag_ids.join(','));
+        }
+        
+        // Handle featured image file
+        if (postData.featured_image && postData.featured_image instanceof File) {
+            formData.append('featured_image', postData.featured_image);
+        }
+        
+        // Default to draft unless explicitly set to publish
+        const isPublished = postData.is_published || false;
+        formData.append('is_published', isPublished);
+
+        const response = await axiosPrivate.post('/posts/', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error creating user post:', error);
+        throw error;
+    }
+};
+
+export const updateUserPost = async (postUuid, postData) => {
+    try {
+        // Create FormData for multipart/form-data submission (supports file uploads)
+        const formData = new FormData();
+        
+        // Add all post fields that are being updated
+        if (postData.title !== undefined) formData.append('title', postData.title);
+        if (postData.content !== undefined) formData.append('content', postData.content);
+        if (postData.excerpt !== undefined) formData.append('excerpt', postData.excerpt || '');
+        if (postData.meta_title !== undefined) formData.append('meta_title', postData.meta_title || '');
+        if (postData.meta_description !== undefined) formData.append('meta_description', postData.meta_description || '');
+        if (postData.slug !== undefined) formData.append('slug', postData.slug);
+        if (postData.category_id !== undefined) formData.append('category_id', postData.category_id || '');
+        if (postData.reading_time !== undefined) formData.append('reading_time', postData.reading_time || '');
+        
+        // Handle tag_ids as comma-separated string
+        if (postData.tag_ids !== undefined) {
+            const tagIdsString = Array.isArray(postData.tag_ids) ? postData.tag_ids.join(',') : '';
+            formData.append('tag_ids', tagIdsString);
+        }
+        
+        // Handle featured image file (new upload)
+        if (postData.featured_image && postData.featured_image instanceof File) {
+            formData.append('featured_image', postData.featured_image);
+        }
+
+        const response = await axiosPrivate.put(`/posts/${postUuid}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error updating user post:', error);
+        throw error;
+    }
+};
+
+// ===== DRAFT POSTS SERVICES =====
+export const getUserDraftPosts = async (params = {}) => {
+    try {
+        const response = await axiosPrivate.get('/posts/drafts', { params });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching user draft posts:', error);
+        throw error;
+    }
+};
+
+export const savePostAsDraft = async (postData) => {
+    try {
+        // Ensure it's saved as draft
+        const draftData = { ...postData, is_published: false };
+        return await createUserPost(draftData);
+    } catch (error) {
+        console.error('Error saving post as draft:', error);
+        throw error;
+    }
+};
+
+export const publishDraftPost = async (postUuid) => {
+    try {
+        const response = await axiosPrivate.put(`/posts/${postUuid}`, { is_published: true });
+        return response.data;
+    } catch (error) {
+        console.error('Error publishing draft post:', error);
+        throw error;
+    }
+};
+
+export const deleteUserPost = async (postUuid) => {
+    try {
+        const response = await axiosPrivate.delete(`/posts/${postUuid}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting user post:', error);
         throw error;
     }
 }; 
