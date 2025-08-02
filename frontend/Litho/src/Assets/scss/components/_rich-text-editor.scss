@@ -1,0 +1,258 @@
+// Rich Text Editor Styles
+// Matches Litho design system
+
+.rich-text-editor-wrapper {
+  position: relative;
+  
+  .rich-text-editor {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    
+    // TinyMCE container styling
+    .tox-tinymce {
+      border: 1px solid #dfdfdf !important;
+      border-radius: 6px !important;
+      transition: border-color 0.3s ease;
+      font-family: 'Roboto', sans-serif;
+      
+      &:hover {
+        border-color: #0038e3 !important;
+      }
+      
+      &:focus-within {
+        border-color: #0038e3 !important;
+        box-shadow: 0 0 0 3px rgba(0, 56, 227, 0.1) !important;
+      }
+    }
+    
+    // Toolbar styling
+    .tox-toolbar {
+      background: #ffffff !important;
+      border-bottom: 1px solid #dfdfdf !important;
+      padding: 8px 12px !important;
+      
+      .tox-toolbar__group {
+        margin-right: 12px;
+        
+        .tox-tbtn {
+          border-radius: 4px !important;
+          margin: 0 2px !important;
+          
+          &:hover {
+            background: #f7f7f7 !important;
+            color: #0038e3 !important;
+          }
+          
+          &.tox-tbtn--enabled {
+            background: #0038e3 !important;
+            color: #ffffff !important;
+            
+            &:hover {
+              background: #ff7a56 !important;
+            }
+          }
+        }
+        
+        .tox-split-button {
+          .tox-tbtn {
+            &:hover {
+              background: #f7f7f7 !important;
+              color: #0038e3 !important;
+            }
+          }
+        }
+      }
+    }
+    
+    // Editor area styling
+    .tox-edit-area {
+      background: #ffffff !important;
+      
+      .tox-edit-area__iframe {
+        background: #ffffff !important;
+      }
+    }
+    
+    // Status bar styling
+    .tox-statusbar {
+      background: #f7f7f7 !important;
+      border-top: 1px solid #dfdfdf !important;
+      padding: 8px 12px !important;
+      font-size: 12px !important;
+      color: #939393 !important;
+      
+      .tox-statusbar__text-container {
+        color: #939393 !important;
+      }
+      
+      .tox-statusbar__path {
+        color: #939393 !important;
+      }
+      
+      .tox-statusbar__wordcount {
+        color: #0038e3 !important;
+        font-weight: 500;
+      }
+    }
+    
+    // Menu styling (if enabled)
+    .tox-menubar {
+      background: #ffffff !important;
+      border-bottom: 1px solid #dfdfdf !important;
+      
+      .tox-mbtn {
+        color: #232323 !important;
+        
+        &:hover {
+          background: #f7f7f7 !important;
+          color: #0038e3 !important;
+        }
+        
+        &.tox-mbtn--active {
+          background: #0038e3 !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+    
+    // Dialog styling
+    .tox-dialog {
+      .tox-dialog__header {
+        background: #ffffff !important;
+        border-bottom: 1px solid #dfdfdf !important;
+        color: #232323 !important;
+      }
+      
+      .tox-dialog__body {
+        background: #ffffff !important;
+        color: #232323 !important;
+      }
+      
+      .tox-dialog__footer {
+        background: #f7f7f7 !important;
+        border-top: 1px solid #dfdfdf !important;
+        
+        .tox-button {
+          border-radius: 4px !important;
+          font-weight: 500 !important;
+          
+          &.tox-button--primary {
+            background: #0038e3 !important;
+            border-color: #0038e3 !important;
+            
+            &:hover {
+              background: #ff7a56 !important;
+              border-color: #ff7a56 !important;
+            }
+          }
+          
+          &.tox-button--secondary {
+            background: #ffffff !important;
+            border-color: #dfdfdf !important;
+            color: #232323 !important;
+            
+            &:hover {
+              background: #f7f7f7 !important;
+              border-color: #0038e3 !important;
+              color: #0038e3 !important;
+            }
+          }
+        }
+      }
+    }
+    
+    // Error state styling
+    &.errors-danger {
+      .tox-tinymce {
+        border-color: #dc3545 !important;
+        
+        &:focus-within {
+          border-color: #dc3545 !important;
+          box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+        }
+      }
+    }
+  }
+  
+  // Error message styling
+  .text-error {
+    color: #dc3545 !important;
+    font-size: 13px;
+    margin-top: 5px;
+    display: block;
+  }
+  
+  // Error state for wrapper
+  &.errors-danger {
+    .rich-text-editor .tox-tinymce {
+      border-color: #dc3545 !important;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 767px) {
+  .rich-text-editor-wrapper {
+    .rich-text-editor {
+      .tox-toolbar {
+        padding: 4px 8px !important;
+        
+        .tox-toolbar__group {
+          margin-right: 8px;
+          
+          .tox-tbtn {
+            margin: 0 1px !important;
+            padding: 4px !important;
+            font-size: 12px !important;
+          }
+        }
+      }
+      
+      .tox-statusbar {
+        padding: 6px 8px !important;
+        font-size: 11px !important;
+      }
+    }
+  }
+}
+
+// Dark mode support (if needed later)
+@media (prefers-color-scheme: dark) {
+  .rich-text-editor-wrapper.dark-mode {
+    .rich-text-editor {
+      .tox-tinymce {
+        background: #262b35 !important;
+        border-color: #495057 !important;
+      }
+      
+      .tox-toolbar {
+        background: #262b35 !important;
+        border-bottom-color: #495057 !important;
+        
+        .tox-tbtn {
+          color: #ffffff !important;
+          
+          &:hover {
+            background: #495057 !important;
+            color: #0038e3 !important;
+          }
+        }
+      }
+      
+      .tox-edit-area {
+        background: #262b35 !important;
+        
+        .tox-edit-area__iframe {
+          background: #262b35 !important;
+        }
+      }
+      
+      .tox-statusbar {
+        background: #495057 !important;
+        border-top-color: #6c757d !important;
+        color: #ffffff !important;
+      }
+    }
+  }
+}

@@ -262,11 +262,8 @@ const PostDetails = lazy(() =>
 const CreatePost = lazy(() =>
   import("./Pages/Posts/CreatePost")
 );
-const DraftPosts = lazy(() =>
-  import("./Pages/User/DraftPosts")
-);
-const EditPost = lazy(() =>
-  import("./Pages/Posts/EditPost")
+const UserPosts = lazy(() =>
+  import("./Pages/User/UserPosts")
 );
 
 // User Profile & Social Features
@@ -645,7 +642,7 @@ function App() {
                     </Route>
                   </Route>
 
-                  {/* Create Post Route */}
+                  {/* Create/Edit Post Route */}
                   <Route 
                     path="posts/create" 
                     element={
@@ -655,21 +652,21 @@ function App() {
                     } 
                   />
 
-                  {/* User Draft Posts Route */}
+                  {/* Edit Post Route */}
                   <Route 
-                    path="user/drafts" 
+                    path="posts/edit/:slug" 
                     element={
-                      <DraftPosts
+                      <CreatePost
                         style={{ "--base-color": "#0038e3" }}
                       />
                     } 
                   />
 
-                  {/* Edit Post Route */}
+                  {/* User Posts Route */}
                   <Route 
-                    path="posts/edit/:slug" 
+                    path="user/posts" 
                     element={
-                      <EditPost
+                      <UserPosts
                         style={{ "--base-color": "#0038e3" }}
                       />
                     } 

@@ -8,6 +8,7 @@ import { PropTypes } from "prop-types";
 // Components
 import Pagination from './HelperComponents/Pagination';
 import Filter from "./BlogFilter";
+import Buttons from '../Button/Buttons';
 
 // Data
 import { blogData } from './BlogData';
@@ -21,6 +22,22 @@ const blogClassicData = blogData.filter((item) => item.blogType === "classic");
 const BlogClassic = (props) => {
   const blogWrapper = useRef();
   const [loading, setLoading] = useState(true);
+
+  // Utility function to truncate content and strip HTML
+  const truncateWords = (text, limit = 50) => {
+    if (!text) return '';
+    // Strip HTML tags, decode HTML entities, and get plain text
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = text;
+    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+    const cleanText = plainText.replace(/\s+/g, ' ').trim();
+    
+    const words = cleanText.split(' ');
+    if (words.length > limit) {
+      return words.slice(0, limit).join(' ') + '...';
+    }
+    return cleanText;
+  };
 
   useEffect(() => {
     import("../../Functions/Utilities").then(module => {
@@ -49,7 +66,7 @@ const BlogClassic = (props) => {
                 let categories = Array.isArray(item.category) ? item.category : (item.category && item.category.name ? [item.category.name] : []);
                 return categories.map(cat => cat.split(" ").join("")).join(" ").toLowerCase();
               })()}`}>
-                <m.div className="blog-classic"
+                <m.div className="blog-classic mb-12 md:mb-10 sm:mb-8"
                   initial={{ opacity: 0 }}
                   whileInView={!loading && { opacity: 1 }}
                   viewport={{ once: true }}
@@ -63,7 +80,7 @@ const BlogClassic = (props) => {
                         loading="lazy" 
                         src={getImageUrl(item.featured_image) || item.img} 
                         alt={item.title} 
-                        className="rounded-[4px] md:mb-[40px] sm:mb-[33px] xs:mb-[28px]" 
+                        className="rounded-[4px] w-full h-55 object-cover md:mb-[25px] sm:mb-[20px] xs:mb-[15px]" 
                       />
                     </Link>
                   </div>
@@ -71,10 +88,23 @@ const BlogClassic = (props) => {
                     <Link 
                       aria-label="link" 
                       to={`${props.link}${item.uuid}`}
+                      className="font-bold text-darkgray hover:text-fastblue transition-colors duration-300"
                     >
                       {item.title}
                     </Link>
-                    <p>{item.content}</p>
+                    <p className="mt-3 text-spanishgray leading-relaxed">
+                      {truncateWords(item.content, 50)}
+                    </p>
+                    <div className="mt-4">
+                      <Buttons
+                        to={`${props.link}${item.uuid}`}
+                        title="Continue Reading"
+                        size="sm"
+                        themeColor={["#0038e3", "#ff7a56"]}
+                        className="btn-transparent"
+                        ariaLabel={`Continue reading ${item.title}`}
+                      />
+                    </div>
                   </div>
                 </m.div>
               </li>

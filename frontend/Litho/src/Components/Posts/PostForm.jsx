@@ -7,7 +7,7 @@ import * as Yup from 'yup'
 import { m } from "framer-motion"
 
 // Components
-import { Input, TextArea } from '../Form/Form'
+import { Input, TextArea, RichTextEditor } from '../Form/Form'
 import Buttons from '../Button/Buttons'
 
 // API & Auth
@@ -28,7 +28,12 @@ const PostFormSchema = Yup.object().shape({
         .required('Title is required'),
     content: Yup.string()
         .min(50, 'Content must be at least 50 characters')
-        .required('Content is required'),
+        .required('Content is required')
+        .test('content-length', 'Content must be at least 50 characters', function(value) {
+            // Strip HTML tags to check actual text content length
+            const textContent = value ? value.replace(/<[^>]*>/g, '').trim() : '';
+            return textContent.length >= 50;
+        }),
     excerpt: Yup.string()
         .max(500, 'Excerpt must be less than 500 characters'),
     category_id: Yup.number()
@@ -53,7 +58,6 @@ const PostForm = (props) => {
         submitButtonText = "Publish Post",
         draftButtonText = "Save as Draft",
         loading = false,
-        isEdit = false,
         className,
         showAdvancedFields = true,
         ...restProps
@@ -200,7 +204,14 @@ const PostForm = (props) => {
                 onSubmit={handleSubmit}
                 enableReinitialize={true}
             >
-                {({ values, errors, touched, isSubmitting, setFieldValue }) => (
+                {({ values, errors, touched, isSubmitting, setFieldValue }) => {
+                    // Debug: Log form state
+                    console.log('Form values:', values);
+                    console.log('Form errors:', errors);
+                    console.log('Form touched:', touched);
+                    console.log('Form isSubmitting:', isSubmitting);
+                    
+                    return (
                     <Form className="post-form">
                         {/* Title Field */}
                         <div className="mb-[25px]">
@@ -226,17 +237,18 @@ const PostForm = (props) => {
 
                         {/* Content Field - Rich Text Editor */}
                         <div className="mb-[25px]">
-                            <label className="text-sm font-medium text-darkgray mb-[10px] block">
-                                Content *
-                            </label>
-                            <TextArea
+                            <RichTextEditor
                                 name="content"
-                                rows={12}
-                                placeholder="Write your post content here... You can use Markdown formatting."
-                                className="py-[15px] px-[20px] w-full border-[1px] border-solid border-[#dfdfdf] text-base rounded-[6px] focus:border-fastblue focus:outline-none transition-all duration-300 resize-vertical"
+                                label={
+                                    <span className="text-sm font-medium text-darkgray mb-[10px] block">
+                                        Content *
+                                    </span>
+                                }
+                                height={400}
+                                className="w-full"
                             />
                             <div className="text-xs text-spanishgray mt-2">
-                                Tip: You can use Markdown formatting for better content structure.
+                                Tip: Use the rich text editor to format your content with headings, lists, links, and more.
                             </div>
                         </div>
 
@@ -433,7 +445,8 @@ const PostForm = (props) => {
                             )}
                         </div>
                     </Form>
-                )}
+                    );
+                }}
             </Formik>
         </m.div>
     );
@@ -444,7 +457,6 @@ PostForm.defaultProps = {
     submitButtonText: "Publish Post",
     draftButtonText: "Save as Draft",
     loading: false,
-    isEdit: false,
     showAdvancedFields: true,
     className: ""
 };
@@ -456,7 +468,6 @@ PostForm.propTypes = {
     submitButtonText: PropTypes.string,
     draftButtonText: PropTypes.string,
     loading: PropTypes.bool,
-    isEdit: PropTypes.bool,
     showAdvancedFields: PropTypes.bool,
     className: PropTypes.string,
 };

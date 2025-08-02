@@ -240,11 +240,11 @@ const Dashboard = (props) => {
                         </Col>
                         <Col lg={3} md={4} sm={6} className="mb-[30px]">
                             <Buttons
-                                to="/user/drafts"
+                                to="/user/posts"
                                 className="btn-fill btn-fancy font-medium font-serif uppercase rounded-none w-full h-[60px] flex items-center justify-center"
                                 themeColor="#ff7a56"
                                 color="#fff"
-                                title="Manage Drafts"
+                                title="Manage Posts"
                                 icon="fas fa-edit mr-2"
                             />
                         </Col>
@@ -299,7 +299,7 @@ const Dashboard = (props) => {
                                 />
                                 <div className="text-center mt-[50px]">
                                     <Buttons
-                                        to="/dashboard/posts"
+                                        to="/user/posts"
                                         className="btn-fill btn-fancy font-medium font-serif uppercase rounded-none"
                                         themeColor="#0038e3"
                                         color="#fff"

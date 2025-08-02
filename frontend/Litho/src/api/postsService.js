@@ -6,7 +6,7 @@ export const getImageUrl = (imagePath, folder) => {
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
     
     const filename = imagePath.split('/').pop();
-    return `/uploads/images/${filename}?folder=${folder || 'posts'}`;
+    return `/v1/uploads/images/${filename}?folder=${folder || 'posts'}`;
 };
 
 // ===== POSTS SERVICES =====

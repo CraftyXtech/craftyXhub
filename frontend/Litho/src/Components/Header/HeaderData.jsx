@@ -6,13 +6,10 @@ export const DashboardMenuData = {
             title: 'Overview',
             link: '/dashboard'
         },
+      
         {
             title: 'My Posts',
-            link: '/dashboard/posts'
-        },
-        {
-            title: 'Drafts',
-            link: '/user/drafts'
+            link: '/user/posts'
         },
         {
             title: 'Media Library',
