@@ -8,6 +8,8 @@ import { PropTypes } from "prop-types"
 
 // Components
 import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
+import Logo from '../../Components/Logo'
+import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import SideButtons from "../../Components/SideButtons"
 import Counter from '../../Components/Counters/Counter'
@@ -42,13 +44,7 @@ const Dashboard = (props) => {
                 <Header topSpace={{ desktop: true }} type="reverse-scroll">
                     <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" containerClass="sm:px-0">
                         <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                            <Link aria-label="header logo" className="flex items-center" to="/">
-                                <Navbar.Brand className="inline-block p-0 m-0">
-                                    <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                    <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                    <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                </Navbar.Brand>
-                            </Link>
+                            <Logo className="flex items-center" variant="black" />
                         </Col>
                         <div className="col-auto hidden order-last md:block">
                             <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
@@ -101,27 +97,49 @@ const Dashboard = (props) => {
         )
     }
 
-    // Prepare stats data for Counter component
+    // Prepare stats data for Counter component - Enhanced with social stats
     const statsData = [
         {
             number: { text: userPosts?.length || 0, class: "text-darkgray font-serif font-semibold text-[40px] tracking-[-1px]" },
             title: "Published Posts",
-            content: "Total posts published"
+            content: "Total posts published",
+            icon: "feather-edit",
+            link: "/user/posts"
         },
         {
             number: { text: drafts?.length || 0, class: "text-darkgray font-serif font-semibold text-[40px] tracking-[-1px]" },
-            title: "Draft Posts",
-            content: "Posts in draft"
+            title: "Draft Posts", 
+            content: "Posts in draft",
+            icon: "feather-file-text",
+            link: "/user/posts?tab=drafts"
+        },
+        {
+            number: { text: 0, class: "text-darkgray font-serif font-semibold text-[40px] tracking-[-1px]" },
+            title: "Followers",
+            content: "People following you",
+            icon: "feather-users",
+            link: "#followers-modal"
+        },
+        {
+            number: { text: 0, class: "text-darkgray font-serif font-semibold text-[40px] tracking-[-1px]" },
+            title: "Following", 
+            content: "People you follow",
+            icon: "feather-user-plus",
+            link: "#following-modal"
         },
         {
             number: { text: bookmarks?.length || 0, class: "text-darkgray font-serif font-semibold text-[40px] tracking-[-1px]" },
             title: "Bookmarks",
-            content: "Saved articles"
+            content: "Saved articles",
+            icon: "feather-bookmark", 
+            link: "/user/bookmarks"
         },
         {
             number: { text: media?.length || 0, class: "text-darkgray font-serif font-semibold text-[40px] tracking-[-1px]" },
-            title: "Media Files",
-            content: "Uploaded files"
+            title: "Media Library",
+            content: "Uploaded files",
+            icon: "feather-image",
+            link: "/user/media-library"
         }
     ]
 
@@ -136,13 +154,7 @@ const Dashboard = (props) => {
             <Header topSpace={{ desktop: true }} type="reverse-scroll">
                 <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" containerClass="sm:px-0">
                     <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                        <Link aria-label="header logo" className="flex items-center" to="/">
-                            <Navbar.Brand className="inline-block p-0 m-0">
-                                <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                            </Navbar.Brand>
-                        </Link>
+                        <Logo className="flex items-center" variant="black" />
                     </Col>
                     <div className="col-auto hidden order-last md:block">
                         <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
@@ -154,12 +166,8 @@ const Dashboard = (props) => {
                     </div>
                     <Navbar.Collapse className="col-auto px-0 justify-end">
                         <Menu {...props} />
+                        <UserProfileDropdown className="ms-4" />
                     </Navbar.Collapse>
-                    <Col className="col-auto text-right pe-0">
-                        <SearchBar className="xs:pl-[15px] pr-0" />
-                        <HeaderLanguage className="xs:pl-[15px]" />
-                        <HeaderCart className="xs:pl-[15px]" style={{ "--base-color": "#0038e3" }} />
-                    </Col>
                 </HeaderNav>
             </Header>
             {/* Header End */}
@@ -233,6 +241,7 @@ const Dashboard = (props) => {
                                 to="/posts/create"
                                 className="btn-fill btn-fancy font-medium font-serif uppercase rounded-none w-full h-[60px] flex items-center justify-center"
                                 themeColor="#0038e3"
+                                size="sm"
                                 color="#fff"
                                 title="Create New Post"
                                 icon="fas fa-plus mr-2"
@@ -243,6 +252,7 @@ const Dashboard = (props) => {
                                 to="/user/posts"
                                 className="btn-fill btn-fancy font-medium font-serif uppercase rounded-none w-full h-[60px] flex items-center justify-center"
                                 themeColor="#ff7a56"
+                                size="sm"
                                 color="#fff"
                                 title="Manage Posts"
                                 icon="fas fa-edit mr-2"
@@ -250,9 +260,10 @@ const Dashboard = (props) => {
                         </Col>
                         <Col lg={3} md={4} sm={6} className="mb-[30px]">
                             <Buttons
-                                to="/user/media"
+                                to="/user/media-library"
                                 className="btn-fill btn-fancy font-medium font-serif uppercase rounded-none w-full h-[60px] flex items-center justify-center"
                                 themeColor="#28a745"
+                                size="sm"
                                 color="#fff"
                                 title="Media Library"
                                 icon="fas fa-images mr-2"
@@ -263,6 +274,7 @@ const Dashboard = (props) => {
                                 to="/user/bookmarks"
                                 className="btn-fill btn-fancy font-medium font-serif uppercase rounded-none w-full h-[60px] flex items-center justify-center"
                                 themeColor="#6c757d"
+                                size="sm"
                                 color="#fff"
                                 title="Bookmarks"
                                 icon="fas fa-bookmark mr-2"

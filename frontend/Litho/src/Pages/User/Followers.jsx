@@ -7,6 +7,8 @@ import { m } from "framer-motion"
 
 // Components
 import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
+import Logo from '../../Components/Logo'
+import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import SideButtons from "../../Components/SideButtons"
 import FollowButton from '../../Components/User/FollowButton'
@@ -113,11 +115,7 @@ const Followers = (props) => {
                 <Header topSpace={{ md: true }} type="reverse-scroll">
                     <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" menuPosition="left">
                         <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                            <Link aria-label="header logo" className="flex items-center" to="/">
-                                <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/litho-logo-regular-dark.png' data-rjs='/assets/img/litho-logo-regular-dark@2x.png' alt='logo' />
-                                <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/litho-logo-regular-dark.png' data-rjs='/assets/img/litho-logo-regular-dark@2x.png' alt='logo' />
-                                <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/litho-logo-regular-dark.png' data-rjs='/assets/img/litho-logo-regular-dark@2x.png' alt='logo' />
-                            </Link>
+                            <Logo className="flex items-center" variant="black" asNavbarBrand={false} />
                         </Col>
                         <div className="col-auto hidden order-last md:block">
                             <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
@@ -160,11 +158,7 @@ const Followers = (props) => {
                 <Header topSpace={{ md: true }} type="reverse-scroll">
                     <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" menuPosition="left">
                         <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                            <Link aria-label="header logo" className="flex items-center" to="/">
-                                <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/litho-logo-regular-dark.png' data-rjs='/assets/img/litho-logo-regular-dark@2x.png' alt='logo' />
-                                <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/litho-logo-regular-dark.png' data-rjs='/assets/img/litho-logo-regular-dark@2x.png' alt='logo' />
-                                <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/litho-logo-regular-dark.png' data-rjs='/assets/img/litho-logo-regular-dark@2x.png' alt='logo' />
-                            </Link>
+                            <Logo className="flex items-center" variant="black" asNavbarBrand={false} />
                         </Col>
                         <div className="col-auto hidden order-last md:block">
                             <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
@@ -229,6 +223,7 @@ const Followers = (props) => {
                     </div>
                     <Navbar.Collapse className="col-auto px-0 justify-end">
                         <Menu {...props} />
+                        <UserProfileDropdown className="ms-4" />
                     </Navbar.Collapse>
                 </HeaderNav>
             </Header>

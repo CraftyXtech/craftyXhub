@@ -93,18 +93,15 @@ const BlogClassic = (props) => {
                       {item.title}
                     </Link>
                     <p className="mt-3 text-spanishgray leading-relaxed">
-                      {truncateWords(item.content, 50)}
-                    </p>
-                    <div className="mt-4">
-                      <Buttons
+                      {truncateWords(item.content, 50)}{' '}
+                      <Link 
                         to={`${props.link}${item.uuid}`}
-                        title="Continue Reading"
-                        size="sm"
-                        themeColor={["#0038e3", "#ff7a56"]}
-                        className="btn-transparent"
-                        ariaLabel={`Continue reading ${item.title}`}
-                      />
-                    </div>
+                        className="text-darkgray hover:text-black transition-colors duration-300"
+                        aria-label={`Read more about ${item.title}`}
+                      >
+                        [Read more...]
+                      </Link>
+                    </p>
                   </div>
                 </m.div>
               </li>

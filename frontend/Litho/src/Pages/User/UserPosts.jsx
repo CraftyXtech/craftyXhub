@@ -8,6 +8,8 @@ import { m } from "framer-motion"
 
 // Components
 import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
+import Logo from '../../Components/Logo'
+import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import SideButtons from "../../Components/SideButtons"
 import UserPostCard from '../../Components/Posts/UserPostCard'
@@ -30,7 +32,7 @@ const UserPosts = (props) => {
     
     // Fetch both drafts and all posts
     const { drafts, loading: draftsLoading, error: draftsError, refetch: refetchDrafts } = useUserDraftPosts()
-    const { posts: allPosts, loading: postsLoading, error: postsError } = usePosts({ author_id: user?.id })
+    const { posts: allPosts, loading: postsLoading, error: postsError, refetch: refetchPosts } = usePosts({ author_id: user?.id })
     
     // Determine which data to show based on active tab
     const currentPosts = activeTab === 'drafts' ? drafts : allPosts
@@ -39,20 +41,33 @@ const UserPosts = (props) => {
     const isDraftMode = activeTab === 'drafts'
 
     const handlePostDelete = useCallback((postId) => {
-        if (isDraftMode) {
-            refetchDrafts()
-        }
+        // Refresh both drafts and posts lists to ensure consistency
+        refetchDrafts()
+        refetchPosts()
         
+        // Remove from selected posts
         setSelectedPosts(prev => prev.filter(id => id !== postId))
-    }, [isDraftMode, refetchDrafts])
+        
+        console.log('Post deleted successfully:', postId)
+    }, [refetchDrafts, refetchPosts])
 
     const handleDraftPublish = useCallback((draftId, publishedPost) => {
+        // Refresh both drafts and posts lists
         refetchDrafts()
+        refetchPosts()
         
+        // Remove from selected posts
         setSelectedPosts(prev => prev.filter(id => id !== draftId))
         
-        alert(`Draft published successfully! You can view it at /posts/${publishedPost.post.slug}`)
-    }, [refetchDrafts])
+        // Show success message
+        if (publishedPost?.post?.slug) {
+            alert(`Draft published successfully! You can view it at /posts/${publishedPost.post.slug}`)
+        } else {
+            alert('Draft published successfully!')
+        }
+        
+        console.log('Draft published successfully:', draftId, publishedPost)
+    }, [refetchDrafts, refetchPosts])
 
     const handleSelectPost = useCallback((postId) => {
         setSelectedPosts(prev => {
@@ -85,13 +100,7 @@ const UserPosts = (props) => {
                 <Header topSpace={{ desktop: true }} type="reverse-scroll">
                     <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" containerClass="sm:px-0">
                         <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                            <Link aria-label="header logo" className="flex items-center" to="/">
-                                <Navbar.Brand className="inline-block p-0 m-0">
-                                    <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                    <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                    <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                </Navbar.Brand>
-                            </Link>
+                            <Logo className="flex items-center" variant="black" />
                         </Col>
                         <div className="col-auto hidden order-last md:block">
                             <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
@@ -150,13 +159,7 @@ const UserPosts = (props) => {
             <Header topSpace={{ desktop: true }} type="reverse-scroll">
                 <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" containerClass="sm:px-0">
                     <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                        <Link aria-label="header logo" className="flex items-center" to="/">
-                            <Navbar.Brand className="inline-block p-0 m-0">
-                                <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                            </Navbar.Brand>
-                        </Link>
+                        <Logo className="flex items-center" variant="black" />
                     </Col>
                     <div className="col-auto hidden order-last md:block">
                         <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
@@ -168,12 +171,8 @@ const UserPosts = (props) => {
                     </div>
                     <Navbar.Collapse className="col-auto px-0 justify-end">
                         <Menu {...props} />
+                        <UserProfileDropdown className="ms-4" />
                     </Navbar.Collapse>
-                    <Col className="col-auto text-right pe-0">
-                        <SearchBar className="xs:pl-[15px] pr-0" />
-                        <HeaderLanguage className="xs:pl-[15px]" />
-                        <HeaderCart className="xs:pl-[15px]" style={{ "--base-color": "#0038e3" }} />
-                    </Col>
                 </HeaderNav>
             </Header>
             {/* Header End */}
@@ -346,8 +345,8 @@ const UserPosts = (props) => {
                                         </p>
                                     </div>
 
-                                    {/* Posts Grid */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {/* Posts Grid - Two Columns */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         {currentPosts.map((post, index) => (
                                             <UserPostCard
                                                 key={post.uuid}

@@ -8,6 +8,7 @@ import { m } from "framer-motion"
 
 // Components
 import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
+import Logo from '../../Components/Logo'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import SideButtons from "../../Components/SideButtons"
 import PostForm from '../../Components/Posts/PostForm'
@@ -20,17 +21,17 @@ const CreatePost = (props) => {
     const [submitError, setSubmitError] = useState('')
     const [canEdit, setCanEdit] = useState(false)
     
-    const { slug } = useParams()
+    const { uuid } = useParams()
     const navigate = useNavigate()
     const { isAuthenticated, user } = useAuth()
     
     // Determine if we're in edit mode
-    const isEditMode = !!slug
+    const isEditMode = !!uuid
     
     // API hooks
     const { createPost, loading: createLoading, error: createError } = useCreatePost()
     const { saveAsDraft, loading: saveLoading, error: draftError } = useSaveAsDraft()
-    const { post, loading: postLoading, error: postError } = usePost(slug)
+    const { post, loading: postLoading, error: postError } = usePost(uuid)
     const { updatePost, loading: updateLoading, error: updateError } = useUpdatePost()
 
     // Check if user owns this post (for edit mode)
@@ -96,9 +97,7 @@ const CreatePost = (props) => {
                         <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
                             <Link aria-label="header logo" className="flex items-center" to="/">
                                 <Navbar.Brand className="inline-block p-0 m-0">
-                                    <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                    <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                    <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
+                                    <Logo className="flex items-center" asNavbarBrand={false} />
                                 </Navbar.Brand>
                             </Link>
                         </Col>
@@ -162,7 +161,7 @@ const CreatePost = (props) => {
                         <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
                             <Link aria-label="header logo" className="flex items-center" to="/">
                                 <Navbar.Brand className="inline-block p-0 m-0">
-                                    <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
+                                    <Logo className="flex items-center" asNavbarBrand={false} />
                                 </Navbar.Brand>
                             </Link>
                         </Col>
@@ -202,7 +201,7 @@ const CreatePost = (props) => {
                         <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
                             <Link aria-label="header logo" className="flex items-center" to="/">
                                 <Navbar.Brand className="inline-block p-0 m-0">
-                                    <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
+                                    <Logo className="flex items-center" asNavbarBrand={false} />
                                 </Navbar.Brand>
                             </Link>
                         </Col>
@@ -255,7 +254,7 @@ const CreatePost = (props) => {
                         <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
                             <Link aria-label="header logo" className="flex items-center" to="/">
                                 <Navbar.Brand className="inline-block p-0 m-0">
-                                    <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
+                                    <Logo className="flex items-center" asNavbarBrand={false} />
                                 </Navbar.Brand>
                             </Link>
                         </Col>
@@ -321,9 +320,7 @@ const CreatePost = (props) => {
                     <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
                         <Link aria-label="header logo" className="flex items-center" to="/">
                             <Navbar.Brand className="inline-block p-0 m-0">
-                                <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                                <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
+                                <Logo className="flex items-center" asNavbarBrand={false} />
                             </Navbar.Brand>
                         </Link>
                     </Col>

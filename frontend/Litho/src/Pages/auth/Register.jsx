@@ -12,6 +12,7 @@ import SideButtons from "../../Components/SideButtons"
 // API - Using barrel exports
 import useAuth from '../../api/useAuth'
 import { axiosInstance } from '../../api'
+import Logo from '../../Components/Logo'
 
 // Data
 import HeaderData from '../../Components/Header/HeaderData'
@@ -91,8 +92,8 @@ const Register = (props) => {
             // Step 4: Store both token and user data
             login(token, userResponse.data)
             
-            // Redirect to home page
-            navigate('/')
+            // Redirect to user dashboard
+            navigate('/dashboard')
         } catch (error) {
             console.error('Registration error:', error)
             let errorMessage = "Registration failed. Please try again."
@@ -126,11 +127,7 @@ const Register = (props) => {
             <Header topSpace={{ desktop: true }} type="reverse-scroll">
                 <HeaderNav bg="white" theme="light" expand="lg" className="py-[0px] lg:px-[15px] md:px-0">
                     <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                        <Link aria-label="header logo" className="flex items-center" to="/">
-                            <Navbar.Brand className="inline-block p-0 m-0">
-                                <span className="text-2xl font-bold text-darkgray tracking-wide">CraftyXhub</span>
-                            </Navbar.Brand>
-                        </Link>
+                        <Logo className="flex items-center" />
                     </Col>
                     <div className="col-auto hidden order-last md:block">
                         <Navbar.Toggle className="md:ml-[10px] sm:ml-0">

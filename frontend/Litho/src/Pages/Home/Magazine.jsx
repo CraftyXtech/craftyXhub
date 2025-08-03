@@ -9,6 +9,7 @@ import { m } from "framer-motion";
 
 // Components
 import Header, { HeaderLanguage, HeaderNav, Menu, SearchBar, Topbar } from '../../Components/Header/Header'
+import Logo from '../../Components/Logo'
 import SocialIcons from '../../Components/SocialIcon/SocialIcons'
 import BlogClassic from '../../Components/Blogs/BlogClassic';
 import BlogCategory from "../../Components/Blogs/BlogCategory";
@@ -118,13 +119,7 @@ const MagazinePage = (props) => {
         <HeaderNav bg="white" theme="light" expand="lg" containerClass="!px-0" className="py-[0px] md:py-[18px] md:px-[15px] sm:px-0">
           {/* Logo – Left */}
           <Col sm={6} lg={2} className="col-auto me-auto ps-lg-0">
-            <Link aria-label="header logo" className="inline-block relative z-10" to="/">
-              <Navbar.Brand className="inline-block p-0 m-0 align-middle">
-                <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-yellow-ochre.webp' data-rjs='/assets/img/webp/logo-yellow-ochre@2x.webp' alt='logo' />
-                <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-yellow-ochre.webp' data-rjs='/assets/img/webp/logo-yellow-ochre@2x.webp' alt='logo' />
-                <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-yellow-ochre.webp' data-rjs='/assets/img/webp/logo-yellow-ochre@2x.webp' alt='logo' />
-              </Navbar.Brand>
-            </Link>
+            <Logo />
           </Col>
 
           {/* Toggler */}

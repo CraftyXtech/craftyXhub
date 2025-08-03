@@ -6,6 +6,7 @@ import { Link, Outlet } from 'react-router-dom'
 
 // Components
 import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../Components/Header/Header'
+import Logo from '../Components/Logo'
 import FooterStyle05 from '../Components/Footers/FooterStyle05'
 const SideButtons = lazy(() => import("../Components/SideButtons"))
 
@@ -16,13 +17,7 @@ const BlogPage = (props) => {
       <Header topSpace={{ desktop: false, md: true }} type="reverse-scroll">
         <HeaderNav theme="light" expand="lg" className="px-[35px] py-[0px] lg:px-[15px] md:px-0" containerClass="sm:px-0">
           <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-            <Link aria-label="header logo" className="flex items-center" to="/">
-              <Navbar.Brand className="inline-block p-0 m-0">
-                <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-              </Navbar.Brand>
-            </Link>
+            <Logo className="flex items-center" />
           </Col>
           <div className="col-auto hidden order-last md:block">
             <Navbar.Toggle className="md:ml-[10px] sm:ml-0">

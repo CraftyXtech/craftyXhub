@@ -51,6 +51,9 @@ const LoginModal = ({ show, onHide, onSwitchToRegister, onSwitchToPasswordReset 
             onHide()
             setFormData({ email: '', password: '' })
             setError('')
+            
+            // Redirect to user dashboard
+            navigate('/dashboard')
         } catch (error) {
             console.error('Login error:', error)
             let errorMessage = "Login failed. Please check your credentials."

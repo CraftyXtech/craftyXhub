@@ -22,7 +22,7 @@ export const getPosts = async (params = {}) => {
 
 export const getPost = async (postUuid) => {
     try {
-        const response = await axiosInstance.get(`/posts/${postUuid}`);
+        const response = await axiosPrivate.get(`/posts/${postUuid}`);
         return response.data;
     } catch (error) {
         throw error;

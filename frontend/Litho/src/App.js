@@ -654,7 +654,7 @@ function App() {
 
                   {/* Edit Post Route */}
                   <Route 
-                    path="posts/edit/:slug" 
+                    path="posts/edit/:uuid" 
                     element={
                       <CreatePost
                         style={{ "--base-color": "#0038e3" }}
@@ -672,27 +672,11 @@ function App() {
                     } 
                   />
 
-                  {/* User Profile & Social Routes */}
-                  <Route 
-                    path="user/:username/followers" 
-                    element={
-                      <Followers
-                        style={{ "--base-color": "#0038e3" }}
-                      />
-                    } 
-                  />
-                  <Route 
-                    path="user/:username/following" 
-                    element={
-                      <Following
-                        style={{ "--base-color": "#0038e3" }}
-                      />
-                    } 
-                  />
+                  {/* Note: Followers/Following are now integrated into Dashboard as cards */}
 
                   {/* Media Library Route */}
                   <Route 
-                    path="user/media" 
+                    path="user/media-library" 
                     element={
                       <MediaLibrary
                         style={{ "--base-color": "#0038e3" }}
@@ -722,7 +706,7 @@ function App() {
 
                   {/* User Profile Route */}
                   <Route 
-                    path="user/profile" 
+                    path="profile" 
                     element={
                       <Profile
                         style={{ "--base-color": "#0038e3" }}

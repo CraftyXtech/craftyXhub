@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Modal, Form, Alert } from 'react-bootstrap'
 import { m } from "framer-motion"
 import Buttons from '../Button/Buttons'
@@ -20,6 +20,7 @@ const RegisterModal = ({ show, onHide, onSwitchToLogin }) => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     
     const { login } = useAuth()
+    const navigate = useNavigate()
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -79,6 +80,9 @@ const RegisterModal = ({ show, onHide, onSwitchToLogin }) => {
                 confirmPassword: ''
             })
             setError('')
+            
+            // Redirect to user dashboard
+            navigate('/dashboard')
         } catch (error) {
             console.error('Registration error:', error)
             let errorMessage = "Registration failed. Please try again."
