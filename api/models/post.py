@@ -10,6 +10,10 @@ class Category(BaseTable):
     slug = Column(String(100), unique=True, nullable=False)
     description = Column(Text, nullable=True)
     posts = relationship("Post", back_populates="category")
+    parent_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
+
+    parent = relationship("Category", remote_side='Category.id', back_populates="subcategories")
+    subcategories = relationship("Category", back_populates="parent")
 
 
 class Tag(BaseTable):
