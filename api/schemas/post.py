@@ -112,7 +112,7 @@ class PostResponse(BaseModel):
     updated_at: Optional[datetime]
     deleted_at: Optional[datetime]
     author: Optional[UserResponse]
-    category: Optional[CategoryResponse]
+    category: Optional[CategoryCreateResponse]
     tags: List[TagResponse]
     comments: List[CommentResponse]
     liked_by: List[UserResponse]
