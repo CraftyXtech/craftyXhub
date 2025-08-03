@@ -13,6 +13,7 @@ class CategoryBase(BaseModel):
 
 
 class CategoryCreate(CategoryBase):
+    parent_id: Optional[int] = None
     pass
 
 class CategoryUpdate(BaseModel):
@@ -20,9 +21,25 @@ class CategoryUpdate(BaseModel):
     slug: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
 
+class CategoryChildResponse(BaseModel):
+    id: int
+    name: str
+    slug: Optional[str] = None
+    description: Optional[str] = None
 
 class CategoryResponse(CategoryBase, BaseSchema):
     id: int
+    parent_id: Optional[int] = None
+    created_at: datetime
+    post_count: Optional[int] = 0
+    subcategories: List['CategoryChildResponse'] = []
+
+CategoryResponse.model_rebuild()
+
+
+class CategoryCreateResponse(CategoryBase, BaseSchema):
+    id: int
+    parent_id: Optional[int] = None
     created_at: datetime
     post_count: Optional[int] = 0
 

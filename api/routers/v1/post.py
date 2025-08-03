@@ -1,6 +1,7 @@
 import os
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlalchemy import func
 from sqlmodel import select
 from typing import Optional, List
@@ -15,6 +16,7 @@ from schemas.post import (
     PostResponse,
     PostListResponse,
     CategoryCreate,
+    CategoryCreateResponse,
     CategoryResponse,
     CategoryListResponse,
     TagCreate,
@@ -29,7 +31,6 @@ from fastapi import Form, File, UploadFile
 from models.base import post_bookmarks
 
 router = APIRouter(prefix="/posts", tags=["posts"])
-
 
 
 @router.get("/trending/", response_model=PostListResponse)
@@ -135,7 +136,8 @@ async def get_reports(
         session: AsyncSession = Depends(get_db_session)
 ):
     reports = await PostService.get_reports(session, skip=skip, limit=limit)
-    return  reports
+    return reports
+
 
 @router.get("/", response_model=PostListResponse)
 async def get_posts(
@@ -356,12 +358,17 @@ async def toggle_post_like(
 async def get_categories(
         session: AsyncSession = Depends(get_db_session)
 ):
-    result = await session.execute(select(Category))
+    result = await session.execute(
+        select(Category)
+        .options(selectinload(Category.subcategories))
+        .where(Category.parent_id.is_(None))
+    )
     categories = result.scalars().all()
+
     return {"categories": categories}
 
 
-@router.post("/categories/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/categories/", response_model=CategoryCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
         category_data: CategoryCreate,
         current_user: User = Depends(get_current_active_user),
@@ -444,7 +451,6 @@ async def bookmark_post(
     return await PostService.toggle_bookmark_post(session, post_uuid, current_user.id)
 
 
-
 @router.get("/users/me/bookmarks", response_model=PostListResponse)
 async def get_user_bookmarks(
         skip: int = Query(0, ge=0),
@@ -454,8 +460,8 @@ async def get_user_bookmarks(
 ):
     posts = await PostService.get_user_bookmarks(session, current_user.id, skip=skip, limit=limit)
     result = await session.execute(
-    select(func.count()).select_from(post_bookmarks).where(post_bookmarks.c.user_id == current_user.id)
-)
+        select(func.count()).select_from(post_bookmarks).where(post_bookmarks.c.user_id == current_user.id)
+    )
     total = result.scalar_one()
     return {
         "posts": posts,

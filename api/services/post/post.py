@@ -618,6 +618,7 @@ class PostService:
         db_category = Category(
             name=category_data.name,
             slug=generated_slug,
+            parent_id=category_data.parent_id,
             description=category_data.description
         )
 
