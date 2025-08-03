@@ -14,6 +14,8 @@ import ScrollToTopButton from "./Components/ScrollToTop";
 
 // Home
 const MagazinePage = lazy(() => import("./Pages/Home/Magazine"));
+const FeaturedArticlesPage = lazy(() => import("./Pages/Home/FeaturedArticlesPage"));
+const TrendingArticlesPage = lazy(() => import("./Pages/Home/TrendingArticlesPage"));
 
 // Pages
 
@@ -256,6 +258,36 @@ const PostDetails = lazy(() =>
   import("./Pages/Blogs/PostDetail/PostDetails")
 );
 
+// Posts Management
+const CreatePost = lazy(() =>
+  import("./Pages/Posts/CreatePost")
+);
+const UserPosts = lazy(() =>
+  import("./Pages/User/UserPosts")
+);
+
+// User Profile & Social Features
+const Followers = lazy(() =>
+  import("./Pages/User/Followers")
+);
+const Following = lazy(() =>
+  import("./Pages/User/Following")
+);
+const MediaLibrary = lazy(() =>
+  import("./Pages/User/MediaLibrary")
+);
+const Dashboard = lazy(() =>
+  import("./Pages/User/Dashboard")
+);
+const Bookmarks = lazy(() =>
+  import("./Pages/User/Bookmarks")
+);
+const Profile = lazy(() =>
+  import("./Pages/User/Profile")
+);
+
+
+
 // Auth Pages
 const LoginPage = lazy(() => import("./Pages/auth/Login"));
 const RegisterPage = lazy(() => import("./Pages/auth/Register"));
@@ -332,6 +364,24 @@ function App() {
               <Suspense fallback={<></>}>
                 <Routes>
                   <Route path="/" element={<MagazinePage />} />
+                  
+                  {/* Featured and Trending Articles Routes */}
+                  <Route 
+                    path="/featured-articles" 
+                    element={
+                      <FeaturedArticlesPage
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
+                  <Route 
+                    path="/trending-articles" 
+                    element={
+                      <TrendingArticlesPage
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
 
                   {/* Headers */}
                   <Route path="headers">
@@ -591,6 +641,96 @@ function App() {
                       />
                     </Route>
                   </Route>
+
+                  {/* Create/Edit Post Route */}
+                  <Route 
+                    path="posts/create" 
+                    element={
+                      <CreatePost
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
+
+                  {/* Edit Post Route */}
+                  <Route 
+                    path="posts/edit/:slug" 
+                    element={
+                      <CreatePost
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
+
+                  {/* User Posts Route */}
+                  <Route 
+                    path="user/posts" 
+                    element={
+                      <UserPosts
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
+
+                  {/* User Profile & Social Routes */}
+                  <Route 
+                    path="user/:username/followers" 
+                    element={
+                      <Followers
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
+                  <Route 
+                    path="user/:username/following" 
+                    element={
+                      <Following
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
+
+                  {/* Media Library Route */}
+                  <Route 
+                    path="user/media" 
+                    element={
+                      <MediaLibrary
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
+
+                  {/* Dashboard Routes */}
+                  <Route 
+                    path="dashboard" 
+                    element={
+                      <Dashboard
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
+
+                  {/* User Bookmarks Route */}
+                  <Route 
+                    path="user/bookmarks" 
+                    element={
+                      <Bookmarks
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
+
+                  {/* User Profile Route */}
+                  <Route 
+                    path="user/profile" 
+                    element={
+                      <Profile
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
+
+
 
                   {/* New Post Detail Route - Primary route for all blog posts */}
                   <Route 

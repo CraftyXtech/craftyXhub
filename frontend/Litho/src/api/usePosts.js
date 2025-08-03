@@ -23,7 +23,19 @@ import {
     deleteComment,
     toggleCommentLike,
     reportComment,
-    getImageUrl
+    getImageUrl,
+    searchContent,
+    getTrendingPosts,
+    getFeaturedPosts,
+    bookmarkPost,
+    getUserBookmarks,
+    reportPost,
+    createUserPost,
+    updateUserPost,
+    getUserDraftPosts,
+    savePostAsDraft,
+    publishDraftPost,
+    deleteUserPost
 } from './postsService';
 
 // Hook to get all posts with optional filters
@@ -526,4 +538,342 @@ export const useReportComment = () => {
     }, []);
 
     return { reportCommentAction, loading, error };
+};
+
+
+
+// ===== SEARCH HOOKS =====
+
+// Hook for global search with debouncing
+export const useSearch = () => {
+    const [searchResults, setSearchResults] = useState({ posts: [], users: [], categories: [] });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const search = useCallback(async (query) => {
+        if (!query || query.trim().length < 1) {
+            setSearchResults({ posts: [], users: [], categories: [] });
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await searchContent(query.trim());
+            setSearchResults({
+                posts: response.posts || [],
+                users: response.users || [],
+                categories: response.categories || []
+            });
+        } catch (err) {
+            console.error('Error searching content:', err);
+            setError(err.response?.data?.detail || err.message || 'Search failed');
+            setSearchResults({ posts: [], users: [], categories: [] });
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const clearSearch = useCallback(() => {
+        setSearchResults({ posts: [], users: [], categories: [] });
+        setError(null);
+        setLoading(false);
+    }, []);
+
+    return { searchResults, loading, error, search, clearSearch };
+};
+
+// ===== TRENDING & FEATURED POSTS HOOKS =====
+
+// Hook to get trending posts
+export const useTrendingPosts = (params = {}) => {
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchTrendingPosts = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getTrendingPosts(params);
+            setPosts(Array.isArray(data.posts) ? data.posts : []);
+            setError(null);
+        } catch (err) {
+            setError(err.response?.data?.detail || err.message);
+            setPosts([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [JSON.stringify(params)]);
+
+    useEffect(() => {
+        fetchTrendingPosts();
+    }, [fetchTrendingPosts]);
+
+    return { posts, loading, error, refetch: fetchTrendingPosts };
+};
+
+// Hook to get featured posts
+export const useFeaturedPosts = (params = {}) => {
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchFeaturedPosts = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getFeaturedPosts(params);
+            setPosts(Array.isArray(data.posts) ? data.posts : []);
+            setError(null);
+        } catch (err) {
+            setError(err.response?.data?.detail || err.message);
+            setPosts([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [JSON.stringify(params)]);
+
+    useEffect(() => {
+        fetchFeaturedPosts();
+    }, [fetchFeaturedPosts]);
+
+    return { posts, loading, error, refetch: fetchFeaturedPosts };
+};
+
+// ===== BOOKMARK HOOKS =====
+
+// Hook to handle bookmark functionality
+export const useBookmark = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const toggleBookmark = useCallback(async (postUuid) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await bookmarkPost(postUuid);
+            return response;
+        } catch (err) {
+            console.error('Error toggling bookmark:', err);
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to bookmark post';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { toggleBookmark, loading, error };
+};
+
+// Hook to get user bookmarks
+export const useUserBookmarks = (params = {}) => {
+    const [bookmarks, setBookmarks] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchBookmarks = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getUserBookmarks(params);
+            setBookmarks(Array.isArray(data.posts) ? data.posts : []);
+            setError(null);
+        } catch (err) {
+            setError(err.response?.data?.detail || err.message);
+            setBookmarks([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [JSON.stringify(params)]);
+
+    useEffect(() => {
+        fetchBookmarks();
+    }, [fetchBookmarks]);
+
+    return { bookmarks, loading, error, refetch: fetchBookmarks };
+};
+
+// ===== REPORT HOOKS =====
+
+// Hook to report posts
+export const useReportPost = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const reportPostAction = useCallback(async (postUuid, reportData) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await reportPost(postUuid, reportData);
+            return response;
+        } catch (err) {
+            console.error('Error reporting post:', err);
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to report post';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { reportPostAction, loading, error };
+};
+
+// ===== USER POST CREATION HOOKS =====
+
+// Hook to create a new post
+export const useCreatePost = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const createPost = useCallback(async (postData) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await createUserPost(postData);
+            return response;
+        } catch (err) {
+            console.error('Error creating post:', err);
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to create post';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { createPost, loading, error };
+};
+
+// Hook to update a post
+export const useUpdatePost = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const updatePost = useCallback(async (postUuid, postData) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await updateUserPost(postUuid, postData);
+            return response;
+        } catch (err) {
+            console.error('Error updating post:', err);
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to update post';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { updatePost, loading, error };
+};
+
+// Hook to delete a post
+export const useDeletePost = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const deletePost = useCallback(async (postUuid) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await deleteUserPost(postUuid);
+            return response;
+        } catch (err) {
+            console.error('Error deleting post:', err);
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to delete post';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { deletePost, loading, error };
+};
+
+// ===== DRAFT POSTS HOOKS =====
+
+// Hook to get user's draft posts
+export const useUserDraftPosts = (params = {}) => {
+    const [drafts, setDrafts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchDrafts = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getUserDraftPosts(params);
+            setDrafts(Array.isArray(data.posts) ? data.posts : []);
+            setError(null);
+        } catch (err) {
+            setError(err.response?.data?.detail || err.message);
+            setDrafts([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [JSON.stringify(params)]);
+
+    useEffect(() => {
+        fetchDrafts();
+    }, [fetchDrafts]);
+
+    return { drafts, loading, error, refetch: fetchDrafts };
+};
+
+// Hook to save post as draft
+export const useSaveAsDraft = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const saveAsDraft = useCallback(async (postData) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await savePostAsDraft(postData);
+            return response;
+        } catch (err) {
+            console.error('Error saving as draft:', err);
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to save as draft';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { saveAsDraft, loading, error };
+};
+
+// Hook to publish a draft post
+export const usePublishDraft = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const publishDraft = useCallback(async (postUuid) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await publishDraftPost(postUuid);
+            return response;
+        } catch (err) {
+            console.error('Error publishing draft:', err);
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to publish draft';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { publishDraft, loading, error };
 };

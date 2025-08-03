@@ -65,10 +65,23 @@ const Login = (props) => {
             navigate('/')
         } catch (error) {
             console.error('Login error:', error)
-            const errorMessage = error.response?.data?.detail || 
-                              error.response?.data?.message || 
-                              error.message || 
-                              "Login failed. Please check your credentials."
+            let errorMessage = "Login failed. Please check your credentials."
+            
+            if (error.response?.data?.detail) {
+                if (Array.isArray(error.response.data.detail)) {
+                    // Handle validation errors from FastAPI
+                    errorMessage = error.response.data.detail
+                        .map(err => err.msg || err.message || 'Validation error')
+                        .join(', ')
+                } else if (typeof error.response.data.detail === 'string') {
+                    errorMessage = error.response.data.detail
+                }
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message
+            } else if (error.message) {
+                errorMessage = error.message
+            }
+            
             setError(errorMessage)
         } finally {
             setLoading(false)

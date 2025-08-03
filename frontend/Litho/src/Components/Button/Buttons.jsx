@@ -18,6 +18,14 @@ const Buttons = (props) => {
     "--brand-color": typeof (props.themeColor) === "object" ? `linear-gradient(to right, ${color1}, ${color2}, ${color1})` : props.themeColor,
     "--text-color": typeof (props.color) === "object" ? `linear-gradient(to right, ${textcolor1}, ${textcolor2}, ${textcolor1})` : props.color,
   }
+
+  const handleClick = (e) => {
+    // Don't call onClick for submit buttons - let the form handle submission
+    if (props.onClick && props.type !== "submit") {
+      props.onClick(e);
+    }
+  }
+
   return (
     (props.href || props.type === "submit") ? (
       <Button
@@ -26,7 +34,7 @@ const Buttons = (props) => {
         style={style}
         className={`border-[2px] border-solid btn-${props.size}${props.className ? ' ' + props.className : ''}${typeof (props.themeColor) === "object" ? " btn-gradient" : ""}${typeof (props.color) === "object" ? " text-gradient" : ""}`}
         href={props.href}
-        onClick={props.onClick}
+        onClick={handleClick}
         disabled={props.disabled}
         variant="secondary"
         aria-label={props.ariaLabel}
@@ -40,7 +48,7 @@ const Buttons = (props) => {
         target={props.target}
         className={`btn border-[2px] border-solid btn-${props.size}${props.className ? ' ' + props.className : ''}${typeof (props.themeColor) === "object" ? " btn-gradient" : ""}${typeof (props.color) === "object" ? " text-gradient" : ""} `}
         to={props.to ? props.to : "#"}
-        onClick={props.onClick}
+        onClick={handleClick}
         aria-label={props.ariaLabel}>
         <ButtonInner {...props} />
       </Link>

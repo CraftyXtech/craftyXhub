@@ -1,3 +1,35 @@
+// Dashboard menu data - only visible when authenticated
+export const DashboardMenuData = {
+    title: 'Dashboard',
+    dropdown: [
+        {
+            title: 'Overview',
+            link: '/dashboard'
+        },
+      
+        {
+            title: 'My Posts',
+            link: '/user/posts'
+        },
+        {
+            title: 'Media Library',
+            link: '/user/media'
+        },
+        {
+            title: 'Bookmarks',
+            link: '/user/bookmarks'
+        },
+        {
+            title: 'Create Post',
+            link: '/posts/create'
+        },
+        {
+            title: 'Profile Settings',
+            link: '/user/profile'
+        }
+    ]
+};
+
 const HeaderData = [
     {
         title: 'Technology',

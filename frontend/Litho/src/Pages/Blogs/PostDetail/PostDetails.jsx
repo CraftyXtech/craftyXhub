@@ -22,6 +22,13 @@ import { usePost, useRelatedPosts, getImageUrl } from '../../../api'
 // Utils
 import { formatDate } from '../../../utils/dateUtils'
 
+// New Components  
+import BookmarkButton from '../../../Components/Blogs/BookmarkButton'
+import ReportModal from '../../../Components/Blogs/ReportModal'
+
+// Auth
+import useAuth from '../../../api/useAuth'
+
 // Data (for fallback only)
 import { blogData } from '../../../Components/Blogs/BlogData'
 import { fadeIn } from '../../../Functions/GlobalAnimations'
@@ -56,6 +63,11 @@ const SocialIconsData = [
 
 const PostDetails = (props) => {
   const [data, setData] = useState(null)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [isBookmarked, setIsBookmarked] = useState(false)
+
+  // Auth context
+  const { isAuthenticated } = useAuth()
 
   // Get slug or id from URL params
   const param = useParams();
@@ -71,6 +83,11 @@ const PostDetails = (props) => {
   useEffect(() => {
     if (post) {
       setData([post]);
+      // Check if current user has bookmarked this post
+      if (isAuthenticated && post.bookmarked_by) {
+        // This would need user ID to check properly, for now just check if array exists
+        setIsBookmarked(post.bookmarked_by.length > 0);
+      }
     } else if (!loading && !post) {
       // Fallback to static data if API fails
       let getData;
@@ -81,7 +98,7 @@ const PostDetails = (props) => {
       }
     setData(getData);
     }
-  }, [post, loading, slug, id]);
+  }, [post, loading, slug, id, isAuthenticated]);
 
   // Show loading state
   if (loading) {
@@ -330,9 +347,10 @@ const PostDetails = (props) => {
                           </div>
                       )}
                       
-                      {/* Likes */}
-                      {(data[0]?.liked_by || data[0]?.likes) && (
-                          <div className="text-center md:text-end px-0 flex justify-end sm:justify-center">
+                      {/* Likes, Bookmark, and Report Actions */}
+                      <div className="text-center md:text-end px-0 flex justify-end sm:justify-center items-center gap-3">
+                        {/* Likes */}
+                        {(data[0]?.liked_by || data[0]?.likes) && (
                           <Link 
                             aria-label="like post" 
                             className="uppercase text-darkgray text-xs w-auto font-medium inline-block border border-mediumgray rounded pt-[5px] pb-[6px] px-[18px] leading-[20px] hover:text-black transition-default hover:shadow-[0_0_10px_rgba(23,23,23,0.10)]" 
@@ -342,9 +360,33 @@ const PostDetails = (props) => {
                             <span>
                               {data[0]?.liked_by ? `${data[0].liked_by.length} Likes` : `${data[0]?.likes || 0} Likes`}
                             </span>
-                            </Link>
-                          </div>
-                      )}
+                          </Link>
+                        )}
+                        
+                        {/* Bookmark Button */}
+                        {data[0]?.uuid && (
+                          <BookmarkButton 
+                            postUuid={data[0].uuid}
+                            isBookmarked={isBookmarked}
+                            onBookmarkChange={setIsBookmarked}
+                            size="md"
+                            variant="outline"
+                            themeColor={["#0038e3", "#ff7a56"]}
+                          />
+                        )}
+                        
+                        {/* Report Button */}
+                        {data[0]?.uuid && (
+                          <button
+                            onClick={() => setShowReportModal(true)}
+                            className="flex items-center justify-center w-10 h-10 border border-mediumgray rounded-full text-spanishgray hover:text-red-500 hover:border-red-500 transition-all duration-300"
+                            aria-label="Report post"
+                            title="Report this post"
+                          >
+                            <i className="feather-flag text-sm"></i>
+                          </button>
+                        )}
+                      </div>
                     </Col>
                     <Col>
                       <AuthorBox 
@@ -395,6 +437,20 @@ const PostDetails = (props) => {
           {/* Section Start */}
           <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
           {/* Section End */}
+
+          {/* Report Modal */}
+          {data[0]?.uuid && (
+            <ReportModal 
+              show={showReportModal}
+              onHide={() => setShowReportModal(false)}
+              postUuid={data[0].uuid}
+              postTitle={data[0].title}
+              onReportSuccess={() => {
+                console.log('Post reported successfully');
+                // Could show a toast notification here
+              }}
+            />
+          )}
         </>
       ) : undefined}
     </div>

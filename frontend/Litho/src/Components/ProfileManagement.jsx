@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useProfile, useCreateProfile, useUpdateProfile, useDeleteProfile } from '../api';
+import { useProfile } from '../api';
+import { createProfile, updateProfile, deleteProfile } from '../api/postsService';
 import Buttons from './Button/Buttons';
 import { Input, TextArea } from './Form/Form';
 
@@ -15,11 +16,13 @@ const ProfileManagement = ({ userUuid }) => {
         avatar: null
     });
 
-    // Hooks for different operations
+    // State for operations
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(false);
+    
+    // Get profile data
     const { profile, loading: profileLoading, error: profileError, refetch } = useProfile(userUuid);
-    const { createProfile, loading: createLoading, error: createError, success: createSuccess } = useCreateProfile();
-    const { updateProfile, loading: updateLoading, error: updateError, success: updateSuccess } = useUpdateProfile();
-    const { deleteProfile, loading: deleteLoading, error: deleteError, success: deleteSuccess } = useDeleteProfile();
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -39,33 +42,51 @@ const ProfileManagement = ({ userUuid }) => {
     const handleCreateProfile = async (e) => {
         e.preventDefault();
         try {
+            setLoading(true);
+            setError(null);
             await createProfile(formData);
+            setSuccess(true);
             // Refresh the profile data after creation
             refetch();
         } catch (error) {
             console.error('Failed to create profile:', error);
+            setError(error.message || 'Failed to create profile');
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
         try {
+            setLoading(true);
+            setError(null);
             await updateProfile(userUuid, formData);
+            setSuccess(true);
             // Refresh the profile data after update
             refetch();
         } catch (error) {
             console.error('Failed to update profile:', error);
+            setError(error.message || 'Failed to update profile');
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleDeleteProfile = async () => {
         if (window.confirm('Are you sure you want to delete your profile? This action cannot be undone.')) {
             try {
+                setLoading(true);
+                setError(null);
                 await deleteProfile(userUuid);
-                // You might want to redirect or show a message
-                alert('Profile deleted successfully');
+                setSuccess(true);
+                // Refresh the profile data after deletion
+                refetch();
             } catch (error) {
                 console.error('Failed to delete profile:', error);
+                setError(error.message || 'Failed to delete profile');
+            } finally {
+                setLoading(false);
             }
         }
     };
@@ -249,7 +270,7 @@ const ProfileManagement = ({ userUuid }) => {
                                     <div className="text-center">
                                         <Buttons 
                                             type="submit" 
-                                            disabled={createLoading || updateLoading}
+                                            disabled={loading}
                                             title={profile ? 'Update Profile' : 'Create Profile'}
                                             size="md"
                                             themeColor="#007bff"
@@ -263,7 +284,7 @@ const ProfileManagement = ({ userUuid }) => {
                                     <div className="text-center mt-4">
                                         <Buttons 
                                             onClick={handleDeleteProfile}
-                                            disabled={deleteLoading}
+                                            disabled={loading}
                                             title="Delete Profile"
                                             size="md"
                                             themeColor="#dc3545"
@@ -276,35 +297,15 @@ const ProfileManagement = ({ userUuid }) => {
 
                         {/* Status Messages */}
                         <div className="mt-4">
-                            {createSuccess && (
+                            {success && (
                                 <div className="alert alert-success text-center">
-                                    Profile created successfully!
-                                </div>
-                            )}
-                            {updateSuccess && (
-                                <div className="alert alert-success text-center">
-                                    Profile updated successfully!
-                                </div>
-                            )}
-                            {deleteSuccess && (
-                                <div className="alert alert-success text-center">
-                                    Profile deleted successfully!
+                                    Profile operation completed successfully!
                                 </div>
                             )}
                             
-                            {createError && (
+                            {error && (
                                 <div className="alert alert-danger text-center">
-                                    Error creating profile: {createError}
-                                </div>
-                            )}
-                            {updateError && (
-                                <div className="alert alert-danger text-center">
-                                    Error updating profile: {updateError}
-                                </div>
-                            )}
-                            {deleteError && (
-                                <div className="alert alert-danger text-center">
-                                    Error deleting profile: {deleteError}
+                                    Error: {error}
                                 </div>
                             )}
                         </div>

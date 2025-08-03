@@ -41,3 +41,6 @@ export const Checkbox = memo(({label, labelClass, className, children, ...props 
 Input.defaultProps = {
     showErrorMsg: true
 }
+
+// Export RichTextEditor
+export { default as RichTextEditor } from './RichTextEditor'

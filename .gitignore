@@ -256,3 +256,4 @@ api/.cursor/
 # Backup files
 *.bak
 *.backup
+/frontend/litho/.env
