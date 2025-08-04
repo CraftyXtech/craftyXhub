@@ -13,7 +13,7 @@ import BlogClassic from '../../../Components/Blogs/BlogClassic';
 import { TiltBox } from '../../../Components/FancyText/FancyText'
 import FooterStyle05 from '../../../Components/Footers/FooterStyle05';
 import Overlap from '../../../Components/Overlap/Overlap'
-import SideButtons from "../../../Components/SideButtons";
+
 import { fadeIn, fadeInLeft, fadeInRight } from "../../../Functions/GlobalAnimations";
 import CommentBox from '../../../Components/Blogs/HelperComponents/CommentBox';
 
@@ -85,7 +85,7 @@ const BlogPostLayout04 = (props) => {
         </HeaderNav>
       </Header>
       {/* Header End */}
-      <SideButtons />
+      
       {/* Section Start */}
       <section style={{ backgroundImage: "url(/assets/img/webp/blog-post-layout-05-img-12.webp)" }} className="py-[130px] h-[607px] overflow-hidden lg:py-[90px] sm:py-[50px] lg:h-[490px] sm:h-[400px] xs:h-auto">
         <Container>

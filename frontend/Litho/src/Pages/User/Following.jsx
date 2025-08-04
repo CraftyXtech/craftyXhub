@@ -10,7 +10,7 @@ import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '
 import Logo from '../../Components/Logo'
 import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
-import SideButtons from "../../Components/SideButtons"
+
 import FollowButton from '../../Components/User/FollowButton'
 import Buttons from '../../Components/Button/Buttons'
 
@@ -147,7 +147,7 @@ const Following = (props) => {
                 </section>
 
                 <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
-                <SideButtons />
+    
             </div>
         )
     }
@@ -197,7 +197,7 @@ const Following = (props) => {
                 </section>
 
                 <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
-                <SideButtons />
+    
             </div>
         )
     }
@@ -228,14 +228,14 @@ const Following = (props) => {
                 </HeaderNav>
             </Header>
 
-            <section className="py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
-                <Container>
+            <section className="py-[50px] sm:py-[60px] md:py-[75px] lg:py-[90px] xl:py-[130px]">
+                <Container className="px-4 sm:px-6">
                     <Row className="justify-center">
                         <Col lg={10} xl={9}>
                             {/* Page Header */}
-                            <div className="text-center mb-16">
-                                <div className="mb-6">
-                                    <div className="w-24 h-24 rounded-full overflow-hidden bg-lightgray mx-auto mb-4">
+                            <div className="text-center mb-12 sm:mb-16">
+                                <div className="mb-4 sm:mb-6">
+                                    <div className="w-16 sm:w-20 lg:w-24 h-16 sm:h-20 lg:h-24 rounded-full overflow-hidden bg-lightgray mx-auto mb-3 sm:mb-4">
                                         {profileUser.profile_picture ? (
                                             <img 
                                                 src={profileUser.profile_picture} 
@@ -244,33 +244,33 @@ const Following = (props) => {
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                                <i className="icon-user text-3xl"></i>
+                                                <i className="icon-user text-xl sm:text-2xl lg:text-3xl"></i>
                                             </div>
                                         )}
                                     </div>
-                                    <h1 className="text-darkgray font-medium mb-2">Following</h1>
-                                    <p className="text-gray-600">
+                                    <h1 className="text-darkgray font-medium mb-2 text-lg sm:text-xl lg:text-2xl">Following</h1>
+                                    <p className="text-gray-600 text-sm sm:text-base">
                                         People that @{profileUser.username} follows
                                     </p>
                                 </div>
                                 
-                                <div className="flex justify-center space-x-6 text-sm text-gray-600">
+                                <div className="flex flex-col xs:flex-row justify-center gap-4 xs:gap-6 text-xs sm:text-sm text-gray-600">
                                     <Link 
                                         to={`/user/${profileUser.username}`}
-                                        className="hover:text-black transition-colors duration-200"
+                                        className="hover:text-black transition-colors duration-200 flex items-center justify-center"
                                     >
-                                        <i className="icon-user mr-2"></i>
+                                        <i className="icon-user mr-1 sm:mr-2"></i>
                                         Profile
                                     </Link>
                                     <Link 
                                         to={`/user/${profileUser.username}/followers`}
-                                        className="hover:text-black transition-colors duration-200"
+                                        className="hover:text-black transition-colors duration-200 flex items-center justify-center"
                                     >
-                                        <i className="icon-people mr-2"></i>
+                                        <i className="icon-people mr-1 sm:mr-2"></i>
                                         Followers
                                     </Link>
-                                    <span className="text-black font-medium">
-                                        <i className="icon-user-following mr-2"></i>
+                                    <span className="text-black font-medium flex items-center justify-center">
+                                        <i className="icon-user-following mr-1 sm:mr-2"></i>
                                         Following ({following.length})
                                     </span>
                                 </div>
@@ -330,7 +330,7 @@ const Following = (props) => {
             </section>
 
             <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
-            <SideButtons />
+
         </div>
     )
 }

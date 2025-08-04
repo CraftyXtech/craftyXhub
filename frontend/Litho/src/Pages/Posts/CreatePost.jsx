@@ -10,7 +10,7 @@ import { m } from "framer-motion"
 import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
 import Logo from '../../Components/Logo'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
-import SideButtons from "../../Components/SideButtons"
+
 import PostForm from '../../Components/Posts/PostForm'
 import { useCreatePost, useSaveAsDraft, usePost, useUpdatePost } from '../../api/usePosts'
 import useAuth from '../../api/useAuth'
@@ -120,7 +120,7 @@ const CreatePost = (props) => {
                     </HeaderNav>
                 </Header>
                 {/* Header End */}
-                <SideButtons />
+    
                 
                 {/* Auth Required Section */}
                 <section className="bg-lightgray py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
@@ -170,7 +170,7 @@ const CreatePost = (props) => {
                         </Navbar.Collapse>
                     </HeaderNav>
                 </Header>
-                <SideButtons />
+    
                 
                 <section className="bg-lightgray py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
                     <Container>
@@ -210,7 +210,7 @@ const CreatePost = (props) => {
                         </Navbar.Collapse>
                     </HeaderNav>
                 </Header>
-                <SideButtons />
+    
                 
                 <section className="bg-lightgray py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
                     <Container>
@@ -263,7 +263,7 @@ const CreatePost = (props) => {
                         </Navbar.Collapse>
                     </HeaderNav>
                 </Header>
-                <SideButtons />
+    
                 
                 <section className="bg-lightgray py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
                     <Container>
@@ -343,7 +343,7 @@ const CreatePost = (props) => {
                 </HeaderNav>
             </Header>
             {/* Header End */}
-            <SideButtons />
+
             
             {/* Page Title Section Start */}
             <section className="bg-darkgray py-[25px] page-title-small">

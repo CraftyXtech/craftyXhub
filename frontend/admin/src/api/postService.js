@@ -215,6 +215,51 @@ export const useCreateCategory = () => {
   return { createCategory, loading, error };
 };
 
+// Hook to update a category
+export const useUpdateCategory = () => {
+  const axiosPrivate = useAxiosPrivate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const updateCategory = async (categoryId, categoryData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axiosPrivate.put(`/posts/categories/${categoryId}`, categoryData);
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { updateCategory, loading, error };
+};
+
+// Hook to delete a category
+export const useDeleteCategory = () => {
+  const axiosPrivate = useAxiosPrivate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const deleteCategory = async (categoryId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      await axiosPrivate.delete(`/posts/categories/${categoryId}`);
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { deleteCategory, loading, error };
+};
+
 // Hook to fetch tags
 export const useGetTags = () => {
   const axiosPrivate = useAxiosPrivate();

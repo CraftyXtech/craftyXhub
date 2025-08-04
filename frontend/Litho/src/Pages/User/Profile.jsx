@@ -11,7 +11,7 @@ import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '
 import Logo from '../../Components/Logo'
 import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
-import SideButtons from "../../Components/SideButtons"
+
 import ProfileManagement from '../../Components/ProfileManagement'
 import Buttons from '../../Components/Button/Buttons'
 
@@ -51,14 +51,14 @@ const Profile = (props) => {
                 {/* Header End */}
 
                 {/* Section Start */}
-                <section className="pt-[130px] lg:pt-[90px] md:pt-[75px] sm:pt-[50px]">
-                    <Container>
+                <section className="pt-[50px] sm:pt-[70px] md:pt-[75px] lg:pt-[90px] xl:pt-[130px]">
+                    <Container className="px-4 sm:px-6">
                         <Row className="justify-center">
                             <Col xl={6} lg={7} md={8} className="text-center">
-                                <h1 className="font-serif text-darkgray font-semibold text-[42px] lg:text-[32px] md:text-[30px] mb-[25px]">
+                                <h1 className="font-serif text-darkgray font-semibold text-[24px] sm:text-[30px] md:text-[32px] lg:text-[42px] mb-[20px] sm:mb-[25px]">
                                     Access Required
                                 </h1>
-                                <p className="w-[85%] mx-auto mb-[35px] lg:w-[90%] md:w-full">
+                                <p className="w-[95%] sm:w-[85%] lg:w-[90%] md:w-full mx-auto mb-[25px] sm:mb-[35px] text-sm sm:text-base">
                                     Please log in to manage your profile settings.
                                 </p>
                                 <Buttons 
@@ -66,6 +66,7 @@ const Profile = (props) => {
                                     className="btn-fill btn-fancy font-medium font-serif uppercase rounded-none"
                                     themeColor="#0038e3"
                                     color="#fff"
+                                    size="sm"
                                     title="Login to Continue"
                                 />
                             </Col>
@@ -83,7 +84,7 @@ const Profile = (props) => {
 
     return (
         <div style={props.style}>
-            <SideButtons />
+
             
             {/* Header Start */}
             <Header topSpace={{ desktop: true }} type="reverse-scroll">
@@ -132,8 +133,8 @@ const Profile = (props) => {
             {/* Page Title End */}
 
             {/* Profile Management Section Start */}
-            <m.section {...fadeIn} className="py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
-                <Container>
+            <m.section {...fadeIn} className="py-[50px] sm:py-[60px] md:py-[75px] lg:py-[90px] xl:py-[130px]">
+                <Container className="px-4 sm:px-6">
                     <Row className="justify-center">
                         <Col lg={8}>
                             <ProfileManagement userUuid={user?.uuid} />

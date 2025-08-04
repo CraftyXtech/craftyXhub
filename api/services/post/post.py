@@ -10,6 +10,7 @@ from schemas.post import (
     PostCreate,
     PostUpdate,
     CategoryCreate,
+    CategoryUpdate,
     TagCreate,
     ReportCreate
 )
@@ -842,6 +843,111 @@ class PostService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to create category: {str(e)}"
+            )
+
+    @staticmethod
+    async def update_category(
+            session: AsyncSession,
+            category_id: int,
+            category_data: CategoryUpdate
+    ) -> Category:
+        try:
+            result = await session.execute(
+                select(Category).where(Category.id == category_id)
+            )
+            db_category = result.scalar_one_or_none()
+            
+            if not db_category:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Category not found"
+                )
+
+            # Update fields if provided
+            if category_data.name is not None:
+                db_category.name = category_data.name
+                
+                # Generate new slug if name changed and no slug provided
+                if category_data.slug is None:
+                    generated_slug = await PostService.generate_unique_slug(session, category_data.name, Category)
+                    db_category.slug = generated_slug
+            
+            if category_data.slug is not None:
+                if category_data.slug.strip():
+                    existing_category = await session.execute(
+                        select(Category).where(
+                            Category.slug == category_data.slug.strip(),
+                            Category.id != category_id
+                        )
+                    )
+                    if existing_category.scalar_one_or_none():
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Category with this slug already exists"
+                        )
+                    db_category.slug = category_data.slug.strip()
+            
+            if category_data.description is not None:
+                db_category.description = category_data.description
+
+            await session.commit()
+            await session.refresh(db_category)
+            return db_category
+        except HTTPException:
+            raise
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to update category: {str(e)}"
+            )
+
+    @staticmethod
+    async def delete_category(
+            session: AsyncSession,
+            category_id: int
+    ):
+        try:
+            result = await session.execute(
+                select(Category).where(Category.id == category_id)
+            )
+            db_category = result.scalar_one_or_none()
+            
+            if not db_category:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Category not found"
+                )
+            
+            # Check if category has posts
+            posts_result = await session.execute(
+                select(Post).where(Post.category_id == category_id)
+            )
+            if posts_result.scalar_one_or_none():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot delete category that has posts. Please reassign or delete posts first."
+                )
+            
+            # Check if category has subcategories
+            subcategories_result = await session.execute(
+                select(Category).where(Category.parent_id == category_id)
+            )
+            if subcategories_result.scalar_one_or_none():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot delete category that has subcategories. Please delete subcategories first."
+                )
+
+            await session.delete(db_category)
+            await session.commit()
+        except HTTPException:
+            raise
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to delete category: {str(e)}"
             )
 
     @staticmethod

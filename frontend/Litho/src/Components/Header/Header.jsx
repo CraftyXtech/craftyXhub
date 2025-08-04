@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useRef, memo } from "react";
+import React, { useEffect, useState, useContext, useRef, memo, useMemo } from "react";
 
 // Libraries
 import * as Yup from "yup";
@@ -17,10 +17,8 @@ import ReactCustomScrollbar from "../ReactCustomScrollbar";
 // Context
 import GlobalContext from "../../Context/Context";
 
-// Data
-import HeaderData, { DashboardMenuData } from "./HeaderData";
+import HeaderData, { DashboardMenuData, useDynamicHeaderData } from "./HeaderData";
 
-// API & Auth
 import useAuth from "../../api/useAuth";
 
 // css
@@ -28,7 +26,6 @@ import "../../Assets/scss/layouts/_header.scss"
 
 /* Header Component Start */
 export const Header = memo((props) => {
-  // Add Global Header Data
   const { setHeaderHeight } = useContext(GlobalContext);
   const { scrollY } = useScroll();
   const [scrollPos, setScrollPos] = useState({
@@ -77,7 +74,6 @@ export const Header = memo((props) => {
       document.body.style.removeProperty("overflow");
     }
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location]);
 
   useEffect(() => {
@@ -105,7 +101,6 @@ export const Header = memo((props) => {
       lastScrollTop = pos;
     });
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
@@ -117,7 +112,6 @@ export const Header = memo((props) => {
     </header>
   );
 });
-/* Header Component End */
 
 /* Headernav Component Start */
 export const HeaderNav = (props) => {
@@ -161,7 +155,7 @@ export const HeaderNav = (props) => {
     </Navbar>
   );
 };
-/* Headernav Component End */
+
 
 /* Topbar Component Start */
 export const Topbar = ({ className, ...props }) => {
@@ -179,7 +173,7 @@ export const Topbar = ({ className, ...props }) => {
     </div>
   );
 };
-/* Topbar Component End */
+
 
 /* Menu Component Start */
 export const Menu = memo((props) => {
@@ -188,18 +182,25 @@ export const Menu = memo((props) => {
   const [isHover, setIsHover] = useState(false)
   const handleMenuClick = (e, index) => setMenuActive(index !== isMenuActive ? index : null);
   
-  // Get authentication state
   const { isAuthenticated } = useAuth();
+  const { headerData, loading, error } = useDynamicHeaderData();
   
-  // Conditionally add Dashboard menu for authenticated users
-  const menuData = React.useMemo(() => {
-    if (isAuthenticated) {
-      return [DashboardMenuData, ...props.data];
+  const baseMenuData = useMemo(() => {
+    if (!loading && !error && headerData?.length > 0) {
+      return headerData;
     }
-    return props.data;
-  }, [isAuthenticated, props.data]);
+    return [];
+  }, [headerData, loading, error]);
+  
+  
+  const menuData = useMemo(() => {
+    if (isAuthenticated) {
+      return [DashboardMenuData, ...baseMenuData];
+    }
+    return baseMenuData;
+  }, [isAuthenticated, baseMenuData]);
 
-  // set Active Menu
+  
   const location = useLocation()
 
   useEffect(() => {
@@ -344,7 +345,6 @@ export const MobileMenu = (props) => {
   const [toggle, setToggle] = useState(false);
   const handleMenuClick = (e, index) => setMenuActive(index !== isMenuActive ? index : null);
 
-  // set Active Menu
   const location = useLocation()
   useEffect(() => {
     let header = document.querySelector("header"),
@@ -863,7 +863,18 @@ export const HeaderCart = (props) => {
 
 /* Collapsible Menu Component Start */
 export const CollapsibleMenu = (props) => {
-  const collapsibleMenu = useRef(null)
+  const collapsibleMenu = useRef(null);
+  
+  // Get dynamic header data for mobile menu
+  const { headerData, loading, error } = useDynamicHeaderData();
+  
+  // Use only dynamic header data from API
+  const menuData = useMemo(() => {
+    if (!loading && !error && headerData?.length > 0) {
+      return headerData;
+    }
+    return [];
+  }, [headerData, loading, error])
   let location = useLocation()
 
   useEffect(() => {
@@ -902,8 +913,8 @@ export const CollapsibleMenu = (props) => {
       className={`collapsible-menu${props.theme ? ` ${props.theme}` : ""}${props.className ? ` ${props.className}` : ""
         }`}
     >
-      {HeaderData &&
-        HeaderData.map((item, i) => {
+      {menuData &&
+        menuData.map((item, i) => {
           return (
             <Accordion.Item key={i} eventKey={i}>
               <Accordion.Header>
@@ -1071,14 +1082,9 @@ HamburgerMenu.propTypes = {
   closeBtn: PropTypes.bool,
 };
 
-Menu.defaultProps = {
-  data: HeaderData,
-};
+// Menu.defaultProps removed - now uses dynamic data from useDynamicHeaderData hook
 
-MobileMenu.defaultProps = {
-  type: "full",
-  data: HeaderData,
-};
+// MobileMenu.defaultProps removed - now uses dynamic data from useDynamicHeaderData hook
 
 MobileMenu.propTypes = {
   type: PropTypes.string,

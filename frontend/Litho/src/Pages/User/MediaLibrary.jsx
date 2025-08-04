@@ -10,7 +10,7 @@ import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '
 import Logo from '../../Components/Logo'
 import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
-import SideButtons from "../../Components/SideButtons"
+
 import MediaUploader from '../../Components/Media/MediaUploader'
 import MediaGallery from '../../Components/Media/MediaGallery'
 import Buttons from '../../Components/Button/Buttons'
@@ -165,7 +165,7 @@ const MediaLibrary = (props) => {
                 </section>
 
                 <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
-                <SideButtons />
+    
             </div>
         )
     }
@@ -208,33 +208,33 @@ const MediaLibrary = (props) => {
                                 </p>
                                 
                                 {/* Stats */}
-                                <div className="grid grid-cols-4 gap-4 max-w-2xl mx-auto mb-8">
-                                    <div className="text-center">
-                                        <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-                                        <div className="text-sm text-gray-600">Total Files</div>
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
+                                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                                        <div className="text-lg sm:text-2xl font-bold text-blue-600">{stats.total}</div>
+                                        <div className="text-xs sm:text-sm text-gray-600">Total Files</div>
                                     </div>
-                                    <div className="text-center">
-                                        <div className="text-2xl font-bold text-green-600">{stats.images}</div>
-                                        <div className="text-sm text-gray-600">Images</div>
+                                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                                        <div className="text-lg sm:text-2xl font-bold text-green-600">{stats.images}</div>
+                                        <div className="text-xs sm:text-sm text-gray-600">Images</div>
                                     </div>
-                                    <div className="text-center">
-                                        <div className="text-2xl font-bold text-purple-600">{stats.videos}</div>
-                                        <div className="text-sm text-gray-600">Videos</div>
+                                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                                        <div className="text-lg sm:text-2xl font-bold text-purple-600">{stats.videos}</div>
+                                        <div className="text-xs sm:text-sm text-gray-600">Videos</div>
                                     </div>
-                                    <div className="text-center">
-                                        <div className="text-2xl font-bold text-orange-600">{formatFileSize(stats.totalSize)}</div>
-                                        <div className="text-sm text-gray-600">Total Size</div>
+                                    <div className="text-center p-3 bg-orange-50 rounded-lg">
+                                        <div className="text-lg sm:text-2xl font-bold text-orange-600">{formatFileSize(stats.totalSize)}</div>
+                                        <div className="text-xs sm:text-sm text-gray-600">Total Size</div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Toolbar */}
-                            <div className="flex flex-wrap items-center justify-between mb-8 p-4 bg-gray-50 rounded-lg">
-                                <div className="flex flex-wrap items-center space-x-4 mb-4 md:mb-0">
+                            <div className="flex flex-col lg:flex-row items-center justify-between mb-6 lg:mb-8 p-3 sm:p-4 bg-gray-50 rounded-lg gap-4 lg:gap-0">
+                                <div className="flex justify-center lg:justify-start xxs:flex-col xxs:items-center w-full lg:w-auto">
                                     {/* Upload Button */}
                                     <Buttons
                                         onClick={() => setShowUploader(!showUploader)}
-                                        className="btn-fill btn-fancy font-medium font-serif uppercase rounded-none"
+                                        className="btn-fill btn-fancy font-medium font-serif uppercase rounded-none mb-[15px] xxs:mx-0"
                                         color="#0038e3"
                                         size="sm"
                                         themeColor="#0038e3"
@@ -246,12 +246,12 @@ const MediaLibrary = (props) => {
                                     {/* Bulk Actions */}
                                     {selectedMedia.length > 0 && (
                                         <>
-                                            <span className="text-sm text-gray-600">
+                                            <span className="text-xs sm:text-sm text-gray-600 mr-3 mb-[15px] xxs:mx-0">
                                                 {selectedMedia.length} selected
                                             </span>
                                             <Buttons
                                                 onClick={handleBulkDelete}
-                                                className="btn-outline btn-fancy font-medium font-serif uppercase rounded-none"
+                                                className="btn-outline btn-fancy font-medium font-serif uppercase rounded-none mb-[15px]"
                                                 color="#ef4444"
                                                 size="sm"
                                                 title="Delete Selected"
@@ -262,12 +262,12 @@ const MediaLibrary = (props) => {
                                     )}
                                 </div>
                                 
-                                <div className="flex flex-wrap items-center space-x-4">
+                                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 w-full lg:w-auto">
                                     {/* Filter */}
                                     <select
                                         value={filterType}
                                         onChange={(e) => setFilterType(e.target.value)}
-                                        className="px-3 py-1 border border-gray-300 rounded text-sm"
+                                        className="px-3 py-2 border border-gray-300 rounded text-xs sm:text-sm w-full sm:w-auto"
                                     >
                                         <option value="all">All Files</option>
                                         <option value="images">Images</option>
@@ -279,7 +279,7 @@ const MediaLibrary = (props) => {
                                     <select
                                         value={sortBy}
                                         onChange={(e) => setSortBy(e.target.value)}
-                                        className="px-3 py-1 border border-gray-300 rounded text-sm"
+                                        className="px-3 py-2 border border-gray-300 rounded text-xs sm:text-sm w-full sm:w-auto"
                                     >
                                         <option value="newest">Newest First</option>
                                         <option value="oldest">Oldest First</option>
@@ -288,22 +288,23 @@ const MediaLibrary = (props) => {
                                     </select>
                                     
                                     {/* Grid Size */}
-                                    <div className="flex items-center space-x-2">
+                                    <div className="flex items-center justify-center gap-2 sm:gap-3">
+                                        <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">View:</span>
                                         <button
                                             onClick={() => setGridSize(3)}
-                                            className={`p-1 ${gridSize === 3 ? 'text-blue-600' : 'text-gray-400'}`}
+                                            className={`p-2 rounded text-xs sm:text-sm ${gridSize === 3 ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-gray-600'}`}
                                         >
                                             <i className="fas fa-th-large"></i>
                                         </button>
                                         <button
                                             onClick={() => setGridSize(4)}
-                                            className={`p-1 ${gridSize === 4 ? 'text-blue-600' : 'text-gray-400'}`}
+                                            className={`p-2 rounded text-xs sm:text-sm ${gridSize === 4 ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-gray-600'}`}
                                         >
                                             <i className="fas fa-th"></i>
                                         </button>
                                         <button
                                             onClick={() => setGridSize(6)}
-                                            className={`p-1 ${gridSize === 6 ? 'text-blue-600' : 'text-gray-400'}`}
+                                            className={`p-2 rounded text-xs sm:text-sm ${gridSize === 6 ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-gray-600'}`}
                                         >
                                             <i className="fas fa-border-all"></i>
                                         </button>
@@ -367,7 +368,7 @@ const MediaLibrary = (props) => {
             </section>
 
             <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
-            <SideButtons />
+
         </div>
     )
 }

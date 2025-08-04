@@ -13,7 +13,7 @@ import SocialIcons from "../../../Components/SocialIcon/SocialIcons"
 import Blockquote from '../../../Components/BlockQuote/Blockquote'
 import Dropcaps from '../../../Components/Dropcaps/Dropcaps'
 import FooterStyle05 from "../../../Components/Footers/FooterStyle05"
-import SideButtons from "../../../Components/SideButtons";
+
 import Sidebar from '../../../Components/Blogs/HelperComponents/Sidebar';
 
 // Data
@@ -90,7 +90,7 @@ const BlogStandardPostPage = (props) => {
         </HeaderNav>
       </Header>
       {/* Header End */}
-      <SideButtons />
+      
       {data ? (
         <>
           <section className="py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">

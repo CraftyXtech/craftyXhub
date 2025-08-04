@@ -11,6 +11,7 @@ import {
     getRecentPosts,
     getRelatedPosts,
     getCategories,
+    getCategoryBySlug,
     getTags,
     getProfile,
     createProfile,
@@ -45,6 +46,13 @@ export const usePosts = (params = {}) => {
     const [error, setError] = useState(null);
 
     const fetchPosts = useCallback(async () => {
+        if (params.skip) {
+            setLoading(false);
+            setPosts([]);
+            setError(null);
+            return;
+        }
+
         try {
             setLoading(true);
             const data = await getPosts(params);
@@ -226,11 +234,16 @@ export const useCategories = () => {
     const fetchCategories = useCallback(async () => {
         try {
             setLoading(true);
-            const data = await getCategories();
-            setCategories(data.categories || []);
             setError(null);
+            const response = await getCategories();
+            
+            // Transform API response to header menu format
+            const headerMenuData = transformCategoriesToMenuData(response.categories);
+            setCategories(headerMenuData);
         } catch (err) {
-            setError(err.response?.data?.detail || err.message);
+            setError(err.response?.data?.message || 'Failed to fetch categories');
+            console.error('Categories fetch error:', err);
+            // Fallback to empty array on error
             setCategories([]);
         } finally {
             setLoading(false);
@@ -242,6 +255,62 @@ export const useCategories = () => {
     }, [fetchCategories]);
 
     return { categories, loading, error, refetch: fetchCategories };
+};
+
+/**
+ * Hook to get a single category by slug
+ */
+export const useCategoryBySlug = (slug) => {
+    const [category, setCategory] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (!slug) {
+            setCategory(null);
+            setLoading(false);
+            return;
+        }
+
+        const fetchCategory = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await getCategoryBySlug(slug);
+                setCategory(response);
+            } catch (err) {
+                setError(err.response?.data?.message || 'Failed to fetch category');
+                console.error('Category fetch error:', err);
+                setCategory(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCategory();
+    }, [slug]);
+
+    return { category, loading, error };
+};
+
+/**
+ * Transforms API categories response to header menu data format
+ * @param {Array} apiCategories - Categories from API with subcategories
+ * @returns {Array} - Formatted menu data for header
+ */
+const transformCategoriesToMenuData = (apiCategories) => {
+    if (!Array.isArray(apiCategories)) return [];
+    
+    return apiCategories.map(category => ({
+        title: category.name,
+        link: `/category/${category.slug}`,
+        dropdown: category.subcategories?.length > 0 
+            ? category.subcategories.map(subcategory => ({
+                title: subcategory.name,
+                link: `/category/${subcategory.slug}`
+            }))
+            : null
+    }));
 };
 
 export const useTags = () => {

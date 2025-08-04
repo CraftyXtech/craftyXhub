@@ -7,13 +7,11 @@ import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import Buttons from '../../Components/Button/Buttons'
 import SideButtons from "../../Components/SideButtons"
 
-// API - Using barrel exports
 import useAuth from '../../api/useAuth'
 import { axiosInstance } from '../../api'
 import Logo from '../../Components/Logo'
 
-// Data
-import HeaderData from '../../Components/Header/HeaderData'
+
 
 // Animations
 import { fadeIn } from '../../Functions/GlobalAnimations'
@@ -44,7 +42,6 @@ const Login = (props) => {
         setError('')
 
         try {
-            // Step 1: Login to get token
             const loginResponse = await axiosInstance.post('/auth/login', {
                 email: formData.email,
                 password: formData.password
@@ -52,17 +49,14 @@ const Login = (props) => {
 
             const token = loginResponse.data.access_token
 
-            // Step 2: Fetch user data using the token
             const userResponse = await axiosInstance.get('/auth/me', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             })
 
-            // Step 3: Store both token and user data
             login(token, userResponse.data)
             
-            // Redirect to user dashboard
             navigate('/dashboard')
         } catch (error) {
             console.error('Login error:', error)
@@ -70,7 +64,6 @@ const Login = (props) => {
             
             if (error.response?.data?.detail) {
                 if (Array.isArray(error.response.data.detail)) {
-                    // Handle validation errors from FastAPI
                     errorMessage = error.response.data.detail
                         .map(err => err.msg || err.message || 'Validation error')
                         .join(', ')
@@ -108,7 +101,7 @@ const Login = (props) => {
                         </Navbar.Toggle>
                     </div>
                     <Navbar.Collapse className="col-auto p-0 justify-end">
-                        <Menu data={HeaderData} />
+                        <Menu />
                     </Navbar.Collapse>
                 </HeaderNav>
             </Header>

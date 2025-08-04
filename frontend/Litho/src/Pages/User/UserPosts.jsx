@@ -11,8 +11,8 @@ import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '
 import Logo from '../../Components/Logo'
 import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
-import SideButtons from "../../Components/SideButtons"
-import UserPostCard from '../../Components/Posts/UserPostCard'
+
+import BlogWidget from '../../Components/Blogs/BlogWidget'
 import Buttons from '../../Components/Button/Buttons'
 
 // API & Auth
@@ -30,9 +30,14 @@ const UserPosts = (props) => {
     const navigate = useNavigate()
     const { isAuthenticated, user } = useAuth()
     
-    // Fetch both drafts and all posts
+    // Fetch both drafts and all posts 
     const { drafts, loading: draftsLoading, error: draftsError, refetch: refetchDrafts } = useUserDraftPosts()
-    const { posts: allPosts, loading: postsLoading, error: postsError, refetch: refetchPosts } = usePosts({ author_id: user?.id })
+    const { posts: allPosts, loading: postsLoading, error: postsError, refetch: refetchPosts } = usePosts(
+        user?.id ? { 
+            author_id: user.id,
+            published: true 
+        } : { skip: true } 
+    )
     
     // Determine which data to show based on active tab
     const currentPosts = activeTab === 'drafts' ? drafts : allPosts
@@ -41,25 +46,20 @@ const UserPosts = (props) => {
     const isDraftMode = activeTab === 'drafts'
 
     const handlePostDelete = useCallback((postId) => {
-        // Refresh both drafts and posts lists to ensure consistency
         refetchDrafts()
         refetchPosts()
         
-        // Remove from selected posts
         setSelectedPosts(prev => prev.filter(id => id !== postId))
         
         console.log('Post deleted successfully:', postId)
     }, [refetchDrafts, refetchPosts])
 
     const handleDraftPublish = useCallback((draftId, publishedPost) => {
-        // Refresh both drafts and posts lists
         refetchDrafts()
         refetchPosts()
         
-        // Remove from selected posts
         setSelectedPosts(prev => prev.filter(id => id !== draftId))
         
-        // Show success message
         if (publishedPost?.post?.slug) {
             alert(`Draft published successfully! You can view it at /posts/${publishedPost.post.slug}`)
         } else {
@@ -89,7 +89,7 @@ const UserPosts = (props) => {
 
     const handleTabChange = useCallback((tab) => {
         setActiveTab(tab)
-        setSelectedPosts([]) // Clear selection when switching tabs
+        setSelectedPosts([]) 
     }, [])
 
     // Show auth required message for non-authenticated users
@@ -121,7 +121,7 @@ const UserPosts = (props) => {
                     </HeaderNav>
                 </Header>
                 {/* Header End */}
-                <SideButtons />
+
                 
                 {/* Auth Required Section */}
                 <section className="bg-lightgray py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
@@ -176,7 +176,6 @@ const UserPosts = (props) => {
                 </HeaderNav>
             </Header>
             {/* Header End */}
-            <SideButtons />
             
             {/* Page Title Section Start */}
             <section className="bg-darkgray py-[25px] page-title-small">
@@ -190,7 +189,7 @@ const UserPosts = (props) => {
                         <Col xl={4} lg={6} className="breadcrumb justify-end text-sm font-serif mb-0 md:mt-[10px] md:justify-center">
                             <ul className="xs:text-center">
                                 <li><Link aria-label="homepage" to="/" className="hover:text-white">Home</Link></li>
-                                <li><Link aria-label="user dashboard" to="/user" className="hover:text-white">Dashboard</Link></li>
+                                <li><Link aria-label="user dashboard" to="/dashboard" className="hover:text-white">Dashboard</Link></li>
                                 <li>Posts</li>
                             </ul>
                         </Col>
@@ -200,29 +199,21 @@ const UserPosts = (props) => {
             {/* Page Title Section End */}
 
             {/* Posts Section Start */}
-            <section className="bg-lightgray py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
-                <Container>
+            <section className="bg-lightgray py-[50px] sm:py-[60px] md:py-[75px] lg:py-[90px] xl:py-[130px]">
+                <Container className="px-4 sm:px-6">
                     <Row>
                         <Col xs={12}>
-                            {/* User Info & Actions */}
+                            {/* Create Post Action */}
                             <m.div 
-                                className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8"
+                                className="flex justify-center md:justify-end mb-8"
                                 {...fadeIn}
                             >
-                                <div className="mb-4 sm:mb-0">
-                                    <h2 className="font-serif text-darkgray text-2xl font-medium mb-2">
-                                        Welcome back, {user?.full_name || user?.username}
-                                    </h2>
-                                    <p className="text-spanishgray">
-                                        Manage your posts and drafts.
-                                    </p>
-                                </div>
                                 <Buttons
                                     to="/posts/create"
                                     ariaLabel="create new post"
-                                    className="font-medium font-serif uppercase text-sm"
-                                    themeColor={["#0038e3", "#ff7a56"]}
-                                    size="md"
+                                    className="font-medium font-serif uppercase text-sm btn-fill"
+                                    themeColor="#232323"
+                                    size="sm"
                                     color="#fff"
                                     title="Create New Post"
                                 />
@@ -230,10 +221,10 @@ const UserPosts = (props) => {
 
                             {/* Tab Navigation */}
                             <m.div className="mb-8" {...fadeIn}>
-                                <div className="flex border-b border-[#dfdfdf]">
+                                <div className="flex flex-wrap border-b border-[#dfdfdf] overflow-x-auto">
                                     <button
                                         onClick={() => handleTabChange('all')}
-                                        className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+                                        className={`px-4 sm:px-6 py-3 font-medium text-xs sm:text-sm border-b-2 transition-colors whitespace-nowrap ${
                                             activeTab === 'all' 
                                                 ? 'border-fastblue text-fastblue' 
                                                 : 'border-transparent text-spanishgray hover:text-darkgray'
@@ -243,7 +234,7 @@ const UserPosts = (props) => {
                                     </button>
                                     <button
                                         onClick={() => handleTabChange('drafts')}
-                                        className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+                                        className={`px-4 sm:px-6 py-3 font-medium text-xs sm:text-sm border-b-2 transition-colors whitespace-nowrap ${
                                             activeTab === 'drafts' 
                                                 ? 'border-fastblue text-fastblue' 
                                                 : 'border-transparent text-spanishgray hover:text-darkgray'
@@ -256,25 +247,25 @@ const UserPosts = (props) => {
 
                             {/* Loading State */}
                             {loading && (
-                                <m.div className="text-center py-16" {...fadeIn}>
+                                <m.div className="text-center py-12 sm:py-16" {...fadeIn}>
                                     <div className="spinner-border text-fastblue" role="status">
                                         <span className="visually-hidden">Loading...</span>
                                     </div>
-                                    <p className="mt-4 text-spanishgray">Loading your {activeTab === 'drafts' ? 'drafts' : 'posts'}...</p>
+                                    <p className="mt-4 text-spanishgray text-sm sm:text-base">Loading your {activeTab === 'drafts' ? 'drafts' : 'posts'}...</p>
                                 </m.div>
                             )}
 
                             {/* Error State */}
                             {error && (
                                 <m.div 
-                                    className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg mb-8"
+                                    className="bg-red-100 border border-red-400 text-red-700 px-4 sm:px-6 py-4 rounded-lg mb-8"
                                     {...fadeIn}
                                 >
-                                    <div className="flex items-center">
-                                        <i className="feather-alert-circle text-xl mr-3"></i>
-                                        <div>
-                                            <h4 className="font-medium mb-1">Error Loading {activeTab === 'drafts' ? 'Drafts' : 'Posts'}</h4>
-                                            <p className="text-sm mb-0">{error}</p>
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center">
+                                        <i className="feather-alert-circle text-xl mr-0 sm:mr-3 mb-2 sm:mb-0"></i>
+                                        <div className="text-center sm:text-left">
+                                            <h4 className="font-medium mb-1 text-sm sm:text-base">Error Loading {activeTab === 'drafts' ? 'Drafts' : 'Posts'}</h4>
+                                            <p className="text-xs sm:text-sm mb-0">{error}</p>
                                         </div>
                                     </div>
                                 </m.div>
@@ -282,12 +273,12 @@ const UserPosts = (props) => {
 
                             {/* No Posts State */}
                             {!loading && !error && currentPosts.length === 0 && (
-                                <m.div className="text-center py-16" {...fadeIn}>
-                                    <i className="feather-edit text-6xl text-spanishgray mb-6"></i>
-                                    <h3 className="font-serif text-darkgray mb-4">
+                                <m.div className="text-center py-12 sm:py-16 px-4" {...fadeIn}>
+                                    <i className="feather-edit text-4xl sm:text-6xl text-spanishgray mb-4 sm:mb-6"></i>
+                                    <h3 className="font-serif text-darkgray mb-3 sm:mb-4 text-lg sm:text-xl">
                                         No {activeTab === 'drafts' ? 'Draft Posts' : 'Posts'}
                                     </h3>
-                                    <p className="text-spanishgray mb-8 text-lg">
+                                    <p className="text-spanishgray mb-6 sm:mb-8 text-sm sm:text-lg max-w-md mx-auto">
                                         {activeTab === 'drafts' 
                                             ? "You haven't created any draft posts yet. Start writing your first post!"
                                             : "You haven't published any posts yet. Start writing your first post!"
@@ -296,9 +287,9 @@ const UserPosts = (props) => {
                                     <Buttons
                                         to="/posts/create"
                                         ariaLabel="create first post"
-                                        className="font-medium font-serif uppercase text-sm"
-                                        themeColor={["#0038e3", "#ff7a56"]}
-                                        size="lg"
+                                        className="font-medium font-serif uppercase text-sm btn-fill"
+                                        themeColor="#232323"
+                                        size="sm"
                                         color="#fff"
                                         title="Create Your First Post"
                                     />
@@ -310,18 +301,18 @@ const UserPosts = (props) => {
                                 <m.div {...fadeIn}>
                                     {/* Bulk Actions */}
                                     {selectedPosts.length > 0 && (
-                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-blue-800">
+                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-6">
+                                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                                                <span className="text-xs sm:text-sm text-blue-800 text-center sm:text-left">
                                                     {selectedPosts.length} {activeTab === 'drafts' ? 'draft' : 'post'}{selectedPosts.length > 1 ? 's' : ''} selected
                                                 </span>
-                                                <div className="flex space-x-3">
+                                                <div className="flex justify-center sm:justify-start gap-4 sm:gap-3 w-full sm:w-auto">
                                                     {activeTab === 'drafts' && (
-                                                        <button className="text-sm text-blue-600 hover:text-blue-800">
+                                                        <button className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium">
                                                             Bulk Publish
                                                         </button>
                                                     )}
-                                                    <button className="text-sm text-red-600 hover:text-red-800">
+                                                    <button className="text-xs sm:text-sm text-red-600 hover:text-red-800 font-medium">
                                                         Bulk Delete
                                                     </button>
                                                 </div>
@@ -345,18 +336,16 @@ const UserPosts = (props) => {
                                         </p>
                                     </div>
 
-                                    {/* Posts Grid - Two Columns */}
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        {currentPosts.map((post, index) => (
-                                            <UserPostCard
-                                                key={post.uuid}
-                                                post={post}
-                                                onDelete={handlePostDelete}
-                                                onPublish={isDraftMode ? handleDraftPublish : undefined}
-                                                transition={{ delay: index * 0.1 }}
-                                            />
-                                        ))}
-                                    </div>
+                                    {/* Posts List */}
+                                    <BlogWidget
+                                        filter={false}
+                                        data={currentPosts}
+                                        link="/posts/"
+                                        grid="grid grid-1col gutter-large"
+                                        pagination={false}
+                                        onPublish={isDraftMode ? handleDraftPublish : undefined}
+                                        onDelete={handlePostDelete}
+                                    />
                                 </m.div>
                             )}
                         </Col>

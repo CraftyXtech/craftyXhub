@@ -22,7 +22,7 @@ export const useProfile = (userUuid) => {
       setLoading(true)
       setError(null)
       
-      const response = await axiosPrivate.get(`/users/${userUuid}/profile`)
+      const response = await axiosPrivate.get(`/profiles/${userUuid}`)
       setProfile(response.data)
     } catch (err) {
       console.error('Error fetching profile:', err)

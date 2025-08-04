@@ -5,10 +5,10 @@ import { Container, Row, Col, Navbar } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
 
 // Components
-import Header, { HeaderLanguage, HeaderNav, Menu, SearchBar, Topbar } from '../../Components/Header/Header'
+import Header, { HeaderNav, Menu, SearchBar, Topbar } from '../../Components/Header/Header'
 import SocialIcons from '../../Components/SocialIcon/SocialIcons'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
-import SideButtons from "../../Components/SideButtons";
+
 import Buttons from '../../Components/Button/Buttons'
 import LoginModal from '../../Components/auth/LoginModal'
 import RegisterModal from '../../Components/auth/RegisterModal'
@@ -71,7 +71,7 @@ const FeaturedArticlesPage = (props) => {
 
   return (
     <div style={props.style}>
-      <SideButtons />
+      
 
       {/* Header Start */}
       <Header className="header-with-topbar" topSpace={{ desktop: true }} type="reverse-scroll">
@@ -89,7 +89,6 @@ const FeaturedArticlesPage = (props) => {
               </Col>
               <Col className="col-auto col-md-3 text-right">
                 <SearchBar className="!py-[7px] text-white" />
-                <HeaderLanguage className="!py-[7px] pl-[20px] text-white" />
               </Col>
             </Row>
           </Container>

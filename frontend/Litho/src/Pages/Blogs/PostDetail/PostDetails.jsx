@@ -13,7 +13,7 @@ import SocialIcons from "../../../Components/SocialIcon/SocialIcons"
 import Blockquote from '../../../Components/BlockQuote/Blockquote'
 import Dropcaps from '../../../Components/Dropcaps/Dropcaps'
 import FooterStyle05 from "../../../Components/Footers/FooterStyle05"
-import SideButtons from "../../../Components/SideButtons";
+
 import Sidebar from '../../../Components/Blogs/HelperComponents/Sidebar';
 
 // API Hooks
@@ -129,7 +129,7 @@ const PostDetails = (props) => {
             </Col>
           </HeaderNav>
         </Header>
-        <SideButtons />
+        
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mb-4"></div>
@@ -169,7 +169,7 @@ const PostDetails = (props) => {
             </Col>
           </HeaderNav>
         </Header>
-        <SideButtons />
+        
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-center">
             <h2 className="text-2xl font-serif font-medium text-darkgray mb-4">Post Not Found</h2>
@@ -215,7 +215,7 @@ const PostDetails = (props) => {
         </HeaderNav>
       </Header>
       {/* Header End */}
-      <SideButtons />
+      
       {data && data.length > 0 && data[0] ? (
         <>
           <section className="py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">

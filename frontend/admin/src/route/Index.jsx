@@ -11,6 +11,13 @@ import CategoryManagement from "@/pages/posts/CategoryManagement";
 import PostForm from "@/pages/posts/PostForm";
 import PostDetail from "@/pages/posts/PostDetail";
 
+// Content Moderation Components
+import CommentModeration from "@/pages/moderation/CommentModeration";
+import PostReports from "@/pages/moderation/PostReports";
+
+// System Components
+import HealthCheck from "@/pages/system/HealthCheck";
+
 
 import Component from "@/pages/components/Index";
 import Accordian from "@/pages/components/Accordions";
@@ -184,6 +191,13 @@ const Router = () => {
               <Route path="posts-create" element={<PostForm />}></Route>
               <Route path="posts-edit/:postId" element={<PostForm />}></Route>
               <Route path="posts-detail" element={<PostDetail />}></Route>
+
+              {/* Content Moderation Routes */}
+              <Route path="moderation/comments" element={<CommentModeration />}></Route>
+              <Route path="moderation/reports" element={<PostReports />}></Route>
+
+              {/* System Routes */}
+              <Route path="system/health" element={<HealthCheck />}></Route>
              
               <Route path="invoice-list" element={<InvoiceList />}></Route>
               <Route path="invoice-details/:invoiceId" element={<InvoiceDetails />}></Route>

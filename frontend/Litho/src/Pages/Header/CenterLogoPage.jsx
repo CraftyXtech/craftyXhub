@@ -20,7 +20,6 @@ import SideButtons from "../../Components/SideButtons";
 
 // Data
 import { TabData01 } from "../../Components/Tab/TabData";
-import HeaderData from "../../Components/Header/HeaderData";
 import { blogData } from "../../Components/Blogs/BlogData";
 
 const SocialIconsData01 = [
@@ -147,8 +146,8 @@ const CenterLogoPage = (props) => {
               </Navbar.Collapse>
             </div>
             <div className="flex justify-between md:hidden col-lg-9 col-xl-8 mx-auto !pl-[25px] !pr-[12px] lg:!pl-[15px] lg:!pr-0">
-              <Menu data={HeaderData.slice(0, Math.floor(HeaderData.length / 2))} />
-              <Menu data={HeaderData.slice(Math.floor(HeaderData.length / 2), (HeaderData.length - 1))} />
+                                      <Menu />
+                        <Menu />
             </div>
           </Col>
         </HeaderNav>

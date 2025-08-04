@@ -8,16 +8,10 @@ import Header, { HeaderNav, Menu } from '../../Components/Header/Header'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import Buttons from '../../Components/Button/Buttons'
 import SideButtons from "../../Components/SideButtons"
-
-// API - Using barrel exports
 import useAuth from '../../api/useAuth'
 import { axiosInstance } from '../../api'
 import Logo from '../../Components/Logo'
 
-// Data
-import HeaderData from '../../Components/Header/HeaderData'
-
-// Animations
 import { fadeIn } from '../../Functions/GlobalAnimations'
 
 const Register = (props) => {
@@ -49,14 +43,13 @@ const Register = (props) => {
         setLoading(true)
         setError('')
 
-        // Validate passwords match
+        
         if (formData.password !== formData.confirmPassword) {
             setError('Passwords do not match')
             setLoading(false)
             return
         }
 
-        // Validate password length
         if (formData.password.length < 8) {
             setError('Password must be at least 8 characters long')
             setLoading(false)
@@ -64,7 +57,6 @@ const Register = (props) => {
         }
 
         try {
-            // Step 1: Register user
             const registerResponse = await axiosInstance.post('/auth/register', {
                 full_name: formData.full_name,
                 username: formData.username,
@@ -74,7 +66,6 @@ const Register = (props) => {
                 role: 'user'
             })
 
-            // Step 2: Auto login after successful registration
             const loginResponse = await axiosInstance.post('/auth/login', {
                 email: formData.email,
                 password: formData.password
@@ -82,17 +73,14 @@ const Register = (props) => {
 
             const token = loginResponse.data.access_token
 
-            // Step 3: Fetch user data using the token
             const userResponse = await axiosInstance.get('/auth/me', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             })
 
-            // Step 4: Store both token and user data
             login(token, userResponse.data)
             
-            // Redirect to user dashboard
             navigate('/dashboard')
         } catch (error) {
             console.error('Registration error:', error)
@@ -100,7 +88,6 @@ const Register = (props) => {
             
             if (error.response?.data?.detail) {
                 if (Array.isArray(error.response.data.detail)) {
-                    // Handle validation errors from FastAPI
                     errorMessage = error.response.data.detail
                         .map(err => err.msg || err.message || 'Validation error')
                         .join(', ')
@@ -138,7 +125,7 @@ const Register = (props) => {
                         </Navbar.Toggle>
                     </div>
                     <Navbar.Collapse className="col-auto p-0 justify-end">
-                        <Menu data={HeaderData} />
+                        <Menu />
                     </Navbar.Collapse>
                 </HeaderNav>
             </Header>

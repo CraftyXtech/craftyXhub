@@ -2,20 +2,13 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Col, Container, Row, Navbar, Form, Alert } from 'react-bootstrap'
 import { m } from "framer-motion"
-
-// Components
 import Header, { HeaderNav, Menu } from '../../Components/Header/Header'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import Buttons from '../../Components/Button/Buttons'
 import SideButtons from "../../Components/SideButtons"
 
-// API - Using barrel export
 import { axiosInstance } from '../../api'
 
-// Data
-import HeaderData from '../../Components/Header/HeaderData'
-
-// Animations
 import { fadeIn } from '../../Functions/GlobalAnimations'
 
 const ForgotPassword = (props) => {
@@ -71,7 +64,7 @@ const ForgotPassword = (props) => {
                         </Navbar.Toggle>
                     </div>
                     <Navbar.Collapse className="col-auto p-0 justify-end">
-                        <Menu data={HeaderData} />
+                        <Menu />
                     </Navbar.Collapse>
                 </HeaderNav>
             </Header>

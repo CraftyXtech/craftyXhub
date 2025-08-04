@@ -1,17 +1,13 @@
 import React, { useState, memo } from 'react'
 import PropTypes from "prop-types"
 
-// Libraries
 import { m } from "framer-motion"
 
-// API & Auth
 import { useBookmark } from '../../api/usePosts'
 import useAuth from '../../api/useAuth'
 
-// Animation
 import { fadeIn } from '../../Functions/GlobalAnimations'
 
-// CSS
 import "../../Assets/scss/components/_bookmark-button.scss"
 
 const BookmarkButton = (props) => {

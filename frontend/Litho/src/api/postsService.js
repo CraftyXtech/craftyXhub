@@ -194,6 +194,17 @@ export const getCategories = async () => {
         const response = await axiosInstance.get('/posts/categories/');
         return response.data;
     } catch (error) {
+        console.error('Error fetching categories:', error);
+        throw error;
+    }
+};
+
+export const getCategoryBySlug = async (slug) => {
+    try {
+        const response = await axiosInstance.get(`/posts/categories/${slug}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching category by slug:', error);
         throw error;
     }
 };
@@ -213,6 +224,7 @@ export const getTags = async () => {
         const response = await axiosInstance.get('/posts/tags/');
         return response.data;
     } catch (error) {
+        console.error('Error fetching tags:', error);
         throw error;
     }
 };

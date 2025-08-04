@@ -15,7 +15,6 @@ const UserProfileDropdown = ({
   const navigate = useNavigate()
   const dropdownRef = useRef(null)
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -52,14 +51,12 @@ const UserProfileDropdown = ({
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
-      {/* Profile Button */}
       <button
         onClick={toggleDropdown}
         className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
         aria-label="User profile menu"
         aria-expanded={showDropdown}
       >
-        {/* User Avatar */}
         <div 
           className="w-8 h-8 rounded-full bg-fastblue text-white flex items-center justify-center text-sm font-semibold"
           style={{ backgroundColor: iconColor }}
@@ -67,23 +64,19 @@ const UserProfileDropdown = ({
           {getUserInitials()}
         </div>
         
-        {/* Username (hidden on mobile) */}
         <span className="hidden md:block text-sm font-medium text-darkgray max-w-[120px] truncate">
           {user?.username || 'User'}
         </span>
         
-        {/* Dropdown Arrow */}
         <i className={`fas fa-chevron-down text-xs text-gray-500 transition-transform duration-200 ${
           showDropdown ? 'rotate-180' : ''
         }`}></i>
       </button>
 
-      {/* Dropdown Menu */}
       {showDropdown && (
         <div className={`absolute top-full mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 ${
           dropdownPosition === 'end' ? 'right-0' : 'left-0'
         }`}>
-          {/* User Info Header */}
           <div className="px-4 py-3 border-b border-gray-100">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-fastblue text-white flex items-center justify-center font-semibold">
@@ -107,7 +100,7 @@ const UserProfileDropdown = ({
               onClick={handleItemClick}
               className="flex items-center px-4 py-2 text-sm text-darkgray hover:bg-gray-50 transition-colors"
             >
-              <i className="fas fa-tachometer-alt w-4 mr-3 text-gray-400"></i>
+              <i className="feather-home w-4 mr-3 text-gray-400"></i>
               Dashboard
             </Link>
 
@@ -135,8 +128,10 @@ const UserProfileDropdown = ({
               className="flex items-center px-4 py-2 text-sm text-darkgray hover:bg-gray-50 transition-colors"
             >
               <i className="fas fa-bookmark w-4 mr-3 text-gray-400"></i>
-              Bookmarks
+              Reading List
             </Link>
+
+
 
             <Link
               to="/user/media-library"
@@ -145,26 +140,6 @@ const UserProfileDropdown = ({
             >
               <i className="fas fa-images w-4 mr-3 text-gray-400"></i>
               Media Library
-            </Link>
-
-            <div className="border-t border-gray-100 my-1"></div>
-
-            <Link
-              to="/user/following"
-              onClick={handleItemClick}
-              className="flex items-center px-4 py-2 text-sm text-darkgray hover:bg-gray-50 transition-colors"
-            >
-              <i className="fas fa-user-friends w-4 mr-3 text-gray-400"></i>
-              Following
-            </Link>
-
-            <Link
-              to="/user/followers"
-              onClick={handleItemClick}
-              className="flex items-center px-4 py-2 text-sm text-darkgray hover:bg-gray-50 transition-colors"
-            >
-              <i className="fas fa-users w-4 mr-3 text-gray-400"></i>
-              Followers
             </Link>
 
             <div className="border-t border-gray-100 my-1"></div>

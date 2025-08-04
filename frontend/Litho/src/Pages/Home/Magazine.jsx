@@ -8,28 +8,24 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import { m } from "framer-motion";
 
 // Components
-import Header, { HeaderLanguage, HeaderNav, Menu, SearchBar, Topbar } from '../../Components/Header/Header'
+import Header, { HeaderNav, Menu, SearchBar, Topbar } from '../../Components/Header/Header'
 import Logo from '../../Components/Logo'
 import SocialIcons from '../../Components/SocialIcon/SocialIcons'
 import BlogClassic from '../../Components/Blogs/BlogClassic';
-import BlogCategory from "../../Components/Blogs/BlogCategory";
+import BlogMetro from '../../Components/Blogs/BlogMetro';
+
 import Instagram from '../../Components/Instagram/Instagram';
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
-import SideButtons from "../../Components/SideButtons";
+
 import Buttons from '../../Components/Button/Buttons'
 import LoginModal from '../../Components/auth/LoginModal'
 import RegisterModal from '../../Components/auth/RegisterModal'
 import PasswordResetModal from '../../Components/auth/PasswordResetModal'
 import { fadeIn } from '../../Functions/GlobalAnimations';
 
-// Hooks & API
 import useAuth from '../../api/useAuth';
-import { usePosts, useCategories, usePopularPosts } from '../../api';
+import { usePosts, usePopularPosts } from '../../api';
 
-
-
-// Data
-import HeaderData from '../../Components/Header/HeaderData';
 
 const SocialIconsData = [
   {
@@ -66,13 +62,11 @@ const MagazinePage = (props) => {
   
   // API hooks
   const { posts: allPosts, loading: postsLoading, error: postsError } = usePosts({ published: true })
-  const { categories, loading: categoriesLoading, error: categoriesError } = useCategories()
   const { posts: popularPosts, loading: popularLoading, error: popularError } = usePopularPosts({ limit: 6 })
   
   // Prepare data for components
   const recentPosts = allPosts?.slice(0, 2) || []
   const latestPosts = allPosts?.slice(0, 10) || []
-  const featuredCategories = categories?.slice(0, 4) || []
 
   const handleSwitchToRegister = () => {
     setShowLoginModal(false)
@@ -93,7 +87,6 @@ const MagazinePage = (props) => {
 
   return (
     <div style={props.style}>
-      <SideButtons />
 
       {/* Header Start */}
       <Header className="header-with-topbar" topSpace={{ desktop: true }} type="reverse-scroll">
@@ -111,7 +104,6 @@ const MagazinePage = (props) => {
               </Col>
               <Col className="col-auto col-md-3 text-right">
                 <SearchBar className="!py-[7px] text-white" />
-                <HeaderLanguage className="!py-[7px] pl-[20px] text-white" />
               </Col>
             </Row>
           </Container>
@@ -137,38 +129,35 @@ const MagazinePage = (props) => {
             <Menu {...props} />
           </Navbar.Collapse>
 
-          {/* Auth Buttons – Right (desktop) */}
+          {/* Auth Buttons – Right (responsive) */}
           <Col className="col-auto col-lg-2 text-end pe-0">
             {!isAuthenticated ? (
-              <div className="flex items-center justify-end space-x-3">
+              <div className="flex items-center justify-end space-x-1 sm:space-x-2">
                 <Buttons
                   onClick={() => setShowLoginModal(true)}
-                  className="btn-transparent btn-fancy font-medium tracking-[1px] rounded-[4px]"
+                  className="btn-transparent btn-fancy font-medium text-xs px-2 py-1 sm:px-3 sm:py-2 rounded-[3px] tracking-[0.5px]"
                   themeColor="#232323"
                   color="#232323"
-                  size="xs"
                   title="Login"
                 />
                 <Buttons
                   onClick={() => setShowRegisterModal(true)}
-                  className="btn-fill btn-fancy font-medium tracking-[1px] rounded-[4px]"
+                  className="btn-fill btn-fancy font-medium text-xs px-2 py-1 sm:px-3 sm:py-2 rounded-[3px] tracking-[0.5px]"
                   themeColor="#232323"
                   color="#fff"
-                  size="xs"
                   title="Sign Up"
                 />
               </div>
             ) : (
-              <div className="flex items-center justify-end space-x-3">
-                <span className="text-sm text-darkgray">
+              <div className="flex items-center justify-end space-x-1 sm:space-x-2">
+                <span className="text-xs sm:text-sm text-darkgray hidden sm:inline">
                   Welcome, {user?.full_name || user?.username}!
                 </span>
                 <Buttons
                   onClick={logout}
-                  className="btn-transparent btn-fancy font-medium tracking-[1px] rounded-[4px]"
+                  className="btn-transparent btn-fancy font-medium text-xs px-2 py-1 sm:px-3 sm:py-2 rounded-[3px] tracking-[0.5px]"
                   themeColor="#232323"
                   color="#232323"
-                  size="xs"
                   title="Logout"
                 />
               </div>
@@ -228,7 +217,7 @@ const MagazinePage = (props) => {
                   <p>Error loading articles. Please try again later.</p>
                 </div>
               ) : (
-                <BlogClassic filter={false} animation={fadeIn} animationDelay={0.1} className="blog-clean px-[6%] xl:px-[3%] lg:px-[15px]" grid="grid grid-1col justify-center gutter-large" data={recentPosts} link="/posts/" pagination={false} />
+                <BlogMetro overlay="#374162" grid="grid grid-2col xl-grid-2col lg-grid-2col md-grid-2col sm-grid-2col xs-grid-1col gutter-large" data={recentPosts.slice(0,2)} link="/posts/" pagination={false} animation={fadeIn} animationDelay={0.1} className="blog-clean px-[6%] xl:px-[3%] lg:px-[15px]" />
               )}
             </Col>
           </Row>
@@ -236,32 +225,7 @@ const MagazinePage = (props) => {
       </section>
       {/* Section End */}
 
-      {/* Section Start */}
-      <section className="py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px] px-[90px] lg:px-[30px] xs:px-[15px]">
-        <Container>
-          <Row className="justify-center">
-            <Col lg={6} className="text-center mb-10 sm:mb-6">
-              <h2 className="heading-5 font-serif font-semibold text-darkgray mb-[5px]">Popular category</h2>
-              <p className="mb-[25px]">Explore our blog for insightful articles</p>
-            </Col>
-          </Row>
-        </Container>
-        <Container fluid className="lg:px-0">
-          {categoriesLoading ? (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-              <p className="mt-2 text-gray-600">Loading categories...</p>
-            </div>
-          ) : categoriesError ? (
-            <div className="text-center py-8 text-red-600">
-              <p>Error loading categories. Please try again later.</p>
-            </div>
-          ) : (
-            <BlogCategory grid="grid grid-4col xl-grid-4col lg-grid-3col md-grid-2col sm-grid-2col xs-grid-1col gutter-extra-large" data={featuredCategories} animation={fadeIn} />
-          )}
-        </Container>
-      </section>
-      {/* Section End */}
+
 
 
 

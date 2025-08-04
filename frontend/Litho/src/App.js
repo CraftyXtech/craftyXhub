@@ -265,6 +265,9 @@ const CreatePost = lazy(() =>
 const UserPosts = lazy(() =>
   import("./Pages/User/UserPosts")
 );
+const Dashboard = lazy(() =>
+  import("./Pages/User/Dashboard")
+);
 
 // User Profile & Social Features
 const Followers = lazy(() =>
@@ -275,9 +278,6 @@ const Following = lazy(() =>
 );
 const MediaLibrary = lazy(() =>
   import("./Pages/User/MediaLibrary")
-);
-const Dashboard = lazy(() =>
-  import("./Pages/User/Dashboard")
 );
 const Bookmarks = lazy(() =>
   import("./Pages/User/Bookmarks")
@@ -662,6 +662,16 @@ function App() {
                     } 
                   />
 
+                  {/* User Dashboard Route */}
+                  <Route 
+                    path="dashboard" 
+                    element={
+                      <Dashboard
+                        style={{ "--base-color": "#0038e3" }}
+                      />
+                    } 
+                  />
+
                   {/* User Posts Route */}
                   <Route 
                     path="user/posts" 
@@ -684,15 +694,7 @@ function App() {
                     } 
                   />
 
-                  {/* Dashboard Routes */}
-                  <Route 
-                    path="dashboard" 
-                    element={
-                      <Dashboard
-                        style={{ "--base-color": "#0038e3" }}
-                      />
-                    } 
-                  />
+
 
                   {/* User Bookmarks Route */}
                   <Route 

@@ -143,6 +143,30 @@ const menu = [
     ],
   },
   {
+    icon: "shield-check",
+    text: "Content Moderation",
+    subMenu: [
+      {
+        text: "Comment Moderation",
+        link: "/moderation/comments",
+      },
+      {
+        text: "Post Reports",
+        link: "/moderation/reports",
+      },
+    ],
+  },
+  {
+    icon: "activity",
+    text: "System",
+    subMenu: [
+      {
+        text: "Health Check",
+        link: "/system/health",
+      },
+    ],
+  },
+  {
     icon: "file-docs",
     text: "Invoice",
     subMenu: [

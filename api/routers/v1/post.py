@@ -16,6 +16,7 @@ from schemas.post import (
     PostResponse,
     PostListResponse,
     CategoryCreate,
+    CategoryUpdate,
     CategoryCreateResponse,
     CategoryResponse,
     CategoryListResponse,
@@ -375,6 +376,25 @@ async def create_category(
         session: AsyncSession = Depends(get_db_session)
 ):
     return await PostService.create_category(session, category_data)
+
+
+@router.put("/categories/{category_id}", response_model=CategoryResponse)
+async def update_category(
+        category_id: int,
+        category_data: CategoryUpdate,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    return await PostService.update_category(session, category_id, category_data)
+
+
+@router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_category(
+        category_id: int,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    await PostService.delete_category(session, category_id)
 
 
 # Tags endpoints
