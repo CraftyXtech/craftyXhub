@@ -156,16 +156,7 @@ const menu = [
       },
     ],
   },
-  {
-    icon: "activity",
-    text: "System",
-    subMenu: [
-      {
-        text: "Health Check",
-        link: "/system/health",
-      },
-    ],
-  },
+
   {
     icon: "file-docs",
     text: "Invoice",
