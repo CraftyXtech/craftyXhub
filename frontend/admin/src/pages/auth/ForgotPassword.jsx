@@ -1,9 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import Logo from "@/images/logo.png";
-import LogoDark from "@/images/logo-dark.png";
 import Head from "@/layout/head/Head";
 import AuthFooter from "./AuthFooter";
+import Logo from "@/layout/logo/Logo";
 import { Block, BlockContent, BlockDes, BlockHead, BlockTitle, Button, PreviewCard } from "@/components/Component";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -20,10 +19,7 @@ const ForgotPassword = () => {
       <Head title="Forgot-Password" />
         <Block className="nk-block-middle nk-auth-body  wide-xs">
           <div className="brand-logo pb-4 text-center">
-            <Link to={"/"} className="logo-link">
-              <img className="logo-light logo-img logo-img-lg" src={Logo} alt="logo" />
-              <img className="logo-dark logo-img logo-img-lg" src={LogoDark} alt="logo-dark" />
-            </Link>
+            <Logo />
           </div>
           <PreviewCard className="card-bordered" bodyClass="card-inner-lg">
             <BlockHead>

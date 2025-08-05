@@ -88,7 +88,7 @@ const EmailTemplate = () => {
               </EmailBody>
               <EmailFooter>
                 <p className="email-copyright-text">
-                  Copyright © 2020 DashLite. All rights reserved. <br /> Template Made By{" "}
+                  Copyright © 2025 CraftyXhub. All rights reserved. <br /> Template Made By{" "}
                   <a href="https://themeforest.net/user/softnio/portfolio">Softnio</a>.
                 </p>
                 <ul className="email-social">

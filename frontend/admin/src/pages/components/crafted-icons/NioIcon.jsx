@@ -21,7 +21,7 @@ const NioIconPage = () => {
               <p className="lead">
                 <strong>Nioicon</strong> is hand-crafted and beautiful icon set which is designed by{" "}
                 <strong>Softnio</strong> Team. We took inspiration from google icons and carefully designed it for{" "}
-                <strong>DashLite</strong> dashboard. It has over than 900 icons that helps much in your project.
+                <strong>CraftyXhub</strong> dashboard. It has over than 900 icons that helps much in your project.
               </p>
               <p>
                 An in-built component can be used to show the icons. Use the Icon component. Import it to your file from

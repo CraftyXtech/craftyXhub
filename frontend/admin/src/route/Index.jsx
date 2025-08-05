@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { Routes,Route, useLocation, BrowserRouter } from "react-router-dom";
-import { ProductContextProvider } from "@/pages/pre-built/products/ProductContext";
 import { UserContextProvider } from "@/pages/pre-built/user-manage/UserContext";
 
 import Analytics from "@/pages/Analytics";
@@ -84,9 +83,7 @@ import UserProfileActivity from "@/pages/pre-built/user-manage/UserProfileActivi
 import KycListRegular from "@/pages/pre-built/kyc-list-regular/KycListRegular";
 import KycDetailsRegular from "@/pages/pre-built/kyc-list-regular/kycDetailsRegular";
 import TransListBasic from "@/pages/pre-built/trans-list/TransListBasic";
-import ProductCard from "@/pages/pre-built/products/ProductCard";
-import ProductList from "@/pages/pre-built/products/ProductList";
-import ProductDetails from "@/pages/pre-built/products/ProductDetails";
+
 import InvoiceList from "@/pages/pre-built/invoice/InvoiceList";
 import InvoiceDetails from "@/pages/pre-built/invoice/InvoiceDetails";
 import InvoicePrint from "@/pages/pre-built/invoice/InvoicePrint";
@@ -178,11 +175,6 @@ const Router = () => {
               <Route path="kyc-list-regular" element={<KycListRegular />}></Route>
               <Route path="kyc-details-regular/:kycId" element={<KycDetailsRegular />}></Route>
               <Route path="transaction-basic" element={<TransListBasic />}></Route>
-              <Route element={<ProductContextProvider />}>
-                <Route path="product-list" element={<ProductList />}></Route>
-                <Route path="product-card" element={<ProductCard />}></Route>
-                <Route path="product-details/:productId" element={<ProductDetails />}></Route>
-              </Route>
 
               {/* Posts Management Routes */}
               <Route path="posts-list" element={<PostList />}></Route>
