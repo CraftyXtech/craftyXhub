@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Modal, ModalBody, Row, Col, Button, Card } from "reactstrap";
+import React, { useState, useEffect, useRef } from "react";
+import { Modal, ModalHeader, ModalBody, ModalFooter, Row, Col, Button, Card, Alert } from "reactstrap";
 import { useForm } from "react-hook-form";
 import Head from "@/layout/head/Head";
 import Content from "@/layout/content/Content";
@@ -22,13 +22,13 @@ import { useGetCategories, useCreateCategory, useUpdateCategory, useDeleteCatego
 import { toast } from "react-toastify";
 
 const CategoryManagement = () => {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm();
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemPerPage] = useState(10);
+  const [itemPerPage, setItemPerPage] = useState(10);
   const [searchText, setSearchText] = useState("");
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [modalMode, setModalMode] = useState("create"); // "create" or "edit"
   const [sm, updateSm] = useState(false);
 
   // API hooks
@@ -37,16 +37,30 @@ const CategoryManagement = () => {
   const { updateCategory, loading: updateLoading } = useUpdateCategory();
   const { deleteCategory, loading: deleteLoading } = useDeleteCategory();
 
-  // Flatten categories for display (parent + subcategories)
+  const watchedParentId = watch("parent_id");
+
+
+
   const flattenCategories = (cats) => {
     const flattened = [];
     cats.forEach(category => {
-      // Add parent category
-      flattened.push({ ...category, level: 0, isParent: !category.parent_id });
-      // Add subcategories with indentation
+      flattened.push({ 
+        ...category, 
+        level: 0, 
+        isParent: !category.parent_id,
+        type: "parent",
+        hasSubcategories: category.subcategories && category.subcategories.length > 0
+      });
       if (category.subcategories && category.subcategories.length > 0) {
         category.subcategories.forEach(subcat => {
-          flattened.push({ ...subcat, level: 1, isParent: false, parent_name: category.name });
+          flattened.push({ 
+            ...subcat, 
+            level: 1, 
+            isParent: false, 
+            parent_name: category.name,
+            parent_id: category.id,
+            type: "subcategory"
+          });
         });
       }
     });
@@ -62,13 +76,13 @@ const CategoryManagement = () => {
     (category.parent_name && category.parent_name.toLowerCase().includes(searchText.toLowerCase()))
   );
 
-  // Pagination
+
   const indexOfLastItem = currentPage * itemPerPage;
   const indexOfFirstItem = indexOfLastItem - itemPerPage;
   const currentItems = filteredCategories.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredCategories.length / itemPerPage);
 
-  // Auto-generate slug from name
+
   const generateSlug = (name) => {
     return name
       .toLowerCase()
@@ -78,15 +92,33 @@ const CategoryManagement = () => {
       .trim();
   };
 
-  // Handle search
+  const getAvailableParentCategories = (excludeId = null) => {
+    return categories.filter(cat => 
+      !cat.parent_id && 
+      cat.id !== excludeId 
+    );
+  };
+
   const onFilterChange = (e) => {
     setSearchText(e.target.value);
     setCurrentPage(1);
   };
 
-  // Handle create category
   const onCreateSubmit = async (data) => {
     try {
+      if (data.parent_id && data.parent_id !== "") {
+        const parentCategory = categories.find(cat => cat.id === parseInt(data.parent_id));
+        if (!parentCategory) {
+          toast.error("Selected parent category not found");
+          return;
+        }
+        
+        if (parentCategory.subcategories && parentCategory.subcategories.length >= 10) {
+          toast.warning("Parent category already has maximum number of subcategories");
+          return;
+        }
+      }
+
       const categoryData = {
         ...data,
         slug: generateSlug(data.name),
@@ -94,73 +126,120 @@ const CategoryManagement = () => {
       };
       
       await createCategory(categoryData);
-      toast.success("Category created successfully");
-      setShowCreateModal(false);
+      toast.success(`Category "${data.name}" created successfully`);
+      setShowModal(false);
       reset();
       refetch();
     } catch (error) {
-      toast.error("Failed to create category");
+      const errorMessage = error.response?.data?.detail || "Failed to create category";
+      toast.error(errorMessage);
     }
   };
 
-  // Handle modal close
   const handleModalClose = () => {
-    setShowCreateModal(false);
-    setShowEditModal(false);
+    setShowModal(false);
     setEditingCategory(null);
+    setModalMode("create");
     reset();
   };
 
-  // Handle edit category
   const handleEdit = (category) => {
     setEditingCategory(category);
+    setModalMode("edit");
     reset({
       name: category.name,
       description: category.description || '',
       parent_id: category.parent_id || ''
     });
-    setShowEditModal(true);
+    setShowModal(true);
   };
 
-  // Handle update category
   const onUpdateSubmit = async (data) => {
     try {
+      if (data.parent_id && data.parent_id !== "") {
+        const parentCategory = categories.find(cat => cat.id === parseInt(data.parent_id));
+        if (!parentCategory) {
+          toast.error("Selected parent category not found");
+          return;
+        }
+        
+        if (parseInt(data.parent_id) === editingCategory.id) {
+          toast.error("Category cannot be its own parent");
+          return;
+        }
+        
+        if (parentCategory.subcategories && parentCategory.subcategories.length >= 10) {
+          toast.warning("Parent category already has maximum number of subcategories");
+          return;
+        }
+      }
+
       const categoryData = {
         ...data,
         parent_id: data.parent_id && data.parent_id !== "" ? parseInt(data.parent_id) : null
       };
       
       await updateCategory(editingCategory.id, categoryData);
-      toast.success("Category updated successfully");
-      setShowEditModal(false);
+      toast.success(`Category "${data.name}" updated successfully`);
+      setShowModal(false);
       setEditingCategory(null);
       reset();
       refetch();
     } catch (error) {
-      toast.error("Failed to update category");
+      const errorMessage = error.response?.data?.detail || "Failed to update category";
+      toast.error(errorMessage);
     }
   };
 
-  // Handle delete category
   const handleDelete = async (category) => {
-    if (window.confirm(`Are you sure you want to delete "${category.name}"? This action cannot be undone.`)) {
+    const isParent = category.type === "parent";
+    const hasSubcategories = category.hasSubcategories;
+    const hasPosts = category.post_count > 0;
+
+    let confirmMessage = `Are you sure you want to delete "${category.name}"?`;
+    
+    if (isParent && hasSubcategories) {
+      confirmMessage += `\n\nThis will also delete ${category.subcategories.length} subcategories.`;
+    }
+    
+    if (hasPosts) {
+      confirmMessage += `\n\nThis category has ${category.post_count} posts that will be affected.`;
+    }
+    
+    confirmMessage += "\n\nThis action cannot be undone.";
+
+    if (window.confirm(confirmMessage)) {
       try {
         await deleteCategory(category.id);
-        toast.success("Category deleted successfully");
+        toast.success(`Category "${category.name}" deleted successfully`);
         refetch();
       } catch (error) {
-        toast.error(error.response?.data?.detail || "Failed to delete category");
+        const errorMessage = error.response?.data?.detail || "Failed to delete category";
+        toast.error(errorMessage);
       }
     }
   };
 
-  // Format date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const getCategoryStats = () => {
+    const parentCategories = categories.filter(cat => !cat.parent_id);
+    const subcategories = categories.filter(cat => cat.parent_id);
+    const totalPosts = flatCategories.reduce((sum, cat) => sum + (cat.post_count || 0), 0);
+    
+    return {
+      parentCategories: parentCategories.length,
+      subcategories: subcategories.length,
+      totalCategories: categories.length,
+      totalPosts
+    };
+  };
+
+  const stats = getCategoryStats();
 
   if (loading) {
     return (
@@ -177,9 +256,9 @@ const CategoryManagement = () => {
   if (error) {
     return (
       <Content>
-        <div className="alert alert-danger" role="alert">
+        <Alert color="danger" role="alert">
           Error loading categories: {error}
-        </div>
+        </Alert>
       </Content>
     );
   }
@@ -193,7 +272,11 @@ const CategoryManagement = () => {
             <BlockHeadContent>
               <BlockTitle page>Category Management</BlockTitle>
               <BlockDes className="text-soft">
-                <p>Manage your post categories and subcategories. You have {categories.length} parent categories total.</p>
+                <p>
+                  Manage your post categories and subcategories. 
+                  You have {stats.parentCategories} main categories and {stats.subcategories} subcategories.
+                  Total posts: {stats.totalPosts}
+                </p>
               </BlockDes>
             </BlockHeadContent>
             <BlockHeadContent>
@@ -242,7 +325,10 @@ const CategoryManagement = () => {
                       </li>
                       <li className="btn-toolbar-sep"></li>
                       <li>
-                        <Button color="primary" onClick={() => setShowCreateModal(true)}>
+                        <Button color="primary" onClick={() => {
+                          setModalMode("create");
+                          setShowModal(true);
+                        }}>
                           <Icon name="plus" />
                           <span>Add Category</span>
                         </Button>
@@ -261,14 +347,8 @@ const CategoryManagement = () => {
                     <DataTableRow size="sm">
                       <span className="sub-text">Slug</span>
                     </DataTableRow>
-                    <DataTableRow size="md">
+                    <DataTableRow size="sm">
                       <span className="sub-text">Description</span>
-                    </DataTableRow>
-                    <DataTableRow size="sm">
-                      <span className="sub-text">Posts</span>
-                    </DataTableRow>
-                    <DataTableRow size="sm">
-                      <span className="sub-text">Created</span>
                     </DataTableRow>
                     <DataTableRow className="nk-tb-col-tools text-end">
                       <span className="sub-text">Action</span>
@@ -278,85 +358,65 @@ const CategoryManagement = () => {
                   {currentItems.length > 0 ? (
                     currentItems.map((category) => (
                       <DataTableItem key={category.id}>
-                                              <DataTableRow>
-                        <div className="tb-lead" style={{ paddingLeft: `${category.level * 20}px` }}>
-                          {category.level > 0 && (
-                            <span className="text-muted me-2">└─</span>
-                          )}
-                          <span className="title">{category.name}</span>
-                          {category.isParent && category.subcategories?.length > 0 && (
-                            <span className="badge badge-outline-info ms-2 text-xs">
-                              {category.subcategories.length} subcategories
-                            </span>
-                          )}
-                          {category.level > 0 && category.parent_name && (
-                            <span className="text-muted ms-2 text-xs">
-                              (under {category.parent_name})
-                            </span>
-                          )}
-                        </div>
-                      </DataTableRow>
+                        <DataTableRow>
+                          <div className="tb-lead" style={{ paddingLeft: `${category.level * 20}px` }}>
+                            {category.level > 0 && (
+                              <span className="text-muted me-2">└─</span>
+                            )}
+                            <span className="title">{category.name}</span>
+                            {category.type === "parent" && (
+                              <span className="badge badge-outline-primary ms-2 text-xs">
+                                Main Category
+                              </span>
+                            )}
+                            {category.type === "subcategory" && (
+                              <span className="badge badge-outline-info ms-2 text-xs">
+                                Subcategory
+                              </span>
+                            )}
+                            {category.hasSubcategories && (
+                              <span className="badge badge-outline-success ms-2 text-xs">
+                                {category.subcategories.length} subcategories
+                              </span>
+                            )}
+                            {category.level > 0 && category.parent_name && (
+                              <span className="text-muted ms-2 text-xs">
+                                (under {category.parent_name})
+                              </span>
+                            )}
+                          </div>
+                        </DataTableRow>
                         <DataTableRow size="sm">
                           <span className="tb-sub text-primary">/{category.slug}</span>
                         </DataTableRow>
-                        <DataTableRow size="md">
+                        <DataTableRow size="sm">
                           <span className="tb-sub">
                             {category.description || <em className="text-muted">No description</em>}
                           </span>
                         </DataTableRow>
-                        <DataTableRow size="sm">
-                          <span className="tb-sub">
-                            <span className="badge badge-outline-primary">
-                              {category.post_count || 0} posts
-                            </span>
-                          </span>
-                        </DataTableRow>
-                        <DataTableRow size="sm">
-                          <span className="tb-sub">{formatDate(category.created_at)}</span>
-                        </DataTableRow>
                         <DataTableRow className="nk-tb-col-tools">
                           <ul className="nk-tb-actions gx-1 my-n1">
-                            <li className="me-n1">
-                              <div className="dropdown">
-                                <a
-                                  href="#more"
-                                  className="dropdown-toggle btn btn-icon btn-trigger"
-                                  data-bs-toggle="dropdown"
-                                  onClick={(ev) => ev.preventDefault()}
-                                >
-                                  <Icon name="more-h" />
-                                </a>
-                                <div className="dropdown-menu dropdown-menu-end">
-                                  <ul className="link-list-opt no-bdr">
-                                    <li>
-                                      <a 
-                                        href="#edit" 
-                                        onClick={(ev) => {
-                                          ev.preventDefault();
-                                          handleEdit(category);
-                                        }}
-                                      >
-                                        <Icon name="edit" />
-                                        <span>Edit Category</span>
-                                      </a>
-                                    </li>
-                                    <li className="divider"></li>
-                                    <li>
-                                      <a 
-                                        href="#delete" 
-                                        className="text-danger"
-                                        onClick={(ev) => {
-                                          ev.preventDefault();
-                                          handleDelete(category);
-                                        }}
-                                      >
-                                        <Icon name="trash" />
-                                        <span>Delete Category</span>
-                                      </a>
-                                    </li>
-                                  </ul>
-                                </div>
-                              </div>
+                            <li className="me-n0">
+                              <Button
+                                color="primary"
+                                size="sm"
+                                className="btn-icon"
+                                onClick={() => handleEdit(category)}
+                                title="Edit Category"
+                              >
+                                <Icon name="edit" />
+                              </Button>
+                            </li>
+                            <li className="me-n0">
+                              <Button
+                                color="danger"
+                                size="sm"
+                                className="btn-icon"
+                                onClick={() => handleDelete(category)}
+                                title="Delete Category"
+                              >
+                                <Icon name="trash" />
+                              </Button>
                             </li>
                           </ul>
                         </DataTableRow>
@@ -369,7 +429,10 @@ const CategoryManagement = () => {
                         {searchText ? "No categories match your search" : "No categories found"}
                       </p>
                       {!searchText && (
-                        <Button color="primary" size="sm" onClick={() => setShowCreateModal(true)}>
+                        <Button color="primary" size="sm" onClick={() => {
+                          setModalMode("create");
+                          setShowModal(true);
+                        }}>
                           <Icon name="plus" />
                           Create First Category
                         </Button>
@@ -416,226 +479,135 @@ const CategoryManagement = () => {
           </Card>
         </Block>
 
-        {/* Create Category Modal */}
-        <Modal isOpen={showCreateModal} toggle={handleModalClose} className="modal-dialog-centered" size="md">
+        {/* Unified Category Modal */}
+        <Modal isOpen={showModal} toggle={handleModalClose} className="modal-dialog-centered" size="md">
+          <ModalHeader
+            toggle={handleModalClose}
+            close={
+              <button className="close" onClick={handleModalClose}>
+                <Icon name="cross" />
+              </button>
+            }
+          >
+            {modalMode === "create" ? "Create New Category" : "Edit Category"}
+          </ModalHeader>
           <ModalBody>
-            <a href="#cancel" className="close">
-              <Icon
-                name="cross-sm"
-                onClick={(ev) => {
-                  ev.preventDefault();
-                  handleModalClose();
-                }}
-              />
-            </a>
-            <div className="p-2">
-              <h5 className="title">Create New Category</h5>
-              <div className="mt-4">
-                <form onSubmit={handleSubmit(onCreateSubmit)}>
-                  <Row className="g-3">
-                    <Col size="12">
-                      <div className="form-group">
-                        <label className="form-label" htmlFor="category-name">
-                          Category Name *
-                        </label>
-                        <div className="form-control-wrap">
-                          <input
-                            id="category-name"
-                            type="text"
-                            className="form-control"
-                            {...register('name', {
-                              required: "Category name is required",
-                              minLength: { value: 1, message: "Name must be at least 1 character" },
-                              maxLength: { value: 100, message: "Name must be less than 100 characters" }
-                            })}
-                            placeholder="Enter category name"
-                          />
-                          {errors.name && <span className="invalid">{errors.name.message}</span>}
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col size="12">
-                      <div className="form-group">
-                        <label className="form-label" htmlFor="parent-category">
-                          Parent Category
-                        </label>
-                        <div className="form-control-wrap">
-                          <select
-                            id="parent-category"
-                            className="form-select"
-                            {...register('parent_id')}
-                          >
-                            <option value="">None (Root Category)</option>
-                            {categories.filter(cat => !cat.parent_id).map((category) => (
-                              <option key={category.id} value={category.id}>
-                                {category.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="form-note">
-                          <em>Select a parent category to create a subcategory, or leave empty for a root category.</em>
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col size="12">
-                      <div className="form-group">
-                        <label className="form-label" htmlFor="category-description">
-                          Description
-                        </label>
-                        <div className="form-control-wrap">
-                          <textarea
-                            id="category-description"
-                            className="form-control"
-                            rows="3"
-                            {...register('description')}
-                            placeholder="Optional description for this category"
-                          />
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col size="12">
-                      <div className="form-note">
-                        <em>The URL slug will be automatically generated from the category name.</em>
-                      </div>
-                    </Col>
-
-                    <Col size="12">
-                      <div className="form-group">
-                        <Button color="primary" type="submit" disabled={createLoading}>
-                          {createLoading ? (
-                            <>
-                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                              Creating...
-                            </>
-                          ) : (
-                            <>
-                              <Icon name="plus" />
-                              <span>Create Category</span>
-                            </>
-                          )}
-                        </Button>
-                        <Button color="secondary" className="ms-2" onClick={handleModalClose} disabled={createLoading}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </Col>
-                  </Row>
-                </form>
+            <form onSubmit={handleSubmit(modalMode === "create" ? onCreateSubmit : onUpdateSubmit)}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="category-name">
+                  Category Name *
+                </label>
+                <div className="form-control-wrap">
+                  <input
+                    id="category-name"
+                    type="text"
+                    className="form-control"
+                    {...register('name', {
+                      required: "Category name is required",
+                      minLength: { value: 1, message: "Name must be at least 1 character" },
+                      maxLength: { value: 100, message: "Name must be less than 100 characters" }
+                    })}
+                    placeholder="Enter category name"
+                  />
+                  {errors.name && <span className="invalid">{errors.name.message}</span>}
+                </div>
               </div>
-            </div>
-          </ModalBody>
-        </Modal>
 
-        {/* Edit Category Modal */}
-        <Modal isOpen={showEditModal} toggle={handleModalClose} className="modal-dialog-centered" size="md">
-          <ModalBody>
-            <a href="#cancel" className="close">
-              <Icon
-                name="cross-sm"
-                onClick={(ev) => {
-                  ev.preventDefault();
-                  handleModalClose();
-                }}
-              />
-            </a>
-            <div className="p-2">
-              <h5 className="title">Edit Category</h5>
-              <div className="mt-4">
-                <form onSubmit={handleSubmit(onUpdateSubmit)}>
-                  <Row className="g-3">
-                    <Col size="12">
-                      <div className="form-group">
-                        <label className="form-label" htmlFor="edit-category-name">
-                          Category Name *
-                        </label>
-                        <div className="form-control-wrap">
-                          <input
-                            id="edit-category-name"
-                            type="text"
-                            className="form-control"
-                            {...register('name', {
-                              required: "Category name is required",
-                              minLength: { value: 1, message: "Name must be at least 1 character" },
-                              maxLength: { value: 100, message: "Name must be less than 100 characters" }
-                            })}
-                            placeholder="Enter category name"
-                          />
-                          {errors.name && <span className="invalid">{errors.name.message}</span>}
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col size="12">
-                      <div className="form-group">
-                        <label className="form-label" htmlFor="edit-parent-category">
-                          Parent Category
-                        </label>
-                        <div className="form-control-wrap">
-                          <select
-                            id="edit-parent-category"
-                            className="form-select"
-                            {...register('parent_id')}
-                          >
-                            <option value="">None (Root Category)</option>
-                            {categories.filter(cat => !cat.parent_id && cat.id !== editingCategory?.id).map((category) => (
-                              <option key={category.id} value={category.id}>
-                                {category.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="form-note">
-                          <em>Select a parent category to create a subcategory, or leave empty for a root category.</em>
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col size="12">
-                      <div className="form-group">
-                        <label className="form-label" htmlFor="edit-category-description">
-                          Description
-                        </label>
-                        <div className="form-control-wrap">
-                          <textarea
-                            id="edit-category-description"
-                            className="form-control"
-                            rows="3"
-                            {...register('description')}
-                            placeholder="Optional description for this category"
-                          />
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col size="12">
-                      <div className="form-group">
-                        <Button color="primary" type="submit" disabled={updateLoading}>
-                          {updateLoading ? (
-                            <>
-                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                              Updating...
-                            </>
-                          ) : (
-                            <>
-                              <Icon name="edit" />
-                              <span>Update Category</span>
-                            </>
-                          )}
-                        </Button>
-                        <Button color="secondary" className="ms-2" onClick={handleModalClose} disabled={updateLoading}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </Col>
-                  </Row>
-                </form>
+              <div className="form-group">
+                <label className="form-label" htmlFor="parent-category">
+                  Parent Category
+                </label>
+                <div className="form-control-wrap">
+                  <select
+                    id="parent-category"
+                    className="form-select"
+                    {...register('parent_id')}
+                  >
+                    <option value="">
+                      {modalMode === "create" ? "None (Create Main Category)" : "None (Make Main Category)"}
+                    </option>
+                    {getAvailableParentCategories(editingCategory?.id).map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name} {category.subcategories && category.subcategories.length > 0 && 
+                          `(${category.subcategories.length} subcategories)`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-note">
+                  <em>
+                    {watchedParentId && watchedParentId !== "" 
+                      ? modalMode === "create" 
+                        ? "This will create a subcategory under the selected parent."
+                        : "This will make this category a subcategory under the selected parent."
+                      : "Leave empty to create a main category that can have subcategories."}
+                  </em>
+                </div>
               </div>
-            </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="category-description">
+                  Description
+                </label>
+                <div className="form-control-wrap">
+                  <textarea
+                    id="category-description"
+                    className="form-control"
+                    rows="3"
+                    {...register('description')}
+                    placeholder="Optional description for this category"
+                  />
+                </div>
+              </div>
+
+              {modalMode === "create" && (
+                <div className="form-note">
+                  <em>The URL slug will be automatically generated from the category name.</em>
+                </div>
+              )}
+            </form>
           </ModalBody>
+          <ModalFooter className="bg-light">
+            <Button 
+              color="primary" 
+              type="submit" 
+              onClick={handleSubmit(modalMode === "create" ? onCreateSubmit : onUpdateSubmit)} 
+              disabled={modalMode === "create" ? createLoading : updateLoading}
+            >
+              {modalMode === "create" ? (
+                createLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="plus" />
+                    <span>Create Category</span>
+                  </>
+                )
+              ) : (
+                updateLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="edit" />
+                    <span>Update Category</span>
+                  </>
+                )
+              )}
+            </Button>
+            <Button 
+              color="secondary" 
+              onClick={handleModalClose} 
+              disabled={modalMode === "create" ? createLoading : updateLoading}
+            >
+              Cancel
+            </Button>
+          </ModalFooter>
         </Modal>
       </Content>
     </>

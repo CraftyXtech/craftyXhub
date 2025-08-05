@@ -47,9 +47,7 @@ console.log(auth);
             const username = auth.username;
             const roles = auth.roles;
             setAuth(prev => {
-                
-                
-
+            
               
 
                 localStorage.setItem("token", { accessToken, tokenExpiration, refreshToken, usertype, active, firstname, lastname, username, roles })
@@ -63,7 +61,6 @@ console.log(auth);
         catch (err) {
 console.log(err);
 
-              // navigate(`${process.env.PUBLIC_URL}/login`);
             return refresh;
 
         }

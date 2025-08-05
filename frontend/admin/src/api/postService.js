@@ -165,34 +165,45 @@ export const useTogglePostLike = () => {
   return { toggleLike, loading, error };
 };
 
-// Hook to fetch categories
+// Enhanced hook to fetch categories with better error handling
 export const useGetCategories = () => {
   const axiosPrivate = useAxiosPrivate();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoading(true);
-        const response = await axiosPrivate.get('/posts/categories/');
-        setCategories(response.data.categories || []);
-        setError(null);
-      } catch (err) {
-        setError(err.response?.data?.detail || err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axiosPrivate.get('/posts/categories/');
+      setCategories(response.data.categories || []);
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+      console.error('Error fetching categories:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchCategories();
   }, [axiosPrivate]);
 
-  return { categories, loading, error, refetch: () => fetchCategories() };
+  return { 
+    categories, 
+    loading, 
+    error, 
+    refetch: fetchCategories,
+    // Helper functions
+    getParentCategories: () => categories.filter(cat => !cat.parent_id),
+    getSubcategories: () => categories.filter(cat => cat.parent_id),
+    getCategoryById: (id) => categories.find(cat => cat.id === id),
+    getCategoryBySlug: (slug) => categories.find(cat => cat.slug === slug)
+  };
 };
 
-// Hook to create a category
+// Enhanced hook to create a category with validation
 export const useCreateCategory = () => {
   const axiosPrivate = useAxiosPrivate();
   const [loading, setLoading] = useState(false);
@@ -202,20 +213,35 @@ export const useCreateCategory = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Validate required fields
+      if (!categoryData.name || !categoryData.name.trim()) {
+        throw new Error('Category name is required');
+      }
+
+      // Validate parent_id if provided
+      if (categoryData.parent_id) {
+        const parentResponse = await axiosPrivate.get(`/posts/categories/${categoryData.parent_id}`);
+        if (!parentResponse.data) {
+          throw new Error('Selected parent category not found');
+        }
+      }
+
       const response = await axiosPrivate.post('/posts/categories/', categoryData);
-        return response.data;
+      return response.data;
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
-      throw err;
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to create category';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
-      }
+    }
   };
 
-  return { createCategory, loading, error };
+  return { createCategory, loading, error, clearError: () => setError(null) };
 };
 
-// Hook to update a category
+// Enhanced hook to update a category with validation
 export const useUpdateCategory = () => {
   const axiosPrivate = useAxiosPrivate();
   const [loading, setLoading] = useState(false);
@@ -225,20 +251,40 @@ export const useUpdateCategory = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Validate required fields
+      if (!categoryData.name || !categoryData.name.trim()) {
+        throw new Error('Category name is required');
+      }
+
+      // Validate parent_id if provided
+      if (categoryData.parent_id) {
+        const parentResponse = await axiosPrivate.get(`/posts/categories/${categoryData.parent_id}`);
+        if (!parentResponse.data) {
+          throw new Error('Selected parent category not found');
+        }
+        
+        // Prevent circular reference
+        if (parseInt(categoryData.parent_id) === categoryId) {
+          throw new Error('Category cannot be its own parent');
+        }
+      }
+
       const response = await axiosPrivate.put(`/posts/categories/${categoryId}`, categoryData);
       return response.data;
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
-      throw err;
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to update category';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  return { updateCategory, loading, error };
+  return { updateCategory, loading, error, clearError: () => setError(null) };
 };
 
-// Hook to delete a category
+// Enhanced hook to delete a category with validation
 export const useDeleteCategory = () => {
   const axiosPrivate = useAxiosPrivate();
   const [loading, setLoading] = useState(false);
@@ -248,16 +294,116 @@ export const useDeleteCategory = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // First check if category exists and get its details
+      const categoryResponse = await axiosPrivate.get(`/posts/categories/${categoryId}`);
+      const category = categoryResponse.data;
+      
+      if (!category) {
+        throw new Error('Category not found');
+      }
+
+      // Check if category has posts
+      if (category.post_count > 0) {
+        throw new Error(`Cannot delete category "${category.name}" because it has ${category.post_count} posts. Please reassign or delete the posts first.`);
+      }
+
+      // Check if category has subcategories
+      if (category.subcategories && category.subcategories.length > 0) {
+        throw new Error(`Cannot delete category "${category.name}" because it has ${category.subcategories.length} subcategories. Please delete the subcategories first.`);
+      }
+
       await axiosPrivate.delete(`/posts/categories/${categoryId}`);
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
-      throw err;
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to delete category';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  return { deleteCategory, loading, error };
+  return { deleteCategory, loading, error, clearError: () => setError(null) };
+};
+
+// New hook to get category statistics
+export const useGetCategoryStats = () => {
+  const axiosPrivate = useAxiosPrivate();
+  const [stats, setStats] = useState({
+    totalCategories: 0,
+    parentCategories: 0,
+    subcategories: 0,
+    totalPosts: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get categories to calculate stats
+      const response = await axiosPrivate.get('/posts/categories/');
+      const categories = response.data.categories || [];
+      
+      const parentCategories = categories.filter(cat => !cat.parent_id);
+      const subcategories = categories.filter(cat => cat.parent_id);
+      const totalPosts = categories.reduce((sum, cat) => sum + (cat.post_count || 0), 0);
+      
+      setStats({
+        totalCategories: categories.length,
+        parentCategories: parentCategories.length,
+        subcategories: subcategories.length,
+        totalPosts
+      });
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, [axiosPrivate]);
+
+  return { stats, loading, error, refetch: fetchStats };
+};
+
+// New hook to validate category slug
+export const useValidateCategorySlug = () => {
+  const axiosPrivate = useAxiosPrivate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const validateSlug = async (slug, excludeId = null) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Check if slug exists
+      const response = await axiosPrivate.get(`/posts/categories/`);
+      const categories = response.data.categories || [];
+      
+      const existingCategory = categories.find(cat => 
+        cat.slug === slug && cat.id !== excludeId
+      );
+      
+      return {
+        isValid: !existingCategory,
+        exists: !!existingCategory,
+        message: existingCategory ? 'Slug already exists' : 'Slug is available'
+      };
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+      return { isValid: false, exists: false, message: 'Error validating slug' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { validateSlug, loading, error, clearError: () => setError(null) };
 };
 
 // Hook to fetch tags

@@ -4,7 +4,7 @@ const menu = [
     text: "Dashboard",
     link: "/",
   },
-  {
+  /*{
     heading: "Pre-built Pages",
   },
   {
@@ -20,7 +20,7 @@ const menu = [
         link: "/project-list",
       },
     ],
-  },
+  }, */
   {
     icon: "users",
     text: "User Manage",
@@ -47,7 +47,7 @@ const menu = [
       },
     ],
   },
-  {
+  /*{
     icon: "file-docs",
     text: "AML / KYCs",
     subMenu: [
@@ -71,7 +71,7 @@ const menu = [
       },
     ],
   },
-  /*
+  
   {
     icon: "grid-alt",
     text: "Applications",
