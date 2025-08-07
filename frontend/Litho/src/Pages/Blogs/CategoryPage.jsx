@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react'
 
 // Libraries
-import { Col, Container, Row } from 'react-bootstrap'
+import { Col, Container, Row, Navbar } from 'react-bootstrap'
 import { useParams } from 'react-router-dom';
 import { Parallax } from "react-scroll-parallax";
 
 // Components
 import BlogMetro from '../../Components/Blogs/BlogMetro'
+import { Header, HeaderNav, Menu } from '../../Components/Header/Header'
+import Logo from '../../Components/Logo'
+import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
 import { Link } from 'react-router-dom'
 
 // API
@@ -33,6 +36,27 @@ const CategoryPage = (props) => {
 
     return (
         <div style={props.style}>
+            {/* Header Start (same structure as Dashboard) */}
+            <Header topSpace={{ desktop: true }} type="reverse-scroll">
+                <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" containerClass="sm:px-0">
+                    <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
+                        <Logo className="flex items-center" variant="black" />
+                    </Col>
+                    <div className="col-auto hidden order-last md:block">
+                        <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
+                            <span className="navbar-toggler-line"></span>
+                            <span className="navbar-toggler-line"></span>
+                            <span className="navbar-toggler-line"></span>
+                            <span className="navbar-toggler-line"></span>
+                        </Navbar.Toggle>
+                    </div>
+                    <Navbar.Collapse className="col-auto px-0 justify-end">
+                        <Menu {...props} />
+                        <UserProfileDropdown className="ms-4" />
+                    </Navbar.Collapse>
+                </HeaderNav>
+            </Header>
+            {/* Header End */}
             {/* Parallax Section Start */}
             <div className="py-[80px] h-auto overflow-hidden md:relative md:py-[40px]">
                 <Parallax className="lg-no-parallax bg-cover absolute -top-[100px] landscape:md:top-[-20px] left-0 w-full h-[100vh]" translateY={[-40, 40]} style={{ backgroundImage: `url(https://via.placeholder.com/1920x1080)` }}></Parallax>
@@ -89,22 +113,35 @@ const CategoryPage = (props) => {
                                                 Home
                                             </Link>
                                         </li>
-                                        <li>
-                                            <div className="flex items-center">
-                                                <i className="feather-chevron-right text-gray-400 mx-2"></i>
-                                                <Link to="/blog" className="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600">
-                                                    Blog
-                                                </Link>
-                                            </div>
-                                        </li>
-                                        <li aria-current="page">
-                                            <div className="flex items-center">
-                                                <i className="feather-chevron-right text-gray-400 mx-2"></i>
-                                                <span className="ml-1 text-sm font-medium text-gray-500">
-                                                    {categoryData.name}
-                                                </span>
-                                            </div>
-                                        </li>
+                                        {categoryData.parent ? (
+                                            <>
+                                                <li>
+                                                    <div className="flex items-center">
+                                                        <i className="feather-chevron-right text-gray-400 mx-2"></i>
+                                                        <Link to={`/category/${categoryData.parent.slug}`} className="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600">
+                                                            {categoryData.parent.name}
+                                                        </Link>
+                                                    </div>
+                                                </li>
+                                                <li aria-current="page">
+                                                    <div className="flex items-center">
+                                                        <i className="feather-chevron-right text-gray-400 mx-2"></i>
+                                                        <span className="ml-1 text-sm font-medium text-gray-500">
+                                                            {categoryData.name}
+                                                        </span>
+                                                    </div>
+                                                </li>
+                                            </>
+                                        ) : (
+                                            <li aria-current="page">
+                                                <div className="flex items-center">
+                                                    <i className="feather-chevron-right text-gray-400 mx-2"></i>
+                                                    <span className="ml-1 text-sm font-medium text-gray-500">
+                                                        {categoryData.name}
+                                                    </span>
+                                                </div>
+                                            </li>
+                                        )}
                                     </ol>
                                 </nav>
                             </Col>

@@ -201,15 +201,23 @@ export const getCategories = async () => {
 
 export const getCategoryBySlug = async (slug) => {
     try {
-        
         const { data } = await axiosInstance.get('/posts/categories/');
         const categories = data.categories || [];
-        // Search parents first, then subcategories
+        // Search parents first
         const parent = categories.find((c) => c.slug === slug);
-        if (parent) return parent;
+        if (parent) {
+            return { ...parent, parent: null, isSubcategory: false };
+        }
+        // Then search subcategories and attach parent meta for breadcrumbs
         for (const c of categories) {
             const match = (c.subcategories || []).find((s) => s.slug === slug);
-            if (match) return match;
+            if (match) {
+                return {
+                    ...match,
+                    parent: { id: c.id, name: c.name, slug: c.slug },
+                    isSubcategory: true,
+                };
+            }
         }
         const err = new Error('Category not found');
         err.status = 404;
