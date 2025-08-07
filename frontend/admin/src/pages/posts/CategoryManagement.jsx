@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useMemo } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter, Row, Col, Button, Card, Alert } from "reactstrap";
 import { useForm } from "react-hook-form";
 import Head from "@/layout/head/Head";
@@ -30,6 +30,7 @@ const CategoryManagement = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [modalMode, setModalMode] = useState("create"); // "create" or "edit"
   const [sm, updateSm] = useState(false);
+  const [expandedParents, setExpandedParents] = useState(new Set());
 
   // API hooks
   const { categories, loading, error, refetch } = useGetCategories();
@@ -66,21 +67,38 @@ const CategoryManagement = () => {
     });
     return flattened;
   };
-
-  const flatCategories = flattenCategories(categories);
+  const flatCategories = useMemo(() => flattenCategories(categories), [categories]);
   
   // Filter categories based on search
-  const filteredCategories = flatCategories.filter(category =>
-    category.name.toLowerCase().includes(searchText.toLowerCase()) ||
-    category.slug.toLowerCase().includes(searchText.toLowerCase()) ||
-    (category.parent_name && category.parent_name.toLowerCase().includes(searchText.toLowerCase()))
-  );
+  const filteredCategories = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+    if (!q) return flatCategories;
+    return flatCategories.filter(category =>
+      category.name.toLowerCase().includes(q) ||
+      category.slug.toLowerCase().includes(q) ||
+      (category.parent_name && category.parent_name.toLowerCase().includes(q))
+    );
+  }, [flatCategories, searchText]);
+
+  // Visible list respects expansion state. When searching, always show matches regardless of expansion.
+  const visibleCategories = useMemo(() => {
+    const q = searchText.trim();
+    const results = [];
+    for (const cat of filteredCategories) {
+      if (cat.type === "subcategory" && !q) {
+        if (expandedParents.has(cat.parent_id)) results.push(cat);
+      } else {
+        results.push(cat);
+      }
+    }
+    return results;
+  }, [filteredCategories, expandedParents, searchText]);
 
 
   const indexOfLastItem = currentPage * itemPerPage;
   const indexOfFirstItem = indexOfLastItem - itemPerPage;
-  const currentItems = filteredCategories.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredCategories.length / itemPerPage);
+  const currentItems = visibleCategories.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(visibleCategories.length / itemPerPage);
 
 
   const generateSlug = (name) => {
@@ -102,6 +120,14 @@ const CategoryManagement = () => {
   const onFilterChange = (e) => {
     setSearchText(e.target.value);
     setCurrentPage(1);
+  };
+
+  const toggleExpand = (parentId) => {
+    setExpandedParents(prev => {
+      const next = new Set(prev);
+      if (next.has(parentId)) next.delete(parentId); else next.add(parentId);
+      return next;
+    });
   };
 
   const onCreateSubmit = async (data) => {
@@ -355,11 +381,20 @@ const CategoryManagement = () => {
                     </DataTableRow>
                   </DataTableHead>
                   
-                  {currentItems.length > 0 ? (
+                   {currentItems.length > 0 ? (
                     currentItems.map((category) => (
-                      <DataTableItem key={category.id}>
+                      <React.Fragment key={category.id}>
+                      <DataTableItem>
                         <DataTableRow>
-                          <div className="tb-lead" style={{ paddingLeft: `${category.level * 20}px` }}>
+                          <div className="tb-lead d-flex align-items-center" style={{ paddingLeft: `${category.level * 20}px` }}>
+                            {category.type === "parent" && (
+                              <Button color="light" size="sm" className="me-2"
+                                onClick={() => toggleExpand(category.id)}
+                                aria-label={expandedParents.has(category.id) ? "Collapse" : "Expand"}
+                              >
+                                <Icon name={expandedParents.has(category.id) ? "chevron-down" : "chevron-right"} />
+                              </Button>
+                            )}
                             {category.level > 0 && (
                               <span className="text-muted me-2">└─</span>
                             )}
@@ -407,6 +442,19 @@ const CategoryManagement = () => {
                                 <Icon name="edit" />
                               </Button>
                             </li>
+                            {category.type === "parent" && category.hasSubcategories && (
+                              <li className="me-n0">
+                                <Button
+                                  color="light"
+                                  size="sm"
+                                  className="btn-icon"
+                                  onClick={() => toggleExpand(category.id)}
+                                  title={expandedParents.has(category.id) ? "Hide subcategories" : "View subcategories"}
+                                >
+                                  <Icon name={expandedParents.has(category.id) ? "eye-off" : "eye"} />
+                                </Button>
+                              </li>
+                            )}
                             <li className="me-n0">
                               <Button
                                 color="danger"
@@ -421,6 +469,37 @@ const CategoryManagement = () => {
                           </ul>
                         </DataTableRow>
                       </DataTableItem>
+                      {category.type === "parent" && expandedParents.has(category.id) && (!category.hasSubcategories || category.subcategories.length === 0) && (
+                        <DataTableItem key={`${category.id}-empty`}>
+                          <DataTableRow>
+                            <div className="tb-lead text-muted" style={{ paddingLeft: `${20}px` }}>
+                              <em>No subcategories yet</em>
+                            </div>
+                          </DataTableRow>
+                          <DataTableRow size="sm"></DataTableRow>
+                          <DataTableRow size="sm"></DataTableRow>
+                          <DataTableRow className="nk-tb-col-tools">
+                            <ul className="nk-tb-actions gx-1 my-n1">
+                              <li className="me-n0">
+                                <Button
+                                  color="primary"
+                                  size="sm"
+                                  className="btn-icon"
+                                  onClick={() => {
+                                    setModalMode("create");
+                                    setShowModal(true);
+                                    reset({ parent_id: category.id });
+                                  }}
+                                  title="Add Subcategory"
+                                >
+                                  <Icon name="plus" />
+                                </Button>
+                              </li>
+                            </ul>
+                          </DataTableRow>
+                        </DataTableItem>
+                      )}
+                      </React.Fragment>
                     ))
                   ) : (
                     <div className="text-center py-4">

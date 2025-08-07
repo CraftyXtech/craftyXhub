@@ -201,8 +201,19 @@ export const getCategories = async () => {
 
 export const getCategoryBySlug = async (slug) => {
     try {
-        const response = await axiosInstance.get(`/posts/categories/${slug}`);
-        return response.data;
+        
+        const { data } = await axiosInstance.get('/posts/categories/');
+        const categories = data.categories || [];
+        // Search parents first, then subcategories
+        const parent = categories.find((c) => c.slug === slug);
+        if (parent) return parent;
+        for (const c of categories) {
+            const match = (c.subcategories || []).find((s) => s.slug === slug);
+            if (match) return match;
+        }
+        const err = new Error('Category not found');
+        err.status = 404;
+        throw err;
     } catch (error) {
         console.error('Error fetching category by slug:', error);
         throw error;
@@ -211,7 +222,7 @@ export const getCategoryBySlug = async (slug) => {
 
 export const getSubcategories = async (categoryId) => {
     try {
-        // TODO: Implement when backend API supports subcategories        
+               
         return [];
     } catch (error) {
         throw error;

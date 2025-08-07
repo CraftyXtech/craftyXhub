@@ -219,15 +219,13 @@ export const useCreateCategory = () => {
         throw new Error('Category name is required');
       }
 
-      // Validate parent_id if provided
-      if (categoryData.parent_id) {
-        const parentResponse = await axiosPrivate.get(`/posts/categories/${categoryData.parent_id}`);
-        if (!parentResponse.data) {
-          throw new Error('Selected parent category not found');
-        }
-      }
+      // Normalize parent_id
+      const payload = {
+        ...categoryData,
+        parent_id: categoryData.parent_id ? parseInt(categoryData.parent_id, 10) : null,
+      };
 
-      const response = await axiosPrivate.post('/posts/categories/', categoryData);
+      const response = await axiosPrivate.post('/posts/categories/', payload);
       return response.data;
     } catch (err) {
       const errorMessage = err.response?.data?.detail || err.message || 'Failed to create category';
@@ -257,20 +255,17 @@ export const useUpdateCategory = () => {
         throw new Error('Category name is required');
       }
 
-      // Validate parent_id if provided
-      if (categoryData.parent_id) {
-        const parentResponse = await axiosPrivate.get(`/posts/categories/${categoryData.parent_id}`);
-        if (!parentResponse.data) {
-          throw new Error('Selected parent category not found');
-        }
-        
-        // Prevent circular reference
-        if (parseInt(categoryData.parent_id) === categoryId) {
-          throw new Error('Category cannot be its own parent');
-        }
+      // Prevent circular reference
+      if (categoryData.parent_id && parseInt(categoryData.parent_id, 10) === categoryId) {
+        throw new Error('Category cannot be its own parent');
       }
 
-      const response = await axiosPrivate.put(`/posts/categories/${categoryId}`, categoryData);
+      const payload = {
+        ...categoryData,
+        parent_id: categoryData.parent_id ? parseInt(categoryData.parent_id, 10) : null,
+      };
+
+      const response = await axiosPrivate.put(`/posts/categories/${categoryId}`, payload);
       return response.data;
     } catch (err) {
       const errorMessage = err.response?.data?.detail || err.message || 'Failed to update category';
@@ -294,25 +289,8 @@ export const useDeleteCategory = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // First check if category exists and get its details
-      const categoryResponse = await axiosPrivate.get(`/posts/categories/${categoryId}`);
-      const category = categoryResponse.data;
-      
-      if (!category) {
-        throw new Error('Category not found');
-      }
 
-      // Check if category has posts
-      if (category.post_count > 0) {
-        throw new Error(`Cannot delete category "${category.name}" because it has ${category.post_count} posts. Please reassign or delete the posts first.`);
-      }
-
-      // Check if category has subcategories
-      if (category.subcategories && category.subcategories.length > 0) {
-        throw new Error(`Cannot delete category "${category.name}" because it has ${category.subcategories.length} subcategories. Please delete the subcategories first.`);
-      }
-
+      // Directly request deletion; backend enforces constraints and returns proper errors
       await axiosPrivate.delete(`/posts/categories/${categoryId}`);
     } catch (err) {
       const errorMessage = err.response?.data?.detail || err.message || 'Failed to delete category';
