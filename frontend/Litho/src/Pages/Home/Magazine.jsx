@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 // Libraries
 import { Col, Container, Navbar, Row } from 'react-bootstrap'
 import { Link } from 'react-router-dom';
-import { Keyboard } from "swiper/modules";
+import { Keyboard, Autoplay } from "swiper/modules";
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { m } from "framer-motion";
 
@@ -64,6 +64,22 @@ const MagazinePage = (props) => {
   const { posts: allPosts, loading: postsLoading, error: postsError } = usePosts({ published: true })
   const { posts: popularPosts, loading: popularLoading, error: popularError } = usePopularPosts({ limit: 6 })
   
+  // Explicit hero slides from public assets
+  const heroSlides = [
+    {
+      image: `${process.env.PUBLIC_URL}/assets/img/hero/hero.jpg`,
+      label: 'Featured',
+      title: 'Featured Articles',
+      to: '/featured-articles',
+    },
+    {
+      image: `${process.env.PUBLIC_URL}/assets/img/hero/hero2.jpg`,
+      label: 'Trending',
+      title: 'Trending Articles',
+      to: '/trending-articles',
+    },
+  ]
+
   // Prepare data for components
   const recentPosts = allPosts?.slice(0, 2) || []
   const latestPosts = allPosts?.slice(0, 10) || []
@@ -176,26 +192,28 @@ const MagazinePage = (props) => {
         <Container fluid>
           <Row>
             <Col xl={6} className="lg:mb-[10px] py-[10px] px-[10px] font-serif xs:px-[15px] p-[10px] lg:px-[25px] sm:px-[15px]">
-              <Swiper ref={swiperRef} className="white-move swiper-pagination-light h-full relative lg:h-[500px] xs:h-[300px]"
-                modules={[Keyboard]}
+              <Swiper
+                ref={swiperRef}
+                className="white-move swiper-pagination-light h-full relative lg:h-[500px] xs:h-[300px]"
+                modules={[Keyboard, Autoplay]}
                 keyboard={{ enabled: true, onlyInViewport: true }}
-                loop={true} >
-                <SwiperSlide className="overflow-hidden cover-background relative" style={{ backgroundImage: `url(https://via.placeholder.com/1000x710)` }}>
-                  <div className="flex items-center bg-[#000000b3] absolute left-0 bottom-0 w-full py-[55px] xl:py-[20px] lg:py-[55px] md:py-[40px] xs:py-[30px] px-[60px] xl:px-[50px] xs:pl-[30px] xs:pr-[50px] xs:flex-col xs:items-start">
-                    <Link aria-label="link for" to="/featured-articles" className="uppercase ps-0 pr-8 mr-8 border-r border-[#ffffff33] text-[#c89965] tracking-[2px] text-md font-medium tracking-2px font-serif md:border-0 md:mb-[10px] hover:text-white xs:mb-[5px]">Featured</Link>
-                    <h2 className="heading-6 m-0">
-                      <Link aria-label="link for" to="/featured-articles" className="text-white font-light">Featured Articles</Link>
-                    </h2>
-                  </div>
-                </SwiperSlide>
-                <SwiperSlide className="overflow-hidden cover-background relative" style={{ backgroundImage: `url(https://via.placeholder.com/1000x710)` }}>
-                  <div className="flex items-center bg-[#000000b3] absolute left-0 bottom-0 w-full py-[55px] xl:py-[20px] lg:py-[55px] md:py-[40px] xs:py-[30px] px-[60px] xl:px-[50px] xs:pl-[30px] xs:pr-[50px] xs:flex-col xs:items-start">
-                    <Link aria-label="link for" to="/trending-articles" className="col-auto uppercase ps-0 pr-8 mr-8 border-r border-[#ffffff33] text-[#c89965] tracking-[2px] text-md font-medium tracking-2px font-serif md:border-0 md:mb-[10px] hover:text-white xs:mb-[5px]">Trending</Link>
-                    <h2 className="heading-6 m-0">
-                      <Link aria-label="link for" to="/trending-articles" className="text-white font-300">Trending Articles</Link>
-                    </h2>
-                  </div>
-                </SwiperSlide>
+                autoplay={{ delay: 4000, disableOnInteraction: false, pauseOnMouseEnter: true }}
+                loop={true}
+              >
+                {heroSlides.map((s, i) => (
+                  <SwiperSlide
+                    key={i}
+                    className="overflow-hidden cover-background relative"
+                    style={{ backgroundImage: `url(${s.image})` }}
+                  >
+                    <div className="flex items-center bg-[#000000b3] absolute left-0 bottom-0 w-full py-[55px] xl:py-[20px] lg:py-[55px] md:py-[40px] xs:py-[30px] px-[60px] xl:px-[50px] xs:pl-[30px] xs:pr-[50px] xs:flex-col xs:items-start">
+                      <Link aria-label="link for" to={s.to} className="uppercase ps-0 pr-8 mr-8 border-r border-[#ffffff33] text-[#c89965] tracking-[2px] text-md font-medium tracking-2px font-serif md:border-0 md:mb-[10px] hover:text-white xs:mb-[5px]">{s.label}</Link>
+                      <h2 className="heading-6 m-0">
+                        <Link aria-label="link for" to={s.to} className="text-white font-light">{s.title}</Link>
+                      </h2>
+                    </div>
+                  </SwiperSlide>
+                ))}
                 <div className="h-[140px] absolute w-full bottom-0 md:h-[110px] xs:h-[115px]">
                   <div onClick={() => swiperRef.current.swiper.slideNext()} className="bg-black text-white absolute border-0 top-0 right-0 z-[1] h-1/2 text-[20px] w-[50px] flex justify-center text-center items-center">
                     <i className="feather-arrow-right"></i>
