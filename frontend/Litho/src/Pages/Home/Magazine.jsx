@@ -127,7 +127,7 @@ const MagazinePage = (props) => {
         <HeaderNav bg="white" theme="light" expand="lg" containerClass="!px-0" className="py-[0px] md:py-[18px] md:px-[15px] sm:px-0">
           {/* Logo – Left */}
           <Col sm={6} lg={2} className="col-auto me-auto ps-lg-0">
-            <Logo />
+            <Logo variant="black" />
           </Col>
 
           {/* Toggler */}

@@ -19,6 +19,7 @@ const Logo = ({
   className = "",
   ariaLabel = "CraftyXhub logo",
   asNavbarBrand = true,
+  asTag = 'span',
   ...props
 }) => {
   // Define styles based on variant
@@ -40,10 +41,11 @@ const Logo = ({
     }
   }
 
+  const Tag = asTag
   const logoElement = (
-    <span className={`${getLogoStyles()} ${className}`}>
+    <Tag className={`${getLogoStyles()} ${className}`}>
       CraftyXhub
-    </span>
+    </Tag>
   )
 
   const linkElement = (
