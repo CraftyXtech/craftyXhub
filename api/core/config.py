@@ -19,13 +19,9 @@ load_dotenv()
 
 
 class Settings:
-    # Base directory is "core"
-    base_dir = Path(__file__).resolve().parent
-
-    sqlite_db_path = base_dir.parent / "database" / "db.sqlite3"
+    sqlite_db_path = Path(__file__).resolve().parent.parent / "database" / "dev.sqlite3"
 
     DATABASE_URL = f"sqlite+aiosqlite:///{sqlite_db_path}"
-    
     SYNC_DATABASE_URL = f"sqlite:///{sqlite_db_path}"
 
 settings = Settings()

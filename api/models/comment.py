@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, DateTime, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .base import Base
@@ -16,8 +16,13 @@ class Comment(Base):
     post_id = Column(Integer, ForeignKey('posts.id'), nullable=False)
     parent_id = Column(Integer, ForeignKey('comments.id'), nullable=True)
     is_approved = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    # created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    # updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=text("(datetime('now'))"))
+    updated_at = Column(DateTime(timezone=True), 
+                      server_default=text("(datetime('now'))"),
+                      onupdate=text("(datetime('now'))"))
+    
 
     # Relationships
     author = relationship("User", back_populates="comments")

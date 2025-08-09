@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, ForeignKey, Table, String, DateTime, func
+from sqlalchemy import Column, Integer, ForeignKey, Table, String, DateTime, func, text
 
 
 Base = declarative_base()
@@ -10,8 +10,12 @@ class BaseTable(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     uuid = Column(String(36), unique=True, index=True, default=lambda: str(uuid.uuid4()))
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    # created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    # updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"), nullable=False)
+    updated_at = Column(DateTime, 
+                      server_default=text("CURRENT_TIMESTAMP"),
+                      onupdate=text("CURRENT_TIMESTAMP"))
 
 post_tags = Table(
     'post_tags',
