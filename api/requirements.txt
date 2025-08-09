@@ -1,5 +1,6 @@
 aiosmtplib==4.0.1
 aiofiles==24.1.0
+aiosqlite==0.21.0
 fastapi==0.116.0
 itsdangerous==2.2.0
 uvicorn==0.35.0
