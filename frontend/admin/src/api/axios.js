@@ -1,11 +1,11 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_APP_API_URL || 'http://127.0.0.1:8000/v1'
- 
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://xhub-backend-production.up.railway.app/v1';
 
 export default axios.create({
     baseURL: BASE_URL,
-    headers: { 
+    headers: {
         'Content-Type': 'application/json',
     },
 });
