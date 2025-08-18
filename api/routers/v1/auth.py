@@ -1,16 +1,16 @@
+from datetime import datetime, timezone
+from typing import Optional
+from core.config import settings
+from database.connection import get_db_session
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 from fastapi_sso.sso.google import GoogleSSO
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
-from datetime import datetime, timedelta, timezone
+from fastapi_sso.sso.twitter import TwitterSSO
 from models.user import User
 from schemas.user import UserCreate, UserLogin, UserResponse, Token, ResetPasswordRequest, AuthResult
 from services.user.auth import AuthService, get_current_active_user
-from database.connection import get_db_session
-from core.config import settings
-
-
+from sqlalchemy.ext.asyncio import AsyncSession
+import secrets
 
 google_sso = GoogleSSO(
     client_id=settings.GOOGLE_CLIENT_ID,
@@ -19,12 +19,19 @@ google_sso = GoogleSSO(
     allow_insecure_http=True,  # False in prod
 )
 
+twitter_sso = TwitterSSO(
+    client_id=settings.X_CLIENT_ID,
+    client_secret=settings.X_CLIENT_SECRET,
+    redirect_uri="https://x.com/home"
+)
+
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
-    user_data: UserCreate,
-    session: AsyncSession = Depends(get_db_session)
+        user_data: UserCreate,
+        session: AsyncSession = Depends(get_db_session)
 ):
     existing_user = await AuthService.get_user_by_email(session, user_data.email)
     if existing_user:
@@ -32,14 +39,14 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
-    
+
     existing_username = await AuthService.get_user_by_username(session, user_data.username)
     if existing_username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already taken"
         )
-    
+
     hashed_password = AuthService.get_password_hash(user_data.password)
     db_user = User(
         email=user_data.email,
@@ -47,51 +54,52 @@ async def register(
         full_name=user_data.full_name,
         password=hashed_password
     )
-    
+
     session.add(db_user)
     await session.commit()
     await session.refresh(db_user)
-    
+
     return db_user
+
 
 @router.post("/login", response_model=Token)
 async def login(
-    user_credentials: UserLogin,
-    session: AsyncSession = Depends(get_db_session)
+        user_credentials: UserLogin,
+        session: AsyncSession = Depends(get_db_session)
 ):
     user = await AuthService.authenticate_user(
         session, user_credentials.email, user_credentials.password
     )
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user account"
         )
-    
+
     user.last_login = datetime.now(timezone.utc).replace(tzinfo=None)
     await session.commit()
-    
+
     access_token = AuthService._issue_jwt(user)
-    
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "expires_in": int(settings.ACCESS_TOKEN_EXPIRE_MINUTES) * 60
     }
 
+
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
-    current_user: User = Depends(get_current_active_user)
+        current_user: User = Depends(get_current_active_user)
 ):
-    
     user_data = {
         "uuid": current_user.uuid,
         "email": current_user.email,
@@ -106,11 +114,12 @@ async def get_current_user_info(
     }
     return user_data
 
+
 @router.get("/user/{user_uuid}", response_model=UserResponse)
 async def get_user_by_uuid(
-    user_uuid: str,
-    current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_db_session)
+        user_uuid: str,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
 ):
     user = await AuthService.get_user_by_uuid(session, user_uuid)
     if not user:
@@ -118,21 +127,22 @@ async def get_user_by_uuid(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
+
     if user.id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view this user"
         )
-    
+
     return user
+
 
 @router.put("/user/{user_uuid}", response_model=UserResponse)
 async def update_user_profile(
-    user_uuid: str,
-    full_name: Optional[str] = None,
-    current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_db_session)
+        user_uuid: str,
+        full_name: Optional[str] = None,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
 ):
     user = await AuthService.get_user_by_uuid(session, user_uuid)
     if not user:
@@ -140,84 +150,122 @@ async def update_user_profile(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
+
     if user.id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this user"
         )
-    
+
     if full_name:
         user.full_name = full_name
-    
+
     user.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     await session.commit()
     await session.refresh(user)
-    
+
     return user
+
 
 @router.post("/logout")
 async def logout(
-    current_user: User = Depends(get_current_active_user)
+        current_user: User = Depends(get_current_active_user)
 ):
     return {"message": "Successfully logged out"}
 
+
 @router.put("/reset-password")
 async def reset_password(
-    request: ResetPasswordRequest,
-    current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_db_session)
+        request: ResetPasswordRequest,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
 ):
     if request.new_password != request.confirm_new_password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="New passwords do not match"
         )
-    
+
     if not AuthService.verify_password(request.current_password, current_user.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Incorrect current password"
         )
-    
+
     current_user.password = AuthService.get_password_hash(request.new_password)
     current_user.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     await session.commit()
-    
+
     return {"message": "Password updated successfully"}
 
 
 @router.get("/google/login")
 async def google_login():
-    async with google_sso:
-        return await google_sso.get_login_redirect()
+    try:
+        async with google_sso:
+            return await google_sso.get_login_redirect()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
-@router.get("/google/callback", response_model=AuthResult)
+@router.get("/google/callback", response_model=Token)
 async def google_callback(request: Request, db: AsyncSession = Depends(get_db_session)):
-    async with google_sso: 
+    async with google_sso:
         try:
             user_info = await google_sso.verify_and_process(request)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Google SSO failed: {e}")
-        
+
         if not user_info or not user_info.email:
             raise HTTPException(status_code=400, detail="Missing email from Google profile")
-        
-        user, token = await AuthService.login_with_google_profile(                                            
+
+        token = await AuthService.login_with_google_profile(
             session=db,
             email=user_info.email,
             name=user_info.display_name,
             picture=user_info.picture,
         )
-        
+
         token_data = {
             "access_token": token,
             "token_type": "bearer",
             "expires_in": int(settings.ACCESS_TOKEN_EXPIRE_MINUTES) * 60
         }
-        
-        return {
-            "user": user,
-            "token": token_data,
-        }
+
+        return token_data
+
+@router.get("/x/login")
+async def x_login():
+    try:
+        async with twitter_sso:
+            return await twitter_sso.get_login_redirect(
+                state=secrets.token_urlsafe(32)
+            )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/x/callback")
+async def x_callback(request: Request, db: AsyncSession = Depends(get_db_session)):
+    try:
+        async with twitter_sso:
+            user_info = await twitter_sso.verify_and_process(request)
+            if not user_info:
+                raise HTTPException(status_code=400, detail="Authentication failed")
+
+                token = AuthService.login_with_x_profile(
+                    session=db,
+                    email=user_info.email,
+                    name=user_info.display_name,
+                    picture=user_info.picture,
+                )
+
+            return {
+                "access_token": token,
+                "token_type": "bearer",
+                "expires_in": int(settings.ACCESS_TOKEN_EXPIRE_MINUTES) * 60
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Authentication error: {str(e)}")

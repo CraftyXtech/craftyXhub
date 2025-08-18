@@ -31,8 +31,10 @@ class Settings:
     DATABASE_URL = f"sqlite+aiosqlite:///{sqlite_db_path}"
     SYNC_DATABASE_URL = f"sqlite:///{sqlite_db_path}"
     
-    GOOGLE_CLIENT_ID = os.getenv("CLIENT_ID", "")
-    GOOGLE_CLIENT_SECRET = os.getenv("CLIENT_SECRET", "")
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    X_CLIENT_ID = os.getenv("X_CLIENT_ID", "")
+    X_CLIENT_SECRET = os.getenv("X_CLIENT_SECRET", "")
     
     ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15)
     SECRET_KEY = os.getenv("SECRET_KEY", "")
