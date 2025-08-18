@@ -63,6 +63,10 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
 
+class AuthResult(BaseModel):
+    user: UserResponse
+    token: Token
+
 class ResetPasswordRequest(BaseModel):
     current_password: str
     new_password: str

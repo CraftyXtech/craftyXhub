@@ -1,17 +1,25 @@
-import os
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import RedirectResponse
+from fastapi_sso.sso.google import GoogleSSO
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from datetime import datetime, timedelta, timezone
 from models.user import User
-from schemas.user import UserCreate, UserLogin, UserResponse, Token, ResetPasswordRequest
+from schemas.user import UserCreate, UserLogin, UserResponse, Token, ResetPasswordRequest, AuthResult
 from services.user.auth import AuthService, get_current_active_user
 from database.connection import get_db_session
+from core.config import settings
 
+
+
+google_sso = GoogleSSO(
+    client_id=settings.GOOGLE_CLIENT_ID,
+    client_secret=settings.GOOGLE_CLIENT_SECRET,
+    redirect_uri="http://127.0.0.1:8000/v1/auth/google/callback",
+    allow_insecure_http=True,  # False in prod
+)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
-ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30) 
-
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
@@ -71,15 +79,12 @@ async def login(
     user.last_login = datetime.now(timezone.utc).replace(tzinfo=None)
     await session.commit()
     
-    access_token_expires = timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
-    access_token = AuthService.create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
+    access_token = AuthService._issue_jwt(user)
     
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "expires_in": int(ACCESS_TOKEN_EXPIRE_MINUTES) * 60
+        "expires_in": int(settings.ACCESS_TOKEN_EXPIRE_MINUTES) * 60
     }
 
 @router.get("/me", response_model=UserResponse)
@@ -180,3 +185,39 @@ async def reset_password(
     await session.commit()
     
     return {"message": "Password updated successfully"}
+
+
+@router.get("/google/login")
+async def google_login():
+    async with google_sso:
+        return await google_sso.get_login_redirect()
+
+
+@router.get("/google/callback", response_model=AuthResult)
+async def google_callback(request: Request, db: AsyncSession = Depends(get_db_session)):
+    async with google_sso: 
+        try:
+            user_info = await google_sso.verify_and_process(request)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Google SSO failed: {e}")
+        
+        if not user_info or not user_info.email:
+            raise HTTPException(status_code=400, detail="Missing email from Google profile")
+        
+        user, token = await AuthService.login_with_google_profile(                                            
+            session=db,
+            email=user_info.email,
+            name=user_info.display_name,
+            picture=user_info.picture,
+        )
+        
+        token_data = {
+            "access_token": token,
+            "token_type": "bearer",
+            "expires_in": int(settings.ACCESS_TOKEN_EXPIRE_MINUTES) * 60
+        }
+        
+        return {
+            "user": user,
+            "token": token_data,
+        }

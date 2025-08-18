@@ -27,3 +27,4 @@ psutil==7.0.0
 pytest==8.3.3
 pytest-asyncio==0.23.8
 slowapi==0.1.9
+fastapi-sso==0.18.0

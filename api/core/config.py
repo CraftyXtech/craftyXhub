@@ -17,11 +17,25 @@ load_dotenv()
 #     # for migrations since alembic does not support async db connections
 #     SYNC_DATABASE_URL = f'postgresql://{database_username}:{database_password}@{database_host}:{database_port}/{database_name}'
 
+#     GOOGLE_CLIENT_ID = os.getenv("CLIENT_ID", "")
+#     GOOGLE_CLIENT_SECRET = os.getenv("CLIENT_SECRET", "")
+    
+#     ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15)
+#     SECRET_KEY = os.getenv("SECRET_KEY", "")
+#     ALGORITHM = os.getenv("ALGORITHM", "HS256")
+
 
 class Settings:
     sqlite_db_path = Path(__file__).resolve().parent.parent / "database" / "dev.sqlite3"
 
     DATABASE_URL = f"sqlite+aiosqlite:///{sqlite_db_path}"
     SYNC_DATABASE_URL = f"sqlite:///{sqlite_db_path}"
+    
+    GOOGLE_CLIENT_ID = os.getenv("CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET = os.getenv("CLIENT_SECRET", "")
+    
+    ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15)
+    SECRET_KEY = os.getenv("SECRET_KEY", "")
+    ALGORITHM = os.getenv("ALGORITHM", "HS256")
 
 settings = Settings()
