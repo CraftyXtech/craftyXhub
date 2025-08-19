@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import RedirectResponse
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -91,35 +92,6 @@ class AuthService:
         token = AuthService._issue_jwt(user)
         return token
 
-    @staticmethod
-    async def login_with_x_profile(session: AsyncSession, email: str, name: Optional[str],
-                                   picture: Optional[str]) -> str:
-        user = await AuthService.get_user_by_email(session, email)
-
-        if not user:
-            user = User(
-                email=email,
-                username=name,
-                full_name=name,
-                password=settings.X_CLIENT_ID,
-                provider="x",
-                is_verified=True,
-            )
-            session.add(user)
-            await session.commit()
-            await session.refresh(user)
-        else:
-
-            if name and user.full_name != name:
-                user.full_name = name
-
-            user.last_login = datetime.now(timezone.utc)
-
-            await session.commit()
-            await session.refresh(user)
-
-        token = AuthService._issue_jwt(user)
-        return token
 
 
     @staticmethod

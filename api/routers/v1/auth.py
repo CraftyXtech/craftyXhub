@@ -5,24 +5,18 @@ from database.connection import get_db_session
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 from fastapi_sso.sso.google import GoogleSSO
-from fastapi_sso.sso.twitter import TwitterSSO
 from models.user import User
 from schemas.user import UserCreate, UserLogin, UserResponse, Token, ResetPasswordRequest, AuthResult
 from services.user.auth import AuthService, get_current_active_user
 from sqlalchemy.ext.asyncio import AsyncSession
-import secrets
+from urllib.parse import urlencode
+
 
 google_sso = GoogleSSO(
     client_id=settings.GOOGLE_CLIENT_ID,
     client_secret=settings.GOOGLE_CLIENT_SECRET,
     redirect_uri="http://127.0.0.1:8000/v1/auth/google/callback",
     allow_insecure_http=True,  # False in prod
-)
-
-twitter_sso = TwitterSSO(
-    client_id=settings.X_CLIENT_ID,
-    client_secret=settings.X_CLIENT_SECRET,
-    redirect_uri="https://x.com/home"
 )
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -211,16 +205,18 @@ async def google_login():
         )
 
 
-@router.get("/google/callback", response_model=Token)
+@router.get("/google/callback")
 async def google_callback(request: Request, db: AsyncSession = Depends(get_db_session)):
     async with google_sso:
         try:
             user_info = await google_sso.verify_and_process(request)
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Google SSO failed: {e}")
+            params = urlencode({"error": f"Google SSO failed: {str(e)}"})
+            return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/failure?{params}")
 
         if not user_info or not user_info.email:
-            raise HTTPException(status_code=400, detail="Missing email from Google profile")
+            params = urlencode({"error": "Missing email from Google profile"})
+            return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/failure?{params}")
 
         token = await AuthService.login_with_google_profile(
             session=db,
@@ -229,43 +225,9 @@ async def google_callback(request: Request, db: AsyncSession = Depends(get_db_se
             picture=user_info.picture,
         )
 
-        token_data = {
+        params = urlencode({
             "access_token": token,
             "token_type": "bearer",
-            "expires_in": int(settings.ACCESS_TOKEN_EXPIRE_MINUTES) * 60
-        }
-
-        return token_data
-
-@router.get("/x/login")
-async def x_login():
-    try:
-        async with twitter_sso:
-            return await twitter_sso.get_login_redirect(
-                state=secrets.token_urlsafe(32)
-            )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/x/callback")
-async def x_callback(request: Request, db: AsyncSession = Depends(get_db_session)):
-    try:
-        async with twitter_sso:
-            user_info = await twitter_sso.verify_and_process(request)
-            if not user_info:
-                raise HTTPException(status_code=400, detail="Authentication failed")
-
-                token = AuthService.login_with_x_profile(
-                    session=db,
-                    email=user_info.email,
-                    name=user_info.display_name,
-                    picture=user_info.picture,
-                )
-
-            return {
-                "access_token": token,
-                "token_type": "bearer",
-                "expires_in": int(settings.ACCESS_TOKEN_EXPIRE_MINUTES) * 60
-            }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Authentication error: {str(e)}")
+            "expires_in": int(settings.ACCESS_TOKEN_EXPIRE_MINUTES) * 60,
+        })
+        return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/success?{params}")
