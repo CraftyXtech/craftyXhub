@@ -104,7 +104,3 @@ async def bulk_update(model_class: Any, updates: List[dict]) -> None:
 
 async def get_session() -> AsyncSession:
     return AsyncSessionLocal()
-
-
-async def execute_with_session(session: AsyncSession, query: str, params: dict | None = None) -> Any:
-    return await session.execute(text(query), params or {})
