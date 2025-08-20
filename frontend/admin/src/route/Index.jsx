@@ -142,7 +142,7 @@ const ScrollToTop = (props) => {
 
 const Router = () => {
   return (
-    <BrowserRouter basename="/" future={{
+    <BrowserRouter basename="/admin" future={{
       v7_startTransition: true,
       v7_relativeSplatPath: true,
     }}>

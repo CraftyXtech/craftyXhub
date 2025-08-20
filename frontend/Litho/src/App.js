@@ -292,6 +292,8 @@ const Profile = lazy(() =>
 const LoginPage = lazy(() => import("./Pages/auth/Login"));
 const RegisterPage = lazy(() => import("./Pages/auth/Register"));
 const ForgotPasswordPage = lazy(() => import("./Pages/auth/ForgotPassword"));
+const AuthSuccessPage = lazy(() => import("./Pages/auth/AuthSuccess"));
+const AuthFailurePage = lazy(() => import("./Pages/auth/AuthFailure"));
 
 function App() {
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -845,6 +847,8 @@ function App() {
                     <Route path="login" element={<LoginPage />} />
                     <Route path="register" element={<RegisterPage />} />
                     <Route path="forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="success" element={<AuthSuccessPage />} />
+                    <Route path="failure" element={<AuthFailurePage />} />
                   </Route>
 
                   {/* Additional Pages */}

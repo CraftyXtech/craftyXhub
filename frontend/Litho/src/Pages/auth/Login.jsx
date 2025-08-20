@@ -28,6 +28,17 @@ const Login = (props) => {
     const { login } = useAuth()
     const navigate = useNavigate()
 
+    const handleGoogleSignIn = () => {
+        // Redirect to Google OAuth endpoint
+        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '/v1'
+        window.location.href = `${API_BASE_URL}/auth/google/login`
+    }
+
+    const handleFacebookSignIn = () => {
+        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '/v1'
+        window.location.href = `${API_BASE_URL}/auth/facebook/login`
+    }
+
     const handleInputChange = (e) => {
         const { name, value } = e.target
         setFormData(prev => ({
@@ -146,6 +157,33 @@ const Login = (props) => {
                                     </Alert>
                                 )}
 
+                                {/* Social sign-in options */}
+                                <div className="mb-[20px]">
+                                    <button
+                                        type="button"
+                                        onClick={handleGoogleSignIn}
+                                        className="w-full border border-[#dfdfdf] rounded-[999px] py-[12px] px-[16px] mb-[12px] flex items-center justify-center gap-[10px] hover:bg-[#f7f7f7]"
+                                    >
+                                        <i className="fab fa-google text-[#DB4437]"></i>
+                                        <span className="text-sm font-medium">Sign in with Google</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleFacebookSignIn}
+                                        className="w-full border border-[#dfdfdf] rounded-[999px] py-[12px] px-[16px] flex items-center justify-center gap-[10px] hover:bg-[#f7f7f7]"
+                                    >
+                                        <i className="fab fa-facebook-f text-[#1877F2]"></i>
+                                        <span className="text-sm font-medium">Sign in with Facebook</span>
+                                    </button>
+                                </div>
+
+                                {/* Divider */}
+                                <div className="flex items-center my-[20px]">
+                                    <div className="flex-1 h-[1px] bg-[#e5e5e5]"></div>
+                                    <span className="px-[10px] text-xs uppercase tracking-[1px] text-[#777]">or</span>
+                                    <div className="flex-1 h-[1px] bg-[#e5e5e5]"></div>
+                                </div>
+
                                 <Form onSubmit={handleSubmit}>
                                     <Row>
                                         <Col xs={12} className="mb-[25px]">
@@ -206,7 +244,7 @@ const Login = (props) => {
                                                 themeColor="#232323"
                                                 color="#fff"
                                                 size="lg"
-                                                title={loading ? "Signing In..." : "Sign In"}
+                                                title={loading ? "Signing In..." : "Sign in with email"}
                                                 disabled={loading}
                                             />
                                         </Col>

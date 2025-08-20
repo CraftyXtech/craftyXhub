@@ -54,7 +54,7 @@ class AuthService:
         return user
 
     @staticmethod
-    async def login_with_google_profile(session: AsyncSession, email: str, name: Optional[str], picture: Optional[str]) ->  str:
+    async def login_with_social_profile(session: AsyncSession, email: str, name: Optional[str], picture: Optional[str], provider: str = "google") -> str:
         user = await AuthService.get_user_by_email(session, email)
         if not user:
             base_username = name or email.split('@')[0]
@@ -75,8 +75,8 @@ class AuthService:
                 email=email,
                 username=username,
                 full_name=full_name,
-                password=settings.GOOGLE_CLIENT_ID,
-                provider="google",
+                password=settings.GOOGLE_CLIENT_ID,  
+                provider=provider,
                 is_verified=True
             )
             session.add(user)

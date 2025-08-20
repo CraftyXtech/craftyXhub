@@ -38,4 +38,5 @@ export const logout = async () => {
     } catch (error) {
         throw error;
     }
-}; 
+};
+
