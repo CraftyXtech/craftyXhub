@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy import text
 import logging
 from core.config import settings
-from typing import AsyncGenerator, Any, List
+from typing import AsyncGenerator, Any, List, Optional
 from sqlalchemy.ext.declarative import declarative_base
 
 logger = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ class DatabaseTransaction:
                 await self.session.close()
 
 
-async def execute_query(query: str, params: dict | None = None) -> Any:
+async def execute_query(query: str, params: Optional[dict] = None) -> Any:
     async with DatabaseTransaction() as session:
         result = await session.execute(text(query), params or {})
         return result
