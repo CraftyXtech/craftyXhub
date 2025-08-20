@@ -19,6 +19,98 @@ const LoginModal = ({ show, onHide, onSwitchToRegister, onSwitchToPasswordReset 
     const { login } = useAuth()
     const navigate = useNavigate()
 
+    const handleGoogleSignIn = async () => {
+        setLoading(true)
+        setError('')
+
+        try {
+            const loginResponse = await axiosInstance.post('/auth/oauth/google')
+            const token = loginResponse.data.access_token
+
+            const userResponse = await axiosInstance.get('/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            
+            login(token, userResponse.data)
+            
+            onHide()
+            setFormData({ email: '', password: '' })
+            setError('')
+            
+            // Redirect to user dashboard
+            navigate('/dashboard')
+        } catch (error) {
+            console.error('Google login error:', error)
+            let errorMessage = "Google login failed. Please try again."
+            
+            if (error.response?.data?.detail) {
+                if (Array.isArray(error.response.data.detail)) {
+                    errorMessage = error.response.data.detail
+                        .map(err => err.msg || err.message || 'Validation error')
+                        .join(', ')
+                } else if (typeof error.response.data.detail === 'string') {
+                    errorMessage = error.response.data.detail
+                }
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message
+            } else if (error.message) {
+                errorMessage = error.message
+            }
+            
+            setError(errorMessage)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleFacebookSignIn = async () => {
+        setLoading(true)
+        setError('')
+
+        try {
+            const loginResponse = await axiosInstance.post('/auth/oauth/facebook')
+            const token = loginResponse.data.access_token
+
+            const userResponse = await axiosInstance.get('/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            
+            login(token, userResponse.data)
+            
+            onHide()
+            setFormData({ email: '', password: '' })
+            setError('')
+            
+            // Redirect to user dashboard
+            navigate('/dashboard')
+        } catch (error) {
+            console.error('Facebook login error:', error)
+            let errorMessage = "Facebook login failed. Please try again."
+            
+            if (error.response?.data?.detail) {
+                if (Array.isArray(error.response.data.detail)) {
+                    errorMessage = error.response.data.detail
+                        .map(err => err.msg || err.message || 'Validation error')
+                        .join(', ')
+                } else if (typeof error.response.data.detail === 'string') {
+                    errorMessage = error.response.data.detail
+                }
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message
+            } else if (error.message) {
+                errorMessage = error.message
+            }
+            
+            setError(errorMessage)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const handleInputChange = (e) => {
         const { name, value } = e.target
         setFormData(prev => ({
@@ -112,6 +204,33 @@ const LoginModal = ({ show, onHide, onSwitchToRegister, onSwitchToPasswordReset 
                         </Alert>
                     )}
 
+                    {/* Social sign-in options */}
+                    <div className="mb-[16px]">
+                        <button
+                            type="button"
+                            onClick={handleGoogleSignIn}
+                            className="w-full border border-[#dfdfdf] rounded-[999px] py-[10px] px-[14px] mb-[10px] flex items-center justify-center gap-[10px] hover:bg-[#f7f7f7]"
+                        >
+                            <i className="fab fa-google text-[#DB4437]"></i>
+                            <span className="text-sm font-medium">Sign in with Google</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleFacebookSignIn}
+                            className="w-full border border-[#dfdfdf] rounded-[999px] py-[10px] px-[14px] flex items-center justify-center gap-[10px] hover:bg-[#f7f7f7]"
+                        >
+                            <i className="fab fa-facebook-f text-[#1877F2]"></i>
+                            <span className="text-sm font-medium">Sign in with Facebook</span>
+                        </button>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="flex items-center my-[14px]">
+                        <div className="flex-1 h-[1px] bg-[#e5e5e5]"></div>
+                        <span className="px-[10px] text-xs uppercase tracking-[1px] text-[#777]">or</span>
+                        <div className="flex-1 h-[1px] bg-[#e5e5e5]"></div>
+                    </div>
+
                     <Form onSubmit={handleSubmit}>
                         <div className="mb-[20px]">
                             <label className="text-sm font-medium text-darkgray mb-[10px] block">
@@ -172,7 +291,7 @@ const LoginModal = ({ show, onHide, onSwitchToRegister, onSwitchToPasswordReset 
                                 themeColor="#232323"
                                 color="#fff"
                                 size="md"
-                                title={loading ? "Signing In..." : "Sign In"}
+                                title={loading ? "Signing In..." : "Sign in with email"}
                                 disabled={loading}
                             />
                         </div>
