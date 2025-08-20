@@ -40,20 +40,3 @@ export const logout = async () => {
     }
 };
 
-export const googleLogin = async () => {
-    try {
-        const response = await axiosInstance.post('/auth/oauth/google');
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
-};
-
-export const facebookLogin = async () => {
-    try {
-        const response = await axiosInstance.post('/auth/oauth/facebook');
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
-}; 

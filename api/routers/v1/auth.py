@@ -5,6 +5,7 @@ from database.connection import get_db_session
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 from fastapi_sso.sso.google import GoogleSSO
+from fastapi_sso.sso.facebook import FacebookSSO
 from models.user import User
 from schemas.user import UserCreate, UserLogin, UserResponse, Token, ResetPasswordRequest, AuthResult
 from services.user.auth import AuthService, get_current_active_user
@@ -16,6 +17,13 @@ google_sso = GoogleSSO(
     client_id=settings.GOOGLE_CLIENT_ID,
     client_secret=settings.GOOGLE_CLIENT_SECRET,
     redirect_uri="http://127.0.0.1:8000/v1/auth/google/callback",
+    allow_insecure_http=True,  # False in prod
+)
+
+facebook_sso = FacebookSSO(
+    client_id=settings.FACEBOOK_CLIENT_ID,
+    client_secret=settings.FACEBOOK_CLIENT_SECRET,
+    redirect_uri="http://127.0.0.1:8000/v1/auth/facebook/callback",
     allow_insecure_http=True,  # False in prod
 )
 
@@ -218,11 +226,53 @@ async def google_callback(request: Request, db: AsyncSession = Depends(get_db_se
             params = urlencode({"error": "Missing email from Google profile"})
             return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/failure?{params}")
 
-        token = await AuthService.login_with_google_profile(
+        token = await AuthService.login_with_social_profile(
             session=db,
             email=user_info.email,
             name=user_info.display_name,
             picture=user_info.picture,
+            provider="google"
+        )
+
+        params = urlencode({
+            "access_token": token,
+            "token_type": "bearer",
+            "expires_in": int(settings.ACCESS_TOKEN_EXPIRE_MINUTES) * 60,
+        })
+        return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/success?{params}")
+
+
+@router.get("/facebook/login")
+async def facebook_login():
+    try:
+        async with facebook_sso:
+            return await facebook_sso.get_login_redirect()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/facebook/callback")
+async def facebook_callback(request: Request, db: AsyncSession = Depends(get_db_session)):
+    async with facebook_sso:
+        try:
+            user_info = await facebook_sso.verify_and_process(request)
+        except Exception as e:
+            params = urlencode({"error": f"Facebook SSO failed: {str(e)}"})
+            return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/failure?{params}")
+
+        if not user_info or not user_info.email:
+            params = urlencode({"error": "Missing email from Facebook profile"})
+            return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/failure?{params}")
+
+        token = await AuthService.login_with_social_profile(
+            session=db,
+            email=user_info.email,
+            name=user_info.display_name,
+            picture=user_info.picture,
+            provider="facebook"
         )
 
         params = urlencode({

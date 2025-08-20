@@ -28,88 +28,15 @@ const Login = (props) => {
     const { login } = useAuth()
     const navigate = useNavigate()
 
-    const handleGoogleSignIn = async () => {
-        setLoading(true)
-        setError('')
-
-        try {
-            // Follow same pattern as email login
-            const loginResponse = await axiosInstance.post('/auth/oauth/google')
-            const token = loginResponse.data.access_token
-
-            const userResponse = await axiosInstance.get('/auth/me', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-
-            login(token, userResponse.data)
-            
-            navigate('/dashboard')
-        } catch (error) {
-            console.error('Google login error:', error)
-            let errorMessage = "Google login failed. Please try again."
-            
-            if (error.response?.data?.detail) {
-                if (Array.isArray(error.response.data.detail)) {
-                    errorMessage = error.response.data.detail
-                        .map(err => err.msg || err.message || 'Validation error')
-                        .join(', ')
-                } else if (typeof error.response.data.detail === 'string') {
-                    errorMessage = error.response.data.detail
-                }
-            } else if (error.response?.data?.message) {
-                errorMessage = error.response.data.message
-            } else if (error.message) {
-                errorMessage = error.message
-            }
-            
-            setError(errorMessage)
-        } finally {
-            setLoading(false)
-        }
+    const handleGoogleSignIn = () => {
+        // Redirect to Google OAuth endpoint
+        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '/v1'
+        window.location.href = `${API_BASE_URL}/auth/google/login`
     }
 
-    const handleFacebookSignIn = async () => {
-        setLoading(true)
-        setError('')
-
-        try {
-            // Follow same pattern as email login
-            const loginResponse = await axiosInstance.post('/auth/oauth/facebook')
-            const token = loginResponse.data.access_token
-
-            const userResponse = await axiosInstance.get('/auth/me', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-
-            login(token, userResponse.data)
-            
-            navigate('/dashboard')
-        } catch (error) {
-            console.error('Facebook login error:', error)
-            let errorMessage = "Facebook login failed. Please try again."
-            
-            if (error.response?.data?.detail) {
-                if (Array.isArray(error.response.data.detail)) {
-                    errorMessage = error.response.data.detail
-                        .map(err => err.msg || err.message || 'Validation error')
-                        .join(', ')
-                } else if (typeof error.response.data.detail === 'string') {
-                    errorMessage = error.response.data.detail
-                }
-            } else if (error.response?.data?.message) {
-                errorMessage = error.response.data.message
-            } else if (error.message) {
-                errorMessage = error.message
-            }
-            
-            setError(errorMessage)
-        } finally {
-            setLoading(false)
-        }
+    const handleFacebookSignIn = () => {
+        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '/v1'
+        window.location.href = `${API_BASE_URL}/auth/facebook/login`
     }
 
     const handleInputChange = (e) => {
