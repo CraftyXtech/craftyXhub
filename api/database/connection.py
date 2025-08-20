@@ -85,12 +85,6 @@ class DatabaseTransaction:
                 await self.session.close()
 
 
-async def execute_query(query: str, params: Optional[dict] = None) -> Any:
-    async with DatabaseTransaction() as session:
-        result = await session.execute(text(query), params or {})
-        return result
-
-
 async def bulk_insert(objects: List[Any]) -> None:
     async with DatabaseTransaction() as session:
         session.add_all(objects)
