@@ -32,6 +32,7 @@ class User(BaseTable):
     
     # Relationships
     profile = relationship("Profile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    provider = Column(String(50), nullable=True, default="email")  # e.g., "google", "github"
     posts = relationship("Post", back_populates="author", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")
     liked_posts = relationship("Post", secondary=post_likes, back_populates="liked_by")
