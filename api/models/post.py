@@ -42,6 +42,10 @@ class Post(BaseTable):
     meta_description = Column(String(300), nullable=True)
     published_at = Column(DateTime, nullable=True)
     deleted_at = Column(DateTime, nullable=True, default=None)
+    is_reviewed = Column(Boolean, default=False, nullable=False)
+    review_comments = Column(Text, nullable=True)
+    is_flagged = Column(Boolean, default=False, nullable=False)
+    reviewed_at = Column(DateTime, nullable=True)
 
     # Relationships
     author = relationship("User", back_populates="posts")

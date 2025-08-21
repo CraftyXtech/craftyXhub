@@ -111,6 +111,9 @@ class PostResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
     deleted_at: Optional[datetime]
+    is_reviewed: bool
+    review_comments: Optional[str]
+    is_flagged: bool
     author: Optional[UserResponse]
     category: Optional[CategoryCreateResponse]
     tags: List[TagResponse]
