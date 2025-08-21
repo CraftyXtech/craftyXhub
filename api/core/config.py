@@ -17,6 +17,9 @@ load_dotenv()
 #     # for migrations since alembic does not support async db connections
 #     SYNC_DATABASE_URL = f'postgresql://{database_username}:{database_password}@{database_host}:{database_port}/{database_name}'
 
+#     FACEBOOK_CLIENT_ID = os.getenv("FACEBOOK_CLIENT_ID", "")
+#     FACEBOOK_CLIENT_SECRET = os.getenv("FACEBOOK_CLIENT_SECRET", "")
+    
 #     GOOGLE_CLIENT_ID = os.getenv("CLIENT_ID", "")
 #     GOOGLE_CLIENT_SECRET = os.getenv("CLIENT_SECRET", "")
 
