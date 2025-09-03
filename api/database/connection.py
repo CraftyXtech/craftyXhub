@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy import text
 import logging
 from core.config import settings
-from typing import AsyncGenerator, Any, List
+from typing import AsyncGenerator, Any, List, Optional
 from sqlalchemy.ext.declarative import declarative_base
 
 logger = logging.getLogger(__name__)
@@ -85,12 +85,6 @@ class DatabaseTransaction:
                 await self.session.close()
 
 
-async def execute_query(query: str, params: dict | None = None) -> Any:
-    async with DatabaseTransaction() as session:
-        result = await session.execute(text(query), params or {})
-        return result
-
-
 async def bulk_insert(objects: List[Any]) -> None:
     async with DatabaseTransaction() as session:
         session.add_all(objects)
@@ -110,7 +104,3 @@ async def bulk_update(model_class: Any, updates: List[dict]) -> None:
 
 async def get_session() -> AsyncSession:
     return AsyncSessionLocal()
-
-
-async def execute_with_session(session: AsyncSession, query: str, params: dict | None = None) -> Any:
-    return await session.execute(text(query), params or {})

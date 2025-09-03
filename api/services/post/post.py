@@ -26,6 +26,7 @@ import time
 logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = Path("uploads/posts")
+# UPLOAD_DIR = Path("/tmp/uploads/posts")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
@@ -54,6 +55,7 @@ class PostService:
         try:
             if not include_deleted:
                 query = query.where(Post.deleted_at.is_(None))
+            query = query.where(Post.is_flagged.is_(False))
             return query
         except Exception as e:
             raise HTTPException(
@@ -275,7 +277,7 @@ class PostService:
             if not db_post:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
-            if not current_user.is_moderator:
+            if not current_user.is_moderator or db_post.author_id != current_user.id:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to publish this post")
 
             db_post.is_published = True
@@ -303,7 +305,7 @@ class PostService:
             if not db_post:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
-            if not current_user.is_moderator:
+            if not current_user.is_moderator or db_post.author_id != current_user.id:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                     detail="Not authorized to unpublish this post")
 
