@@ -16,15 +16,15 @@ from urllib.parse import urlencode
 google_sso = GoogleSSO(
     client_id=settings.GOOGLE_CLIENT_ID,
     client_secret=settings.GOOGLE_CLIENT_SECRET,
-    redirect_uri="http://127.0.0.1:8000/v1/auth/google/callback",
-    allow_insecure_http=True,  # False in prod
+    redirect_uri=f"{settings.API_BASE_URL}/v1/auth/google/callback",
+    allow_insecure_http=False,
 )
 
 facebook_sso = FacebookSSO(
     client_id=settings.FACEBOOK_CLIENT_ID,
     client_secret=settings.FACEBOOK_CLIENT_SECRET,
-    redirect_uri="http://127.0.0.1:8000/v1/auth/facebook/callback",
-    allow_insecure_http=True,  # False in prod
+    redirect_uri=f"{settings.API_BASE_URL}/v1/auth/facebook/callback",
+    allow_insecure_http=False,
 )
 
 router = APIRouter(prefix="/auth", tags=["authentication"])

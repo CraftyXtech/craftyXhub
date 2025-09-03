@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Depends, Query, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from core.config import settings
 from fastapi.responses import RedirectResponse
 from routers.v1 import router as v1_router
 from database.connection import db_health_check, get_db_session
 from fastapi.responses import FileResponse
 from sqlalchemy import select, or_
-from database.connection import get_db_session
 from models import Post, User, Category
 from pathlib import Path
 
@@ -99,7 +99,7 @@ def create_application() -> FastAPI:
     # Enable CORS for development
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.ALLOWED_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
