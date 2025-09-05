@@ -1,55 +1,57 @@
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+from urllib.parse import quote_plus
 
 load_dotenv()
 
-# class Settings:
-#     # PostgreSQL configuration
-#     database_username: str = os.getenv("DB_USER", "postgres")
-#     database_password: str = os.getenv("DB_PASSWORD", "root")
-#     database_host: str = os.getenv("DB_HOST", "localhost")
-#     database_port: str = os.getenv("DB_PORT", "5432")
-#     database_name: str = os.getenv("DB_NAME", "xhub")
-
-#     DATABASE_URL = f'postgresql+asyncpg://{database_username}:{database_password}@{database_host}:{database_port}/{database_name}'
-
-#     # for migrations since alembic does not support async db connections
-#     SYNC_DATABASE_URL = f'postgresql://{database_username}:{database_password}@{database_host}:{database_port}/{database_name}'
-
-#     FACEBOOK_CLIENT_ID = os.getenv("FACEBOOK_CLIENT_ID", "")
-#     FACEBOOK_CLIENT_SECRET = os.getenv("FACEBOOK_CLIENT_SECRET", "")
-    
-#     GOOGLE_CLIENT_ID = os.getenv("CLIENT_ID", "")
-#     GOOGLE_CLIENT_SECRET = os.getenv("CLIENT_SECRET", "")
-
-#     ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15)
-#     SECRET_KEY = os.getenv("SECRET_KEY", "")
-#     ALGORITHM = os.getenv("ALGORITHM", "HS256")
-#     FRONTEND_URL = os.getenv("FRONTEND_URL", "")
-
 class Settings:
-    sqlite_db_path = Path(__file__).resolve().parent.parent / "database" / "dev.sqlite3"
+    # PostgreSQL configuration - ALL from environment variables only
+    database_username: str = os.getenv("DB_USER") or ""
+    database_password: str = os.getenv("DB_PASSWORD") or ""
+    database_host: str = os.getenv("DB_HOST", "localhost")
+    database_port: str = os.getenv("DB_PORT", "5432")
+    database_name: str = os.getenv("DB_NAME") or ""
 
-    DATABASE_URL = f"sqlite+aiosqlite:///{sqlite_db_path}"
-    SYNC_DATABASE_URL = f"sqlite:///{sqlite_db_path}"
-
-    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-    GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    # URL-encode password to handle special characters
+    _encoded_password = quote_plus(database_password) if database_password else ""
     
-    FACEBOOK_CLIENT_ID = os.getenv("FACEBOOK_CLIENT_ID", "")
-    FACEBOOK_CLIENT_SECRET = os.getenv("FACEBOOK_CLIENT_SECRET", "")
+    DATABASE_URL = f'postgresql+asyncpg://{database_username}:{_encoded_password}@{database_host}:{database_port}/{database_name}'
 
-    ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
-    SECRET_KEY = os.getenv("SECRET_KEY", "")
+    # for migrations since alembic does not support async db connections
+    SYNC_DATABASE_URL = f'postgresql://{database_username}:{_encoded_password}@{database_host}:{database_port}/{database_name}'
+
+    # OAuth configuration - NO defaults for secrets
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+    
+    FACEBOOK_CLIENT_ID = os.getenv("FACEBOOK_CLIENT_ID")
+    FACEBOOK_CLIENT_SECRET = os.getenv("FACEBOOK_CLIENT_SECRET")
+
+    # Security configuration - NO defaults for sensitive values
+    ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
+    SECRET_KEY = os.getenv("SECRET_KEY")
     ALGORITHM = os.getenv("ALGORITHM", "HS256")
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://localhost:3000")
-
-    # Public API base used by frontends and OAuth callbacks
+    
+    # Application URLs - non-sensitive defaults OK
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
     API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
 
-    # Comma-separated list of allowed CORS origins
-    _origins = os.getenv("ALLOWED_ORIGINS", "*")
-    ALLOWED_ORIGINS = [o.strip() for o in _origins.split(",")] if _origins else ["*"]
+    # CORS configuration
+    _origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+    ALLOWED_ORIGINS = [o.strip() for o in _origins.split(",")] if _origins else ["http://localhost:3000"]
+
+    def __post_init__(self):
+        """Validate that all required environment variables are set"""
+        required_vars = {
+            "DB_USER": self.database_username,
+            "DB_PASSWORD": self.database_password,
+            "DB_NAME": self.database_name,
+            "SECRET_KEY": self.SECRET_KEY,
+        }
+        
+        missing_vars = [var for var, value in required_vars.items() if not value]
+        if missing_vars:
+            raise ValueError(f"Required environment variables missing: {', '.join(missing_vars)}")
 
 settings = Settings()

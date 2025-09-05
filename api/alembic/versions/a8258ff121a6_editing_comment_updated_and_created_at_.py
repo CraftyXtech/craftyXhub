@@ -33,6 +33,7 @@ def upgrade() -> None:
             )
     else:
         op.alter_column(
+            'comments',
             'created_at',
             existing_type=sa.TIMESTAMP(timezone=True),
             type_=sa.DateTime(timezone=True),
@@ -40,6 +41,7 @@ def upgrade() -> None:
             existing_server_default=sa.text('now()')
         )
         op.alter_column(
+            'comments',
             'updated_at',
             existing_type=sa.TIMESTAMP(timezone=True),
             type_=sa.DateTime(timezone=True),
