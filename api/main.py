@@ -100,16 +100,18 @@ def create_application() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.ALLOWED_ORIGINS,
-        # Optional regex from settings (env: ALLOW_ORIGIN_REGEX)
         allow_origin_regex=settings.ALLOW_ORIGIN_REGEX,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_credentials=settings.ALLOW_CREDENTIALS,
+        allow_methods=settings.ALLOW_METHODS,
+        allow_headers=settings.ALLOW_HEADERS,
+        expose_headers=settings.EXPOSE_HEADERS,
+        max_age=settings.CORS_MAX_AGE,
     )
 
        
     include_routers(app)
     return app
+
 
 app = create_application()
 
@@ -122,4 +124,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=True
-    ) 
+    )

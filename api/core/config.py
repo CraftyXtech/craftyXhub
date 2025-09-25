@@ -62,9 +62,27 @@ class Settings:
         ]
     )
 
-    # Optional CORS regex. If set, will be passed to CORSMiddleware
-    # e.g., r"https://([a-z0-9-]+\.)?craftyxhub\.com"
+    # CORS settings - configurable via environment
     ALLOW_ORIGIN_REGEX: str | None = os.getenv("ALLOW_ORIGIN_REGEX") or None
+    ALLOW_CREDENTIALS: bool = (
+        os.getenv("ALLOW_CREDENTIALS", "true").lower() == "true"
+    )
+    ALLOW_METHODS: list[str] = (
+        [m.strip() for m in os.getenv("ALLOW_METHODS", "*").split(",")]
+        if os.getenv("ALLOW_METHODS") != "*"
+        else ["*"]
+    )
+    ALLOW_HEADERS: list[str] = (
+        [h.strip() for h in os.getenv("ALLOW_HEADERS", "*").split(",")]
+        if os.getenv("ALLOW_HEADERS") != "*"
+        else ["*"]
+    )
+    EXPOSE_HEADERS: list[str] = (
+        [h.strip() for h in os.getenv("EXPOSE_HEADERS", "").split(",")]
+        if os.getenv("EXPOSE_HEADERS")
+        else []
+    )
+    CORS_MAX_AGE: int = int(os.getenv("CORS_MAX_AGE", "600"))
 
     def __post_init__(self):
         """Validate that all required environment variables are set"""
