@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, Query, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from core.config import settings
+from core.settings import get_settings
 from fastapi.responses import RedirectResponse
 from routers.v1 import router as v1_router
 from database.connection import db_health_check, get_db_session
@@ -8,6 +8,9 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select, or_
 from models import Post, User, Category
 from pathlib import Path
+
+# Initialize cached settings
+settings = get_settings()
 
 
 def include_routers(app: FastAPI) -> None:
@@ -26,9 +29,11 @@ def include_routers(app: FastAPI) -> None:
             "database": "connected" if db_healthy else "disconnected",
         }
 
-
-    @app.get("/search", tags=["Global Search"], summary="Global Search",)
-    async def global_search(q: str = Query(..., min_length=1), db = Depends(get_db_session)):
+    @app.get("/search", tags=["Global Search"], summary="Global Search")
+    async def global_search(
+        q: str = Query(..., min_length=1),
+        db=Depends(get_db_session),
+    ):
         query = f"%{q}%"
 
         posts_stmt = select(Post).filter(
@@ -58,11 +63,20 @@ def include_routers(app: FastAPI) -> None:
         return {
             "posts": posts_result.scalars().all(),
             "users": users_result.scalars().all(),
-            "categories": categories_result.scalars().all()
+            "categories": categories_result.scalars().all(),
         }
-        
-    @app.get("/v1/uploads/images/{filename}", tags=["Get Images"], summary="Get Image")
-    async def get_image(filename: str, folder: str = Query(..., description="Folder category (e.g., 'posts', 'avatars')")):
+
+    @app.get(
+        "/v1/uploads/images/{filename}",
+        tags=["Get Images"],
+        summary="Get Image",
+    )
+    async def get_image(
+        filename: str,
+        folder: str = Query(
+            ..., description="Folder category (e.g., 'posts', 'avatars')"
+        ),
+    ):
         if folder not in ["posts", "avatars", "media"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -80,26 +94,38 @@ def include_routers(app: FastAPI) -> None:
         
         return FileResponse(file_path)
 
-            
     app.include_router(v1_router)
+
 
 def create_application() -> FastAPI:
     app = FastAPI(
         title="CraftyXhub API",
         description="CraftyXhub Content Management API",
         version="1.0.0",
-        docs_url="/docs" ,
-        redoc_url="/redoc" ,
+        docs_url="/docs",
+        redoc_url="/redoc",
         openapi_url="/openapi.json",
         contact={
             "name": "CraftyXhub Support",
             "email": "support@craftyhub.com",
         }
     )
-    # Enable CORS for development
+    # Enable CORS (middleware applies globally)
+    # If allow_credentials=True, starlette does not allow "*" origins.
+    # Ensure explicit origins are provided in that case.
+    allow_origins = settings.ALLOWED_ORIGINS
+    if settings.ALLOW_CREDENTIALS and (
+        allow_origins == ["*"] or "*" in allow_origins
+    ):
+        # Fallback to explicit origins (e.g., FRONTEND_URL)
+        # to avoid wildcard with credentials
+        allow_origins = list(
+            {settings.FRONTEND_URL, *[o for o in allow_origins if o != "*"]}
+        )
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.ALLOWED_ORIGINS,
+        allow_origins=allow_origins,
         allow_origin_regex=settings.ALLOW_ORIGIN_REGEX,
         allow_credentials=settings.ALLOW_CREDENTIALS,
         allow_methods=settings.ALLOW_METHODS,
@@ -107,8 +133,6 @@ def create_application() -> FastAPI:
         expose_headers=settings.EXPOSE_HEADERS,
         max_age=settings.CORS_MAX_AGE,
     )
-
-       
     include_routers(app)
     return app
 
