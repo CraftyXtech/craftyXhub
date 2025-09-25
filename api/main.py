@@ -100,6 +100,8 @@ def create_application() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.ALLOWED_ORIGINS,
+        # Optional regex from settings (env: ALLOW_ORIGIN_REGEX)
+        allow_origin_regex=settings.ALLOW_ORIGIN_REGEX,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

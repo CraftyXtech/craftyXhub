@@ -62,6 +62,10 @@ class Settings:
         ]
     )
 
+    # Optional CORS regex. If set, will be passed to CORSMiddleware
+    # e.g., r"https://([a-z0-9-]+\.)?craftyxhub\.com"
+    ALLOW_ORIGIN_REGEX: str | None = os.getenv("ALLOW_ORIGIN_REGEX") or None
+
     def __post_init__(self):
         """Validate that all required environment variables are set"""
         required_vars = {
