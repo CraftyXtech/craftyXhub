@@ -38,8 +38,29 @@ class Settings:
     API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
 
     # CORS configuration
-    _origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
-    ALLOWED_ORIGINS = [o.strip() for o in _origins.split(",")] if _origins else ["http://localhost:3000"]
+    # Include common local dev and production domains by default.
+    # Can be overridden via ALLOWED_ORIGINS env.
+    _origins = os.getenv(
+        "ALLOWED_ORIGINS",
+        ",".join(
+            [
+                # Local development
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                # Production sites
+                "https://craftyxhub.com",
+                "https://www.craftyxhub.com",
+                # If you host an admin app on a subdomain,
+                # add it here or via env
+                "https://admin.craftyxhub.com",
+            ]
+        ),
+    )
+    ALLOWED_ORIGINS = (
+        [o.strip() for o in _origins.split(",")] if _origins else [
+            "http://localhost:3000"
+        ]
+    )
 
     def __post_init__(self):
         """Validate that all required environment variables are set"""
@@ -50,8 +71,14 @@ class Settings:
             "SECRET_KEY": self.SECRET_KEY,
         }
         
-        missing_vars = [var for var, value in required_vars.items() if not value]
+        missing_vars = [
+            var for var, value in required_vars.items() if not value
+        ]
         if missing_vars:
-            raise ValueError(f"Required environment variables missing: {', '.join(missing_vars)}")
+            raise ValueError(
+                "Required environment variables missing: "
+                f"{', '.join(missing_vars)}"
+            )
+
 
 settings = Settings()
