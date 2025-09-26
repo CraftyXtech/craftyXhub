@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Depends, Query, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from core.settings import get_settings
@@ -110,10 +111,20 @@ def create_application() -> FastAPI:
             "email": "support@craftyhub.com",
         }
     )
-    # Enable CORS (middleware applies globally)
-    # If allow_credentials=True, starlette does not allow "*" origins.
-    # Ensure explicit origins are provided in that case.
     allow_origins = settings.ALLOWED_ORIGINS
+
+    # Add localhost origins for development
+    if os.getenv("ENVIRONMENT", "production").lower() in ["development", "dev", "local"]:
+        dev_origins = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+        ]
+        allow_origins = list(set(allow_origins + dev_origins))
+
     if settings.ALLOW_CREDENTIALS and (
         allow_origins == ["*"] or "*" in allow_origins
     ):

@@ -1,8 +1,5 @@
 import axios from 'axios';
-
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/v1/';
 export default axios.create({
     baseURL: BASE_URL,
     headers: {
@@ -42,7 +39,7 @@ axiosPrivate.interceptors.response.use(
             // Token expired or invalid, redirect to login
             localStorage.removeItem('accessToken');
             localStorage.removeItem('userInfo');
-            window.location.href = '/login';
+            window.location.href = '/auth/login';
         }
         return Promise.reject(error);
     }
