@@ -44,9 +44,13 @@ const Register = () => {
       navigate('/auth-register-success');
     } catch (error) {
       console.error('Registration error:', error);
+      // Prefer backend-provided messages
       let errorMessage = error.response?.data?.message;
-      // Handle FastAPI 422 validation errors
       const detail = error.response?.data?.detail;
+      // FastAPI can return `detail` as a string (HTTPException) or a list (validation errors)
+      if (!errorMessage && typeof detail === 'string') {
+        errorMessage = detail;
+      }
       if (!errorMessage && Array.isArray(detail)) {
         errorMessage = detail.map(d => d.msg || JSON.stringify(d)).join('\n');
       }
