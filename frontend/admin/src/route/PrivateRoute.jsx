@@ -1,9 +1,10 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import useAuth from '../api/useAuth';
 import { isTokenExpired } from '../api/isTokenExpired';
 
 const PrivateRoute = ({ children }) => {
     const { auth, isAuthenticated, loading } = useAuth();
+    const location = useLocation();
 
     // Show loading while checking authentication
     if (loading) {
@@ -11,14 +12,14 @@ const PrivateRoute = ({ children }) => {
     }
 
     if (!auth?.accessToken || isTokenExpired(auth?.accessToken)) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
     if (auth?.otpRequired == "1") {
         return <Navigate to="/otp" replace />;
     }
 
-    return isAuthenticated ? children : <Navigate to="/login" replace />;
+    return isAuthenticated ? children : <Navigate to="/login" state={{ from: location }} replace />;
 };
 
 export default PrivateRoute;

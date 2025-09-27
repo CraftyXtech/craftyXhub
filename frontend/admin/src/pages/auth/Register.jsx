@@ -13,20 +13,50 @@ import {
   Icon,
   PreviewCard,
 } from "@/components/Component";
-import { Spinner } from "reactstrap";
+import { Spinner, Alert } from "reactstrap";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
+import { axiosPublic } from "@/api/axios";
 
 const Register = () => {
   const [passState, setPassState] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorVal, setError] = useState("");
   const { register, handleSubmit, formState: { errors } } = useForm();
   const navigate = useNavigate();
-  const handleFormSubmit = () => {
+  
+  const handleFormSubmit = async (formData) => {
     setLoading(true);
-    setTimeout(() => {
-      navigate(`/auth-success`);
-    }, 1000);
+    setError("");
+    
+    try {
+      const response = await axiosPublic.post('auth/register', {
+        full_name: formData.name,
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        confirm_password: formData.confirm_password,
+      });
+      
+      console.log('Registration successful:', response.data);
+      
+      // Redirect to registration success page
+      navigate('/auth-register-success');
+    } catch (error) {
+      console.error('Registration error:', error);
+      let errorMessage = error.response?.data?.message;
+      // Handle FastAPI 422 validation errors
+      const detail = error.response?.data?.detail;
+      if (!errorMessage && Array.isArray(detail)) {
+        errorMessage = detail.map(d => d.msg || JSON.stringify(d)).join('\n');
+      }
+      if (!errorMessage) {
+        errorMessage = error.message || "Registration failed. Please try again.";
+      }
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
   return <>
     <Head title="Register" />
@@ -43,6 +73,13 @@ const Register = () => {
               </BlockDes>
             </BlockContent>
           </BlockHead>
+          {errorVal && (
+            <div className="mb-3">
+              <Alert color="danger" className="alert-icon">
+                <Icon name="alert-circle" /> {errorVal}
+              </Alert>
+            </div>
+          )}
           <form className="is-alter" onSubmit={handleSubmit(handleFormSubmit)}>
             <div className="form-group">
               <label className="form-label" htmlFor="name">
@@ -60,8 +97,24 @@ const Register = () => {
             </div>
             <div className="form-group">
               <div className="form-label-group">
+                <label className="form-label" htmlFor="username">
+                  Username
+                </label>
+              </div>
+              <div className="form-control-wrap">
+                <input
+                  type="text"
+                  id="username"
+                  {...register('username', { required: true, minLength: 3 })}
+                  className="form-control-lg form-control"
+                  placeholder="Choose a username (letters, numbers, _ or -)" />
+                {errors.username && <p className="invalid">Username is required (min 3 characters)</p>}
+              </div>
+            </div>
+            <div className="form-group">
+              <div className="form-label-group">
                 <label className="form-label" htmlFor="default-01">
-                  Email or Username
+                  Email
                 </label>
               </div>
               <div className="form-control-wrap">
@@ -71,14 +124,14 @@ const Register = () => {
                   id="default-01"
                   {...register('email', { required: true })}
                   className="form-control-lg form-control"
-                  placeholder="Enter your email address or username" />
+                  placeholder="Enter your email address" />
                 {errors.email && <p className="invalid">This field is required</p>}
               </div>
             </div>
             <div className="form-group">
               <div className="form-label-group">
                 <label className="form-label" htmlFor="password">
-                  Passcode
+                  Password
                 </label>
               </div>
               <div className="form-control-wrap">
@@ -97,10 +150,26 @@ const Register = () => {
                 <input
                   type={passState ? "text" : "password"}
                   id="password"
-                  {...register('passcode', { required: "This field is required" })}
-                  placeholder="Enter your passcode"
+                  {...register('password', { required: "This field is required", minLength: { value: 8, message: "Password must be at least 8 characters" } })}
+                  placeholder="Enter your password"
                   className={`form-control-lg form-control ${passState ? "is-hidden" : "is-shown"}`} />
-                {errors.passcode && <span className="invalid">{errors.passcode.message}</span>}
+                {errors.password && <span className="invalid">{errors.password.message || 'This field is required'}</span>}
+              </div>
+            </div>
+            <div className="form-group">
+              <div className="form-label-group">
+                <label className="form-label" htmlFor="confirm_password">
+                  Confirm Password
+                </label>
+              </div>
+              <div className="form-control-wrap">
+                <input
+                  type={passState ? "text" : "password"}
+                  id="confirm_password"
+                  {...register('confirm_password', { required: "This field is required" })}
+                  placeholder="Re-enter your password"
+                  className={`form-control-lg form-control ${passState ? "is-hidden" : "is-shown"}`} />
+                {errors.confirm_password && <span className="invalid">{errors.confirm_password.message}</span>}
               </div>
             </div>
             <div className="form-group">
@@ -112,7 +181,7 @@ const Register = () => {
           <div className="form-note-s2 text-center pt-4">
             {" "}
             Already have an account?{" "}
-            <Link to={`/auth-login`}>
+            <Link to={`/login`}>
               <strong>Sign in instead</strong>
             </Link>
           </div>

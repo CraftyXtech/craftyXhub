@@ -16,12 +16,13 @@ const Success = () => {
           </div>
           <BlockHead>
             <BlockContent>
-              <BlockTitle tag="h4">Thank you for submitting form</BlockTitle>
+              <BlockTitle tag="h4">Registration Successful!</BlockTitle>
               <BlockDes className="text-success">
-                <p>You can now sign in with your new password</p>
-                <Link to={`/auth-login`}>
+                <p>Welcome to CraftyXhub! Your account has been created successfully.</p>
+                <p>You can now sign in with your credentials and explore the dashboard.</p>
+                <Link to={`/login`}>
                   <Button color="primary" size="lg">
-                    Back to Login
+                    Sign In Now
                   </Button>
                 </Link>
               </BlockDes>

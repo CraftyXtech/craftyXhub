@@ -1,11 +1,16 @@
 import axios from 'axios';
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/v1/';
-export default axios.create({
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+console.log('Environment Variables:', import.meta.env);
+console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
+console.log('Final BASE_URL:', BASE_URL);
+export const axiosPublic = axios.create({
     baseURL: BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
 });
+
+export default axiosPublic;
 
 export const axiosPrivate = axios.create({
     baseURL: BASE_URL,
@@ -39,7 +44,7 @@ axiosPrivate.interceptors.response.use(
             // Token expired or invalid, redirect to login
             localStorage.removeItem('accessToken');
             localStorage.removeItem('userInfo');
-            window.location.href = '/auth/login';
+            window.location.href = '/login';
         }
         return Promise.reject(error);
     }

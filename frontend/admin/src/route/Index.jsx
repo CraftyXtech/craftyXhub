@@ -125,6 +125,7 @@ import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
 import Success from "@/pages/auth/Success";
+import RegisterSuccess from "@/pages/auth/RegisterSuccess";
 
 import Layout from "@/layout/Index";
 import LayoutNoSidebar from "@/layout/Index-nosidebar";
@@ -142,7 +143,7 @@ const ScrollToTop = (props) => {
 
 const Router = () => {
   return (
-    <BrowserRouter basename="/admin" future={{
+    <BrowserRouter basename="/" future={{
       v7_startTransition: true,
       v7_relativeSplatPath: true,
     }}>
@@ -292,6 +293,7 @@ const Router = () => {
             </Route>
             <Route element={<LayoutNoSidebar />}>
               <Route path="auth-success" element={<Success />}></Route>
+              <Route path="auth-register-success" element={<RegisterSuccess />}></Route>
                 <Route path="auth-reset" element={<ForgotPassword />}></Route>
                 <Route path="auth-register" element={<Register />}></Route>
                 <Route path="login" element={<Login />}></Route>

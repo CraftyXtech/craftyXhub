@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Head from "@/layout/head/Head";
 import AuthFooter from "./AuthFooter";
 import Logo from "@/layout/logo/Logo";
@@ -24,6 +24,7 @@ const Login = () => {
   const [passState, setPassState] = useState(false);
   const [errorVal, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   const onFormSubmit = async (formData) => {
@@ -52,7 +53,9 @@ const Login = () => {
       // Step 3: Store both token and user data
       login(token, userResponse.data);
       
-      navigate('/');
+      // Navigate to the intended destination or dashboard
+      const redirectTo = location.state?.from?.pathname || '/';
+      navigate(redirectTo, { replace: true });
     } catch (error) {
       console.error('Login error:', error);
       const errorMessage = error.response?.data?.detail || 
