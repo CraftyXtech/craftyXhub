@@ -50,7 +50,7 @@
     "react-select": "^5.8.2",
     "react-slick": "^0.30.2",
     "react-step-builder": "^2.0.11",
-    "react-syntax-highlighter": "^15.6.1",
+    "react-syntax-highlighter": "^16.0.0",
     "react-toastify": "^10.0.6",
     "reactstrap": "^9.2.3",
     "sass": "1.56.1",
@@ -62,6 +62,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@tailwindcss/postcss": "^4.1.11",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
@@ -73,7 +74,6 @@
     "globals": "^15.14.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.11",
-    "@tailwindcss/postcss": "^4.1.11",
     "vite": "^6.1.0"
   }
 }

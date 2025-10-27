@@ -110,6 +110,10 @@ const menu = [
     text: "Posts Management",
     subMenu: [
       {
+        text: "Create Post",
+        link: "/posts-create",
+      },
+      {
         text: "Posts List",
         link: "/posts-list",
       },

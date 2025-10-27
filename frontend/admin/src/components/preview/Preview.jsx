@@ -1,9 +1,13 @@
 import React, { useState } from "react";
-import SyntaxHighlighter from "react-syntax-highlighter";
+import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
+import javascript from "react-syntax-highlighter/dist/esm/languages/hljs/javascript";
 import { Card, Button } from "reactstrap";
 import { a11yLight } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { OverlineTitle } from "../text/Text";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+
+// Register only the language we need
+SyntaxHighlighter.registerLanguage('javascript', javascript);
 
 export const PreviewCard = ({ className, bodyClass, ...props }) => {
   return (

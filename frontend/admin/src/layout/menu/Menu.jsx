@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, Fragment } from "react";
 import Icon from "@/components/icon/Icon";
 import classNames from "classnames";
-import { NavLink, Link, useLocation } from "react-router";
+import { NavLink, Link, useLocation } from "react-router-dom";
 import { slideUp, slideDown, getParents } from "@/utils/Utils";
 import { useThemeUpdate } from '@/layout/provider/Theme';
 
@@ -10,22 +10,46 @@ const Menu = ({data}) => {
   const themeUpdate = useThemeUpdate();
   const location = useLocation();
 
-  let currentLink = function(selector){
-      let elm = document.querySelectorAll(selector);
-      elm.forEach(function(item){
-          var activeRouterLink = item.classList.contains('active');
-          if (activeRouterLink) {
-              let parents = getParents(item,`.nk-menu`, 'nk-menu-item');
-              parents.forEach(parentElemets =>{
-                  parentElemets.classList.add('active', 'current-page');
-                  let subItem = parentElemets.querySelector(`.nk-menu-wrap`);
-                  subItem !== null && (subItem.style.display = "block")
-              })
-              
-          } else {
-              item.parentElement.classList.remove('active', 'current-page');
+  // Helper function to check if a menu link should be active
+  const isLinkActive = (link) => {
+    const currentPath = location.pathname;
+    
+    // Exact match
+    if (currentPath === link) return true;
+    
+    // Special case: /posts-edit/:id should highlight "Create Post" (/posts-create)
+    if (link === '/posts-create' && currentPath.startsWith('/posts-edit/')) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  let currentLink = function(){
+      // First, remove all active states
+      let allMenuItems = document.querySelectorAll('.nk-menu-item');
+      allMenuItems.forEach(item => {
+        item.classList.remove('active', 'current-page');
+      });
+      
+      // Find all active links
+      let activeLinks = document.querySelectorAll('.nk-menu-link.active');
+      activeLinks.forEach(function(item){
+          // Add active class to parent menu items and open dropdowns
+          let parents = getParents(item, `.nk-menu`, 'nk-menu-item');
+          parents.forEach(parentElement => {
+              parentElement.classList.add('active', 'current-page');
+              let subItem = parentElement.querySelector(`.nk-menu-wrap`);
+              if (subItem !== null) {
+                subItem.style.display = "block";
+              }
+          });
+          
+          // Add active to immediate parent
+          if (item.parentElement) {
+            item.parentElement.classList.add('active', 'current-page');
           }
-      })
+      });
   } 
   // dropdown toggle
   let dropdownToggle = function(elm){
@@ -85,9 +109,10 @@ const Menu = ({data}) => {
   },[location.pathname])
 
   useEffect(() =>{
-      currentLink(`.nk-menu-link`);
+      // Apply active states after render
+      currentLink();
       // eslint-disable-next-line
-  },[null])
+  },[location.pathname])
 
 
   return (
@@ -101,13 +126,17 @@ const Menu = ({data}) => {
             ) : (
               <li className={classNames({'nk-menu-item': true, 'has-sub' : item.subMenu})}>
                 {!item.subMenu ? (
-                  <NavLink to={item.link} className="nk-menu-link" target={item.newTab && '_blank'}>
+                  <Link 
+                    to={item.link} 
+                    className={classNames('nk-menu-link', { 'active': isLinkActive(item.link) })} 
+                    target={item.newTab && '_blank'}
+                  >
                     {item.icon  && <span className="nk-menu-icon">
                       <Icon name={item.icon} />
                     </span>}
                     <span className="nk-menu-text">{item.text}</span>
                     {item.badge && <span className="nk-menu-badge">{item.badge}</span>}
-                  </NavLink>
+                  </Link>
                   ) : (
                   <>
                     <a href="#" className="nk-menu-link nk-menu-toggle" onClick={menuToggle}>
@@ -122,10 +151,14 @@ const Menu = ({data}) => {
                         {item.subMenu.map((sItem, sIndex) =>
                           <li className={classNames({'nk-menu-item': true, 'has-sub' : sItem.subMenu})} key={sIndex}>
                               {!sItem.subMenu ? (
-                                <NavLink to={sItem.link} className="nk-menu-link" target={sItem.newTab && '_blank'}>
+                                <Link 
+                                  to={sItem.link} 
+                                  className={classNames('nk-menu-link', { 'active': isLinkActive(sItem.link) })} 
+                                  target={sItem.newTab && '_blank'}
+                                >
                                   <span className="nk-menu-text">{sItem.text}</span>
                                   {sItem.badge && <span className="nk-menu-badge">{sItem.badge}</span>}
-                                </NavLink>
+                                </Link>
                                 ) : (
                                 <>
                                   <a href="#" className="nk-menu-link nk-menu-toggle" onClick={menuToggle}>
@@ -137,10 +170,14 @@ const Menu = ({data}) => {
                                       {sItem.subMenu.map((s2Item, s2Index) =>
                                         <li className={classNames({'nk-menu-item': true, 'has-sub' : s2Item.subMenu})} key={s2Index}>
                                             {!s2Item.subMenu ? (
-                                              <NavLink to={s2Item.link} className="nk-menu-link" target={s2Item.newTab && '_blank'}>
+                                              <Link 
+                                                to={s2Item.link} 
+                                                className={classNames('nk-menu-link', { 'active': isLinkActive(s2Item.link) })} 
+                                                target={s2Item.newTab && '_blank'}
+                                              >
                                                 <span className="nk-menu-text">{s2Item.text}</span>
                                                 {s2Item.badge && <span className="nk-menu-badge">{s2Item.badge}</span>}
-                                              </NavLink>
+                                              </Link>
                                               ) : (
                                               <>
                                                 <a href="#" className="nk-menu-link nk-menu-toggle" onClick={menuToggle}>
@@ -151,10 +188,14 @@ const Menu = ({data}) => {
                                                   <ul className="nk-menu-sub">
                                                     {s2Item.subMenu.map((s3Item, s3Index) =>
                                                       <li className="nk-menu-item" key={s3Index}>
-                                                          <NavLink to={s3Item.link} className="nk-menu-link" target={s3Item.newTab && '_blank'}>
+                                                          <Link 
+                                                            to={s3Item.link} 
+                                                            className={classNames('nk-menu-link', { 'active': isLinkActive(s3Item.link) })} 
+                                                            target={s3Item.newTab && '_blank'}
+                                                          >
                                                             <span className="nk-menu-text">{s3Item.text}</span>
                                                             {s3Item.badge && <span className="nk-menu-badge">{s3Item.badge}</span>}
-                                                          </NavLink>
+                                                          </Link>
                                                       </li>
                                                     )}
                                                   </ul>
