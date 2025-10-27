@@ -297,16 +297,9 @@ const CategoryManagement = () => {
           <BlockBetween>
             <BlockHeadContent>
               <BlockTitle page>Category Management</BlockTitle>
-              <BlockDes className="text-soft">
-                <p>
-                  Manage your post categories and subcategories. 
-                  You have {stats.parentCategories} main categories and {stats.subcategories} subcategories.
-                  Total posts: {stats.totalPosts}
-                </p>
-              </BlockDes>
             </BlockHeadContent>
             <BlockHeadContent>
-              <BackTo link="/posts-list" icon="arrow-left">
+              <BackTo link="/posts-list" icon="arrow-left" className="btn btn-dim btn-outline-primary">
                 Back to Posts
               </BackTo>
             </BlockHeadContent>
@@ -316,56 +309,36 @@ const CategoryManagement = () => {
         <Block>
           <Card>
             <div className="card-inner-group">
-              <div className="card-inner position-relative card-tools-toggle">
-                <div className="card-title-group">
-                  <div className="card-tools">
-                    <div className="form-inline flex-nowrap gx-3">
-                      <div className="form-wrap w-150px">
-                        <select
-                          className="form-select"
-                          value={itemPerPage}
-                          onChange={(e) => setItemPerPage(parseInt(e.target.value))}
-                        >
-                          <option value={10}>10 per page</option>
-                          <option value={25}>25 per page</option>
-                          <option value={50}>50 per page</option>
-                        </select>
-                      </div>
+              <div className="card-inner position-relative card-tools-toggle mb-5">
+                <div className="d-flex flex-column flex-sm-row gap-2 align-items-sm-center justify-content-sm-end">
+                  <div className="form-control-wrap" style={{ minWidth: '200px' }}>
+                    <div className="form-icon form-icon-right">
+                      <Icon name="search" />
                     </div>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Search categories..."
+                      value={searchText}
+                      onChange={onFilterChange}
+                    />
                   </div>
-                  <div className="card-tools me-n1">
-                    <ul className="btn-toolbar gx-1">
-                      <li>
-                        <div className="form-control-wrap">
-                          <div className="form-icon form-icon-right">
-                            <Icon name="search" />
-                          </div>
-                          <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Search categories..."
-                            value={searchText}
-                            onChange={onFilterChange}
-                          />
-                        </div>
-                      </li>
-                      <li className="btn-toolbar-sep"></li>
-                      <li>
-                        <Button color="primary" onClick={() => {
-                          setModalMode("create");
-                          setShowModal(true);
-                        }}>
-                          <Icon name="plus" />
-                          <span>Add Category</span>
-                        </Button>
-                      </li>
-                    </ul>
-                  </div>
+                  <Button 
+                    onClick={() => {
+                      setModalMode("create");
+                      setShowModal(true);
+                    }}
+                    className="btn btn-dim btn-primary"
+                  >
+                    <Icon name="plus" className="me-1" />
+                    <span>Add Category</span>
+                  </Button>
                 </div>
               </div>
-              
-              <div className="card-inner p-0">
-                <DataTableBody>
+            </div>
+            
+            <div className="card-inner p-0 mt-3">
+              <DataTableBody>
                   <DataTableHead>
                     <DataTableRow>
                       <span className="sub-text">Name</span>
@@ -519,9 +492,9 @@ const CategoryManagement = () => {
                     </div>
                   )}
                 </DataTableBody>
-              </div>
+            </div>
               
-              {filteredCategories.length > itemPerPage && (
+            {filteredCategories.length > itemPerPage && (
                 <div className="card-inner">
                   <div className="nk-block-between-md g-3">
                     <div className="g">
@@ -554,7 +527,6 @@ const CategoryManagement = () => {
                   </div>
                 </div>
               )}
-            </div>
           </Card>
         </Block>
 
