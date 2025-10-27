@@ -1,0 +1,428 @@
+/* ==========================================================================
+   Report Modal Component Styles
+   ========================================================================== */
+
+.report-modal {
+  .modal-content {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+  }
+
+  .modal-header {
+    background: linear-gradient(45deg, #f8f9fa, #ffffff);
+    border-bottom: 1px solid #e9ecef;
+    padding: 1.5rem;
+    
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      
+      i {
+        font-size: 1.1rem;
+      }
+    }
+    
+    .btn-close {
+      font-size: 1.5rem;
+      opacity: 0.7;
+      transition: opacity 0.3s ease;
+      
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 2rem 1.5rem;
+    
+    .post-info {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid var(--brand-color, #0038e3);
+      
+      h6 {
+        color: #232323;
+        margin-bottom: 0.5rem;
+      }
+      
+      p {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 0;
+        line-height: 1.4;
+      }
+    }
+    
+    .form-label {
+      color: #232323;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+      
+      .text-red-500 {
+        color: #dc3545;
+      }
+    }
+    
+    .form-select,
+    .form-control {
+      border: 2px solid #e9ecef;
+      border-radius: 6px;
+      padding: 0.75rem;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      
+      &:focus {
+        border-color: var(--brand-color, #0038e3);
+        box-shadow: 0 0 0 0.2rem rgba(0, 56, 227, 0.15);
+      }
+      
+      &.is-invalid {
+        border-color: #dc3545;
+        
+        &:focus {
+          border-color: #dc3545;
+          box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15);
+        }
+      }
+    }
+    
+    .form-control[as="textarea"] {
+      resize: vertical;
+      min-height: 100px;
+    }
+    
+    .invalid-feedback {
+      display: block;
+      color: #dc3545;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+    }
+    
+    .character-count {
+      text-align: right;
+      font-size: 0.75rem;
+      color: #6c757d;
+      margin-top: 0.25rem;
+    }
+    
+    .note-section {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      
+      p {
+        margin-bottom: 0;
+        font-size: 0.875rem;
+        color: #856404;
+        line-height: 1.4;
+        
+        i {
+          margin-right: 0.5rem;
+        }
+        
+        strong {
+          font-weight: 600;
+        }
+      }
+    }
+    
+    // Success state
+    .success-content {
+      text-align: center;
+      padding: 2rem 1rem;
+      
+      i {
+        margin-bottom: 1rem;
+      }
+      
+      h4 {
+        color: #232323;
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
+      
+      p {
+        color: #6c757d;
+        line-height: 1.5;
+        max-width: 300px;
+        margin: 0 auto;
+      }
+    }
+    
+    // Auth required state
+    .auth-required {
+      text-align: center;
+      padding: 2rem 1rem;
+      
+      i {
+        color: #6c757d;
+        margin-bottom: 1rem;
+      }
+      
+      p {
+        color: #6c757d;
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  .modal-footer {
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+    
+    .btn {
+      font-weight: 500;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      
+      &.btn-secondary {
+        background: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        
+        &:hover {
+          background: #5a6268;
+          border-color: #545b62;
+        }
+      }
+      
+      &.btn-report {
+        background: linear-gradient(45deg, #dc3545, #c82333);
+        border: none;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        
+        &:hover:not(:disabled) {
+          background: linear-gradient(45deg, #c82333, #a71e2a);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+        
+        &:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+        
+        i {
+          margin-right: 0.5rem;
+        }
+      }
+      
+      + .btn {
+        margin-left: 0.75rem;
+      }
+    }
+  }
+
+  // Alert styles
+  .alert {
+    border: none;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    
+    &.alert-danger {
+      background: #f8d7da;
+      color: #721c24;
+      
+      i {
+        margin-right: 0.5rem;
+      }
+    }
+  }
+
+  // Animation states
+  .modal-enter {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  
+  .modal-enter-active {
+    opacity: 1;
+    transform: scale(1);
+    transition: all 0.3s ease;
+  }
+  
+  .modal-exit {
+    opacity: 1;
+    transform: scale(1);
+  }
+  
+  .modal-exit-active {
+    opacity: 0;
+    transform: scale(0.9);
+    transition: all 0.3s ease;
+  }
+
+  // Loading animation
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  // Success check animation
+  @keyframes checkmark {
+    0% {
+      transform: scale(0) rotate(45deg);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.2) rotate(45deg);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
+  
+  .success-content i.feather-check-circle {
+    animation: checkmark 0.6s ease-out;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 767px) {
+  .report-modal {
+    .modal-dialog {
+      margin: 1rem;
+    }
+    
+    .modal-body {
+      padding: 1.5rem 1rem;
+    }
+    
+    .modal-footer {
+      padding: 1rem;
+      
+      .btn {
+        padding: 0.625rem 1.25rem;
+        font-size: 0.9rem;
+        
+        + .btn {
+          margin-left: 0.5rem;
+        }
+      }
+    }
+  }
+}
+
+// Dark theme support
+.dark-theme {
+  .report-modal {
+    .modal-content {
+      background: #1a1a1a;
+      color: #ffffff;
+    }
+    
+    .modal-header {
+      background: linear-gradient(45deg, #2a2a2a, #1a1a1a);
+      border-bottom-color: #333;
+      
+      .modal-title {
+        color: #ffffff;
+      }
+    }
+    
+    .modal-body {
+      .post-info {
+        background: #2a2a2a;
+        border-left-color: var(--brand-color, #0038e3);
+        
+        h6 {
+          color: #ffffff;
+        }
+        
+        p {
+          color: #cccccc;
+        }
+      }
+      
+      .form-label {
+        color: #ffffff;
+      }
+      
+      .form-select,
+      .form-control {
+        background: #2a2a2a;
+        border-color: #444;
+        color: #ffffff;
+        
+        &::placeholder {
+          color: #888;
+        }
+        
+        &:focus {
+          background: #2a2a2a;
+          border-color: var(--brand-color, #0038e3);
+        }
+      }
+      
+      .note-section {
+        background: #2a2a2a;
+        border-color: #555;
+        
+        p {
+          color: #cccccc;
+        }
+      }
+    }
+    
+    .modal-footer {
+      background: #2a2a2a;
+      border-top-color: #333;
+    }
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .report-modal {
+    .modal-content {
+      border: 2px solid #000;
+    }
+    
+    .form-select,
+    .form-control {
+      border: 2px solid #000;
+      
+      &:focus {
+        border-color: #000;
+        outline: 2px solid #000;
+        outline-offset: 2px;
+      }
+    }
+    
+    .btn {
+      border: 2px solid #000;
+      
+      &:focus {
+        outline: 3px solid #000;
+        outline-offset: 2px;
+      }
+    }
+  }
+}
