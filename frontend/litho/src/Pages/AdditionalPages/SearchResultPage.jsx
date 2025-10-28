@@ -8,7 +8,6 @@ import { Col, Container, Navbar, Row, Tab, Nav } from "react-bootstrap";
 import BlogClassic from '../../Components/Blogs/BlogClassic';
 import Header, { HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar, } from "../../Components/Header/Header";
 import FooterStyle05 from '../../Components/Footers/FooterStyle05';
-import SideButtons from "../../Components/SideButtons";
 
 // API
 import { useSearch } from '../../api/usePosts';
@@ -209,8 +208,6 @@ const SearchResultPage = (props) => {
         </HeaderNav>
       </Header>
       {/* Header End */}
-      <SideButtons />
-      
       {/* Page Title Section Start */}
       <section className="bg-darkgray py-[25px] page-title-small">
         <Container>

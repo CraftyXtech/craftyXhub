@@ -13,7 +13,6 @@ import Lists from '../../Components/Lists/Lists'
 import Counter from '../../Components/Counters/Counter'
 import Overlap from '../../Components/Overlap/Overlap'
 import CustomModal from '../../Components/CustomModal'
-import SideButtons from "../../Components/SideButtons";
 
 // Libraries
 import { Link } from "react-router-dom";
@@ -148,7 +147,6 @@ const AboutUsPage = (props) => {
         </HeaderNav>
       </Header>
       {/* Header End */}
-      <SideButtons />
       {/* Parallax Scrolling Start */}
       <div className="h-[660px] lg:h-[580px] md:h-[550px] sm:h-[500px] xs:h-[380px] flex items-center overflow-hidden relative">
         <Parallax className="lg-no-parallax bg-cover cover-background absolute top-[0px] left-0 w-full h-[100vh]" translateY={[-40, 40]} style={{ backgroundImage: `url(https://via.placeholder.com/1920x1100)` }}></Parallax>

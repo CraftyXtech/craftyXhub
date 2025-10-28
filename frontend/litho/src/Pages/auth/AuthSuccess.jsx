@@ -4,7 +4,6 @@ import { Col, Container, Row, Navbar, Alert } from 'react-bootstrap'
 import { m } from "framer-motion"
 import Header, { HeaderNav, Menu } from '../../Components/Header/Header'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
-import SideButtons from "../../Components/SideButtons"
 import Logo from '../../Components/Logo'
 import useAuth from '../../api/useAuth'
 import { axiosInstance } from '../../api'
@@ -59,7 +58,6 @@ const AuthSuccess = (props) => {
 
     return (
         <div style={props.style}>
-            <SideButtons />
             
             {/* Header Start */}
             <Header topSpace={{ desktop: true }} type="reverse-scroll">

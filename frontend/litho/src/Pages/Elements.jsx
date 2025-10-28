@@ -8,7 +8,6 @@ import { Link, Outlet } from 'react-router-dom'
 import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../Components/Header/Header'
 import Logo from '../Components/Logo'
 import FooterStyle05 from '../Components/Footers/FooterStyle05'
-const SideButtons = lazy(() => import("../Components/SideButtons"))
 
 const ElementPage = (props) => {
     return (
@@ -36,7 +35,6 @@ const ElementPage = (props) => {
                 </HeaderNav>
             </Header>
             {/* Header End */}
-            <SideButtons />
             <Outlet />
 
             {/*  Footer Start */}

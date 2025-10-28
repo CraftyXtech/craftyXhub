@@ -21,7 +21,6 @@ import Testimonials from '../../Components/Testimonials/Testimonials';
 import Clients from '../../Components/Clients/Clients';
 import FooterStyle05 from '../../Components/Footers/FooterStyle05';
 import Overlap from '../../Components/Overlap/Overlap';
-import SideButtons from "../../Components/SideButtons";
 
 // Data
 import { TestimonialsData02 } from '../../Components/Testimonials/TestimonialsData';
@@ -109,7 +108,6 @@ const OurServicesPage = (props) => {
         </HeaderNav>
       </Header>
       {/* Header End */}
-      <SideButtons />
       {/* Section Start */}
       <section className="bg-lightgray py-[42px] sm:py-[30px]">
         <Container>
