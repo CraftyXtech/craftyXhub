@@ -7,7 +7,6 @@ import { Link, Outlet } from 'react-router-dom'
 // Components
 import Header, { HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../Components/Header/Header'
 import FooterStyle05 from '../Components/Footers/FooterStyle05'
-import SideButtons from '../Components/SideButtons'
 
 const ModalPopupPage = (props) => {
     return (
@@ -43,7 +42,6 @@ const ModalPopupPage = (props) => {
                 </HeaderNav>
             </Header>
             {/* Header End */}
-            <SideButtons />
             <Outlet />
             <FooterStyle05 theme="dark" className="text-slateblue bg-[#262b35]" />
         </div>

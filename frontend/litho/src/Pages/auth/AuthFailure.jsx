@@ -5,7 +5,6 @@ import { m } from "framer-motion"
 import Header, { HeaderNav, Menu } from '../../Components/Header/Header'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 import Buttons from '../../Components/Button/Buttons'
-import SideButtons from "../../Components/SideButtons"
 import Logo from '../../Components/Logo'
 
 // Animations
@@ -19,7 +18,6 @@ const AuthFailure = (props) => {
 
     return (
         <div style={props.style}>
-            <SideButtons />
             
             {/* Header Start */}
             <Header topSpace={{ desktop: true }} type="reverse-scroll">

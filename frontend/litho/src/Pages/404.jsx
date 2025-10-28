@@ -17,7 +17,6 @@ import Logo from '../Components/Logo'
 import Buttons from '../Components/Button/Buttons'
 import FooterStyle05 from "../Components/Footers/FooterStyle05";
 import { fadeIn } from "../Functions/GlobalAnimations";
-const SideButtons = lazy(() => import("../Components/SideButtons"))
 
 const NotFoundPage = (props) => {
   return (
@@ -47,7 +46,6 @@ const NotFoundPage = (props) => {
         </HeaderNav>
       </Header>
       {/* Header End */}
-      <SideButtons />
       {/* Section Start */}
       <section
         className="cover-background overflow-hidden flex items-center justify-center p-0"

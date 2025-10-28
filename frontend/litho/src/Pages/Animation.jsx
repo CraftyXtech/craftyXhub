@@ -9,7 +9,6 @@ import { m } from "framer-motion";
 import Header, { HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../Components/Header/Header';
 import FooterStyle05 from '../Components/Footers/FooterStyle05';
 import { flash, fadeIn, fadeInUp, fadeInBlur, fadeInRight, fadeInLeft, zoomIn, zoomOut, bounce, rotateInDown, fadeInDown, pulse, rubberBand } from '../Functions/GlobalAnimations'
-const SideButtons = lazy(() => import("../Components/SideButtons"))
 
 const AnimationPage = (props) => {
   return (
@@ -45,7 +44,6 @@ const AnimationPage = (props) => {
         </HeaderNav>
       </Header>
       {/* Header End */}
-      <SideButtons />
       {/* Section Start */}
       <section className="bg-darkgray py-[25px]">
         <Container>
