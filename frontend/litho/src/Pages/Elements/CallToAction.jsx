@@ -75,7 +75,7 @@ const CallToActionPage = () => {
               <h4 className="font-serif font-semibold text-white mb-0 sm:text-center">Gearing your company through an Innovative strategy</h4>
             </Col>
             <Col xl={5} md={4} className="md:flex md:justify-center text-end">
-              <Buttons ariaLabel="button" to="/" className="font-medium font-serif uppercase rounded-none lg:mb-[15px] landscape:lg:mb-[15px]" themeColor={["#2ed47c", "#e8a626"]} size="lg" color="#fff" title="Download litho" />
+              <Buttons ariaLabel="button" to="/" className="font-medium font-serif uppercase rounded-none lg:mb-[15px] landscape:lg:mb-[15px]" themeColor={["#2ed47c", "#e8a626"]} size="lg" color="#fff" title="Download craftyxhub" />
             </Col>
           </Row>
         </Container>
@@ -90,7 +90,7 @@ const CallToActionPage = () => {
           <h2 className="font-serif font-light mb-16 -tracking-[2px] text-darkgray">Global <span className="font-semibold">agency making</span> a world of difference</h2>
           <div className="flex justify-center xxs:flex-col xxs:items-center">
             <Buttons ariaLabel="button link" to="/page/our-services" className="font-medium font-serif tracking-[1px] uppercase rounded-none mr-6 mb-[15px] xxs:mx-0" themeColor={["#556fff", "#ff798e"]} size="lg" color="#fff" title="Explore services" />
-            <Buttons ariaLabel="button link" to="/" className="font-medium font-serif uppercase tracking-[1px] hover:text-darkgray btn-transparent btn-fancy mb-[15px] !leading-[18px]" size="lg" color="#000" themeColor={["#556fff", "#ff798e"]} title="Discover Litho" />
+            <Buttons ariaLabel="button link" to="/" className="font-medium font-serif uppercase tracking-[1px] hover:text-darkgray btn-transparent btn-fancy mb-[15px] !leading-[18px]" size="lg" color="#000" themeColor={["#556fff", "#ff798e"]} title="Discover CraftyXhub" />
           </div>
         </Col>
       </Row>

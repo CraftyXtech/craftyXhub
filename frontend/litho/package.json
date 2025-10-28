@@ -1,8 +1,8 @@
 {
-  "name": "litho",
+  "name": "craftyxhub",
   "version": "1.1.0",
   "private": true,
-  "homepage": "https://lithoreact.themezaa.com",
+  "homepage": "https://craftyxhub.com",
   "exports": "./index.js",
   "dependencies": {
     "@testing-library/jest-dom": "^6.4.6",

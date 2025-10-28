@@ -107,7 +107,7 @@ const DarkHeaderPage = (props) => {
                             </m.h4>
                         </Col>
                         <m.div className="sm:text-center col-xl-5 col-md-6 offset-xl-2 offset-lg-1" {...{ ...fadeIn, transition: { delay: 0.5 } }}>
-                            <span className="font-serif font-semibold text-white uppercase block mb-[15px]">About litho web agency</span>
+                            <span className="font-serif font-semibold text-white uppercase block mb-[15px]">About craftyxhub web agency</span>
                             <p className="text-xmd w-[95%] leading-[36px] md:w-full">With years of experience in the website design and development industry pride ourselves on creating unique, creative and quality designs that are developed upon the latest modern coding and developing techniques.</p>
                         </m.div>
                     </Row>

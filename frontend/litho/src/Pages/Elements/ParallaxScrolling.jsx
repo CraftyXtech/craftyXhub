@@ -58,7 +58,7 @@ const ParallaxScrollingPage = () => {
                 color="#fff"
                 icon="feather-arrow-right"
                 iconPosition="after"
-                title="discover litho"
+                title="discover craftyxhub"
               />
             </Col>
           </Row>

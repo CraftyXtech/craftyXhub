@@ -24,9 +24,9 @@ const SubscriptionModal = () => {
       newsletter_checkbox = newsletter_modal.querySelector("#newsletter-off");
 
     import("../../Functions/Utilities").then(module => {
-      if (module.getCookie("litho-promo-popup") !== 'shown') {
+      if (module.getCookie("craftyxhub-promo-popup") !== 'shown') {
         if (newsletter_checkbox.checked) {
-          document.cookie = "litho-promo-popup=shown";
+          document.cookie = "craftyxhub-promo-popup=shown";
         }
       }
     })

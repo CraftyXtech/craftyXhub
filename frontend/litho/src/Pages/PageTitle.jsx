@@ -58,7 +58,7 @@ const PageTitle = () => {
                             </div>
                             <h5 className="font-serif text-darkgray font-semibold mb-[20px] md:text-center md:mb-[30px] xs:w-[90%] xs:mx-auto">We combine design, thinking and technical</h5>
                             <div className="mt-auto mx-auto mx-lg-0">
-                                <Buttons ariaLabel="home link" href="/" className="btn-fill font-medium font-serif uppercase rounded-none md:mb-[15px] xs:mb-0" themeColor="#232323" color="#fff" size="md" title="Discover litho" />
+                                <Buttons ariaLabel="home link" href="/" className="btn-fill font-medium font-serif uppercase rounded-none md:mb-[15px] xs:mb-0" themeColor="#232323" color="#fff" size="md" title="Discover craftyxhub" />
                             </div>
                         </m.div>
                         <m.div className="col-xl-7 col-lg-8 offset-xl-2" {...{ ...fadeIn, transition: { delay: 0.6 } }} >

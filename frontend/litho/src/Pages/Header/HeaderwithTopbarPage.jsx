@@ -185,7 +185,7 @@ const HeaderwithTopbarPage = (props) => {
                                                         <Buttons ariaLabel="our-services" to="/page/our-services" className="btn-fill btn-fancy font-medium tracking-[1px] rounded-none mr-[10px] xs:mr-0" themeColor="#fff" color="#232323" size="md" title="Explore services" />
                                                     </div>
                                                     <div>
-                                                        <Buttons ariaLabel="home link" to="/" className="mx-[10px] font-medium btn-fancy tracking-[1px] rounded-none btn-transparent hover:text-black" themeColor="#fff" size="md" color="#fff" icon="fas fa-arrow-right right-icon" iconPosition="after" title="Discover litho" />
+                                                        <Buttons ariaLabel="home link" to="/" className="mx-[10px] font-medium btn-fancy tracking-[1px] rounded-none btn-transparent hover:text-black" themeColor="#fff" size="md" color="#fff" icon="fas fa-arrow-right right-icon" iconPosition="after" title="Discover craftyxhub" />
                                                     </div>
                                                 </div>
                                             </Col>
@@ -219,7 +219,7 @@ const HeaderwithTopbarPage = (props) => {
                             </div>
                             <h5 className="alt-font text-darkgray font-semibold font-serif mb-[20px] md:text-center md:mb-[30px] xs:w-[90%] xs:mx-auto">We combine design, thinking and technical</h5>
                             <div className="mt-auto mx-auto mx-lg-0">
-                                <Buttons ariaLabel="link for" to="/" className="btn-fill btn-fancy rounded-none mt-[82px] tracking-[1px] font-medium font-serif uppercase md:my-0" themeColor="#232323" color="#fff" size="sm" title="Discover litho" />
+                                <Buttons ariaLabel="link for" to="/" className="btn-fill btn-fancy rounded-none mt-[82px] tracking-[1px] font-medium font-serif uppercase md:my-0" themeColor="#232323" color="#fff" size="sm" title="Discover craftyxhub" />
                             </div>
                         </m.div>
                         <div className="col-xl-7 col-lg-8 offset-xl-2">
