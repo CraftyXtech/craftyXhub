@@ -130,7 +130,7 @@ const FooterStyle05 = (props) => {
 
 FooterStyle05.defaultProps = {
     data: FooterData,
-    logo: "/assets/img/webp/logo-white.webp"
+    logo: null // Using text-based Logo component instead
 }
 
 FooterStyle05.propTypes = {

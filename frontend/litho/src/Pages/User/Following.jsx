@@ -207,11 +207,7 @@ const Following = (props) => {
             <Header topSpace={{ md: true }} type="reverse-scroll">
                 <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" menuPosition="left">
                     <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                        <Link aria-label="header logo" className="flex items-center" to="/">
-                            <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/litho-logo-regular-dark.png' data-rjs='/assets/img/litho-logo-regular-dark@2x.png' alt='logo' />
-                            <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/litho-logo-regular-dark.png' data-rjs='/assets/img/litho-logo-regular-dark@2x.png' alt='logo' />
-                            <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/litho-logo-regular-dark.png' data-rjs='/assets/img/litho-logo-regular-dark@2x.png' alt='logo' />
-                        </Link>
+                        <Logo variant="default" />
                     </Col>
                     <div className="col-auto hidden order-last md:block">
                         <Navbar.Toggle className="md:ml-[10px] sm:ml-0">

@@ -8,6 +8,7 @@ import { Link, useParams } from 'react-router-dom'
 import AuthorBox from "../../../Components/Blogs/HelperComponents/AuthorBox"
 import CommentBox from "../../../Components/Blogs/HelperComponents/CommentBox"
 import { Header, HeaderNav, Menu } from "../../../Components/Header/Header"
+import Logo from '../../../Components/Logo/Logo'
 import BlogClassic from "../../../Components/Blogs/BlogClassic";
 import SocialIcons from "../../../Components/SocialIcon/SocialIcons"
 import Blockquote from '../../../Components/BlockQuote/Blockquote'
@@ -67,13 +68,7 @@ const BlogStandardPostPage = (props) => {
       <Header topSpace={{ desktop: true }} type="reverse-scroll" className="border-b border-b-[#0000001a]">
         <HeaderNav theme="white" menu="light" expand="lg" fluid="sm" containerClass="sm:px-0" className="py-[0px] md:pr-[15px] md:pl-0 md:py-[20px]">
           <Col className="col-auto col-lg-2 me-auto ps-lg-0">
-            <Link aria-label="header logo" className="flex items-center" to="/">
-              <Navbar.Brand className="inline-block p-0 m-0">
-                <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-              </Navbar.Brand>
-            </Link>
+            <Logo variant="default" />
           </Col>
           <Navbar.Toggle className="order-last md:ml-[8px]">
             <span className="navbar-toggler-line"></span>

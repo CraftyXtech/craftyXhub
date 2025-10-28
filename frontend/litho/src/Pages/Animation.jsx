@@ -7,6 +7,7 @@ import { m } from "framer-motion";
 
 // Components
 import Header, { HeaderNav, Menu, SearchBar } from '../Components/Header/Header';
+import Logo from '../Components/Logo/Logo'
 import FooterStyle05 from '../Components/Footers/FooterStyle05';
 import { flash, fadeIn, fadeInUp, fadeInBlur, fadeInRight, fadeInLeft, zoomIn, zoomOut, bounce, rotateInDown, fadeInDown, pulse, rubberBand } from '../Functions/GlobalAnimations'
 
@@ -17,13 +18,7 @@ const AnimationPage = (props) => {
       <Header topSpace={{ desktop: true }} type="reverse-scroll">
         <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" containerClass="sm:px-0">
           <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-            <Link aria-label="header logo" className="flex items-center" to="/">
-              <Navbar.Brand className="inline-block p-0 m-0">
-                <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-              </Navbar.Brand>
-            </Link>
+            <Logo variant="default" />
           </Col>
           <div className="col-auto hidden order-last md:block">
             <Navbar.Toggle className="md:ml-[10px] sm:ml-0">

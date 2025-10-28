@@ -10,6 +10,7 @@ import { AnimatePresence, m } from 'framer-motion';
 
 // Components
 import { Header, HeaderNav, Menu, SearchBar } from "../../Components/Header/Header";
+import Logo from '../../Components/Logo/Logo'
 import Buttons from '../../Components/Button/Buttons'
 import { ContactFormStyle02Schema } from '../../Components/Form/FormSchema';
 import { Input, TextArea } from '../../Components/Form/Form'
@@ -43,13 +44,7 @@ const ContactUsModernPage = (props) => {
       <Header topSpace={{ md: true }} type="reverse-scroll">
         <HeaderNav theme="light" expand="lg" className="py-[0px] border-b !border-b-[#0000001a] lg:px-[15px] md:px-0" containerClass="sm:px-0">
           <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-            <Link aria-label="header logo" className="flex items-center" to="/">
-              <Navbar.Brand className="inline-block p-0 m-0">
-                <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-black.webp' data-rjs='/assets/img/webp/logo-black@2x.webp' alt='logo' />
-                <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-              </Navbar.Brand>
-            </Link>
+            <Logo variant="black" />
           </Col>
           <div className="col-auto hidden order-last md:block">
             <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
