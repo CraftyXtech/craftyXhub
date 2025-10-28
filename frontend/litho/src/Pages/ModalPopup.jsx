@@ -5,7 +5,7 @@ import { Col, Navbar } from 'react-bootstrap'
 import { Link, Outlet } from 'react-router-dom'
 
 // Components
-import Header, { HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../Components/Header/Header'
+import Header, { HeaderNav, Menu, SearchBar } from '../Components/Header/Header'
 import FooterStyle05 from '../Components/Footers/FooterStyle05'
 
 const ModalPopupPage = (props) => {
@@ -36,8 +36,6 @@ const ModalPopupPage = (props) => {
                     </Navbar.Collapse>
                     <Col className="col-auto text-right pe-0 !pl-[15px]">
                         <SearchBar className="xs:pl-[15px] pr-0" />
-                        <HeaderLanguage className="xs:pl-[15px]" />
-                        <HeaderCart className="xs:pl-[15px]" style={{ "--base-color": "#0038e3" }} />
                     </Col>
                 </HeaderNav>
             </Header>

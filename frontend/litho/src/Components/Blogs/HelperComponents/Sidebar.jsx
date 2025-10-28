@@ -21,30 +21,30 @@ import { getImageUrl } from '../../../api';
 const SocialIconsData = [
     {
         color: "#3b5998",
-        link: "https://www.facebook.com/",
+        link: process.env.REACT_APP_FACEBOOK_URL,
         icon: "fab fa-facebook-f"
     },
     {
         color: "#ea4c89",
-        link: "https://dribbble.com/",
+        link: process.env.REACT_APP_DRIBBBLE_URL,
         icon: "fab fa-dribbble"
     },
     {
         color: "#00aced",
-        link: "https://twitter.com/",
+        link: process.env.REACT_APP_TWITTER_URL,
         icon: "fab fa-twitter"
     },
     {
         color: "#fe1f49",
-        link: "https://www.instagram.com/",
+        link: process.env.REACT_APP_INSTAGRAM_URL,
         icon: "fab fa-instagram"
     },
     {
         color: "#0077b5",
-        link: "https://www.linkedin.com/",
+        link: process.env.REACT_APP_LINKEDIN_URL,
         icon: "fab fa-linkedin-in"
     }
-]
+].filter(item => item.link)
 
 const Sidebar = (props) => {
     const navigate = useNavigate();

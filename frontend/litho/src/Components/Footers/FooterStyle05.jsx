@@ -23,25 +23,25 @@ import FooterData from './FooterData';
 const iconData = [
     {
         color: "#828282",
-        link: "https://www.facebook.com/",
+        link: process.env.REACT_APP_FACEBOOK_URL || "#",
         icon: "fab fa-facebook-f"
     },
     {
         color: "#828282",
-        link: "https://dribbble.com/",
+        link: process.env.REACT_APP_DRIBBBLE_URL || "#",
         icon: "fab fa-dribbble"
     },
     {
         color: "#828282",
-        link: "https://twitter.com/",
+        link: process.env.REACT_APP_TWITTER_URL || "#",
         icon: "fab fa-twitter"
     },
     {
         color: "#828282",
-        link: "https://www.instagram.com/",
+        link: process.env.REACT_APP_INSTAGRAM_URL || "#",
         icon: "fab fa-instagram"
     },
-]
+].filter(item => item.link !== "#")
 
 // Note: default static data kept for fallback; we build dynamic menus below
 
@@ -85,10 +85,10 @@ const FooterStyle05 = (props) => {
                     <Col lg={3} sm={8} className="footer-menu xs:pb-0 md:text-center xs:text-left">
                         <span className="mb-[20px] block font-medium font-serif xs:!mb-[10px] capitalize">Connect</span>
                         <ul>
-                            <li className="mb-[7px]"><a href="https://twitter.com/" target="_blank" rel="noreferrer" className="inline-flex items-center"><i className="fab fa-twitter mr-2"></i>Twitter</a></li>
-                            <li className="mb-[7px]"><a href="https://www.facebook.com/" target="_blank" rel="noreferrer" className="inline-flex items-center"><i className="fab fa-facebook-f mr-2"></i>Facebook</a></li>
-                            <li className="mb-[7px]"><a href="https://www.instagram.com/" target="_blank" rel="noreferrer" className="inline-flex items-center"><i className="fab fa-instagram mr-2"></i>Instagram</a></li>
-                            <li className="mb-[7px]"><a href="https://github.com/" target="_blank" rel="noreferrer" className="inline-flex items-center"><i className="fab fa-github mr-2"></i>GitHub</a></li>
+                            {process.env.REACT_APP_TWITTER_URL && <li className="mb-[7px]"><a href={process.env.REACT_APP_TWITTER_URL} target="_blank" rel="noreferrer" className="inline-flex items-center"><i className="fab fa-twitter mr-2"></i>Twitter</a></li>}
+                            {process.env.REACT_APP_FACEBOOK_URL && <li className="mb-[7px]"><a href={process.env.REACT_APP_FACEBOOK_URL} target="_blank" rel="noreferrer" className="inline-flex items-center"><i className="fab fa-facebook-f mr-2"></i>Facebook</a></li>}
+                            {process.env.REACT_APP_INSTAGRAM_URL && <li className="mb-[7px]"><a href={process.env.REACT_APP_INSTAGRAM_URL} target="_blank" rel="noreferrer" className="inline-flex items-center"><i className="fab fa-instagram mr-2"></i>Instagram</a></li>}
+                            {process.env.REACT_APP_GITHUB_URL && <li className="mb-[7px]"><a href={process.env.REACT_APP_GITHUB_URL} target="_blank" rel="noreferrer" className="inline-flex items-center"><i className="fab fa-github mr-2"></i>GitHub</a></li>}
                         </ul>
                     </Col>
                     <Col lg={3} sm={8} className="xs:pb-0 md:text-center xs:text-left">

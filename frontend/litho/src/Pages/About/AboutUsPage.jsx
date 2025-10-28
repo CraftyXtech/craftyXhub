@@ -1,7 +1,7 @@
 import React from 'react'
 
 // Components
-import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from "../../Components/Header/Header";
+import { Header, HeaderNav, Menu, SearchBar } from "../../Components/Header/Header";
 import { fadeIn } from '../../Functions/GlobalAnimations'
 import Buttons from '../../Components/Button/Buttons'
 import Clients from '../../Components/Clients/Clients'
@@ -141,8 +141,6 @@ const AboutUsPage = (props) => {
           </Navbar.Collapse>
           <Col className="col-auto text-right pe-0">
             <SearchBar className="pr-0 xs:pl-[15px]" />
-            <HeaderLanguage className="xs:pl-[15px]" />
-            <HeaderCart className="xs:pl-[15px]" style={{ "--base-color": "#0038e3" }} />
           </Col>
         </HeaderNav>
       </Header>

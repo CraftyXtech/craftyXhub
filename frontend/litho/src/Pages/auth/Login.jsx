@@ -11,7 +11,6 @@ import { axiosInstance } from '../../api'
 import Logo from '../../Components/Logo'
 
 
-
 // Animations
 import { fadeIn } from '../../Functions/GlobalAnimations'
 

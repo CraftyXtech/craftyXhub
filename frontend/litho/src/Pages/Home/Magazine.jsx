@@ -30,25 +30,25 @@ import { usePosts, usePopularPosts } from '../../api';
 const SocialIconsData = [
   {
     color: "#fff",
-    link: "https://www.facebook.com/",
+    link: process.env.REACT_APP_FACEBOOK_URL,
     icon: "fab fa-facebook-f text-white",
   },
   {
     color: "#fff",
-    link: "https://dribbble.com/",
+    link: process.env.REACT_APP_DRIBBBLE_URL,
     icon: "fab fa-dribbble"
   },
   {
     color: "#fff",
-    link: "https://twitter.com/",
+    link: process.env.REACT_APP_TWITTER_URL,
     icon: "fab fa-twitter text-white",
   },
   {
     color: "#fff",
-    link: "https://www.instagram.com/",
+    link: process.env.REACT_APP_INSTAGRAM_URL,
     icon: "fab fa-instagram"
   }
-]
+].filter(item => item.link)
 
 
 

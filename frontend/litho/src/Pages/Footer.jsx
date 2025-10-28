@@ -5,7 +5,7 @@ import { Col, Navbar } from 'react-bootstrap'
 import { Link, Outlet } from 'react-router-dom'
 
 // Components
-import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../Components/Header/Header'
+import { Header, HeaderNav, Menu, SearchBar } from '../Components/Header/Header'
 import Logo from '../Components/Logo'
 
 const Footer = (props) => {
@@ -30,8 +30,6 @@ const Footer = (props) => {
                     </Navbar.Collapse>
                     <Col className="col-auto text-right pe-0">
                         <SearchBar className="xs:pl-[15px] pr-0" />
-                        <HeaderLanguage className="xs:pl-[15px]" />
-                        <HeaderCart className="xs:pl-[15px]" />
                     </Col>
                 </HeaderNav>
             </Header>

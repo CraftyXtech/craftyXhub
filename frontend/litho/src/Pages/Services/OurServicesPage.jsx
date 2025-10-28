@@ -10,7 +10,7 @@ import { Keyboard } from "swiper/modules";
 import { Link as ScrollTo } from "react-scroll"
 
 // Components
-import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from "../../Components/Header/Header";
+import { Header, HeaderNav, Menu, SearchBar } from "../../Components/Header/Header";
 import Buttons from '../../Components/Button/Buttons'
 import Services from '../../Components/Services/Services';
 import CustomModal from '../../Components/CustomModal'
@@ -102,8 +102,6 @@ const OurServicesPage = (props) => {
           </Navbar.Collapse>
           <Col className="col-auto text-right pe-0">
             <SearchBar className="pr-0" />
-            <HeaderLanguage />
-            <HeaderCart />
           </Col>
         </HeaderNav>
       </Header>

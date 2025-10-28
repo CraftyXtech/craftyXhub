@@ -5,7 +5,7 @@ import { Col, Navbar } from 'react-bootstrap'
 import { Link, Outlet } from 'react-router-dom'
 
 // Components
-import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../Components/Header/Header'
+import { Header, HeaderNav, Menu, SearchBar } from '../Components/Header/Header'
 import Logo from '../Components/Logo'
 import FooterStyle05 from '../Components/Footers/FooterStyle05'
 
@@ -32,8 +32,6 @@ const BlogPage = (props) => {
           </Navbar.Collapse>
           <Col className="col-auto col-lg-2 text-right pe-0">
             <SearchBar className="pr-0 xs:pl-[15px]" />
-            <HeaderLanguage className="xs:pl-[15px]" />
-            <HeaderCart className="xs:pl-[15px]" style={{ "--base-color": "#0038e3" }} />
           </Col>
         </HeaderNav>
       </Header>

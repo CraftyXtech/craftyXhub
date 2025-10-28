@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom'
 import { m } from "framer-motion"
 
 // Components
-import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
+import { Header, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
 import Logo from '../../Components/Logo'
 import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
@@ -115,8 +115,6 @@ const UserPosts = (props) => {
                         </Navbar.Collapse>
                         <Col className="col-auto text-right pe-0">
                             <SearchBar className="xs:pl-[15px] pr-0" />
-                            <HeaderLanguage className="xs:pl-[15px]" />
-                            <HeaderCart className="xs:pl-[15px]" style={{ "--base-color": "#0038e3" }} />
                         </Col>
                     </HeaderNav>
                 </Header>

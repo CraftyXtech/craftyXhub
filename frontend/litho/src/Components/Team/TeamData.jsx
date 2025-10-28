@@ -1,179 +1,80 @@
+// Helper function to generate social links from environment variables
+const getSocialLinks = () => [
+  process.env.REACT_APP_FACEBOOK_URL && {
+    title: "facebook",
+    link: process.env.REACT_APP_FACEBOOK_URL,
+    icon: "fab fa-facebook-f",
+  },
+  process.env.REACT_APP_INSTAGRAM_URL && {
+    title: "instagram",
+    link: process.env.REACT_APP_INSTAGRAM_URL,
+    icon: "fa-brands fa-instagram",
+  },
+  process.env.REACT_APP_TWITTER_URL && {
+    title: "twitter",
+    link: process.env.REACT_APP_TWITTER_URL,
+    icon: "fa-brands fa-twitter",
+  },
+  process.env.REACT_APP_LINKEDIN_URL && {
+    title: "linkedin",
+    link: process.env.REACT_APP_LINKEDIN_URL,
+    icon: "fa-brands fa-linkedin-in",
+  },
+  process.env.REACT_APP_DRIBBBLE_URL && {
+    title: "dribbble",
+    link: process.env.REACT_APP_DRIBBBLE_URL,
+    icon: "fa-brands fa-dribbble",
+  },
+].filter(Boolean);
+
 const TeamData01 = [
   {
     img: "https://via.placeholder.com/525x639",
     name: "Alexander Harvard",
     designation: "CO FOUNDER",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/525x639",
     name: "Bryan Jonhson",
     designation: "MANAGER",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/525x639",
     name: "Jemmy Watson",
     designation: "DESIGNER",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/525x639",
     name: "Jeremy Dupont",
     designation: "MANAGER",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/525x639",
     name: "Alexander Harvard",
     designation: "CO FOUNDER",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/525x639",
     name: "Bryan Jonhson",
     designation: "MANAGER",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/525x639",
     name: "Jemmy Watson",
     designation: "DESIGNER",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/525x639",
     name: "Jeremy Dupont",
     designation: "MANAGER",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
 ];
 
@@ -182,67 +83,19 @@ const TeamData02 = [
     img: "https://via.placeholder.com/721x902",
     name: "Alexander Harvard",
     designation: "Operations officer",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/721x902",
     name: "Bryan Jonhson",
     designation: "Graphic designer",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/721x902",
     name: "Jeremy Dupont",
     designation: "Web developer",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
 ];
 
@@ -251,89 +104,25 @@ const TeamData03 = [
     img: "https://via.placeholder.com/375x460",
     name: "Alexander Harvard",
     designation: "GENERALIST CONSULTANT",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/375x460",
     name: "Bryan Jonhson",
     designation: "SPECIALIST CONSULTANT",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/375x460",
     name: "Jemmy Watson",
     designation: "FINANCIAL CONSULTANT",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/375x460",
     name: "Jeremy Dupont",
     designation: "BUSINESS CONSULTANT",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
 ];
 
@@ -343,84 +132,21 @@ const TeamData04 = [
     name: "JEMMY WATSON",
     designation: "GRAPHIC DESIGNER",
     title: "I AM CREATIVE",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-      {
-        title: "dribbble",
-        link: "https://www.dribbble.com",
-        icon: "fa-brands fa-dribbble",
-      },
-      {
-        title: "linkedin",
-        link: "https://www.linkedin.com",
-        icon: "fa-brands fa-linkedin-in",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/800x1000",
     name: "JEREMY DUPONT",
     designation: "WEB DEVELOPER",
     title: "I AM TRENDY",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-      {
-        title: "dribbble",
-        link: "https://www.dribbble.com",
-        icon: "fa-brands fa-dribbble",
-      },
-      {
-        title: "linkedin",
-        link: "https://www.linkedin.com",
-        icon: "fa-brands fa-linkedin-in",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/800x1000",
     name: "BRYAN JONHSON",
     designation: "OPERATIONS OFFICER",
     title: "I AM PANCTUAL",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-      {
-        title: "dribbble",
-        link: "https://www.dribbble.com",
-        icon: "fa-brands fa-dribbble",
-      },
-      {
-        title: "linkedin",
-        link: "https://www.linkedin.com",
-        icon: "fa-brands fa-linkedin-in",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
 ];
 
@@ -429,67 +155,19 @@ const TeamData05 = [
     img: "https://via.placeholder.com/800x1005",
     name: "JEMMY WATSON",
     designation: "BOOTCAMP TRAINER",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/800x1005",
     name: "BRYAN JONHSON",
     designation: "CROSSFIT TRAINER",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
   {
     img: "https://via.placeholder.com/800x1005",
     name: "JEREMY DUPONT",
     designation: "SPINNING TRAINER",
-    social_links: [
-      {
-        title: "facebook",
-        link: "https://www.facebook.com",
-        icon: "fab fa-facebook-f",
-      },
-      {
-        title: "instagram",
-        link: "https://www.instagram.com",
-        icon: "fa-brands fa-instagram",
-      },
-      {
-        title: "twitter",
-        link: "https://www.twitter.com",
-        icon: "fa-brands fa-twitter",
-      },
-    ],
+    social_links: getSocialLinks(),
   },
 ];
 

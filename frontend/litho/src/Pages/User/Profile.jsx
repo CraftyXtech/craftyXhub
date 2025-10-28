@@ -7,7 +7,7 @@ import { m } from "framer-motion"
 import { PropTypes } from "prop-types"
 
 // Components
-import { Header, HeaderCart, HeaderLanguage, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
+import { Header, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
 import Logo from '../../Components/Logo'
 import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'

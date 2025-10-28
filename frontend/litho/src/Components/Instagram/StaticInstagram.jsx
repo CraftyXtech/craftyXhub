@@ -1,32 +1,7 @@
 import React, { memo, useEffect, useRef, useState } from 'react'
 
-// Data
-const instaData = [
-    {
-        link: "https://www.instagram.com/p/CSMapatMNo8/",
-        img: "https://via.placeholder.com/112x112",
-    },
-    {
-        link: "https://www.instagram.com/p/CSMapatMNo8/",
-        img: "https://via.placeholder.com/112x112",
-    },
-    {
-        link: "https://www.instagram.com/p/CSMapatMNo8/",
-        img: "https://via.placeholder.com/112x112",
-    },
-    {
-        link: "https://www.instagram.com/p/CSMapatMNo8/",
-        img: "https://via.placeholder.com/112x112",
-    },
-    {
-        link: "https://www.instagram.com/p/CSMapatMNo8/",
-        img: "https://via.placeholder.com/112x112",
-    },
-    {
-        link: "https://www.instagram.com/p/CSMapatMNo8/",
-        img: "https://via.placeholder.com/112x112",
-    }
-]
+// Data - placeholder only, should be replaced with real Instagram feed
+const instaData = []
 
 const StaticInstagram = (props) => {
     const instaWrapper = useRef();
