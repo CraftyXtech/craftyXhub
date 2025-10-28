@@ -10,14 +10,14 @@ import CommentBox from "../../../Components/Blogs/HelperComponents/CommentBox"
 import { Header, HeaderNav, Menu } from "../../../Components/Header/Header"
 import BlogClassic from "../../../Components/Blogs/BlogClassic";
 import SocialIcons from "../../../Components/SocialIcon/SocialIcons"
-import Blockquote from '../../../Components/BlockQuote/Blockquote'
-import Dropcaps from '../../../Components/Dropcaps/Dropcaps'
 import FooterStyle05 from "../../../Components/Footers/FooterStyle05"
+import ContentRenderer from '../../../Components/Blogs/ContentRenderer'
+import Logo from '../../../Components/Logo/Logo'
 
 import Sidebar from '../../../Components/Blogs/HelperComponents/Sidebar';
 
 // API Hooks
-import { usePost, useRelatedPosts, getImageUrl } from '../../../api'
+import { usePost, useRelatedPosts, getImageUrl, togglePostLike } from '../../../api'
 
 // Utils
 import { formatDate } from '../../../utils/dateUtils'
@@ -65,9 +65,11 @@ const PostDetails = (props) => {
   const [data, setData] = useState(null)
   const [showReportModal, setShowReportModal] = useState(false)
   const [isBookmarked, setIsBookmarked] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
+  const [isLiked, setIsLiked] = useState(false)
+  const [likingPost, setLikingPost] = useState(false)
 
-  // Auth context
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
 
   // Get slug or id from URL params
   const param = useParams();
@@ -83,13 +85,18 @@ const PostDetails = (props) => {
   useEffect(() => {
     if (post) {
       setData([post]);
-      // Check if current user has bookmarked this post
+      
+      setLikeCount(post.liked_by?.length || 0);
+      
+      if (isAuthenticated && user && post.liked_by) {
+        const userLiked = post.liked_by.some(likedUser => likedUser.uuid === user.uuid || likedUser.id === user.id);
+        setIsLiked(userLiked);
+      }
+      
       if (isAuthenticated && post.bookmarked_by) {
-        // This would need user ID to check properly, for now just check if array exists
         setIsBookmarked(post.bookmarked_by.length > 0);
       }
     } else if (!loading && !post) {
-      // Fallback to static data if API fails
       let getData;
       if (slug) {
         getData = blogData.filter((item) => item.slug === slug || item.title?.toLowerCase().replace(/\s+/g, '-') === slug);
@@ -98,22 +105,34 @@ const PostDetails = (props) => {
       }
     setData(getData);
     }
-  }, [post, loading, slug, id, isAuthenticated]);
+  }, [post, loading, slug, id, isAuthenticated, user]);
 
-  // Show loading state
+  const handleLike = async () => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    if (likingPost) return;
+
+    setLikingPost(true);
+    try {
+      const result = await togglePostLike(data[0].uuid);
+      setIsLiked(result);
+      setLikeCount(prev => result ? prev + 1 : prev - 1);
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    } finally {
+      setLikingPost(false);
+    }
+  };
+
   if (loading) {
     return (
       <div style={props.style}>
         <Header topSpace={{ desktop: true }} type="reverse-scroll" className="border-b border-b-[#0000001a]">
           <HeaderNav theme="white" menu="light" expand="lg" fluid="sm" containerClass="sm:px-0" className="py-[0px] md:pr-[15px] md:pl-0 md:py-[20px]">
             <Col className="col-auto col-lg-2 me-auto ps-lg-0">
-              <Link aria-label="header logo" className="flex items-center" to="/">
-                <Navbar.Brand className="inline-block p-0 m-0">
-                  <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                  <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                  <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                </Navbar.Brand>
-              </Link>
+              <Logo variant="black" />
             </Col>
             <Navbar.Toggle className="order-last md:ml-[8px]">
               <span className="navbar-toggler-line"></span>
@@ -147,13 +166,7 @@ const PostDetails = (props) => {
         <Header topSpace={{ desktop: true }} type="reverse-scroll" className="border-b border-b-[#0000001a]">
           <HeaderNav theme="white" menu="light" expand="lg" fluid="sm" containerClass="sm:px-0" className="py-[0px] md:pr-[15px] md:pl-0 md:py-[20px]">
             <Col className="col-auto col-lg-2 me-auto ps-lg-0">
-              <Link aria-label="header logo" className="flex items-center" to="/">
-                <Navbar.Brand className="inline-block p-0 m-0">
-                  <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                  <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                  <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                </Navbar.Brand>
-              </Link>
+              <Logo variant="black" />
             </Col>
             <Navbar.Toggle className="order-last md:ml-[8px]">
               <span className="navbar-toggler-line"></span>
@@ -192,13 +205,7 @@ const PostDetails = (props) => {
       <Header topSpace={{ desktop: true }} type="reverse-scroll" className="border-b border-b-[#0000001a]">
         <HeaderNav theme="white" menu="light" expand="lg" fluid="sm" containerClass="sm:px-0" className="py-[0px] md:pr-[15px] md:pl-0 md:py-[20px]">
           <Col className="col-auto col-lg-2 me-auto ps-lg-0">
-            <Link aria-label="header logo" className="flex items-center" to="/">
-              <Navbar.Brand className="inline-block p-0 m-0">
-                <img className="default-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                <img className="alt-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-                <img className="mobile-logo" width="111" height="36" loading="lazy" src='/assets/img/webp/logo-fast-blue-black.webp' data-rjs='/assets/img/webp/logo-fast-blue-black@2x.webp' alt='logo' />
-              </Navbar.Brand>
-            </Link>
+            <Logo variant="black" />
           </Col>
           <Navbar.Toggle className="order-last md:ml-[8px]">
             <span className="navbar-toggler-line"></span>
@@ -302,27 +309,10 @@ const PostDetails = (props) => {
                       )}
                       
                       {/* Content */}
-                      <div className="post-content">
-                        {data[0]?.content ? (
-                          // Render API content (could be Markdown)
-                          <div dangerouslySetInnerHTML={{ __html: data[0].content.replace(/\n/g, '<br />') }} />
-                        ) : (
-                          // Fallback to static content
-                          <>
-                      <p className="mb-[25px]">Lorem ipsum is simply dummy text of the printing and typesetting industry. lorem ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic.</p>
-                      <p className="mb-[25px]">There are many variations of passages of lorem ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of lorem ipsum, you need to be sure there isn't anything embarrassing hidden in the middle of text.</p>
-                          </>
-                        )}
-                      </div>
-                      <Blockquote
-                        className="my-[5.5rem] ml-24 sm:ml-0"
-                        theme="blockquote-style-02"
-                        title="Tomorrow is the most important thing in life. Comes into us at midnight very clean. It's perfect when it arrives and it puts itself in our hands. It hopes we've learned something from yesterday."
-                        author="JOHN WAYNE"
+                      <ContentRenderer 
+                        content={data[0]?.content} 
+                        contentBlocks={data[0]?.content_blocks?.blocks || data[0]?.content_blocks} 
                       />
-                      <img width="" height="" src="https://via.placeholder.com/780x500" alt="" className="w-full rounded-[6px] mb-16" />
-                      <Dropcaps theme="dropcaps-style04" content="Master design is simply dummy text of the printing and typesetting industry. lorem ipsum has been the an industry standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book." />
-                      <p className="my-[25px]">There are many variations of passages of lorem ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of Lorem ipsum, you need to be sure there isn't anything embarrassing hidden in the middle of text.</p>
                     </Col>
                     <Col xs={12} className="flex items-center justify-between mb-[35px] sm:block">
                       {/* Tags */}
@@ -350,18 +340,17 @@ const PostDetails = (props) => {
                       {/* Likes, Bookmark, and Report Actions */}
                       <div className="text-center md:text-end px-0 flex justify-end sm:justify-center items-center gap-3">
                         {/* Likes */}
-                        {(data[0]?.liked_by || data[0]?.likes) && (
-                          <Link 
-                            aria-label="like post" 
-                            className="uppercase text-darkgray text-xs w-auto font-medium inline-block border border-mediumgray rounded pt-[5px] pb-[6px] px-[18px] leading-[20px] hover:text-black transition-default hover:shadow-[0_0_10px_rgba(23,23,23,0.10)]" 
-                            to="#"
-                          >
-                            <i className="far fa-heart mr-2 text-[#fa5c47]"></i>
-                            <span>
-                              {data[0]?.liked_by ? `${data[0].liked_by.length} Likes` : `${data[0]?.likes || 0} Likes`}
-                            </span>
-                          </Link>
-                        )}
+                        <button
+                          onClick={handleLike}
+                          disabled={!isAuthenticated || likingPost}
+                          aria-label="like post"
+                          className={`uppercase text-darkgray text-xs w-auto font-medium inline-block border border-mediumgray rounded pt-[5px] pb-[6px] px-[18px] leading-[20px] transition-default hover:shadow-[0_0_10px_rgba(23,23,23,0.10)] ${
+                            isLiked ? 'bg-red-50 border-red-300' : ''
+                          } ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : 'hover:text-black cursor-pointer'}`}
+                        >
+                          <i className={`${isLiked ? 'fas' : 'far'} fa-heart mr-2 text-[#fa5c47]`}></i>
+                          <span>{likeCount} {likeCount === 1 ? 'Like' : 'Likes'}</span>
+                        </button>
                         
                         {/* Bookmark Button */}
                         {data[0]?.uuid && (
@@ -390,7 +379,6 @@ const PostDetails = (props) => {
                     </Col>
                     <Col>
                       <AuthorBox 
-                        authorId={data[0]?.author?.uuid || data[0]?.author?.id || data[0]?.author} 
                         authorData={data[0]?.author} 
                         className="mb-[45px]" 
                       />

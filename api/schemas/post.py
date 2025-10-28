@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List
+from pydantic import BaseModel, Field, ConfigDict, model_validator
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from .user import UserResponse
 from .comment import CommentResponse
@@ -65,10 +65,21 @@ class TagListResponse(BaseModel):
 
 class PostBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
-    content: str = Field(..., min_length=1)
+    content: Optional[str] = Field(None, min_length=1)
+    content_blocks: Optional[Dict[str, Any]] = None
     excerpt: Optional[str] = Field(None, max_length=500)
     meta_title: Optional[str] = Field(None, max_length=200)
     meta_description: Optional[str] = Field(None, max_length=300)
+
+    @classmethod
+    def validate_content(cls, values):
+        content = values.get('content')
+        content_blocks = values.get('content_blocks')
+        
+        if not content and not content_blocks:
+            raise ValueError('Either content or content_blocks must be provided')
+        
+        return values
 
 
 class PostCreate(PostBase):
@@ -85,6 +96,7 @@ class PostUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     slug: Optional[str] = Field(None, min_length=1, max_length=200)
     content: Optional[str] = Field(None, min_length=1)
+    content_blocks: Optional[Dict[str, Any]] = None
     excerpt: Optional[str] = Field(None, max_length=500)
     category_id: Optional[int] = None
     tag_ids: Optional[List[int]] = None
@@ -99,6 +111,7 @@ class PostResponse(BaseModel):
     title: str
     slug: str
     content: str
+    content_blocks: Optional[Dict[str, Any]]
     excerpt: Optional[str]
     featured_image: Optional[str]
     is_published: bool

@@ -240,6 +240,8 @@ const PostForm = () => {
     }
   };
 
+
+
   
   const categoryOptions = categories.map(cat => ({
     value: String(cat.id),
@@ -529,7 +531,8 @@ const PostForm = () => {
                       </div>
                     </div>
                     <div className="card-body p-3 p-md-4">
-                      <div className="form-group">
+                      <div className="form-group mb-4">
+                        <label className="form-label fw-medium mb-3">Post Content</label>
                         <div className="form-control-wrap">
                           <div style={{ border: '1px solid #e5e9f2', borderRadius: '8px', overflow: 'hidden' }}>
                             <Editor

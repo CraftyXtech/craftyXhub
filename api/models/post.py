@@ -1,5 +1,5 @@
 from  datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from .base import  BaseTable, post_tags, post_likes, post_bookmarks
 
@@ -30,6 +30,7 @@ class Post(BaseTable):
     title = Column(String(200), nullable=False)
     slug = Column(String(200), unique=True, nullable=False)
     content = Column(Text, nullable=False)
+    content_blocks = Column(JSON, nullable=True)
     excerpt = Column(Text, nullable=True)
     featured_image = Column(String(500), nullable=True)
     author_id = Column(Integer, ForeignKey('users.id'), nullable=False)
