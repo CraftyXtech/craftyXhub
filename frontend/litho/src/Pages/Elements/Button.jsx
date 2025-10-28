@@ -105,7 +105,7 @@ const ButtonPage = () => {
               <Buttons ariaLabel="button" href="#" className="btn-fill mx-[10px] rounded-none font-medium font-serif uppercase" themeColor="#0038e3" size="lg" color="#fff" icon="fas fa-arrow-left" iconPosition="before" title="Back to blog" />
               <Buttons ariaLabel="button" href="#" className="btn-fill mx-[10px] rounded-none font-medium font-serif uppercase" themeColor="#232323" size="lg" color="#fff" icon="feather-shopping-cart" iconPosition="after" title="Checkout now" />
               <Buttons ariaLabel="button" href="#" className="mx-[10px] rounded-none font-medium font-serif uppercase btn-gradient" themeColor={["#556fff", "#ff798e"]} size="lg" color="#fff" icon="fab fa-instagram" iconPosition="before" title="Instagram" />
-              <Buttons ariaLabel="button" href="#" className="mx-[10px] rounded-none font-medium font-serif uppercase bg-[#fff] hover:text-white" themeColor="#000" size="lg" color="#000" icon="fas fa-arrow-right right-icon" iconPosition="after" title="Explore litho" />
+              <Buttons ariaLabel="button" href="#" className="mx-[10px] rounded-none font-medium font-serif uppercase bg-[#fff] hover:text-white" themeColor="#000" size="lg" color="#000" icon="fas fa-arrow-right right-icon" iconPosition="after" title="Explore craftyxhub" />
             </Col>
           </Row>
         </Container>

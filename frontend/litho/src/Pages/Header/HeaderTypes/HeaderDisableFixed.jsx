@@ -165,7 +165,7 @@ const HeaderDisableFixed = (props) => {
                             </div>
                             <h5 className="alt-font text-darkgray font-semibold font-serif mb-[20px] md:text-center md:mb-[30px] xs:w-[90%] xs:mx-auto">We combine design, thinking and technical</h5>
                             <div className="mt-auto mx-auto mx-lg-0">
-                                <Buttons ariaLabel="link for" to="/" className="btn-fill btn-fancy rounded-none mt-[75px] tracking-[1px] font-medium font-serif uppercase md:my-0" themeColor="#232323" color="#fff" size="md" title="Discover litho" />
+                                <Buttons ariaLabel="link for" to="/" className="btn-fill btn-fancy rounded-none mt-[75px] tracking-[1px] font-medium font-serif uppercase md:my-0" themeColor="#232323" color="#fff" size="md" title="Discover craftyxhub" />
                             </div>
                         </m.div>
                         <div className="col-xl-7 col-lg-8 offset-xl-2">

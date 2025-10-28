@@ -121,7 +121,7 @@ const ContactUsModernPage = (props) => {
       {/* Section Start */}
       <m.section className="relative h-[700px] md:h-[550px] sm:h-[350px]" {...fadeIn}>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[2]">
-          <Buttons to="#" rel="noreferrer" className="btn-fill w-auto z-[2] font-medium !tracking-normal font-serif uppercase rounded-none btn-shadow" size="xl" themeColor="#232323" color="#fff" title="litho design life" />
+          <Buttons to="#" rel="noreferrer" className="btn-fill w-auto z-[2] font-medium !tracking-normal font-serif uppercase rounded-none btn-shadow" size="xl" themeColor="#232323" color="#fff" title="craftyxhub design life" />
         </div>
         <Swiper
           modules={[Autoplay, EffectFade, Keyboard]}

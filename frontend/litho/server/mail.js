@@ -7,7 +7,7 @@ require("dotenv").config();
 const app = express()
 app.use(express.json())
 app.use(cors({
-    origin: 'https://lithoreact.themezaa.com/'
+    origin: 'https://craftyxhub.com/'
 }))
 
 // setup nodemailer configuration
@@ -36,7 +36,7 @@ app.post("/send", (req, res) => {
         var mailConfig = {
             from: process.env.REACT_APP_SMTP_EMAIL,
             to: email,
-            subject: "Litho - Contact Form",
+            subject: "CraftyXhub - Contact Form",
             html: `<html>
             <head>
             <title>HTML email</title>
@@ -44,7 +44,7 @@ app.post("/send", (req, res) => {
             <body>
             <table width="50%" border="0" align="center" cellpadding="0" cellspacing="0">
             <tr>
-            <td colspan="2" align="center" valign="top"><img style=" margin-top: 15px; " src="https://lithoreact.themezaa.com/assets/img/webp/logo-black.webp"></td>
+            <td colspan="2" align="center" valign="top"><img style=" margin-top: 15px; " src="https://craftyxhub.com/assets/img/webp/logo-black.webp"></td>
             </tr>
             <tr>
             <td width="50%" align="right">&nbsp;</td>
@@ -74,7 +74,7 @@ app.post("/send", (req, res) => {
         var mailConfig = {
             from: process.env.REACT_APP_SMTP_EMAIL,
             to: email,
-            subject: "Litho - Subscription Form",
+            subject: "CraftyXhub - Subscription Form",
             html: `<html>
             <head>
             <title>HTML email</title>
@@ -85,7 +85,7 @@ app.post("/send", (req, res) => {
             <td colspan="2" align="center" valign="top">Thank you for subscribing to our email service.</td>
             </tr>
             <tr>
-            <td colspan="2" align="center" valign="top"><img style=" margin-top: 15px; " src="https://lithoreact.themezaa.com/assets/img/webp/logo-black.webp"></td>
+            <td colspan="2" align="center" valign="top"><img style=" margin-top: 15px; " src="https://craftyxhub.com/assets/img/webp/logo-black.webp"></td>
             </tr>
             <tr>
             <td width="50%" align="right">&nbsp;</td>

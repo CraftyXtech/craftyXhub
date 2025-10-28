@@ -96,7 +96,7 @@ const LeftMenuClassicPage = () => {
                         <div className="my-8">
                             <SocialIcons theme="social-icon-style-01" className="text-center justify-center mb-8" size="sm" iconColor="dark" data={iconData} />
                         </div>
-                        <span className="block text-center text-xs text-spanishgray">&copy; {new Date().getFullYear()} LITHO</span>
+                        <span className="block text-center text-xs text-spanishgray">&copy; {new Date().getFullYear()} CRAFTYXHUB</span>
                     </Col>
                 </div>
                 <HeaderNav className="hidden md:flex justify-between px-[30px] sm:px-[15px] md:py-[20px]" bg="white" theme="light" containerClass="px-0">
@@ -112,7 +112,7 @@ const LeftMenuClassicPage = () => {
                                     <CollapsibleMenu className="w-full left-sidebar-menu" theme="dark" />
                                     <div className="my-[60px]">
                                         <SocialIcons theme="social-icon-style-01" className="justify-center mb-8 text-center" size="sm" iconColor="dark" data={iconData} />
-                                        <span className="block text-center text-xs text-spanishgray">&copy; {new Date().getFullYear()} LITHO</span>
+                                        <span className="block text-center text-xs text-spanishgray">&copy; {new Date().getFullYear()} CRAFTYXHUB</span>
                                     </div>
                                 </div>
                             </ReactCustomScrollbar>
@@ -153,7 +153,7 @@ const LeftMenuClassicPage = () => {
                             </div>
                             <h5 className="alt-font text-darkgray font-semibold font-serif mb-[20px] md:text-center md:mb-[30px] xs:w-[90%] xs:mx-auto">We combine design, thinking and technical</h5>
                             <div className="mt-auto mx-auto mx-lg-0">
-                                <Buttons ariaLabel="link for" to="/" className="btn-fill btn-fancy rounded-none mt-[82px] tracking-[1px] font-medium font-serif uppercase md:my-0" themeColor="#232323" color="#fff" size="sm" title="Discover litho" />
+                                <Buttons ariaLabel="link for" to="/" className="btn-fill btn-fancy rounded-none mt-[82px] tracking-[1px] font-medium font-serif uppercase md:my-0" themeColor="#232323" color="#fff" size="sm" title="Discover craftyxhub" />
                             </div>
                         </m.div>
                         <div className="col-xl-7 col-lg-8 offset-xl-2">

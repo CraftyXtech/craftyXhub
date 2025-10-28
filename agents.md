@@ -1,6 +1,6 @@
 ## Source: frontend/litho/.cursor/rules/litho-styling.mdc
 
-# Litho React Template Styling Patterns
+# CraftyXhub React Template Styling Patterns
 
 ## SCSS Architecture
 
@@ -425,13 +425,13 @@ alwaysApply: false
 
 ## Source: frontend/litho/.cursor/rules/litho-framework.mdc
 
-# Litho React Template Framework Guide
+# CraftyXhub React Template Framework Guide
 
-This project uses the Litho React Template (v1.1.0) with React 18, Bootstrap 5, and SCSS. Follow these conventions and patterns when developing the frontend.
+This project uses the CraftyXhub React Template (v1.1.0) with React 18, Bootstrap 5, and SCSS. Follow these conventions and patterns when developing the frontend.
 
 ## Project Structure
 
-The Litho template follows a component-based architecture:
+The CraftyXhub template follows a component-based architecture:
 
 - **src/App.jsx**: Main application entry point and routing from [App.jsx](mdc:frontend/litho/src/App.jsx)
 - **components/**: Reusable UI components organized by functionality
@@ -1040,7 +1040,7 @@ alwaysApply: false
 
 ## Source: frontend/litho/.cursor/rules/litho-components.mdc
 
-# Litho React Template Component Development Patterns
+# CraftyXhub React Template Component Development Patterns
 
 ## Component Structure and Organization
 
@@ -1781,7 +1781,7 @@ alwaysApply: false
 
 ## Source: frontend/litho/.cursor/rules/litho-api-auth.mdc
 
-# Litho React Template API Integration and Authentication Patterns
+# CraftyXhub React Template API Integration and Authentication Patterns
 
 ## Authentication Architecture
 
