@@ -14,6 +14,14 @@ import PostDetail from "@/pages/posts/PostDetail";
 import CommentModeration from "@/pages/moderation/CommentModeration";
 import PostReports from "@/pages/moderation/PostReports";
 
+// AI Writer Components
+import AiDashboard from "@/pages/ai-writer/AiDashboard";
+import AiDocuments from "@/pages/ai-writer/AiDocuments";
+import AiEditorNew from "@/pages/ai-writer/AiEditorNew";
+import AiEditorGenerate from "@/pages/ai-writer/AiEditorGenerate";
+import AiEditorEdit from "@/pages/ai-writer/AiEditorEdit";
+import AiTemplates from "@/pages/ai-writer/AiTemplates";
+
 
 
 
@@ -195,6 +203,17 @@ const Router = () => {
               <Route path="invoice-details/:invoiceId" element={<InvoiceDetails />}></Route>
               <Route path="pricing-table" element={<PricingTable />}></Route>
               <Route path="image-gallery" element={<GalleryPreview />}></Route>
+
+              <Route path="ai-writer">
+                <Route path="dashboard" element={<AiDashboard />}></Route>
+                <Route path="documents" element={<AiDocuments />}></Route>
+                <Route path="editor">
+                  <Route path="new" element={<AiEditorNew />}></Route>
+                  <Route path="generate" element={<AiEditorGenerate />}></Route>
+                  <Route path=":documentId" element={<AiEditorEdit />}></Route>
+                </Route>
+                <Route path="templates" element={<AiTemplates />}></Route>
+              </Route>
 
               <Route path="pages">
                 <Route path="terms-policy" element={<Terms />}></Route>

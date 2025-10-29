@@ -104,7 +104,39 @@ const menu = [
     ],
   },
   */
-
+{
+    icon: "spark",
+    text: "AI Writer",
+    link: "/ai-writer/dashboard",
+    subMenu: [
+      {
+        text: "AI Dashboard",
+        link: "/ai-writer/dashboard",
+      },
+      {
+        text: "Documents",
+        link: "/ai-writer/documents",
+      },
+      {
+        text: "Editor",
+        subMenu: [
+          {
+            text: "New Document",
+            link: "/ai-writer/editor/new",
+          },
+          {
+            text: "Generate",
+            link: "/ai-writer/editor/generate",
+          },
+        ],
+      },
+      {
+        text: "Templates",
+        link: "/ai-writer/templates",
+      },
+    ],
+  },
+  
   {
     icon: "file-text",
     text: "Posts Management",
@@ -145,6 +177,8 @@ const menu = [
       },
     ],
   },
+
+  
 
   {
     icon: "file-docs",
