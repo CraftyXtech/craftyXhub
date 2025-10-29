@@ -1,10 +1,13 @@
 import Router from "./route/Index";
 import { AuthProvider } from "./api/AuthProvider";
+import { AiDocumentProvider } from "./context/AiDocumentContext";
 
 const App = () => {
   return (
       <AuthProvider>
-        <Router />
+        <AiDocumentProvider>
+          <Router />
+        </AiDocumentProvider>
       </AuthProvider>
   );
 };
