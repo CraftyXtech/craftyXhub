@@ -65,8 +65,10 @@ const RecentActivity = ({ data }) => {
         <ul className="nk-activity">
           {activities.map((activity) => (
             <li key={activity.id} className="nk-activity-item">
-              <div className={`nk-activity-media icon-wrap-lg bg-${activity.color}-dim`}>
-                <Icon name={activity.icon} className={`text-${activity.color} icon-lg`}></Icon>
+              <div className="nk-activity-media">
+                <div className={`icon-circle icon-circle-lg bg-${activity.color}-dim text-${activity.color}`}>
+                  <Icon name={activity.icon}></Icon>
+                </div>
               </div>
               <div className="nk-activity-data">
                 <div className="label">{activity.title}</div>

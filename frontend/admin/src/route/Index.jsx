@@ -17,9 +17,7 @@ import PostReports from "@/pages/moderation/PostReports";
 // AI Writer Components
 import AiDashboard from "@/pages/ai-writer/AiDashboard";
 import AiDocuments from "@/pages/ai-writer/AiDocuments";
-import AiEditorNew from "@/pages/ai-writer/AiEditorNew";
-import AiEditorGenerate from "@/pages/ai-writer/AiEditorGenerate";
-import AiEditorEdit from "@/pages/ai-writer/AiEditorEdit";
+import AiEditor from "@/pages/ai-writer/AiEditor";
 import AiTemplates from "@/pages/ai-writer/AiTemplates";
 
 
@@ -208,9 +206,8 @@ const Router = () => {
                 <Route path="dashboard" element={<AiDashboard />}></Route>
                 <Route path="documents" element={<AiDocuments />}></Route>
                 <Route path="editor">
-                  <Route path="new" element={<AiEditorNew />}></Route>
-                  <Route path="generate" element={<AiEditorGenerate />}></Route>
-                  <Route path=":documentId" element={<AiEditorEdit />}></Route>
+                  <Route path="new" element={<AiEditor />}></Route>
+                  <Route path=":documentId" element={<AiEditor />}></Route>
                 </Route>
                 <Route path="templates" element={<AiTemplates />}></Route>
               </Route>

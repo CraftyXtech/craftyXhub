@@ -1,5 +1,5 @@
 // Block Editor Styles
-// Matches CraftyXhub design system (consistent with RichTextEditor)
+// EditorJS (Medium-style) Block Editor - Matches CraftyXhub design system
 
 .block-editor-wrapper {
   position: relative;
@@ -9,7 +9,7 @@
     border-radius: 6px;
     overflow: hidden;
     
-    // EditorJS container styling (matching TinyMCE patterns)
+    // EditorJS container styling
     .codex-editor {
       border: 1px solid #dfdfdf !important;
       border-radius: 6px !important;
@@ -45,7 +45,7 @@
       margin: 0;
     }
     
-    // Toolbar styling (matching TinyMCE toolbar)
+    // Block toolbar styling
     .ce-toolbar {
       &__content {
         max-width: 100%;
@@ -83,7 +83,7 @@
       }
     }
     
-    // Inline toolbar (matching TinyMCE inline toolbar)
+    // Inline formatting toolbar
     .ce-inline-toolbar {
       background: #ffffff !important;
       border: 1px solid #dfdfdf !important;
@@ -431,7 +431,7 @@
   }
 }
 
-// Responsive adjustments (matching RichTextEditor)
+// Responsive adjustments
 @media (max-width: 767px) {
   .block-editor-wrapper {
     .block-editor {

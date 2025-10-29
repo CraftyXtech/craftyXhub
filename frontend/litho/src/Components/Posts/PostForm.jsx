@@ -263,11 +263,16 @@ const PostForm = (props) => {
                                 }
                                 height={400}
                                 className="w-full"
-                                placeholder="Start writing or type '/' for commands..."
+                                placeholder="Click here and start typing your content..."
                                 onContentChange={(contentData) => handleContentChange(contentData, setFieldValue)}
                             />
-                            <div className="text-xs text-spanishgray mt-2">
-                                Tip: Type "/" to see available block types. Use the toolbar to format your content.
+                            <div className="text-xs text-spanishgray mt-2 bg-blue-50 border border-blue-200 rounded px-3 py-2">
+                                <strong>💡 Quick Tips:</strong>
+                                <ul className="list-disc ml-5 mt-1">
+                                    <li><strong>Start typing</strong> - just click and type normally</li>
+                                    <li><strong>Type "/"</strong> on a new line to insert special blocks (headings, lists, quotes, etc.)</li>
+                                    <li><strong>Select text</strong> to see formatting options (bold, italic, links)</li>
+                                </ul>
                             </div>
                         </div>
 

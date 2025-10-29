@@ -121,7 +121,7 @@ const menu = [
         text: "Editor",
         subMenu: [
           {
-            text: "New Document",
+            text: "New",
             link: "/ai-writer/editor/new",
           },
           {
@@ -180,7 +180,7 @@ const menu = [
 
   
 
-  {
+  /*{
     icon: "file-docs",
     text: "Invoice",
     subMenu: [
@@ -202,7 +202,7 @@ const menu = [
   },
   {
     heading: "Misc Pages",
-  },
+  },*/
   
- ];
+ ]; 
 export default menu;

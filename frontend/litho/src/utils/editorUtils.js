@@ -408,3 +408,108 @@ export function isEditorEmpty(editorData) {
     }
   });
 }
+
+/**
+ * Extract title from EditorJS content
+ * Uses first H1/H2 block, or first paragraph if no headers found
+ * @param {Object} editorData - EditorJS data object
+ * @returns {string} Extracted title or 'Untitled Post'
+ */
+export function extractTitle(editorData) {
+  if (!editorData?.blocks || editorData.blocks.length === 0) {
+    return 'Untitled Post';
+  }
+
+  try {
+    // Find first H1 or H2 block
+    const titleBlock = editorData.blocks.find(
+      block => block.type === 'header' && [1, 2].includes(block.data.level)
+    );
+
+    if (titleBlock) {
+      return stripHtmlTags(titleBlock.data.text).trim() || 'Untitled Post';
+    }
+
+    // Fallback to first paragraph
+    const firstPara = editorData.blocks.find(
+      block => block.type === 'paragraph' && block.data.text?.trim()
+    );
+
+    if (firstPara) {
+      const text = stripHtmlTags(firstPara.data.text).trim();
+      return text.substring(0, 60) + (text.length > 60 ? '...' : '');
+    }
+
+    return 'Untitled Post';
+  } catch (error) {
+    console.error('Error extracting title:', error);
+    return 'Untitled Post';
+  }
+}
+
+/**
+ * Calculate word count from EditorJS data
+ * @param {Object} editorData - EditorJS data object
+ * @returns {number} Word count
+ */
+export function calculateWordCount(editorData) {
+  if (!editorData?.blocks) return 0;
+
+  try {
+    const plainText = extractPlainText(editorData);
+    const words = plainText.split(/\s+/).filter(word => word.length > 0);
+    return words.length;
+  } catch (error) {
+    console.error('Error calculating word count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Calculate reading time based on word count
+ * @param {number} wordCount - Total word count
+ * @returns {number} Reading time in minutes
+ */
+export function calculateReadingTime(wordCount) {
+  const wordsPerMinute = 200;
+  return Math.max(1, Math.ceil(wordCount / wordsPerMinute));
+}
+
+/**
+ * Auto-generate excerpt from EditorJS content
+ * Extracts first 2-3 paragraphs or first 150 characters
+ * @param {Object} editorData - EditorJS data object
+ * @param {number} maxLength - Maximum excerpt length (default: 150)
+ * @returns {string} Generated excerpt
+ */
+export function generateExcerpt(editorData, maxLength = 150) {
+  if (!editorData?.blocks || editorData.blocks.length === 0) {
+    return '';
+  }
+
+  try {
+    // Get first 2-3 paragraph blocks
+    const paragraphs = editorData.blocks
+      .filter(block => block.type === 'paragraph' && block.data.text?.trim())
+      .slice(0, 3);
+
+    if (paragraphs.length === 0) {
+      return '';
+    }
+
+    const text = paragraphs
+      .map(p => stripHtmlTags(p.data.text))
+      .join(' ')
+      .trim();
+
+    // Return truncated text
+    if (text.length <= maxLength) {
+      return text;
+    }
+
+    return text.substring(0, maxLength).trim() + '...';
+  } catch (error) {
+    console.error('Error generating excerpt:', error);
+    return '';
+  }
+}

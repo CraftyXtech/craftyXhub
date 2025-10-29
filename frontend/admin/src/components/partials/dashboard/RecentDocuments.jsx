@@ -71,11 +71,14 @@ const RecentDocuments = ({ onSeeAll }) => {
                 <DataTableRow size="sm">
                   <span>Feb 15,2023 02:31 PM</span>
                 </DataTableRow>
-                <DataTableRow size="sm" className="nk-tb-col-tools text-end">
-                  <Button color="primary" size="sm" outline>
-                    <Icon name="eye" />
-                    <span className="ms-1">View</span>
-                  </Button>
+                <DataTableRow size="sm" className="nk-tb-col-tools">
+                  <ul className="nk-tb-actions gx-1">
+                    <li>
+                      <Button className="btn-icon btn-trigger" size="sm" color="primary" title="View Document">
+                        <Icon name="eye" />
+                      </Button>
+                    </li>
+                  </ul>
                 </DataTableRow>
               </DataTableItem>
             ))}

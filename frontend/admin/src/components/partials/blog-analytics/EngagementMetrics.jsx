@@ -54,8 +54,8 @@ const EngagementMetrics = ({ data }) => {
                     <div className="lead-text">{metric.value}</div>
                     <span className={`change up text-${metric.color}`}>{metric.change}</span>
                   </div>
-                  <div className={`icon-wrap icon-wrap-lg bg-${metric.color}-dim`}>
-                    <Icon name={metric.icon} className={`text-${metric.color} icon-lg`}></Icon>
+                  <div className={`icon-circle icon-circle-lg bg-${metric.color}-dim text-${metric.color}`}>
+                    <Icon name={metric.icon}></Icon>
                   </div>
                 </div>
               </div>

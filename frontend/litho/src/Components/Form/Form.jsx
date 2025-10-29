@@ -42,8 +42,5 @@ Input.defaultProps = {
     showErrorMsg: true
 }
 
-// Export RichTextEditor
-export { default as RichTextEditor } from './RichTextEditor'
-
-// Export BlockEditor
+// Export BlockEditor (Medium-style block editor)
 export { default as BlockEditor } from './BlockEditor'

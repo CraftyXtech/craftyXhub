@@ -17,7 +17,7 @@ const AiTemplates = () => {
     : AI_TEMPLATES.filter(template => template.category === activeCategory);
 
   const handleTemplateClick = (template) => {
-    navigate('/ai-writer/editor/generate', { 
+    navigate('/ai-writer/editor/new', { 
       state: { selectedTemplate: template } 
     });
   };

@@ -136,8 +136,8 @@ const AnalyticsHomePage = () => {
                       <h6 className="subtitle">Total Users</h6>
                     </div>
                     <div className="card-tools">
-                      <div className="icon-wrap icon-wrap-lg bg-primary-dim">
-                        <Icon name="users" className="text-primary icon-lg"></Icon>
+                      <div className="icon-circle icon-circle-lg bg-primary-dim text-primary">
+                        <Icon name="users"></Icon>
                       </div>
                     </div>
                   </div>
@@ -163,8 +163,8 @@ const AnalyticsHomePage = () => {
                       <h6 className="subtitle">Active Users</h6>
                     </div>
                     <div className="card-tools">
-                      <div className="icon-wrap icon-wrap-lg bg-success-dim">
-                        <Icon name="user-check" className="text-success icon-lg"></Icon>
+                      <div className="icon-circle icon-circle-lg bg-success-dim text-success">
+                        <Icon name="user-check"></Icon>
                       </div>
                     </div>
                   </div>
@@ -190,8 +190,8 @@ const AnalyticsHomePage = () => {
                       <h6 className="subtitle">Total Posts</h6>
                     </div>
                     <div className="card-tools">
-                      <div className="icon-wrap icon-wrap-lg bg-info-dim">
-                        <Icon name="file-text" className="text-info icon-lg"></Icon>
+                      <div className="icon-circle icon-circle-lg bg-info-dim text-info">
+                        <Icon name="file-text"></Icon>
                       </div>
                     </div>
                   </div>
@@ -217,8 +217,8 @@ const AnalyticsHomePage = () => {
                       <h6 className="subtitle">Pending Reviews</h6>
                     </div>
                     <div className="card-tools">
-                      <div className="icon-wrap icon-wrap-lg bg-warning-dim">
-                        <Icon name="alert-circle" className="text-warning icon-lg"></Icon>
+                      <div className="icon-circle icon-circle-lg bg-warning-dim text-warning">
+                        <Icon name="alert-circle"></Icon>
                       </div>
                     </div>
                   </div>

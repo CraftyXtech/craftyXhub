@@ -35,6 +35,7 @@ const BlockEditor = ({
     placeholder, 
     showErrorMsg,
     height,
+    fullHeight,
     ...props 
 }) => {
     const [field, meta, helpers] = useField(props)
@@ -43,9 +44,10 @@ const BlockEditor = ({
     const isInitializedRef = useRef(false)
     
     // Set defaults
-    const actualPlaceholder = placeholder ?? "Start writing or type '/' for commands..."
+    const actualPlaceholder = placeholder ?? "Click here and start typing your content..."
     const actualShowErrorMsg = showErrorMsg ?? true
-    const actualHeight = height ?? 400
+    const actualFullHeight = fullHeight ?? false
+    const actualHeight = actualFullHeight ? 'calc(100vh - 280px)' : (height ?? 400)
 
     // Custom image uploader for EditorJS
     const imageUploader = useCallback({
@@ -289,16 +291,20 @@ const BlockEditor = ({
     }, []); // Empty dependency array - only initialize once
 
     return (
-        <label className={`block-editor-wrapper block relative${(meta.touched && meta.error) ? " errors-danger" : ""}${labelClass ? ` ${labelClass}` : ""}`}>
+        <label className={`block-editor-wrapper block relative${actualFullHeight ? ' full-height' : ''}${(meta.touched && meta.error) ? " errors-danger" : ""}${labelClass ? ` ${labelClass}` : ""}`}>
             {label}
             <div 
                 className={`block-editor${className ? ` ${className}` : ""}${meta.touched && meta.error ? " errors-danger" : ""}`}
-                style={{ minHeight: `${actualHeight}px` }}
+                style={{ minHeight: typeof actualHeight === 'number' ? `${actualHeight}px` : actualHeight }}
             >
                 <div 
                     ref={holderRef} 
                     id={`editorjs-${props.name}`}
-                    style={{ minHeight: `${actualHeight}px`, width: '100%' }}
+                    style={{ 
+                        minHeight: typeof actualHeight === 'number' ? `${actualHeight}px` : actualHeight,
+                        height: actualFullHeight ? '100%' : 'auto',
+                        width: '100%' 
+                    }}
                 />
             </div>
             {meta.touched && meta.error && actualShowErrorMsg ? (
@@ -314,6 +320,7 @@ BlockEditor.propTypes = {
     className: PropTypes.string,
     showErrorMsg: PropTypes.bool,
     height: PropTypes.number,
+    fullHeight: PropTypes.bool,
     placeholder: PropTypes.string,
     name: PropTypes.string.isRequired,
     onContentChange: PropTypes.func

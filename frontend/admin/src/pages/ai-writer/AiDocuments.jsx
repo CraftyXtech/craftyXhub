@@ -181,7 +181,7 @@ const AiDocuments = () => {
                       </Button>
                     </li>
                     <li>
-                      <Button color="primary" onClick={() => navigate('/ai-writer/editor/generate')}>
+                      <Button color="primary" onClick={() => navigate('/ai-writer/editor/new')}>
                         <Icon name="plus" />
                         <span>New Document</span>
                       </Button>
@@ -200,7 +200,7 @@ const AiDocuments = () => {
                 <Icon name="file-text" className="text-soft mb-2" style={{ fontSize: '3rem' }} />
                 <h6 className="mb-2">No documents yet</h6>
                 <p className="text-soft mb-3">Start creating AI-powered content now</p>
-                <Button color="primary" onClick={() => navigate('/ai-writer/editor/generate')}>
+                <Button color="primary" onClick={() => navigate('/ai-writer/editor/new')}>
                   <Icon name="spark" className="me-1" />
                   <span>Generate Content</span>
                 </Button>

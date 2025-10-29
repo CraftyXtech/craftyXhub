@@ -42,7 +42,7 @@ const AiDashboard = () => {
             <BlockHeadContent>
               <Button
                 color="primary"
-                onClick={() => navigate('/ai-writer/editor/generate')}
+                onClick={() => navigate('/ai-writer/editor/new')}
               >
                 <Icon name="plus" />
                 <span>Create New</span>
@@ -60,7 +60,9 @@ const AiDashboard = () => {
                 subtitle={`${stats.totalDocuments}/${draftLimit} free drafts created`}
                 color="warning"
                 variant="solid"
+                icon="file-text"
                 linkText="See All"
+                onLinkClick={() => navigate('/ai-writer/documents')}
               />
             </Col>
             <Col sm="6" lg="4">
@@ -70,7 +72,9 @@ const AiDashboard = () => {
                 subtitle={`${stats.totalDocuments}/10 free documents created`}
                 color="cyan"
                 variant="solid"
+                icon="files"
                 linkText="See All"
+                onLinkClick={() => navigate('/ai-writer/documents')}
               />
             </Col>
             <Col sm="6" lg="4">
@@ -80,7 +84,9 @@ const AiDashboard = () => {
                 subtitle={`${toolsUsed}/${toolsLimit} tools used to generate`}
                 color="danger"
                 variant="solid"
+                icon="spark"
                 linkText="All Tools"
+                onLinkClick={() => navigate('/ai-writer/templates')}
               />
             </Col>
           </Row>
@@ -137,7 +143,7 @@ const AiDashboard = () => {
               <div className="card-inner">
                 <Icon name="file-text" className="text-soft mb-2" style={{ fontSize: '3rem' }} />
                 <p className="text-soft">No documents yet</p>
-                <Button color="primary" onClick={() => navigate('/ai-writer/editor/generate')}>
+                <Button color="primary" onClick={() => navigate('/ai-writer/editor/new')}>
                   <Icon name="plus" className="me-1" />
                   <span>Create Your First Document</span>
                 </Button>
@@ -176,17 +182,22 @@ const AiDashboard = () => {
                       </span>
                     </DataTableRow>
                     <DataTableRow size="sm">
-                      <span>{textUtils.timeAgo(doc.updated_at)}</span>
+                      <span className="sub-text">{textUtils.timeAgo(doc.updated_at)}</span>
                     </DataTableRow>
-                    <DataTableRow size="sm" className="nk-tb-col-tools text-end">
-                      <Button
-                        color="primary"
-                        size="sm"
-                        onClick={() => navigate(`/ai-writer/editor/${doc.id}`)}
-                      >
-                        <Icon name="edit" />
-                        <span>Edit</span>
-                      </Button>
+                    <DataTableRow size="sm" className="nk-tb-col-tools">
+                      <ul className="nk-tb-actions gx-1">
+                        <li>
+                          <Button
+                            className="btn-icon btn-trigger"
+                            size="sm"
+                            color="primary"
+                            onClick={() => navigate(`/ai-writer/editor/${doc.id}`)}
+                            title="Edit Document"
+                          >
+                            <Icon name="edit" />
+                          </Button>
+                        </li>
+                      </ul>
                     </DataTableRow>
                   </DataTableItem>
                 ))}

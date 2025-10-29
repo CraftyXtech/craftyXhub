@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Card, CardBody, Nav, NavItem, NavLink, TabContent, TabPane, Form, FormGroup, Label, Input, Spinner } from 'reactstrap';
 import { Button, Icon, RSelect } from '@/components/Component';
-import { TONE_OPTIONS, LANGUAGE_OPTIONS, LENGTH_OPTIONS } from '@/data/aiTemplates';
+import { TONE_OPTIONS, LANGUAGE_OPTIONS, LENGTH_OPTIONS, AI_TEMPLATES } from '@/data/aiTemplates';
+import { textUtils } from '@/utils/textUtils';
 import classnames from 'classnames';
 
 const AiWriterPanel = ({
   selectedTemplate,
+  onTemplateChange,
   onGenerate,
   variants = [],
   onInsert,
@@ -13,6 +15,7 @@ const AiWriterPanel = ({
   className = ''
 }) => {
   const [activeTab, setActiveTab] = useState('1');
+  const [expandedVariants, setExpandedVariants] = useState({});
   const [formData, setFormData] = useState({
     prompt: '',
     keywords: '',
@@ -40,6 +43,18 @@ const AiWriterPanel = ({
         template: selectedTemplate?.id
       });
     }
+  };
+
+  const toggleVariant = (index) => {
+    setExpandedVariants(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
+  const handleCopyVariant = (variant) => {
+    const plainText = variant.content.replace(/<[^>]*>/g, '');
+    navigator.clipboard.writeText(plainText);
   };
 
   return (
@@ -79,12 +94,31 @@ const AiWriterPanel = ({
         <TabContent activeTab={activeTab}>
           <TabPane tabId="1">
             <Form onSubmit={handleSubmit} className="mt-3">
+              {/* Template Selector */}
+              <FormGroup>
+                <Label>Select Template</Label>
+                <RSelect
+                  options={AI_TEMPLATES.map(t => ({
+                    value: t.id,
+                    label: t.title
+                  }))}
+                  value={selectedTemplate ? {
+                    value: selectedTemplate.id,
+                    label: selectedTemplate.title
+                  } : null}
+                  onChange={(opt) => {
+                    const template = AI_TEMPLATES.find(t => t.id === opt.value);
+                    onTemplateChange && onTemplateChange(template);
+                  }}
+                  placeholder="Choose a template..."
+                />
+              </FormGroup>
+
               {selectedTemplate && (
                 <div className="mb-3 p-2 bg-light rounded">
                   <div className="d-flex align-items-center">
                     <Icon name={selectedTemplate.icon} className={`text-${selectedTemplate.color} me-2`}></Icon>
-                    <div>
-                      <h6 className="mb-0">{selectedTemplate.title}</h6>
+                    <div className="flex-grow-1">
                       <small className="text-soft">{selectedTemplate.description}</small>
                     </div>
                   </div>
@@ -187,6 +221,14 @@ const AiWriterPanel = ({
 
           <TabPane tabId="2">
             <div className="mt-3">
+              {/* History Header */}
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="mb-0">Generation History</h6>
+                <small className="text-soft">
+                  {variants.length} {variants.length === 1 ? 'variant' : 'variants'}
+                </small>
+              </div>
+
               {variants.length === 0 ? (
                 <div className="text-center py-5">
                   <Icon name="file-text" className="text-soft mb-2" style={{ fontSize: '3rem' }}></Icon>
@@ -194,45 +236,70 @@ const AiWriterPanel = ({
                   <small className="text-soft">Switch to AI Writer tab and generate content</small>
                 </div>
               ) : (
-                <div className="nk-data data-list">
-                  {variants.map((variant, index) => (
-                    <div key={index} className="data-item mb-3">
-                      <Card className="card-bordered">
-                        <CardBody>
+                <div className="history-list">
+                  {variants.map((variant, index) => {
+                    const isExpanded = expandedVariants[index];
+                    const previewText = variant.content.replace(/<[^>]*>/g, '');
+                    const displayText = isExpanded ? previewText : previewText.substring(0, 150) + (previewText.length > 150 ? '...' : '');
+                    
+                    return (
+                      <Card key={index} className="card-bordered mb-3">
+                        <CardBody className="card-inner-sm">
+                          {/* Header with badge and actions */}
                           <div className="d-flex justify-content-between align-items-start mb-2">
-                            <h6 className="mb-0">Variant {index + 1}</h6>
-                            <span className="badge badge-dim badge-sm badge-primary">
-                              {variant.metadata?.words || 0} Words
+                            <span className="badge badge-primary badge-sm">
+                              <Icon name="spark" className="me-1" style={{ fontSize: '10px' }}></Icon>
+                              {selectedTemplate?.title || 'AI Generated'}
                             </span>
+                            <div className="d-flex gap-1">
+                              <Button 
+                                size="sm" 
+                                className="btn-icon btn-trigger"
+                                onClick={() => toggleVariant(index)}
+                                title={isExpanded ? 'Collapse' : 'Expand'}
+                              >
+                                <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                className="btn-icon btn-trigger"
+                                onClick={() => handleCopyVariant(variant)}
+                                title="Copy to clipboard"
+                              >
+                                <Icon name="copy" />
+                              </Button>
+                            </div>
                           </div>
-                          <p className="text-soft small mb-2">
-                            {variant.content.replace(/<[^>]*>/g, '').substring(0, 100)}...
+
+                          {/* Content preview */}
+                          <p className="mb-2" style={{ fontSize: '13px', lineHeight: '1.5' }}>
+                            {displayText}
                           </p>
-                          <div className="d-flex gap-2">
-                            <Button
-                              color="primary"
-                              size="sm"
-                              outline
-                              onClick={() => onInsert && onInsert(variant)}
-                            >
-                              <Icon name="plus" className="me-1"></Icon>
-                              Insert
-                            </Button>
-                            <Button
-                              color="gray"
-                              size="sm"
-                              outline
-                              onClick={() => {
-                                navigator.clipboard.writeText(variant.content);
-                              }}
-                            >
-                              <Icon name="copy"></Icon>
-                            </Button>
+
+                          {/* Footer with meta info */}
+                          <div className="d-flex justify-content-between align-items-center text-soft small">
+                            <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>{variant.metadata?.words || textUtils.countWords(variant.content)} Words</span>
                           </div>
+
+                          {/* Insert button (visible when expanded) */}
+                          {isExpanded && (
+                            <div className="mt-2 pt-2 border-top">
+                              <Button
+                                color="primary"
+                                size="sm"
+                                className="w-100"
+                                onClick={() => onInsert && onInsert(variant)}
+                              >
+                                <Icon name="plus" className="me-1"></Icon>
+                                Insert into Editor
+                              </Button>
+                            </div>
+                          )}
                         </CardBody>
                       </Card>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

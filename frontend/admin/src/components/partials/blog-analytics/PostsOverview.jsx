@@ -51,8 +51,8 @@ const PostsOverview = ({ data }) => {
           {stats.map((stat, index) => (
             <div key={index} className="nk-tb-item">
               <div className="nk-tb-col">
-                <div className={`icon-wrap icon-wrap-lg bg-${stat.color}-dim`}>
-                  <Icon name={stat.icon} className={`text-${stat.color} icon-lg`}></Icon>
+                <div className={`icon-circle icon-circle-lg bg-${stat.color}-dim text-${stat.color}`}>
+                  <Icon name={stat.icon}></Icon>
                 </div>
               </div>
               <div className="nk-tb-col tb-col-md">

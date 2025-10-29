@@ -20,7 +20,6 @@
     "@testing-library/jest-dom": "^6.4.6",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.2",
-    "@tinymce/tinymce-react": "^6.3.0",
     "atropos": "^2.0.2",
     "axios": "^1.10.0",
     "bootstrap": "^5.3.3",
@@ -57,7 +56,6 @@
     "smooth-scrollbar-react": "^2.4.1",
     "swiper": "^11.1.4",
     "tailwindcss": "^3.4.4",
-    "tinymce": "^8.0.1",
     "web-vitals": "^4.1.1",
     "yarn": "^1.22.22",
     "yup": "^1.4.0"
