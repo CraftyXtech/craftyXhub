@@ -13,7 +13,18 @@ import { getImageUrl } from '../../api';
 // Filter the blog data category wise
 const blogWidgetData = blogData.filter((item) => item.blogType === "widget");
 
-const BlogWidget = (props) => {
+const BlogWidget = ({ 
+  filter = false,
+  data = blogWidgetData,
+  link = "/posts/",
+  showActions = true,
+  pagination,
+  title,
+  grid,
+  filterData,
+  onPublish,
+  onDelete
+}) => {
   const blogWrapper = useRef();
   const [loading, setLoading] = useState(true);
 
@@ -30,12 +41,12 @@ const BlogWidget = (props) => {
 
   return (
     <div className="grid-wrapper">
-      <Filter title={props.title} filterData={props.filterData} onFilterChange={handleFilterChange} />
+      <Filter title={title} filterData={filterData} onFilterChange={handleFilterChange} />
         {/* Grid Start */}
-      <ul ref={blogWrapper} className={`blog-widget grid-container ${props.grid ? ` ${props.grid}` : ""}${loading ? " loading" : ""}${props.filter === false ? "" : " mt-28 md:mt-[4.5rem] sm:mt-8"}`}>
+      <ul ref={blogWrapper} className={`blog-widget grid-container ${grid ? ` ${grid}` : ""}${loading ? " loading" : ""}${filter === false ? "" : " mt-28 md:mt-[4.5rem] sm:mt-8"}`}>
         <li className="grid-sizer"></li>
         {
-          props.data.map((item, i) => {
+          data.map((item, i) => {
             return (
               <li key={i} className={`grid-item${item.double_col ? " grid-item-double" : ""} ${(() => {
                 let categories = Array.isArray(item.category) ? item.category : (item.category && item.category.name ? [item.category.name] : []);
@@ -47,7 +58,7 @@ const BlogWidget = (props) => {
                   viewport={{ once: true }}
                   transition={{ duration: 0.6, ease: "easeOut" }} >
                   <figure className="shrink-0 h-auto w-[140px] mb-0 xs:w-[100px]">
-                    <Link aria-label="link" to={`${props.link}${item.uuid || item.id}`}>
+                    <Link aria-label="link" to={`${link}${item.uuid || item.id}`}>
                       <img 
                         height={88} 
                         width={140} 
@@ -71,7 +82,7 @@ const BlogWidget = (props) => {
                     </span>
                     <Link 
                       aria-label="link" 
-                      to={`${props.link}${item.uuid || item.id}`} 
+                      to={`${link}${item.uuid || item.id}`} 
                       className="mb-2 leading-[22px] font-medium text-darkgray font-serif block hover:text-fastblue transition-colors duration-300"
                     >
                       {item.title}
@@ -94,58 +105,58 @@ const BlogWidget = (props) => {
                       </div>
                     </div>
                     
-                                                {/* Action Buttons - Only show if showActions is true */}
-                            {props.showActions !== false && (
-                                <div className="flex items-center space-x-2">
-                                    {item.is_published === false ? (
-                                        // Draft Actions
-                                        <>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    props.onPublish && props.onPublish(item.uuid, item);
-                                                }}
-                                                className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md transition-colors duration-200 font-medium"
-                                            >
-                                                Publish
-                                            </button>
-                                            <Link
-                                                to={`/posts/edit/${item.uuid}`}
-                                                className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md transition-colors duration-200 font-medium"
-                                            >
-                                                Edit
-                                            </Link>
-                                        </>
-                                    ) : (
-                                        // Published Actions
-                                        <>
-                                            <Link
-                                                to={`${props.link}${item.uuid}`}
-                                                className="text-xs bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-md transition-colors duration-200 font-medium"
-                                            >
-                                                View
-                                            </Link>
-                                            <Link
-                                                to={`/posts/edit/${item.uuid}`}
-                                                className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md transition-colors duration-200 font-medium"
-                                            >
-                                                Edit
-                                            </Link>
-                                        </>
-                                    )}
+                    {/* Action Buttons - Only show if showActions is true */}
+                    {showActions !== false && (
+                        <div className="flex items-center space-x-2">
+                            {item.is_published === false ? (
+                                // Draft Actions
+                                <>
                                     <button
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            if (window.confirm(`Are you sure you want to delete "${item.title}"?`)) {
-                                                props.onDelete && props.onDelete(item.uuid);
-                                            }
+                                            onPublish && onPublish(item.uuid, item);
                                         }}
-                                        className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md transition-colors duration-200 font-medium"
+                                        className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md transition-colors duration-200 font-medium"
                                     >
-                                        Delete
+                                        Publish
                                     </button>
-                                </div>
+                                    <Link
+                                        to={`/posts/edit/${item.uuid}`}
+                                        className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md transition-colors duration-200 font-medium"
+                                    >
+                                        Edit
+                                    </Link>
+                                </>
+                            ) : (
+                                // Published Actions
+                                <>
+                                    <Link
+                                        to={`${link}${item.uuid}`}
+                                        className="text-xs bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-md transition-colors duration-200 font-medium"
+                                    >
+                                        View
+                                    </Link>
+                                    <Link
+                                        to={`/posts/edit/${item.uuid}`}
+                                        className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md transition-colors duration-200 font-medium"
+                                    >
+                                        Edit
+                                    </Link>
+                                </>
                             )}
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    if (window.confirm(`Are you sure you want to delete "${item.title}"?`)) {
+                                        onDelete && onDelete(item.uuid);
+                                    }
+                                }}
+                                className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md transition-colors duration-200 font-medium"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    )}
                   </div>
                 </m.div>
               </li>
@@ -157,21 +168,14 @@ const BlogWidget = (props) => {
 
       {/* Pagination Start */}
       {
-        props.pagination === true && (
+        pagination === true && (
           <div className="flex justify-center mt-[7.5rem] md:mt-20">
             <Pagination />
           </div>)
       }
-      {/* Pagination Emd */}
+      {/* Pagination End */}
     </div>
   )
-}
-
-BlogWidget.defaultProps = {
-  filter: false,
-  data: blogWidgetData,
-  link: "/posts/",
-  showActions: true,
 }
 
 BlogWidget.propTypes = {
@@ -179,22 +183,29 @@ BlogWidget.propTypes = {
   title: PropTypes.string,
   grid: PropTypes.string,
   link: PropTypes.string,
+  filter: PropTypes.bool,
+  filterData: PropTypes.array,
   onPublish: PropTypes.func,
   onDelete: PropTypes.func,
   showActions: PropTypes.bool,
   data: PropTypes.arrayOf(
-    PropTypes.exact({
+    PropTypes.shape({
       id: PropTypes.number,
-      category: PropTypes.array,
+      uuid: PropTypes.string,
+      category: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
       tags: PropTypes.array,
       blogType: PropTypes.string,
       img: PropTypes.string,
+      featured_image: PropTypes.string,
       title: PropTypes.string,
       content: PropTypes.string,
-      author: PropTypes.number,
+      author: PropTypes.oneOfType([PropTypes.number, PropTypes.object]),
       likes: PropTypes.number,
-      comments: PropTypes.number,
+      comments: PropTypes.oneOfType([PropTypes.number, PropTypes.array]),
       date: PropTypes.string,
+      created_at: PropTypes.string,
+      is_published: PropTypes.bool,
+      is_featured: PropTypes.bool,
       double_col: PropTypes.bool
     })
   ),

@@ -487,7 +487,4 @@ PostForm.propTypes = {
     className: PropTypes.string,
 };
 
-// Defaults are now handled in destructuring
-PostForm.defaultProps = undefined;
-
 export default memo(PostForm)

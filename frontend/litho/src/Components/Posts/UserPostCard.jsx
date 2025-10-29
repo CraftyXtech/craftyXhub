@@ -17,7 +17,7 @@ import { fadeIn } from '../../Functions/GlobalAnimations'
 // Utils
 import { getImageUrl } from '../../api/postsService'
 
-const UserPostCard = ({ post, onDelete, onPublish, className, ...props }) => {
+const UserPostCard = ({ post, onDelete, onPublish, className = "", ...props }) => {
     // Determine if this is a draft or published post
     const isDraft = !post.is_published
     const [isDeleting, setIsDeleting] = useState(false)
@@ -278,10 +278,6 @@ const UserPostCard = ({ post, onDelete, onPublish, className, ...props }) => {
             </div>
         </m.div>
     )
-}
-
-UserPostCard.defaultProps = {
-    className: ""
 }
 
 UserPostCard.propTypes = {

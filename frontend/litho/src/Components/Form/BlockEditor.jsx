@@ -133,7 +133,6 @@ const BlockEditor = ({
         }
 
         const initEditor = async () => {
-            console.log('BlockEditor: Initializing editor...');
             try {
                 let initialData = {
                     time: Date.now(),
@@ -235,46 +234,16 @@ const BlockEditor = ({
                     onChange: handleEditorChange,
 
                     onReady: () => {
-                        console.log('BlockEditor is ready');
+                        // Editor ready
                     }
                 });
 
                 await editor.isReady;
                 editorRef.current = editor;
                 isInitializedRef.current = true;
-                console.log('BlockEditor: Editor initialized successfully');
-                
-                // Debug: Check if editor is receiving input
-                const editorElement = document.getElementById(`editorjs-${props.name}`);
-                if (editorElement) {
-                    console.log('BlockEditor: Editor element found', editorElement);
-                    
-                    // Add event listeners to debug
-                    editorElement.addEventListener('keydown', (e) => {
-                        console.log('BlockEditor: Keydown event', e.key, e);
-                    });
-                    
-                    editorElement.addEventListener('input', (e) => {
-                        console.log('BlockEditor: Input event', e);
-                    });
-                    
-                    editorElement.addEventListener('click', (e) => {
-                        console.log('BlockEditor: Click event', e.target);
-                    });
-                    
-                    // Check contenteditable
-                    const editableElements = editorElement.querySelectorAll('[contenteditable]');
-                    console.log('BlockEditor: Contenteditable elements found:', editableElements.length);
-                    editableElements.forEach((el, index) => {
-                        console.log(`BlockEditor: Element ${index}:`, el, 'contenteditable=', el.getAttribute('contenteditable'));
-                    });
-                } else {
-                    console.error('BlockEditor: Editor element NOT found!');
-                }
 
             } catch (error) {
-                console.error('BlockEditor: Error initializing editor:', error);
-                console.error('BlockEditor: Error details:', error.message, error.stack);
+                console.error('Error initializing BlockEditor:', error);
             }
         };
 

@@ -133,7 +133,6 @@ const EditorOnlyPostForm = ({
             setLastSaved(Date.now())
             setIsDirty(false)
         } catch (error) {
-            console.error('Auto-save failed:', error)
             setSaveStatus('error')
         }
     }, [
@@ -178,7 +177,6 @@ const EditorOnlyPostForm = ({
             setLastSaved(Date.now())
             setIsDirty(false)
         } catch (error) {
-            console.error('Save draft failed:', error)
             setSaveStatus('error')
             alert(error.message || 'Failed to save draft')
         }
@@ -228,7 +226,6 @@ const EditorOnlyPostForm = ({
             await onSubmit(postData)
             setIsDirty(false)
         } catch (error) {
-            console.error('Publish failed:', error)
             alert(error.message || 'Failed to publish post')
         }
     }, [

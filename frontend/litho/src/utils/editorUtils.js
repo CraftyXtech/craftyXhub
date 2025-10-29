@@ -14,13 +14,17 @@ const edjsParser = edjsHTML();
  * @returns {string} HTML string
  */
 export function editorJsToHtml(editorData) {
-  if (!editorData || !editorData.blocks || editorData.blocks.length === 0) {
+  if (!editorData || !editorData.blocks || !Array.isArray(editorData.blocks) || editorData.blocks.length === 0) {
     return '';
   }
 
   try {
     const html = edjsParser.parse(editorData);
-    return html.join('');
+    // Handle cases where parse() might return non-array or undefined
+    if (!html) return '';
+    if (Array.isArray(html)) return html.join('');
+    if (typeof html === 'string') return html;
+    return '';
   } catch (error) {
     console.error('Error converting EditorJS to HTML:', error);
     return '';
