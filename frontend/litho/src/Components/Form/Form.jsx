@@ -44,3 +44,6 @@ Input.defaultProps = {
 
 // Export RichTextEditor
 export { default as RichTextEditor } from './RichTextEditor'
+
+// Export BlockEditor
+export { default as BlockEditor } from './BlockEditor'

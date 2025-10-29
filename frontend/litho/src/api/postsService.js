@@ -436,6 +436,11 @@ export const createUserPost = async (postData) => {
     formData.append("title", postData.title);
     formData.append("content", postData.content);
 
+    // Add content_blocks as JSON string if present
+    if (postData.content_blocks) {
+      formData.append("content_blocks", JSON.stringify(postData.content_blocks));
+    }
+
     if (postData.excerpt) formData.append("excerpt", postData.excerpt);
     if (postData.meta_title) formData.append("meta_title", postData.meta_title);
     if (postData.meta_description)
@@ -481,6 +486,12 @@ export const updateUserPost = async (postUuid, postData) => {
     if (postData.title !== undefined) formData.append("title", postData.title);
     if (postData.content !== undefined)
       formData.append("content", postData.content);
+    
+    // Add content_blocks as JSON string if present
+    if (postData.content_blocks !== undefined) {
+      formData.append("content_blocks", postData.content_blocks ? JSON.stringify(postData.content_blocks) : "");
+    }
+    
     if (postData.excerpt !== undefined)
       formData.append("excerpt", postData.excerpt || "");
     if (postData.meta_title !== undefined)

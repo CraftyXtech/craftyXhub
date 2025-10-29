@@ -1,16 +1,13 @@
 import React, { useState } from "react";
 import Content from "@/layout/content/Content";
 import Head from "@/layout/head/Head";
-import AudienceOverview from "@/components/partials/analytics/audience-overview/AudienceOverview";
-import ActiveUser from "@/components/partials/analytics/active-user/ActiveUser";
-import WebsitePerformance from "@/components/partials/analytics/website-perfomance/WebsitePerfomance";
-import TrafficChannel from "@/components/partials/analytics/traffic-channel/Traffic";
-import TrafficDougnut from "@/components/partials/analytics/traffic-dougnut/TrafficDoughnut";
-import UserMap from "@/components/partials/analytics/user-map/UserMap";
-import BrowserUser from "@/components/partials/analytics/browser-users/BrowserUser";
-import PageViewer from "@/components/partials/analytics/page-view/PageView";
-import SessionDevice from "@/components/partials/analytics/session-devices/SessionDevice";
-import { DropdownToggle, DropdownMenu, Card, UncontrolledDropdown, DropdownItem } from "reactstrap";
+import PostsOverview from "@/components/partials/blog-analytics/PostsOverview";
+import EngagementMetrics from "@/components/partials/blog-analytics/EngagementMetrics";
+import PopularPosts from "@/components/partials/blog-analytics/PopularPosts";
+import RecentActivity from "@/components/partials/blog-analytics/RecentActivity";
+import RecentDocuments from "@/components/partials/dashboard/RecentDocuments";
+import { Card, CardBody } from "reactstrap";
+import { DropdownToggle, DropdownMenu, UncontrolledDropdown, DropdownItem } from "reactstrap";
 import {
   Block,
   BlockDes,
@@ -21,23 +18,44 @@ import {
   Button,
   Row,
   Col,
-  PreviewAltCard,
 } from "@/components/Component";
 
 const AnalyticsHomePage = () => {
   const [sm, updateSm] = useState(false);
+  
+  const systemData = {
+    overview: {
+      totalUsers: 1248,
+      activeUsers: 892,
+      totalPosts: 156,
+      pendingReviews: 23
+    },
+    postsOverview: {
+      totalPosts: 156,
+      published: 132,
+      drafts: 18,
+      trending: 6
+    },
+    engagementMetrics: {
+      totalViews: '45.2k',
+      likes: '8.5k',
+      comments: '1.2k',
+      bookmarks: '3.4k'
+    }
+  };
+
   return (
     <>
-      <Head title="Analytics Dashboard" />
+      <Head title="Dashboard" />
       <Content>
         <BlockHead size="sm">
           <div className="nk-block-between">
             <BlockHeadContent>
               <BlockTitle page tag="h3">
-                Website Analytics
+                Dashboard Overview
               </BlockTitle>
               <BlockDes className="text-soft">
-                <p>Welcome to Analytics Dashboard.</p>
+                <p>Welcome to your admin dashboard.</p>
               </BlockDes>
             </BlockHeadContent>
             <BlockHeadContent>
@@ -110,52 +128,144 @@ const AnalyticsHomePage = () => {
 
         <Block>
           <Row className="g-gs">
-            <Col lg="7" xxl="6">
-              <PreviewAltCard className="h-100">
-                <AudienceOverview />
-              </PreviewAltCard>
-            </Col>
-            <Col md="6" lg="5" xxl="3">
-              <PreviewAltCard className="h-100">
-                <ActiveUser />
-              </PreviewAltCard>
-            </Col>
-            <Col md="6" lg="5" xxl="3">
-              <PreviewAltCard className="h-100">
-                <WebsitePerformance />
-              </PreviewAltCard>
-            </Col>
-            <Col lg="7" xxl="6">
+            <Col sm="6" lg="3">
               <Card className="card-bordered h-100">
-                <TrafficChannel />
+                <CardBody className="card-inner">
+                  <div className="card-title-group align-start mb-2">
+                    <div className="card-title">
+                      <h6 className="subtitle">Total Users</h6>
+                    </div>
+                    <div className="card-tools">
+                      <div className="icon-wrap icon-wrap-lg bg-primary-dim">
+                        <Icon name="users" className="text-primary icon-lg"></Icon>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="align-end flex-sm-wrap g-4 flex-md-nowrap">
+                    <div className="nk-sale-data">
+                      <span className="amount">{systemData.overview.totalUsers}</span>
+                      <span className="sub-title text-soft mt-1">
+                        <span className="change up text-success">
+                          <Icon name="arrow-long-up"></Icon>12.5%
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </CardBody>
               </Card>
             </Col>
-            <Col md="6" xxl="3">
-              <PreviewAltCard className="h-100">
-                <TrafficDougnut />
-              </PreviewAltCard>
-            </Col>
-            <Col md="6" xxl="3">
-              <PreviewAltCard className="h-100">
-                <UserMap />
-              </PreviewAltCard>
-            </Col>
-            <Col xxl="6">
+
+            <Col sm="6" lg="3">
               <Card className="card-bordered h-100">
-                <BrowserUser />
+                <CardBody className="card-inner">
+                  <div className="card-title-group align-start mb-2">
+                    <div className="card-title">
+                      <h6 className="subtitle">Active Users</h6>
+                    </div>
+                    <div className="card-tools">
+                      <div className="icon-wrap icon-wrap-lg bg-success-dim">
+                        <Icon name="user-check" className="text-success icon-lg"></Icon>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="align-end flex-sm-wrap g-4 flex-md-nowrap">
+                    <div className="nk-sale-data">
+                      <span className="amount">{systemData.overview.activeUsers}</span>
+                      <span className="sub-title text-soft mt-1">
+                        <span className="change up text-success">
+                          <Icon name="arrow-long-up"></Icon>8.3%
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </CardBody>
               </Card>
             </Col>
-            <Col md="6" xxl="3">
+
+            <Col sm="6" lg="3">
               <Card className="card-bordered h-100">
-                <PageViewer />
+                <CardBody className="card-inner">
+                  <div className="card-title-group align-start mb-2">
+                    <div className="card-title">
+                      <h6 className="subtitle">Total Posts</h6>
+                    </div>
+                    <div className="card-tools">
+                      <div className="icon-wrap icon-wrap-lg bg-info-dim">
+                        <Icon name="file-text" className="text-info icon-lg"></Icon>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="align-end flex-sm-wrap g-4 flex-md-nowrap">
+                    <div className="nk-sale-data">
+                      <span className="amount">{systemData.overview.totalPosts}</span>
+                      <span className="sub-title text-soft mt-1">
+                        <span className="change up text-success">
+                          <Icon name="arrow-long-up"></Icon>15.2%
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </CardBody>
               </Card>
             </Col>
-            <Col md="6" xxl="3">
-              <PreviewAltCard className="h-100" bodyClass="h-100 stretch flex-column">
-                <SessionDevice />
-              </PreviewAltCard>
+
+            <Col sm="6" lg="3">
+              <Card className="card-bordered h-100">
+                <CardBody className="card-inner">
+                  <div className="card-title-group align-start mb-2">
+                    <div className="card-title">
+                      <h6 className="subtitle">Pending Reviews</h6>
+                    </div>
+                    <div className="card-tools">
+                      <div className="icon-wrap icon-wrap-lg bg-warning-dim">
+                        <Icon name="alert-circle" className="text-warning icon-lg"></Icon>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="align-end flex-sm-wrap g-4 flex-md-nowrap">
+                    <div className="nk-sale-data">
+                      <span className="amount">{systemData.overview.pendingReviews}</span>
+                      <span className="sub-title text-soft mt-1">Needs attention</span>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
             </Col>
           </Row>
+        </Block>
+
+        <Block>
+          <BlockHead>
+            <BlockHeadContent>
+              <BlockTitle>Blog Analytics</BlockTitle>
+              <BlockDes className="text-soft">
+                <p>Monitor your blog performance and engagement</p>
+              </BlockDes>
+            </BlockHeadContent>
+          </BlockHead>
+          <Row className="g-gs">
+            <Col lg="6" xxl="6">
+              <PostsOverview data={systemData.postsOverview} />
+            </Col>
+            <Col lg="6" xxl="6">
+              <EngagementMetrics data={systemData.engagementMetrics} />
+            </Col>
+          </Row>
+        </Block>
+
+        <Block>
+          <Row className="g-gs">
+            <Col lg="8" xxl="8">
+              <PopularPosts />
+            </Col>
+            <Col lg="4" xxl="4">
+              <RecentActivity />
+            </Col>
+          </Row>
+        </Block>
+
+        <Block>
+          <RecentDocuments />
         </Block>
       </Content>
     </>

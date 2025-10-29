@@ -48,7 +48,23 @@ const Logo = ({
     </Tag>
   )
 
-  const linkElement = (
+  // Wrap in Navbar.Brand if requested (for header usage)
+  // Note: Navbar.Brand renders as <a>, so we use it directly with 'as' prop
+  if (asNavbarBrand) {
+    return (
+      <Navbar.Brand 
+        as={Link}
+        to={to}
+        aria-label={ariaLabel}
+        className="inline-block p-0 m-0 align-middle relative z-10"
+        {...props}
+      >
+        {logoElement}
+      </Navbar.Brand>
+    )
+  }
+
+  return (
     <Link 
       aria-label={ariaLabel} 
       className="inline-block relative z-10" 
@@ -58,17 +74,6 @@ const Logo = ({
       {logoElement}
     </Link>
   )
-
-  // Wrap in Navbar.Brand if requested (for header usage)
-  if (asNavbarBrand) {
-    return (
-      <Navbar.Brand className="inline-block p-0 m-0 align-middle">
-        {linkElement}
-      </Navbar.Brand>
-    )
-  }
-
-  return linkElement
 }
 
 Logo.propTypes = {
