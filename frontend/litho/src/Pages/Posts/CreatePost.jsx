@@ -435,7 +435,6 @@ const CreatePost = (props) => {
                                     onSubmit={handleSubmit}
                                     onSaveDraft={handleSaveDraft}
                                     loading={isEditMode ? updateLoading : (createLoading || saveLoading)}
-                                    isEdit={isEditMode}
                                     submitButtonText={isEditMode 
                                         ? (post?.is_published ? "Update Post" : "Publish Post")
                                         : "Publish Post"

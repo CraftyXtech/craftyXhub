@@ -45,7 +45,7 @@ const iconData = [
 
 // Note: default static data kept for fallback; we build dynamic menus below
 
-const FooterStyle05 = (props) => {
+const FooterStyle05 = ({ className, theme, data, logo, ...props }) => {
     // Dynamic menus
     const { categories } = useCategories();
     const servicesSubmenu = Array.isArray(categories)
@@ -61,7 +61,7 @@ const FooterStyle05 = (props) => {
         : [FooterData[3] || { title: 'Categories', submenu: [] }, { title: 'Highlights', submenu: customerSubmenu }];
 
     return (
-        <Footer className={`footer-style-05${props.className ? ` ${props.className}` : ""}`} theme={props.theme}>
+        <Footer className={`footer-style-05${className ? ` ${className}` : ""}`} theme={theme}>
             <div className="py-[40px] border-b border-[#ffffff1a]">
                 <Container>
                     <Row className="justify-between items-center sm:justify-center">
@@ -72,7 +72,7 @@ const FooterStyle05 = (props) => {
                             <p className="font-serif font-medium block align-middle uppercase xs:pl-0">Ready to join CraftyXhub? <Link aria-label="become a member" to="/auth/register" className="underline underline-offset-[6px] text-themecolor font-serif font-medium text-sm inline-block uppercase ml-[5px]">Become a member</Link></p>
                         </Col>
                         <Col className="col-12 col-md-3">
-                            <SocialIcons size="xs" className="justify-end sm:!text-center sm:!justify-center" theme="social-icon-style-01" iconColor={props.theme === "dark" ? "light" : "dark"} data={iconData} />
+                            <SocialIcons size="xs" className="justify-end sm:!text-center sm:!justify-center" theme="social-icon-style-01" iconColor={theme === "dark" ? "light" : "dark"} data={iconData} />
                         </Col>
                     </Row>
                 </Container>
@@ -128,14 +128,14 @@ const FooterStyle05 = (props) => {
     )
 }
 
-FooterStyle05.defaultProps = {
-    data: FooterData,
-    logo: null // Using text-based Logo component instead
-}
-
 FooterStyle05.propTypes = {
     className: PropTypes.string,
     logo: PropTypes.string,
+    theme: PropTypes.string,
+    data: PropTypes.array,
 }
+
+// Defaults removed - using text-based Logo component
+FooterStyle05.defaultProps = undefined;
 
 export default memo(FooterStyle05)
