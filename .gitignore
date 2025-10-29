@@ -253,3 +253,5 @@ api/.cursor/
 frontend/litho/.env
 frontend/admin/.env
 *.kiro  
+frontend/admin/dist.zip
+dist

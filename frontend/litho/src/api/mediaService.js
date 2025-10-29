@@ -85,8 +85,9 @@ export const getImageUrl = (filePath) => {
         return filePath
     }
     
-    const baseUrl = process.env.REACT_APP_API_BASE_URL || '/v1'
-    return `${baseUrl.replace('/v1', '')}/media/files/${filePath}`
+    const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/v1'
+    const apiBase = baseUrl.replace('/v1', '').replace(/\/$/, '')
+    return `${apiBase}/media/files/${filePath}`
 }
 
 export const formatFileSize = (bytes) => {
