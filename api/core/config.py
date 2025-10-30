@@ -30,6 +30,13 @@ class Settings:
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
     API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
 
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    GROK_API_KEY: str = os.getenv("GROK_API_KEY", "")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    
+    FREE_CHATGPT_TOKEN: str = os.getenv("FREE_CHATGPT_TOKEN", "")
+    FREE_DEEPSEEK_TOKEN: str = os.getenv("FREE_DEEPSEEK_TOKEN", "")
+
     _origins = os.getenv(
         "ALLOWED_ORIGINS",
         ",".join(

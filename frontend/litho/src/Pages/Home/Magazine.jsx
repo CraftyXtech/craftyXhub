@@ -306,7 +306,7 @@ const MagazinePage = (props) => {
         <Container>
           <Instagram carousel={true}
             carouselOption={{
-              loop: true,
+              loop: false,
               slidesPerView: 2,
               spaceBetween: 15,
               autoplay: { "delay": 3500, "disableOnInteraction": false },

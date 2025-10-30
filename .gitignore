@@ -255,3 +255,4 @@ frontend/admin/.env
 *.kiro  
 frontend/admin/dist.zip
 dist
+/docs

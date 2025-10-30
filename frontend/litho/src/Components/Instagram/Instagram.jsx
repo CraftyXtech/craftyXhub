@@ -6,7 +6,14 @@ import { PropTypes } from "prop-types";
 // Components
 import Instagram02 from './Instagram02';
 
-const Instagram = (props) => {
+const Instagram = ({ 
+    theme = "instagram-style-01",
+    total_posts = 6,
+    className,
+    grid,
+    carousel,
+    carouselOption
+}) => {
     const instaWrapper = useRef(null);
     const [loading, setLoading] = useState(true);
 
@@ -35,12 +42,12 @@ const Instagram = (props) => {
     }, [instaFeed])
 
     return (
-        props.carousel !== true ? (
+        carousel !== true ? (
             <div className="grid-wrapper">
-                <ul ref={instaWrapper} className={`grid-container${props.grid ? ` ${props.grid}` : ""}${loading ? " loading" : ""} instagram-posts`}>
+                <ul ref={instaWrapper} className={`grid-container${grid ? ` ${grid}` : ""}${loading ? " loading" : ""} instagram-posts`}>
                     <li className="grid-sizer"></li>
                     {
-                        instaFeed && instaFeed.slice(0, props.total_posts).map((item, i) => {
+                        instaFeed && instaFeed.slice(0, total_posts).map((item, i) => {
                             return (
                                 <li key={i} className="grid-item">
                                     <figure className="relative overflow-hidden rounded-[3px]">
@@ -58,18 +65,22 @@ const Instagram = (props) => {
                 </ul>
             </div>
         ) : (
-            <Instagram02 data={instaFeed} {...props} />
+            <Instagram02 
+                data={instaFeed} 
+                theme={theme}
+                total_posts={total_posts}
+                className={className}
+                grid={grid}
+                carousel={carousel}
+                carouselOption={carouselOption}
+            />
         )
     )
 }
 
-Instagram.defaultProps = {
-    theme: "instagram-style-01",
-    total_posts: 6,
-}
-
 Instagram.propTypes = {
     className: PropTypes.string,
+    theme: PropTypes.string,
     total_posts: PropTypes.number,
     grid: PropTypes.string,
     carousel: PropTypes.bool,
