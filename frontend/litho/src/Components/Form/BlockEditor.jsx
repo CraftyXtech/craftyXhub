@@ -260,7 +260,7 @@ const BlockEditor = ({
     }, []); // Empty dependency array - only initialize once
 
     return (
-        <label className={`block-editor-wrapper block relative${actualFullHeight ? ' full-height' : ''}${(meta.touched && meta.error) ? " errors-danger" : ""}${labelClass ? ` ${labelClass}` : ""}`}>
+        <div className={`block-editor-wrapper block relative${actualFullHeight ? ' full-height' : ''}${(meta.touched && meta.error) ? " errors-danger" : ""}${labelClass ? ` ${labelClass}` : ""}`}>
             {label}
             <div 
                 className={`block-editor${className ? ` ${className}` : ""}${meta.touched && meta.error ? " errors-danger" : ""}`}
@@ -272,14 +272,14 @@ const BlockEditor = ({
                     style={{ 
                         minHeight: typeof actualHeight === 'number' ? `${actualHeight}px` : actualHeight,
                         height: actualFullHeight ? '100%' : 'auto',
-                        width: '100%' 
+                        width: '100%'
                     }}
                 />
             </div>
             {meta.touched && meta.error && actualShowErrorMsg ? (
                 <span className="text-sm text-error block mt-[5px]">{meta.error}</span>
             ) : null}
-        </label>
+        </div>
     )
 }
 

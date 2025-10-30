@@ -6,34 +6,42 @@ import Head from '@/layout/head/Head';
 import Content from '@/layout/content/Content';
 import { Block, BlockHead, BlockBetween, BlockHeadContent, Row, Col, Button, Icon } from '@/components/Component';
 import AiWriterPanel from '@/components/ai-writer/AiWriterPanel';
-import { useAiDocuments } from '@/context/AiDocumentContext';
+import { useAiDrafts } from '@/context/AiDraftContext';
 import { mockGenerator } from '@/data/mockGenerator';
 import { textUtils } from '@/utils/textUtils';
 import { toast } from 'react-toastify';
+import { useTheme } from '@/layout/provider/Theme';
+// TinyMCE imports
+import 'tinymce/tinymce';
+import 'tinymce/models/dom/model';
+import 'tinymce/themes/silver';
+import 'tinymce/icons/default';
+import 'tinymce/skins/content/default/content';
 
 const AiEditorGenerate = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { documentId } = useParams();
   const editorRef = useRef(null);
-  const [documentTitle, setDocumentTitle] = useState('Untitled Document');
+  const theme = useTheme();
+  const [documentTitle, setDocumentTitle] = useState('Untitled Draft');
   const [content, setContent] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState(location.state?.selectedTemplate || null);
   const [variants, setVariants] = useState([]);
   const [generating, setGenerating] = useState(false);
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
-  const { addDocument, updateDocument, getDocumentById } = useAiDocuments();
+  const { addDraft, updateDraft, getDraftById } = useAiDrafts();
 
   useEffect(() => {
     if (documentId) {
-      const doc = getDocumentById(documentId);
-      if (doc) {
-        setDocumentTitle(doc.name);
-        setContent(doc.content);
+      const draft = getDraftById(documentId);
+      if (draft) {
+        setDocumentTitle(draft.name);
+        setContent(draft.content);
       }
     }
-  }, [documentId, getDocumentById]);
+  }, [documentId, getDraftById]);
 
   useEffect(() => {
     setWordCount(textUtils.countWords(content));
@@ -69,7 +77,7 @@ const AiEditorGenerate = () => {
 
   const handleSave = () => {
     const currentContent = editorRef.current ? editorRef.current.getContent() : content;
-    const docData = {
+    const draftData = {
       name: documentTitle,
       content: currentContent,
       type: 'blog_post',
@@ -82,10 +90,10 @@ const AiEditorGenerate = () => {
     };
 
     if (documentId) {
-      updateDocument(documentId, docData);
+      updateDraft(documentId, draftData);
     } else {
-      const newDoc = addDocument(docData);
-      navigate(`/ai-writer/editor/${newDoc.id}`, { replace: true });
+      const newDraft = addDraft(draftData);
+      navigate(`/ai-writer/editor/${newDraft.id}`, { replace: true });
     }
   };
 
@@ -152,7 +160,7 @@ const AiEditorGenerate = () => {
               <Card className="card-bordered h-100">
                 <CardBody className="card-inner">
                   <Editor
-                    apiKey="no-api-key"
+                    licenseKey="gpl"
                     onInit={(evt, editor) => (editorRef.current = editor)}
                     initialValue={content}
                     value={content}
@@ -160,14 +168,12 @@ const AiEditorGenerate = () => {
                     init={{
                       height: 600,
                       menubar: false,
-                      plugins: [
-                        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                        'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-                      ],
                       toolbar:
-                        'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
-                      content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size:14px }'
+                        'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat',
+                      content_style: theme.skin === 'dark' ? 
+                        'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; color: #fff; background-color: #1a1a1a; }' : 
+                        'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; color: #000; background-color: #fff; }',
+                      branding: false
                     }}
                   />
                 </CardBody>

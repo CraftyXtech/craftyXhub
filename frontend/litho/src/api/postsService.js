@@ -131,7 +131,14 @@ export const getRelatedPosts = async (postUuid, params = {}) => {
 // Get comments for a post or all comments with filters
 export const getComments = async (params = {}) => {
   try {
-    const response = await axiosInstance.get("/comments/", { params });
+    // Backend expects post_uuid in the path: /comments/{post_uuid}/comments
+    const { post_uuid, ...rest } = params || {};
+    if (!post_uuid) {
+      throw new Error("post_uuid is required to fetch comments");
+    }
+    const response = await axiosInstance.get(`/comments/${post_uuid}/comments`, {
+      params: rest,
+    });
     return response.data;
   } catch (error) {
     console.error("Error fetching comments:", error);
@@ -153,7 +160,12 @@ export const getComment = async (commentUuid) => {
 // Create a new comment
 export const createComment = async (commentData) => {
   try {
-    const response = await axiosPrivate.post("/comments/", commentData);
+    // Expecting { post_uuid, content, parent_id? }
+    const { post_uuid, ...payload } = commentData || {};
+    if (!post_uuid) {
+      throw new Error("post_uuid is required to create a comment");
+    }
+    const response = await axiosPrivate.post(`/comments/${post_uuid}/comments`, payload);
     return response.data;
   } catch (error) {
     console.error("Error creating comment:", error);
@@ -434,11 +446,16 @@ export const createUserPost = async (postData) => {
 
     // Add all post fields
     formData.append("title", postData.title);
-    formData.append("content", postData.content);
+    if (postData.content && String(postData.content).trim() !== "") {
+      formData.append("content", postData.content);
+    }
 
     // Add content_blocks as JSON string if present
     if (postData.content_blocks) {
-      formData.append("content_blocks", JSON.stringify(postData.content_blocks));
+      const cb = Array.isArray(postData.content_blocks)
+        ? { blocks: postData.content_blocks }
+        : postData.content_blocks;
+      formData.append("content_blocks", JSON.stringify(cb));
     }
 
     if (postData.excerpt) formData.append("excerpt", postData.excerpt);
@@ -472,7 +489,7 @@ export const createUserPost = async (postData) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error creating user post:", error);
+    console.error("Error creating user post:", error.response?.data || error);
     throw error;
   }
 };
@@ -483,33 +500,49 @@ export const updateUserPost = async (postUuid, postData) => {
     const formData = new FormData();
 
     // Add all post fields that are being updated
-    if (postData.title !== undefined) formData.append("title", postData.title);
-    if (postData.content !== undefined)
+    if (postData.title !== undefined && postData.title !== null && String(postData.title).trim() !== "") {
+      formData.append("title", postData.title);
+    }
+    if (postData.content !== undefined && postData.content !== null && String(postData.content).trim() !== "") {
       formData.append("content", postData.content);
+    }
     
     // Add content_blocks as JSON string if present
     if (postData.content_blocks !== undefined) {
-      formData.append("content_blocks", postData.content_blocks ? JSON.stringify(postData.content_blocks) : "");
+      const cb = Array.isArray(postData.content_blocks)
+        ? { blocks: postData.content_blocks }
+        : postData.content_blocks;
+      if (cb && (Array.isArray(cb.blocks) ? cb.blocks.length > 0 : true)) {
+        formData.append("content_blocks", JSON.stringify(cb));
+      }
     }
     
-    if (postData.excerpt !== undefined)
-      formData.append("excerpt", postData.excerpt || "");
-    if (postData.meta_title !== undefined)
-      formData.append("meta_title", postData.meta_title || "");
-    if (postData.meta_description !== undefined)
-      formData.append("meta_description", postData.meta_description || "");
-    if (postData.slug !== undefined) formData.append("slug", postData.slug);
-    if (postData.category_id !== undefined)
-      formData.append("category_id", postData.category_id || "");
-    if (postData.reading_time !== undefined)
-      formData.append("reading_time", postData.reading_time || "");
+    if (postData.excerpt !== undefined && postData.excerpt !== null && String(postData.excerpt).trim() !== "") {
+      formData.append("excerpt", postData.excerpt);
+    }
+    if (postData.meta_title !== undefined && postData.meta_title !== null && String(postData.meta_title).trim() !== "") {
+      formData.append("meta_title", postData.meta_title);
+    }
+    if (postData.meta_description !== undefined && postData.meta_description !== null && String(postData.meta_description).trim() !== "") {
+      formData.append("meta_description", postData.meta_description);
+    }
+    if (postData.slug !== undefined && postData.slug !== null && String(postData.slug).trim() !== "") {
+      formData.append("slug", postData.slug);
+    }
+    if (postData.category_id !== undefined && postData.category_id !== null && postData.category_id !== "")
+      formData.append("category_id", String(postData.category_id));
+    if (postData.reading_time !== undefined && postData.reading_time !== null && postData.reading_time !== "")
+      formData.append("reading_time", String(postData.reading_time));
+
+    // Allow toggling publish state via update
+    if (postData.is_published !== undefined) {
+      formData.append("is_published", String(postData.is_published));
+    }
 
     // Handle tag_ids as comma-separated string
     if (postData.tag_ids !== undefined) {
-      const tagIdsString = Array.isArray(postData.tag_ids)
-        ? postData.tag_ids.join(",")
-        : "";
-      formData.append("tag_ids", tagIdsString);
+      const ids = Array.isArray(postData.tag_ids) ? postData.tag_ids : [];
+      if (ids.length > 0) formData.append("tag_ids", ids.join(","));
     }
 
     // Handle featured image file (new upload)
@@ -524,7 +557,7 @@ export const updateUserPost = async (postUuid, postData) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error updating user post:", error);
+    console.error("Error updating user post:", error.response?.data || error);
     throw error;
   }
 };
@@ -553,9 +586,7 @@ export const savePostAsDraft = async (postData) => {
 
 export const publishDraftPost = async (postUuid) => {
   try {
-    const response = await axiosPrivate.put(`/posts/${postUuid}`, {
-      is_published: true,
-    });
+    const response = await axiosPrivate.put(`/posts/${postUuid}/publish`);
     return response.data;
   } catch (error) {
     console.error("Error publishing draft post:", error);

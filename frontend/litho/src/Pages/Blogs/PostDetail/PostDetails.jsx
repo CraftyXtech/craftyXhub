@@ -71,16 +71,14 @@ const PostDetails = (props) => {
 
   const { isAuthenticated, user } = useAuth()
 
-  // Get slug or id from URL params
-  const param = useParams();
-  const { id, slug } = param;
+  // Canonical param: UUID
+  const { uuid } = useParams();
   
-  // Use API hook to fetch post data
-  const identifier = slug || id;
-  const { post, loading, error } = usePost(identifier);
+  // Fetch post by UUID
+  const { post, loading, error } = usePost(uuid);
   
-  // Fetch related posts dynamically
-  const { relatedPosts, loading: relatedLoading, error: relatedError } = useRelatedPosts(post?.uuid, { limit: 3 });
+  // Fetch related posts by UUID directly to avoid intermediate undefined
+  const { relatedPosts, loading: relatedLoading, error: relatedError } = useRelatedPosts(uuid, { limit: 3 });
 
   useEffect(() => {
     if (post) {
@@ -98,14 +96,10 @@ const PostDetails = (props) => {
       }
     } else if (!loading && !post) {
       let getData;
-      if (slug) {
-        getData = blogData.filter((item) => item.slug === slug || item.title?.toLowerCase().replace(/\s+/g, '-') === slug);
-      } else if (id) {
-        getData = blogData.filter((item) => item.id === parseInt(id));
-      }
+      // Legacy fallback removed: this page expects a server UUID in URL.
     setData(getData);
     }
-  }, [post, loading, slug, id, isAuthenticated, user]);
+  }, [post, loading, isAuthenticated, user]);
 
   const handleLike = async () => {
     if (!isAuthenticated) {
@@ -420,7 +414,7 @@ const PostDetails = (props) => {
           </section>
           {/* Section End */}
 
-          <CommentBox postUuid={id} postData={data[0]} />
+          <CommentBox postUuid={post?.uuid || uuid} postData={data[0]} />
 
           {/* Section Start */}
           <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />

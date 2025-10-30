@@ -28,11 +28,23 @@ class CommentService:
                     detail="Post not found"
                 )
 
+            # Resolve parent reference from uuid if provided
+            parent_id_val = comment_data.parent_id
+            if getattr(comment_data, "parent_uuid", None):
+                parent_comment = await CommentService.get_comment_by_uuid(session, comment_data.parent_uuid)
+                if parent_comment.post_id != db_post.id:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Parent comment does not belong to this post"
+                    )
+                parent_id_val = parent_comment.id
+
             db_comment = Comment(
                 content=comment_data.content,
                 post_id=db_post.id,
                 author_id=user_id,
-                parent_id=comment_data.parent_id
+                parent_id=parent_id_val,
+                is_approved=True
             )
             session.add(db_comment)
             await session.commit()

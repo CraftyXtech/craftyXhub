@@ -5,31 +5,31 @@ import Content from '@/layout/content/Content';
 import { Block, BlockHead, BlockTitle, BlockDes, BlockBetween, BlockHeadContent, Row, Col, Button, Icon, DataTable, DataTableBody, DataTableHead, DataTableRow, DataTableItem } from '@/components/Component';
 import AiStatCard from '@/components/ai-writer/AiStatCard';
 import TemplateCard from '@/components/ai-writer/TemplateCard';
-import { useAiDocuments } from '@/context/AiDocumentContext';
+import { useAiDrafts } from '@/context/AiDraftContext';
 import { AI_TEMPLATES } from '@/data/aiTemplates';
 import { textUtils } from '@/utils/textUtils';
 
 const AiDashboard = () => {
   const navigate = useNavigate();
-  const { documents, getStats } = useAiDocuments();
+  const { drafts, getStats } = useAiDrafts();
   const stats = getStats();
 
-  const recentDocuments = useMemo(() => {
-    return documents
+  const recentDrafts = useMemo(() => {
+    return drafts
       .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
       .slice(0, 5);
-  }, [documents]);
+  }, [drafts]);
 
   const popularTemplates = AI_TEMPLATES.slice(0, 4);
 
   const wordLimit = 2000;
   const draftLimit = 10;
-  const toolsUsed = Object.keys(stats.documentsByType).length;
+  const toolsUsed = Object.keys(stats.draftsByType || {}).length;
   const toolsLimit = 16;
 
   return (
     <>
-      <Head title="AI Writer Dashboard" />
+      <Head title="Content Generator Dashboard" />
       <Content>
         <BlockHead size="sm">
           <BlockBetween>
@@ -55,25 +55,25 @@ const AiDashboard = () => {
           <Row className="g-gs">
             <Col sm="6" lg="4">
               <AiStatCard
-                title="Drafts Available"
-                value={`${stats.totalDocuments}`}
-                subtitle={`${stats.totalDocuments}/${draftLimit} free drafts created`}
+                title="Content Drafts"
+                value={`${stats.totalDrafts}`}
+                subtitle={`${stats.totalDrafts} drafts created`}
                 color="warning"
                 variant="solid"
                 icon="file-text"
-                linkText="See All"
+                linkText="View All"
                 onLinkClick={() => navigate('/ai-writer/documents')}
               />
             </Col>
             <Col sm="6" lg="4">
               <AiStatCard
-                title="Documents Available"
-                value={`${stats.totalDocuments}`}
-                subtitle={`${stats.totalDocuments}/10 free documents created`}
+                title="Words Generated"
+                value={`${stats.totalWords}`}
+                subtitle="Total words created with AI"
                 color="cyan"
                 variant="solid"
-                icon="files"
-                linkText="See All"
+                icon="edit"
+                linkText="View Drafts"
                 onLinkClick={() => navigate('/ai-writer/documents')}
               />
             </Col>
@@ -127,25 +127,25 @@ const AiDashboard = () => {
           <BlockHead>
             <BlockBetween className="g-3">
               <BlockHeadContent>
-                <BlockTitle>Recent Documents</BlockTitle>
+                <BlockTitle>Recent Drafts</BlockTitle>
               </BlockHeadContent>
               <BlockHeadContent>
                 <Button color="light" outline onClick={() => navigate('/ai-writer/documents')}>
-                  <span>See All</span>
+                  <span>View All</span>
                   <Icon name="arrow-right" className="ms-1" />
                 </Button>
               </BlockHeadContent>
             </BlockBetween>
           </BlockHead>
 
-          {recentDocuments.length === 0 ? (
+          {recentDrafts.length === 0 ? (
             <div className="text-center py-5 card card-bordered">
               <div className="card-inner">
                 <Icon name="file-text" className="text-soft mb-2" style={{ fontSize: '3rem' }} />
-                <p className="text-soft">No documents yet</p>
+                <p className="text-soft">No drafts yet</p>
                 <Button color="primary" onClick={() => navigate('/ai-writer/editor/new')}>
                   <Icon name="plus" className="me-1" />
-                  <span>Create Your First Document</span>
+                  <span>Generate Your First Draft</span>
                 </Button>
               </div>
             </div>
@@ -166,23 +166,23 @@ const AiDashboard = () => {
                 </DataTableRow>
               </DataTableHead>
               <DataTableBody>
-                {recentDocuments.map((doc) => (
-                  <DataTableItem key={doc.id}>
+                {recentDrafts.map((draft) => (
+                  <DataTableItem key={draft.id}>
                     <DataTableRow>
                       <div className="user-card">
                         <div className="user-info">
-                          <span className="tb-lead">{doc.name}</span>
-                          <span className="sub-text">{doc.metadata?.words || 0} words</span>
+                          <span className="tb-lead">{draft.name}</span>
+                          <span className="sub-text">{draft.metadata?.words || 0} words</span>
                         </div>
                       </div>
                     </DataTableRow>
                     <DataTableRow size="sm">
                       <span className="badge badge-dim badge-sm badge-primary">
-                        {doc.type || 'Blog Post'}
+                        {draft.type || 'Blog Post'}
                       </span>
                     </DataTableRow>
                     <DataTableRow size="sm">
-                      <span className="sub-text">{textUtils.timeAgo(doc.updated_at)}</span>
+                      <span className="sub-text">{textUtils.timeAgo(draft.updated_at)}</span>
                     </DataTableRow>
                     <DataTableRow size="sm" className="nk-tb-col-tools">
                       <ul className="nk-tb-actions gx-1">
@@ -191,8 +191,8 @@ const AiDashboard = () => {
                             className="btn-icon btn-trigger"
                             size="sm"
                             color="primary"
-                            onClick={() => navigate(`/ai-writer/editor/${doc.id}`)}
-                            title="Edit Document"
+                            onClick={() => navigate(`/ai-writer/editor/${draft.id}`)}
+                            title="Edit Draft"
                           >
                             <Icon name="edit" />
                           </Button>

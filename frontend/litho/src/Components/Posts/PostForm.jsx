@@ -11,7 +11,7 @@ import { Input, TextArea, BlockEditor } from '../Form/Form'
 import Buttons from '../Button/Buttons'
 
 // API & Auth
-import { useCategories, useTags } from '../../api/usePosts'
+import { useCategoriesRaw as useCategories, useTags } from '../../api/usePosts'
 import useAuth from '../../api/useAuth'
 
 // Animation

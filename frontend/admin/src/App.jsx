@@ -1,13 +1,13 @@
 import Router from "./route/Index";
 import { AuthProvider } from "./api/AuthProvider";
-import { AiDocumentProvider } from "./context/AiDocumentContext";
+import { AiDraftProvider } from "./context/AiDraftContext";
 
 const App = () => {
   return (
       <AuthProvider>
-        <AiDocumentProvider>
+        <AiDraftProvider>
           <Router />
-        </AiDocumentProvider>
+        </AiDraftProvider>
       </AuthProvider>
   );
 };

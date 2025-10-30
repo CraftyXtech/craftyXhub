@@ -106,15 +106,15 @@ const menu = [
   */
 {
     icon: "spark",
-    text: "AI Writer",
+    text: "Content Generator",
     link: "/ai-writer/dashboard",
     subMenu: [
       {
-        text: "AI Dashboard",
+        text: "Dashboard",
         link: "/ai-writer/dashboard",
       },
       {
-        text: "Documents",
+        text: "Drafts",
         link: "/ai-writer/documents",
       },
       {

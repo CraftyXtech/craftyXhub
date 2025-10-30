@@ -15,7 +15,8 @@ class Comment(Base):
     author_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     post_id = Column(Integer, ForeignKey('posts.id'), nullable=False)
     parent_id = Column(Integer, ForeignKey('comments.id'), nullable=True)
-    is_approved = Column(Boolean, default=False)
+    # Comments are auto-approved; no manual admin approval needed
+    is_approved = Column(Boolean, default=True)
     # created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     # updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     created_at = Column(DateTime(timezone=True), server_default=text("(datetime('now'))"))

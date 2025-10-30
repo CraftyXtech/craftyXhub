@@ -275,9 +275,9 @@ function App() {
 
 
 
-                  {/* New Post Detail Route - Primary route for all blog posts */}
+                  {/* New Post Detail Route - use UUID for canonical post view */}
                   <Route 
-                    path="posts/:slug" 
+                    path="posts/:uuid" 
                     element={
                       <PostDetails
                         style={{ "--base-color": "#0038e3" }}

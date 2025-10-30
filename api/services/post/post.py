@@ -598,6 +598,11 @@ class PostService:
                 author_id=author_id
             )
 
+            # If immediate publish is requested, set publish fields
+            if post_data.is_published:
+                db_post.is_published = True
+                db_post.published_at = datetime.utcnow()
+
             if post_data.tag_ids:
                 tags = await PostService.get_tags_by_ids(session, post_data.tag_ids)
                 db_post.tags.extend(tags)
@@ -644,6 +649,15 @@ class PostService:
             for field, value in update_data.items():
                 setattr(db_post, field, value)
 
+            # Handle publish state toggle
+            if post_data.is_published is not None:
+                if post_data.is_published:
+                    db_post.is_published = True
+                    db_post.published_at = datetime.utcnow()
+                else:
+                    db_post.is_published = False
+                    db_post.published_at = None
+
             db_post.updated_at = datetime.utcnow()
             await session.commit()
             await session.refresh(db_post)
@@ -661,7 +675,7 @@ class PostService:
     async def delete_post(
             session: AsyncSession,
             post_uuid: str,
-            current_user_id: int
+            current_user: User
     ) -> bool:
         try:
             db_post = await PostService.get_post_by_uuid(session, post_uuid, include_deleted=False)
@@ -671,7 +685,8 @@ class PostService:
                     detail="Post not found"
                 )
 
-            if db_post.author_id != current_user_id:
+            # Allow author or admin to delete
+            if db_post.author_id != current_user.id and not current_user.is_admin():
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Not authorized to delete this post"
@@ -693,7 +708,7 @@ class PostService:
     async def soft_delete_post(
             session: AsyncSession,
             post_uuid: str,
-            current_user_id: int
+            current_user: User
     ) -> dict:
         try:
             db_post = await PostService.get_post_by_uuid(session, post_uuid, include_deleted=False)
@@ -703,7 +718,8 @@ class PostService:
                     detail="Post not found"
                 )
 
-            if db_post.author_id != current_user_id:
+            # Allow author or admin to soft delete
+            if db_post.author_id != current_user.id and not current_user.is_admin():
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Not authorized to delete this post"
@@ -806,6 +822,41 @@ class PostService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to toggle post like: {str(e)}"
+            )
+
+    @staticmethod
+    async def flag_post(
+            session: AsyncSession,
+            post_uuid: str,
+            current_user: User,
+            flag: bool = True
+    ) -> Post:
+        """Admin can flag/unflag a post. Flagging also unpublishes the post."""
+        try:
+            if not current_user.is_admin():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only admins can flag posts"
+                )
+
+            db_post = await PostService.get_post_by_uuid(session, post_uuid, include_deleted=True)
+            if not db_post:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+            db_post.is_flagged = flag
+            if flag:
+                db_post.is_published = False
+                db_post.published_at = None
+            await session.commit()
+            await session.refresh(db_post)
+            return db_post
+        except HTTPException:
+            raise
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to flag post: {str(e)}"
             )
 
     @staticmethod

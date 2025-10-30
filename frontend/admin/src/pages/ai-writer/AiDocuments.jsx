@@ -4,13 +4,13 @@ import { UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem, Modal
 import Head from '@/layout/head/Head';
 import Content from '@/layout/content/Content';
 import { Block, BlockHead, BlockTitle, BlockDes, BlockBetween, BlockHeadContent, Button, Icon, ReactDataTable } from '@/components/Component';
-import { useAiDocuments } from '@/context/AiDocumentContext';
+import { useAiDrafts } from '@/context/AiDraftContext';
 import { textUtils } from '@/utils/textUtils';
 import { toast } from 'react-toastify';
 
 const AiDocuments = () => {
   const navigate = useNavigate();
-  const { documents, deleteDocument, duplicateDocument, updateDocument, exportDocuments } = useAiDocuments();
+  const { drafts, deleteDraft, duplicateDraft, updateDraft, exportDrafts } = useAiDrafts();
   const [selectedRows, setSelectedRows] = useState([]);
   const [renameModal, setRenameModal] = useState(false);
   const [currentDoc, setCurrentDoc] = useState(null);
@@ -24,7 +24,7 @@ const AiDocuments = () => {
 
   const handleRenameSubmit = () => {
     if (currentDoc && newName.trim()) {
-      updateDocument(currentDoc.id, { name: newName.trim() });
+      updateDraft(currentDoc.id, { name: newName.trim() });
       setRenameModal(false);
       setCurrentDoc(null);
       setNewName('');
@@ -114,7 +114,7 @@ const AiDocuments = () => {
                   href="#duplicate"
                   onClick={(ev) => {
                     ev.preventDefault();
-                    duplicateDocument(row.id);
+                    duplicateDraft(row.id);
                   }}
                 >
                   <Icon name="copy"></Icon>
@@ -141,8 +141,8 @@ const AiDocuments = () => {
                   href="#delete"
                   onClick={(ev) => {
                     ev.preventDefault();
-                    if (window.confirm('Are you sure you want to delete this document?')) {
-                      deleteDocument(row.id);
+                    if (window.confirm('Are you sure you want to delete this draft?')) {
+                      deleteDraft(row.id);
                     }
                   }}
                 >
@@ -160,14 +160,14 @@ const AiDocuments = () => {
 
   return (
     <>
-      <Head title="AI Documents" />
+      <Head title="Content Drafts" />
       <Content>
         <BlockHead size="sm">
           <BlockBetween>
             <BlockHeadContent>
-              <BlockTitle page>AI Documents</BlockTitle>
+              <BlockTitle page>Content Drafts</BlockTitle>
               <BlockDes className="text-soft">
-                <p>Manage your AI-generated content</p>
+                <p>Manage your generated content drafts</p>
               </BlockDes>
             </BlockHeadContent>
             <BlockHeadContent>
@@ -175,7 +175,7 @@ const AiDocuments = () => {
                 <div className="toggle-expand-content">
                   <ul className="nk-block-tools g-3">
                     <li>
-                      <Button color="light" outline onClick={exportDocuments}>
+                      <Button color="light" outline onClick={exportDrafts}>
                         <Icon name="download" />
                         <span>Export</span>
                       </Button>
@@ -183,7 +183,7 @@ const AiDocuments = () => {
                     <li>
                       <Button color="primary" onClick={() => navigate('/ai-writer/editor/new')}>
                         <Icon name="plus" />
-                        <span>New Document</span>
+                        <span>Generate Content</span>
                       </Button>
                     </li>
                   </ul>
@@ -194,11 +194,11 @@ const AiDocuments = () => {
         </BlockHead>
 
         <Block>
-          {documents.length === 0 ? (
+          {drafts.length === 0 ? (
             <div className="text-center py-5 card card-bordered">
               <div className="card-inner">
                 <Icon name="file-text" className="text-soft mb-2" style={{ fontSize: '3rem' }} />
-                <h6 className="mb-2">No documents yet</h6>
+                <h6 className="mb-2">No drafts yet</h6>
                 <p className="text-soft mb-3">Start creating AI-powered content now</p>
                 <Button color="primary" onClick={() => navigate('/ai-writer/editor/new')}>
                   <Icon name="spark" className="me-1" />
@@ -208,7 +208,7 @@ const AiDocuments = () => {
             </div>
           ) : (
             <ReactDataTable
-              data={documents}
+              data={drafts}
               columns={columns}
               pagination
               className="nk-tb-list"
@@ -232,15 +232,15 @@ const AiDocuments = () => {
             <Icon name="cross-sm"></Icon>
           </a>
           <div className="p-2">
-            <h5 className="title">Rename Document</h5>
+            <h5 className="title">Rename Draft</h5>
             <div className="mt-4">
               <FormGroup>
-                <Label className="form-label">Document Name</Label>
+                <Label className="form-label">Draft Title</Label>
                 <Input
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Enter document name"
+                  placeholder="Enter draft title"
                 />
               </FormGroup>
               <div className="form-group mt-3">

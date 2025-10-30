@@ -16,7 +16,7 @@ import BlogWidget from '../../Components/Blogs/BlogWidget'
 import Buttons from '../../Components/Button/Buttons'
 
 // API & Auth
-import { useUserDraftPosts, usePosts } from '../../api/usePosts'
+import { useUserDraftPosts, usePosts, usePublishDraft, useDeletePost } from '../../api/usePosts'
 import useAuth from '../../api/useAuth'
 
 // Animation
@@ -38,6 +38,8 @@ const UserPosts = (props) => {
             published: true 
         } : { skip: true } 
     )
+    const { publishDraft, loading: publishLoading } = usePublishDraft()
+    const { deletePost, loading: deleteLoading } = useDeletePost()
     
     // Determine which data to show based on active tab
     const currentPosts = activeTab === 'drafts' ? drafts : allPosts
@@ -45,29 +47,33 @@ const UserPosts = (props) => {
     const error = activeTab === 'drafts' ? draftsError : postsError
     const isDraftMode = activeTab === 'drafts'
 
-    const handlePostDelete = useCallback((postId) => {
-        refetchDrafts()
-        refetchPosts()
-        
-        setSelectedPosts(prev => prev.filter(id => id !== postId))
-        
-        console.log('Post deleted successfully:', postId)
-    }, [refetchDrafts, refetchPosts])
-
-    const handleDraftPublish = useCallback((draftId, publishedPost) => {
-        refetchDrafts()
-        refetchPosts()
-        
-        setSelectedPosts(prev => prev.filter(id => id !== draftId))
-        
-        if (publishedPost?.post?.slug) {
-            alert(`Draft published successfully! You can view it at /posts/${publishedPost.post.slug}`)
-        } else {
-            alert('Draft published successfully!')
+    const handlePostDelete = useCallback(async (postId) => {
+        try {
+            await deletePost(postId)
+            refetchDrafts()
+            refetchPosts()
+            setSelectedPosts(prev => prev.filter(id => id !== postId))
+            alert('Post deleted successfully')
+        } catch (err) {
+            alert(err.message || 'Failed to delete post')
         }
-        
-        console.log('Draft published successfully:', draftId, publishedPost)
-    }, [refetchDrafts, refetchPosts])
+    }, [deletePost, refetchDrafts, refetchPosts])
+
+    const handleDraftPublish = useCallback(async (draftId) => {
+        try {
+            const publishedPost = await publishDraft(draftId)
+            refetchDrafts()
+            refetchPosts()
+            setSelectedPosts(prev => prev.filter(id => id !== draftId))
+            if (publishedPost?.slug) {
+                alert(`Draft published successfully! You can view it at /posts/${publishedPost.slug}`)
+            } else {
+                alert('Draft published successfully!')
+            }
+        } catch (err) {
+            alert(err.message || 'Failed to publish draft')
+        }
+    }, [publishDraft, refetchDrafts, refetchPosts])
 
     const handleSelectPost = useCallback((postId) => {
         setSelectedPosts(prev => {

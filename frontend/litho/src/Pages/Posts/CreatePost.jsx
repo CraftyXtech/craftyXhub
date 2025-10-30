@@ -77,12 +77,16 @@ const CreatePost = (props) => {
             if (isEditMode) {
                 const draftData = { ...postData, is_published: false }
                 await updatePost(post.uuid, draftData)
-                alert('Post converted to draft successfully!')
-                navigate('/user/posts')
+                if (!postData.autosave) {
+                    alert('Post converted to draft successfully!')
+                    navigate('/user/posts')
+                }
             } else {
                 await saveAsDraft(postData)
-                alert('Post saved as draft successfully!')
-                navigate('/user/posts')
+                if (!postData.autosave) {
+                    alert('Post saved as draft successfully!')
+                    navigate('/user/posts')
+                }
             }
             
         } catch (error) {

@@ -1,14 +1,10 @@
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import PropTypes from 'prop-types'
 import { m, AnimatePresence } from 'framer-motion'
 
 const PostSettingsSidebar = ({
     isOpen,
     onClose,
-    featuredImage,
-    featuredImagePreview,
-    onImageChange,
-    onImageRemove,
     excerpt,
     autoExcerpt,
     useAutoExcerpt,
@@ -28,14 +24,7 @@ const PostSettingsSidebar = ({
     tagsLoading
 }) => {
     const [seoExpanded, setSeoExpanded] = useState(false)
-    const fileInputRef = useRef(null)
-
-    const handleImageSelect = (event) => {
-        const file = event.target.files[0]
-        if (file) {
-            onImageChange(file)
-        }
-    }
+    
 
     return (
         <>
@@ -75,51 +64,6 @@ const PostSettingsSidebar = ({
 
                         {/* Content */}
                         <div className="sidebar-content px-6 py-6 space-y-8">
-                            {/* Featured Image Section */}
-                            <div className="setting-section">
-                                <h4 className="text-sm font-semibold text-darkgray mb-3 flex items-center gap-2">
-                                    <i className="feather-image"></i>
-                                    Featured Image
-                                </h4>
-                                
-                                {featuredImagePreview ? (
-                                    <div className="relative group">
-                                        <img
-                                            src={featuredImagePreview}
-                                            alt="Featured preview"
-                                            className="w-full h-48 object-cover rounded-lg"
-                                        />
-                                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all rounded-lg flex items-center justify-center">
-                                            <button
-                                                type="button"
-                                                onClick={onImageRemove}
-                                                className="opacity-0 group-hover:opacity-100 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-all"
-                                            >
-                                                Remove
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-fastblue transition-colors"
-                                    >
-                                        <i className="feather-upload text-3xl text-gray-400 mb-2"></i>
-                                        <p className="text-sm text-gray-600">Click to upload</p>
-                                        <p className="text-xs text-gray-400 mt-1">Max 10MB</p>
-                                    </button>
-                                )}
-                                
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageSelect}
-                                    className="hidden"
-                                />
-                            </div>
-
                             {/* Excerpt Section */}
                             <div className="setting-section">
                                 <h4 className="text-sm font-semibold text-darkgray mb-3 flex items-center gap-2">
@@ -303,7 +247,7 @@ const PostSettingsSidebar = ({
                                 <p className="font-medium text-gray-600 mb-2">Keyboard Shortcuts</p>
                                 <p><kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs">Cmd</kbd> + <kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs">,</kbd> Open Settings</p>
                                 <p><kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs">Esc</kbd> Close Settings</p>
-                                <p className="text-gray-400 mt-2">✨ Auto-saves every 30 seconds</p>
+                                <p className="text-gray-400 mt-2">✨ Auto-saves every 5 seconds</p>
                             </div>
                         </div>
                     </m.div>
@@ -316,10 +260,6 @@ const PostSettingsSidebar = ({
 PostSettingsSidebar.propTypes = {
     isOpen: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
-    featuredImage: PropTypes.object,
-    featuredImagePreview: PropTypes.string,
-    onImageChange: PropTypes.func.isRequired,
-    onImageRemove: PropTypes.func.isRequired,
     excerpt: PropTypes.string,
     autoExcerpt: PropTypes.string,
     useAutoExcerpt: PropTypes.bool,

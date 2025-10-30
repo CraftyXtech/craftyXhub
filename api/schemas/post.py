@@ -104,6 +104,7 @@ class PostUpdate(BaseModel):
     reading_time: Optional[int] = None
     meta_title: Optional[str] = Field(None, max_length=200)
     meta_description: Optional[str] = Field(None, max_length=300)
+    is_published: Optional[bool] = None
 
     
 class PostResponse(BaseModel):

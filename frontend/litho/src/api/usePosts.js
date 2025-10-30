@@ -236,14 +236,41 @@ export const useCategories = () => {
             setLoading(true);
             setError(null);
             const response = await getCategories();
-            
-            // Transform API response to header menu format
+            // Transform API response to header menu format for header menus
             const headerMenuData = transformCategoriesToMenuData(response.categories);
             setCategories(headerMenuData);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to fetch categories');
             console.error('Categories fetch error:', err);
             // Fallback to empty array on error
+            setCategories([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
+    return { categories, loading, error, refetch: fetchCategories };
+};
+
+// Raw categories (id, name, slug, subcategories[]) for forms and pickers
+export const useCategoriesRaw = () => {
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchCategories = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await getCategories();
+            setCategories(response.categories || []);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to fetch categories');
+            console.error('Categories fetch error:', err);
             setCategories([]);
         } finally {
             setLoading(false);
@@ -405,25 +432,18 @@ export const useRelatedPosts = (postUuid, options = { limit: 3 }) => {
 
     useEffect(() => {
         if (!postUuid) {
-            console.log('useRelatedPosts: No postUuid provided');
             setLoading(false);
             return;
         }
 
         const fetchRelatedPosts = async () => {
             try {
-                console.log('useRelatedPosts: Fetching related posts for', postUuid);
                 setLoading(true);
                 setError(null);
 
-                // Use the dedicated related posts endpoint
                 const response = await getRelatedPosts(postUuid, { limit: options.limit });
-                console.log('useRelatedPosts: Response from /related endpoint', response);
-                
                 setRelatedPosts(response.posts || []);
-                console.log('useRelatedPosts: Set related posts', response.posts || []);
             } catch (err) {
-                console.error('useRelatedPosts: Error fetching related posts', err);
                 setError(err.response?.data?.detail || err.message || 'Failed to fetch related posts');
                 setRelatedPosts([]);
             } finally {
@@ -460,9 +480,11 @@ export const useComments = (postUuid, params = {}) => {
                 post_uuid: postUuid,
                 ...params
             });
-            
-            setComments(response.comments || []);
-            setTotalComments(response.total || 0);
+            const list = response?.comments || [];
+            setComments(list);
+            setTotalComments(
+                typeof response?.total === 'number' ? response.total : list.length
+            );
         } catch (err) {
             console.error('Error fetching comments:', err);
             setError(err.response?.data?.detail || err.message || 'Failed to fetch comments');
@@ -470,7 +492,7 @@ export const useComments = (postUuid, params = {}) => {
         } finally {
             setLoading(false);
         }
-    }, [postUuid, params]);
+    }, [postUuid, JSON.stringify(params)]);
 
     useEffect(() => {
         fetchComments();
@@ -873,13 +895,23 @@ export const useDeletePost = () => {
 // Hook to get user's draft posts
 export const useUserDraftPosts = (params = {}) => {
     const [drafts, setDrafts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Check if we should skip the API call
+    const shouldSkip = params.skip === true;
+
     const fetchDrafts = useCallback(async () => {
+        if (shouldSkip) {
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
-            const data = await getUserDraftPosts(params);
+            // Remove skip from params before passing to API
+            const { skip, ...apiParams } = params;
+            const data = await getUserDraftPosts(apiParams);
             setDrafts(Array.isArray(data.posts) ? data.posts : []);
             setError(null);
         } catch (err) {
@@ -888,7 +920,7 @@ export const useUserDraftPosts = (params = {}) => {
         } finally {
             setLoading(false);
         }
-    }, [JSON.stringify(params)]);
+    }, [shouldSkip, JSON.stringify(params)]);
 
     useEffect(() => {
         fetchDrafts();

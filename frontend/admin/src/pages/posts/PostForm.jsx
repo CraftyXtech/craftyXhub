@@ -104,23 +104,25 @@ const PostForm = () => {
     debounce(async (data) => {
       try {
         setAutosaveLoading(true);
-        const jsonData = {
-          title: data.title,
-          slug: data.slug,
-          content: data.content,
-          excerpt: data.excerpt,
-          meta_title: data.meta_title,
-          meta_description: data.meta_description,
-          reading_time: data.reading_time,
-          category_id: data.category_id,
-          tag_ids: data.tag_ids
-        };
-        
-        // Use separate axios call for autosave to avoid interfering with manual save
-        await axiosPrivate.put(`/posts/${postId}`, jsonData);
+        // Build FormData to match backend expectations (multipart/form-data)
+        const fd = new FormData();
+        if (data.title) fd.append('title', data.title);
+        if (data.slug) fd.append('slug', data.slug);
+        if (data.content) fd.append('content', data.content);
+        if (data.excerpt) fd.append('excerpt', data.excerpt);
+        if (data.meta_title) fd.append('meta_title', data.meta_title);
+        if (data.meta_description) fd.append('meta_description', data.meta_description);
+        if (data.reading_time !== null && data.reading_time !== undefined) fd.append('reading_time', String(data.reading_time));
+        if (data.category_id) fd.append('category_id', String(data.category_id));
+        if (Array.isArray(data.tag_ids) && data.tag_ids.length > 0) fd.append('tag_ids', data.tag_ids.join(','));
+
+        await axiosPrivate.put(`/posts/${postId}`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
         toast.info('Post autosaved');
       } catch (err) {
-        toast.error('Autosave failed');
+        // Keep autosave failures silent/low-friction
+        console.error('Autosave failed', err);
       } finally {
         setAutosaveLoading(false);
       }
