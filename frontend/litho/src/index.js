@@ -11,13 +11,19 @@ import { LazyMotion, domMax } from "framer-motion";
 import "./Assets/css/icons.css";
 import "./Assets/css/global.css";
 import "./Assets/css/pages.css";
+import "./Assets/scss/components/_editor-only-post.scss";
 import "./index.scss";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <LazyMotion features={domMax}>
     <ParallaxProvider>
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true
+        }}
+      >
         <App />
       </BrowserRouter>
     </ParallaxProvider>

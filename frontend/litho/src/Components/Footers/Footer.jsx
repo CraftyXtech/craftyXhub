@@ -11,9 +11,12 @@ import GlobalContext from "../../Context/Context"
 // css
 import "../../Assets/scss/layouts/_footer.scss"
 
-export const Footer = (props) => {
+export const Footer = ({ theme, className, style, parallax, children, ...props }) => {
     // Add Global Data
     const { setFooterHeight } = useContext(GlobalContext);
+    
+    // Set defaults
+    const actualTheme = theme ?? "dark"
 
     useEffect(() => {
         // Calculate Footer Height
@@ -23,55 +26,55 @@ export const Footer = (props) => {
             let windowWidth = window.innerWidth;
             let footerHeight = 0;
 
-            if (props.parallax) {
-                if (props.parallax.desktop === true) {
+            if (parallax) {
+                if (parallax.desktop === true) {
                     footerHeight = footerEl.offsetHeight;
                     footerEl.classList.add("pos-fixed")
                 }
 
                 if (windowWidth <= 1199) {
-                    if (props.parallax.lg === false) {
+                    if (parallax.lg === false) {
                         footerHeight = 0;
                         footerEl.classList.remove("pos-fixed")
                     }
 
-                    if (props.parallax.lg === true) {
+                    if (parallax.lg === true) {
                         footerHeight = footerEl.offsetHeight;
                         footerEl.classList.add("pos-fixed")
                     }
                 }
 
                 if (windowWidth <= 991) {
-                    if (props.parallax.md === false) {
+                    if (parallax.md === false) {
                         footerHeight = 0;
                         footerEl.classList.remove("pos-fixed")
                     }
 
-                    if (props.parallax.md === true) {
+                    if (parallax.md === true) {
                         footerHeight = footerEl.offsetHeight;
                         footerEl.classList.add("pos-fixed")
                     }
                 }
 
                 if (windowWidth <= 767) {
-                    if (props.parallax.sm === false) {
+                    if (parallax.sm === false) {
                         footerHeight = 0;
                         footerEl.classList.remove("pos-fixed")
                     }
 
-                    if (props.parallax.sm === true) {
+                    if (parallax.sm === true) {
                         footerHeight = footerEl.offsetHeight;
                         footerEl.classList.add("pos-fixed")
                     }
                 }
 
                 if (windowWidth <= 575) {
-                    if (props.parallax.xs === false) {
+                    if (parallax.xs === false) {
                         footerHeight = 0;
                         footerEl.classList.remove("pos-fixed");
                     }
 
-                    if (props.parallax.xs === true) {
+                    if (parallax.xs === true) {
                         footerHeight = footerEl.offsetHeight;
                         footerEl.classList.add("pos-fixed")
                     }
@@ -90,11 +93,21 @@ export const Footer = (props) => {
         [])
 
     return (
-        <footer className={`${props.theme}${props.className ? ` ${props.className}` : ""}`} style={props.style}>
-            {props.children}
+        <footer className={`${actualTheme}${className ? ` ${className}` : ""}`} style={style}>
+            {children}
         </footer>
     )
 }
+
+Footer.propTypes = {
+    theme: PropTypes.string,
+    className: PropTypes.string,
+    style: PropTypes.object,
+    parallax: PropTypes.object,
+}
+
+// Defaults are now handled in destructuring
+Footer.defaultProps = undefined;
 
 const FooterMenu = ({ data, titleClass, className, ...props }) => {
     return (
@@ -126,10 +139,6 @@ FooterMenu.propTypes = {
                 })
             ),
         }))
-}
-
-Footer.defaultProps = {
-    theme: "dark"
 }
 
 export default memo(FooterMenu)

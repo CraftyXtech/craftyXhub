@@ -104,7 +104,39 @@ const menu = [
     ],
   },
   */
-
+{
+    icon: "spark",
+    text: "Content Generator",
+    link: "/ai-writer/dashboard",
+    subMenu: [
+      {
+        text: "Dashboard",
+        link: "/ai-writer/dashboard",
+      },
+      {
+        text: "Drafts",
+        link: "/ai-writer/documents",
+      },
+      {
+        text: "Editor",
+        subMenu: [
+          {
+            text: "New",
+            link: "/ai-writer/editor/new",
+          },
+          {
+            text: "Generate",
+            link: "/ai-writer/editor/generate",
+          },
+        ],
+      },
+      {
+        text: "Templates",
+        link: "/ai-writer/templates",
+      },
+    ],
+  },
+  
   {
     icon: "file-text",
     text: "Posts Management",
@@ -146,7 +178,9 @@ const menu = [
     ],
   },
 
-  {
+  
+
+  /*{
     icon: "file-docs",
     text: "Invoice",
     subMenu: [
@@ -168,7 +202,7 @@ const menu = [
   },
   {
     heading: "Misc Pages",
-  },
+  },*/
   
- ];
+ ]; 
 export default menu;

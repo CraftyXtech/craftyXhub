@@ -9,11 +9,15 @@ import { m } from "framer-motion"
 // Components
 import { Header, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
 import Logo from '../../Components/Logo'
-import FooterStyle05 from '../../Components/Footers/FooterStyle05'
+import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
+import EditorOnlyPostForm from '../../Components/Posts/EditorOnlyPostForm'
+import Buttons from '../../Components/Button/Buttons'
 
-import PostForm from '../../Components/Posts/PostForm'
+// API & Hooks
 import { useCreatePost, useSaveAsDraft, usePost, useUpdatePost } from '../../api/usePosts'
 import useAuth from '../../api/useAuth'
+
+// Utilities
 import { fadeIn } from '../../Functions/GlobalAnimations'
 
 const CreatePost = (props) => {
@@ -73,12 +77,16 @@ const CreatePost = (props) => {
             if (isEditMode) {
                 const draftData = { ...postData, is_published: false }
                 await updatePost(post.uuid, draftData)
-                alert('Post converted to draft successfully!')
-                navigate('/user/posts')
+                if (!postData.autosave) {
+                    alert('Post converted to draft successfully!')
+                    navigate('/user/posts')
+                }
             } else {
                 await saveAsDraft(postData)
-                alert('Post saved as draft successfully!')
-                navigate('/user/posts')
+                if (!postData.autosave) {
+                    alert('Post saved as draft successfully!')
+                    navigate('/user/posts')
+                }
             }
             
         } catch (error) {
@@ -95,11 +103,7 @@ const CreatePost = (props) => {
                 <Header topSpace={{ desktop: true }} type="reverse-scroll">
                     <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" containerClass="sm:px-0">
                         <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                            <Link aria-label="header logo" className="flex items-center" to="/">
-                                <Navbar.Brand className="inline-block p-0 m-0">
-                                    <Logo className="flex items-center" asNavbarBrand={false} />
-                                </Navbar.Brand>
-                            </Link>
+                            <Logo className="flex items-center" variant="black" />
                         </Col>
                         <div className="col-auto hidden order-last md:block">
                             <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
@@ -111,41 +115,35 @@ const CreatePost = (props) => {
                         </div>
                         <Navbar.Collapse className="col-auto px-0 justify-end">
                             <Menu {...props} />
+                            <UserProfileDropdown className="ms-4" />
                         </Navbar.Collapse>
-                        <Col className="col-auto text-right pe-0">
-                            <SearchBar className="xs:pl-[15px] pr-0" />
-                        </Col>
                     </HeaderNav>
                 </Header>
                 {/* Header End */}
     
-                
                 {/* Auth Required Section */}
-                <section className="bg-lightgray py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
-                    <Container>
+                <section className="pt-[50px] sm:pt-[70px] md:pt-[75px] lg:pt-[90px] xl:pt-[130px]">
+                    <Container className="px-4 sm:px-6">
                         <Row className="justify-center">
-                            <Col lg={8} md={10} className="text-center">
-                                <m.div {...fadeIn}>
-                                    <i className="feather-lock text-6xl text-spanishgray mb-6"></i>
-                                    <h2 className="font-serif text-darkgray mb-6">Authentication Required</h2>
-                                    <p className="text-spanishgray mb-8 text-lg">
-                                        Please log in to {isEditMode ? 'edit' : 'create and publish'} posts on our platform.
-                                    </p>
-                                    <Link 
-                                        to="/" 
-                                        className="btn btn-large btn-dark-gray btn-box-shadow font-medium font-serif uppercase inline-block"
-                                    >
-                                        Go to Homepage
-                                    </Link>
-                                </m.div>
+                            <Col xl={6} lg={7} md={8} className="text-center">
+                                <h1 className="font-serif text-darkgray font-semibold text-[24px] sm:text-[30px] md:text-[32px] lg:text-[42px] mb-[20px] sm:mb-[25px]">
+                                    Authentication Required
+                                </h1>
+                                <p className="w-[95%] sm:w-[85%] lg:w-[90%] md:w-full mx-auto mb-[25px] sm:mb-[35px] text-sm sm:text-base">
+                                    Please log in to {isEditMode ? 'edit' : 'create and publish'} posts on our platform.
+                                </p>
+                                <Buttons 
+                                    to="/auth/login" 
+                                    className="btn-fill btn-fancy font-medium font-serif uppercase rounded-none"
+                                    themeColor="#0038e3"
+                                    color="#fff"
+                                    size="sm"
+                                    title="Login to Continue"
+                                />
                             </Col>
                         </Row>
                     </Container>
                 </section>
-
-                {/* Footer Start */}
-                <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
-                {/* Footer End */}
             </div>
         )
     }
@@ -157,35 +155,35 @@ const CreatePost = (props) => {
                 <Header topSpace={{ desktop: true }} type="reverse-scroll">
                     <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" containerClass="sm:px-0">
                         <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                            <Link aria-label="header logo" className="flex items-center" to="/">
-                                <Navbar.Brand className="inline-block p-0 m-0">
-                                    <Logo className="flex items-center" asNavbarBrand={false} />
-                                </Navbar.Brand>
-                            </Link>
+                            <Logo className="flex items-center" variant="black" />
                         </Col>
+                        <div className="col-auto hidden order-last md:block">
+                            <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
+                                <span className="navbar-toggler-line"></span>
+                                <span className="navbar-toggler-line"></span>
+                                <span className="navbar-toggler-line"></span>
+                                <span className="navbar-toggler-line"></span>
+                            </Navbar.Toggle>
+                        </div>
                         <Navbar.Collapse className="col-auto px-0 justify-end">
                             <Menu {...props} />
+                            <UserProfileDropdown className="ms-4" />
                         </Navbar.Collapse>
                     </HeaderNav>
                 </Header>
     
-                
-                <section className="bg-lightgray py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
-                    <Container>
+                <section className="pt-[50px] sm:pt-[70px] md:pt-[75px] lg:pt-[90px] xl:pt-[130px]">
+                    <Container className="px-4 sm:px-6">
                         <Row className="justify-center">
-                            <Col lg={8} md={10} className="text-center">
-                                <m.div {...fadeIn}>
-                                    <div className="spinner-border text-fastblue" role="status">
-                                        <span className="visually-hidden">Loading...</span>
-                                    </div>
-                                    <p className="mt-4 text-spanishgray">Loading post...</p>
-                                </m.div>
+                            <Col xl={6} lg={7} md={8} className="text-center">
+                                <div className="spinner-border text-fastblue mb-4" role="status">
+                                    <span className="visually-hidden">Loading...</span>
+                                </div>
+                                <p className="text-darkgray">Loading post...</p>
                             </Col>
                         </Row>
                     </Container>
                 </section>
-
-                <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
             </div>
         )
     }
@@ -197,48 +195,55 @@ const CreatePost = (props) => {
                 <Header topSpace={{ desktop: true }} type="reverse-scroll">
                     <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" containerClass="sm:px-0">
                         <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                            <Link aria-label="header logo" className="flex items-center" to="/">
-                                <Navbar.Brand className="inline-block p-0 m-0">
-                                    <Logo className="flex items-center" asNavbarBrand={false} />
-                                </Navbar.Brand>
-                            </Link>
+                            <Logo className="flex items-center" variant="black" />
                         </Col>
+                        <div className="col-auto hidden order-last md:block">
+                            <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
+                                <span className="navbar-toggler-line"></span>
+                                <span className="navbar-toggler-line"></span>
+                                <span className="navbar-toggler-line"></span>
+                                <span className="navbar-toggler-line"></span>
+                            </Navbar.Toggle>
+                        </div>
                         <Navbar.Collapse className="col-auto px-0 justify-end">
                             <Menu {...props} />
+                            <UserProfileDropdown className="ms-4" />
                         </Navbar.Collapse>
                     </HeaderNav>
                 </Header>
     
-                
-                <section className="bg-lightgray py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
-                    <Container>
+                <section className="pt-[50px] sm:pt-[70px] md:pt-[75px] lg:pt-[90px] xl:pt-[130px]">
+                    <Container className="px-4 sm:px-6">
                         <Row className="justify-center">
-                            <Col lg={8} md={10} className="text-center">
-                                <m.div {...fadeIn}>
-                                    <i className="feather-alert-circle text-6xl text-red-500 mb-6"></i>
-                                    <h2 className="font-serif text-darkgray mb-6">Post Not Found</h2>
-                                    <p className="text-spanishgray mb-8 text-lg">
-                                        The post you're trying to edit could not be found or you don't have permission to edit it.
-                                    </p>
-                                    <Link 
+                            <Col xl={6} lg={7} md={8} className="text-center">
+                                <h1 className="font-serif text-darkgray font-semibold text-[24px] sm:text-[30px] md:text-[32px] lg:text-[42px] mb-[20px] sm:mb-[25px]">
+                                    Post Not Found
+                                </h1>
+                                <p className="w-[95%] sm:w-[85%] lg:w-[90%] md:w-full mx-auto mb-[25px] sm:mb-[35px] text-sm sm:text-base">
+                                    The post you're trying to edit could not be found or you don't have permission to edit it.
+                                </p>
+                                <div className="flex gap-3 justify-center">
+                                    <Buttons 
                                         to="/user/posts" 
-                                        className="btn btn-large btn-dark-gray btn-box-shadow font-medium font-serif uppercase inline-block mr-4"
-                                    >
-                                        My Posts
-                                    </Link>
-                                    <Link 
+                                        className="btn-fill btn-fancy font-medium font-serif uppercase rounded-none"
+                                        themeColor="#0038e3"
+                                        color="#fff"
+                                        size="sm"
+                                        title="My Posts"
+                                    />
+                                    <Buttons 
                                         to="/" 
-                                        className="btn btn-large btn-transparent-black btn-box-shadow font-medium font-serif uppercase inline-block"
-                                    >
-                                        Go Home
-                                    </Link>
-                                </m.div>
+                                        className="btn-transparent-dark-gray btn-fancy font-medium font-serif uppercase rounded-none"
+                                        themeColor="transparent"
+                                        color="#232323"
+                                        size="sm"
+                                        title="Go Home"
+                                    />
+                                </div>
                             </Col>
                         </Row>
                     </Container>
                 </section>
-
-                <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
             </div>
         )
     }
@@ -250,48 +255,55 @@ const CreatePost = (props) => {
                 <Header topSpace={{ desktop: true }} type="reverse-scroll">
                     <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" containerClass="sm:px-0">
                         <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                            <Link aria-label="header logo" className="flex items-center" to="/">
-                                <Navbar.Brand className="inline-block p-0 m-0">
-                                    <Logo className="flex items-center" asNavbarBrand={false} />
-                                </Navbar.Brand>
-                            </Link>
+                            <Logo className="flex items-center" variant="black" />
                         </Col>
+                        <div className="col-auto hidden order-last md:block">
+                            <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
+                                <span className="navbar-toggler-line"></span>
+                                <span className="navbar-toggler-line"></span>
+                                <span className="navbar-toggler-line"></span>
+                                <span className="navbar-toggler-line"></span>
+                            </Navbar.Toggle>
+                        </div>
                         <Navbar.Collapse className="col-auto px-0 justify-end">
                             <Menu {...props} />
+                            <UserProfileDropdown className="ms-4" />
                         </Navbar.Collapse>
                     </HeaderNav>
                 </Header>
     
-                
-                <section className="bg-lightgray py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
-                    <Container>
+                <section className="pt-[50px] sm:pt-[70px] md:pt-[75px] lg:pt-[90px] xl:pt-[130px]">
+                    <Container className="px-4 sm:px-6">
                         <Row className="justify-center">
-                            <Col lg={8} md={10} className="text-center">
-                                <m.div {...fadeIn}>
-                                    <i className="feather-shield text-6xl text-yellow-500 mb-6"></i>
-                                    <h2 className="font-serif text-darkgray mb-6">Permission Denied</h2>
-                                    <p className="text-spanishgray mb-8 text-lg">
-                                        You don't have permission to edit this post. Only the author can edit their posts.
-                                    </p>
-                                    <Link 
+                            <Col xl={6} lg={7} md={8} className="text-center">
+                                <h1 className="font-serif text-darkgray font-semibold text-[24px] sm:text-[30px] md:text-[32px] lg:text-[42px] mb-[20px] sm:mb-[25px]">
+                                    Permission Denied
+                                </h1>
+                                <p className="w-[95%] sm:w-[85%] lg:w-[90%] md:w-full mx-auto mb-[25px] sm:mb-[35px] text-sm sm:text-base">
+                                    You don't have permission to edit this post. Only the author can edit their posts.
+                                </p>
+                                <div className="flex gap-3 justify-center">
+                                    <Buttons 
                                         to={`/posts/${post.slug}`}
-                                        className="btn btn-large btn-dark-gray btn-box-shadow font-medium font-serif uppercase inline-block mr-4"
-                                    >
-                                        View Post
-                                    </Link>
-                                    <Link 
+                                        className="btn-fill btn-fancy font-medium font-serif uppercase rounded-none"
+                                        themeColor="#0038e3"
+                                        color="#fff"
+                                        size="sm"
+                                        title="View Post"
+                                    />
+                                    <Buttons 
                                         to="/" 
-                                        className="btn btn-large btn-transparent-black btn-box-shadow font-medium font-serif uppercase inline-block"
-                                    >
-                                        Go Home
-                                    </Link>
-                                </m.div>
+                                        className="btn-transparent-dark-gray btn-fancy font-medium font-serif uppercase rounded-none"
+                                        themeColor="transparent"
+                                        color="#232323"
+                                        size="sm"
+                                        title="Go Home"
+                                    />
+                                </div>
                             </Col>
                         </Row>
                     </Container>
                 </section>
-
-                <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
             </div>
         )
     }
@@ -300,12 +312,13 @@ const CreatePost = (props) => {
     const initialValues = isEditMode ? {
         title: post.title || '',
         content: post.content || '',
+        content_blocks: post.content_blocks || null,
         excerpt: post.excerpt || '',
         category_id: post.category?.id || '',
         tag_ids: post.tags?.map(tag => tag.id) || [],
         meta_title: post.meta_title || '',
         meta_description: post.meta_description || '',
-        reading_time: post.reading_time || '',
+        reading_time: post.reading_time || null,
         slug: post.slug || '',
         featured_image: post.featured_image || null
     } : {}
@@ -316,11 +329,7 @@ const CreatePost = (props) => {
             <Header topSpace={{ desktop: true }} type="reverse-scroll">
                 <HeaderNav fluid="fluid" theme="light" bg="white" menu="light" className="px-[35px] py-[0px] md:px-0" containerClass="sm:px-0">
                     <Col className="col-auto col-sm-6 col-lg-2 me-auto ps-lg-0">
-                        <Link aria-label="header logo" className="flex items-center" to="/">
-                            <Navbar.Brand className="inline-block p-0 m-0">
-                                <Logo className="flex items-center" asNavbarBrand={false} />
-                            </Navbar.Brand>
-                        </Link>
+                        <Logo className="flex items-center" variant="black" />
                     </Col>
                     <div className="col-auto hidden order-last md:block">
                         <Navbar.Toggle className="md:ml-[10px] sm:ml-0">
@@ -332,127 +341,20 @@ const CreatePost = (props) => {
                     </div>
                     <Navbar.Collapse className="col-auto px-0 justify-end">
                         <Menu {...props} />
+                        <UserProfileDropdown className="ms-4" />
                     </Navbar.Collapse>
-                    <Col className="col-auto text-right pe-0">
-                        <SearchBar className="xs:pl-[15px] pr-0" />
-                    </Col>
                 </HeaderNav>
             </Header>
             {/* Header End */}
 
-            
-            {/* Page Title Section Start */}
-            <section className="bg-darkgray py-[25px] page-title-small">
-                <Container>
-                    <Row className="items-center justify-center">
-                        <Col xl={8} lg={6}>
-                            <h1 className="font-serif text-lg text-white font-medium mb-0 md:text-center">
-                                {isEditMode ? 'Edit Post' : 'Create New Post'}
-                            </h1>
-                        </Col>
-                        <Col xl={4} lg={6} className="breadcrumb justify-end text-sm font-serif mb-0 md:mt-[10px] md:justify-center">
-                            <ul className="xs:text-center">
-                                <li><Link aria-label="homepage" to="/" className="hover:text-white">Home</Link></li>
-                                <li><Link aria-label="posts" to="/posts" className="hover:text-white">Posts</Link></li>
-                                {isEditMode && (
-                                    <li><Link aria-label="view post" to={`/posts/${post.slug}`} className="hover:text-white">View</Link></li>
-                                )}
-                                <li>{isEditMode ? 'Edit' : 'Create'}</li>
-                            </ul>
-                        </Col>
-                    </Row>
-                </Container>
-            </section>
-            {/* Page Title Section End */}
-
-            {/* Post Form Section Start */}
-            <section className="bg-lightgray py-[130px] lg:py-[90px] md:py-[75px] sm:py-[50px]">
-                <Container>
-                    <Row className="justify-center">
-                        <Col xl={10} lg={12}>
-                            {/* Success Message */}
-                            {submitSuccess && (
-                                <m.div 
-                                    className="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg mb-8"
-                                    {...fadeIn}
-                                >
-                                    <div className="flex items-center">
-                                        <i className="feather-check-circle text-xl mr-3"></i>
-                                        <div>
-                                            <h4 className="font-medium mb-1">Post {isEditMode ? 'Updated' : 'Created'} Successfully!</h4>
-                                            <p className="text-sm mb-0">Redirecting to your {isEditMode ? 'updated' : 'new'} post...</p>
-                                        </div>
-                                    </div>
-                                </m.div>
-                            )}
-
-                            {/* Error Message */}
-                            {(submitError || createError || draftError || updateError) && (
-                                <m.div 
-                                    className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg mb-8"
-                                    {...fadeIn}
-                                >
-                                    <div className="flex items-center">
-                                        <i className="feather-alert-circle text-xl mr-3"></i>
-                                        <div>
-                                            <h4 className="font-medium mb-1">Error</h4>
-                                            <p className="text-sm mb-0">{submitError || createError || draftError || updateError}</p>
-                                        </div>
-                                    </div>
-                                </m.div>
-                            )}
-
-                            {/* Post Form */}
-                            <m.div 
-                                className="bg-white rounded-lg shadow-sm p-8 lg:p-6 md:p-4"
-                                {...fadeIn}
-                            >
-                                <div className="mb-8">
-                                    <h2 className="font-serif text-darkgray text-2xl font-medium mb-4">
-                                        {isEditMode ? 'Edit Your Post' : 'Create Your Post'}
-                                    </h2>
-                                    <p className="text-spanishgray">
-                                        {isEditMode 
-                                            ? 'Update your post content, images, and settings. Changes will be saved when you publish.'
-                                            : 'Share your thoughts, insights, and stories with our community. Fill out the form below to create your new post.'
-                                        }
-                                    </p>
-                                    {isEditMode && (
-                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                                            <div className="flex items-center">
-                                                <i className="feather-info text-blue-500 mr-2"></i>
-                                                <div className="text-sm text-blue-800">
-                                                    <strong>Current Status:</strong> {post.is_published ? 'Published' : 'Draft'} | 
-                                                    <strong className="ml-2">Last Updated:</strong> {new Date(post.updated_at).toLocaleDateString()}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <PostForm
-                                    initialValues={initialValues}
-                                    onSubmit={handleSubmit}
-                                    onSaveDraft={handleSaveDraft}
-                                    loading={isEditMode ? updateLoading : (createLoading || saveLoading)}
-                                    isEdit={isEditMode}
-                                    submitButtonText={isEditMode 
-                                        ? (post?.is_published ? "Update Post" : "Publish Post")
-                                        : "Publish Post"
-                                    }
-                                    draftButtonText={isEditMode ? "Convert to Draft" : "Save as Draft"}
-                                    showAdvancedFields={true}
-                                />
-                            </m.div>
-                        </Col>
-                    </Row>
-                </Container>
-            </section>
-            {/* Post Form Section End */}
-
-            {/* Footer Start */}
-            <FooterStyle05 theme="dark" className="bg-[#262b35] text-slateblue" />
-            {/* Footer End */}
+            {/* Full-Screen Editor-Only Post Form */}
+            <EditorOnlyPostForm
+                initialValues={initialValues}
+                onSubmit={handleSubmit}
+                onSaveDraft={handleSaveDraft}
+                loading={isEditMode ? updateLoading : (createLoading || saveLoading)}
+                isEditMode={isEditMode}
+            />
         </div>
     )
 }

@@ -8,7 +8,10 @@ import PropTypes from "prop-types"
 // css
 import "../../Assets/scss/components/_button.scss"
 
-const Buttons = (props) => {
+const Buttons = ({ size, style: buttonStyle, ...props }) => {
+  // Set defaults
+  const actualSize = size ?? "lg"
+  const actualStyle = buttonStyle ?? "primary"
   const color1 = props.themeColor && props.themeColor[0];
   const color2 = props.themeColor && props.themeColor[1];
   const textcolor1 = props.color && props.color[0];
@@ -32,7 +35,7 @@ const Buttons = (props) => {
         as={props.href ? "a" : (props.type === "submit" ? "button" : "a")}
         type={props.type === "submit" ? "submit" : undefined}
         style={style}
-        className={`border-[2px] border-solid btn-${props.size}${props.className ? ' ' + props.className : ''}${typeof (props.themeColor) === "object" ? " btn-gradient" : ""}${typeof (props.color) === "object" ? " text-gradient" : ""}`}
+        className={`border-[2px] border-solid btn-${actualSize}${props.className ? ' ' + props.className : ''}${typeof (props.themeColor) === "object" ? " btn-gradient" : ""}${typeof (props.color) === "object" ? " text-gradient" : ""}`}
         href={props.href}
         onClick={handleClick}
         disabled={props.disabled}
@@ -46,7 +49,7 @@ const Buttons = (props) => {
       <Link
         style={style}
         target={props.target}
-        className={`btn border-[2px] border-solid btn-${props.size}${props.className ? ' ' + props.className : ''}${typeof (props.themeColor) === "object" ? " btn-gradient" : ""}${typeof (props.color) === "object" ? " text-gradient" : ""} `}
+        className={`btn border-[2px] border-solid btn-${actualSize}${props.className ? ' ' + props.className : ''}${typeof (props.themeColor) === "object" ? " btn-gradient" : ""}${typeof (props.color) === "object" ? " text-gradient" : ""} `}
         to={props.to ? props.to : "#"}
         onClick={handleClick}
         aria-label={props.ariaLabel}>
@@ -67,11 +70,6 @@ const ButtonInner = (props) => {
   )
 }
 
-Buttons.defaultProps = {
-  size: "lg",
-  style: "primary"
-}
-
 Buttons.propTypes = {
   className: PropTypes.string,
   type: PropTypes.string,
@@ -85,5 +83,8 @@ Buttons.propTypes = {
   iconPosition: PropTypes.string,
   onClick: PropTypes.func,
 }
+
+// Defaults are now handled in destructuring
+Buttons.defaultProps = undefined;
 
 export default memo(Buttons)

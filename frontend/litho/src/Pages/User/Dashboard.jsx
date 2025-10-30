@@ -22,6 +22,38 @@ import useAuth from '../../api/useAuth'
 // Animation
 import { fadeIn } from '../../Functions/GlobalAnimations'
 
+// Helper function to transform post data for BlogClassic component
+const transformPostForBlogClassic = (post) => {
+    if (!post) return null;
+    
+    // Extract tag names from tag objects
+    const extractTagNames = (tags) => {
+        if (!Array.isArray(tags)) return [];
+        return tags.map(tag => {
+            if (typeof tag === 'string') return tag;
+            if (tag && tag.name) return tag.name;
+            return '';
+        }).filter(Boolean);
+    };
+    
+    return {
+        id: post.id || 0,
+        uuid: post.uuid || '', // Keep uuid for navigation
+        category: extractTagNames(post.tags),
+        tags: extractTagNames(post.tags),
+        blogType: "classic",
+        img: post.featured_image || post.img || "",
+        featured_image: post.featured_image || post.img || "",
+        title: post.title || "",
+        content: post.excerpt || post.content || "",
+        author: typeof post.author === 'object' ? post.author.id || 0 : (post.author || 0),
+        likes: Array.isArray(post.liked_by) ? post.liked_by.length : 0,
+        comments: Array.isArray(post.comments) ? post.comments.length : 0,
+        date: post.published_at || post.created_at || "",
+        double_col: false
+    };
+};
+
 const Dashboard = (props) => {
     const [activeSection, setActiveSection] = useState('overview') // 'overview', 'reading-list', 'my-posts'
     const [showDrafts, setShowDrafts] = useState(false) // Toggle between published posts and drafts
@@ -256,7 +288,7 @@ const Dashboard = (props) => {
                                         {!recLoading && recommended?.length > 0 ? (
                                             <BlogClassic 
                                                 filter={false} 
-                                                data={recommended.slice(0, 6)} 
+                                                data={recommended.slice(0, 6).map(transformPostForBlogClassic).filter(Boolean)} 
                                                 link="/posts/" 
                                                 grid="grid grid-3col xl-grid-3col lg-grid-2col md-grid-2col sm-grid-1col xs-grid-1col gutter-large"
                                                 pagination={false}
@@ -297,7 +329,7 @@ const Dashboard = (props) => {
                                         {!trendingLoading && trendingPosts?.length > 0 ? (
                                             <BlogClassic 
                                                 filter={false} 
-                                                data={trendingPosts} 
+                                                data={trendingPosts.map(transformPostForBlogClassic).filter(Boolean)} 
                                                 link="/posts/" 
                                                 grid="grid grid-3col xl-grid-3col lg-grid-2col md-grid-2col sm-grid-1col xs-grid-1col gutter-large"
                                                 pagination={false}

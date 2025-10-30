@@ -45,7 +45,7 @@ const CommentBox = ({ postUuid, postData }) => {
             const commentData = {
                 post_uuid: postUuid,
                 content: values.comment,
-                parent_id: replyingTo
+                parent_uuid: replyingTo || undefined
             }
 
             await createNewComment(commentData)
@@ -55,7 +55,7 @@ const CommentBox = ({ postUuid, postData }) => {
             setReplyingTo(null)
             refreshComments()
             
-            actions.setStatus({ type: 'success', message: 'Comment posted successfully! It will be visible after admin approval.' })
+            actions.setStatus({ type: 'success', message: 'Comment posted successfully!' })
         } catch (error) {
             actions.setStatus({ type: 'error', message: createError || 'Failed to post comment' })
         }
@@ -110,15 +110,7 @@ const CommentBox = ({ postUuid, postData }) => {
                                     {comment.author?.full_name || comment.author?.username || 'Anonymous'}
                                 </Link>
                                 
-                                {/* Comment Status Badge */}
-                                {!comment.is_approved && (
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                        <i className="fas fa-clock mr-1 text-xs"></i>
-                                        Pending Review
-                                    </span>
-                                )}
-                                
-                                {isAuthenticated && comment.is_approved && (
+                                {isAuthenticated && (
                                     <button
                                         onClick={() => handleReply(comment.uuid, comment.author?.full_name)}
                                         className="btn-reply py-[7px] px-[16px] text-spanishgray uppercase hover:text-fastblue transition-colors"

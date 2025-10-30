@@ -78,7 +78,7 @@ export const Header = memo((props) => {
 
   useEffect(() => {
     let lastScrollTop = 0;
-    scrollY.onChange((pos) => {
+    const unsubscribe = scrollY.on("change", (pos) => {
       if (pos > lastScrollTop) {
         setScrollPos({
           ...scrollPos,
@@ -101,6 +101,7 @@ export const Header = memo((props) => {
       lastScrollTop = pos;
     });
 
+    return () => unsubscribe();
   }, [])
 
   return (
@@ -114,7 +115,13 @@ export const Header = memo((props) => {
 });
 
 /* Headernav Component Start */
-export const HeaderNav = (props) => {
+export const HeaderNav = ({ expand, bg, theme, menu, fluid, className, containerClass, children, ...props }) => {
+  // Set defaults
+  const actualFluid = fluid ?? "lg"
+  const actualTheme = theme ?? "dark"
+  const actualMenu = menu ?? "light"
+  const actualExpand = expand ?? "lg"
+  
   const handleMenuToggle = () => {
     let header = document.querySelector("header"),
       menu = header.querySelector(".navbar-nav"),
@@ -139,18 +146,18 @@ export const HeaderNav = (props) => {
     <Navbar
       collapseOnSelect
       id="headerbar"
-      expand={props.expand}
-      bg={props.bg ? props.bg : "transparent"}
-      variant={props.theme}
-      className={`${props.menu && `menu-${props.menu}`}${props.className ? ` ${props.className}` : ""
-        }${props.bg || props.bg === "transparent" ? "" : " header-transparent"}`}
+      expand={actualExpand}
+      bg={bg ? bg : "transparent"}
+      variant={actualTheme}
+      className={`${actualMenu && `menu-${actualMenu}`}${className ? ` ${className}` : ""
+        }${bg || bg === "transparent" ? "" : " header-transparent"}`}
       onToggle={handleMenuToggle}
     >
       <Container
-        fluid={props.fluid}
-        className={props.containerClass ? props.containerClass : ""}
+        fluid={actualFluid}
+        className={containerClass ? containerClass : ""}
       >
-        {props.children}
+        {children}
       </Container>
     </Navbar>
   );
@@ -914,19 +921,18 @@ Header.propTypes = {
   topSpace: PropTypes.object,
 };
 
-HeaderNav.defaultProps = {
-  fluid: "lg",
-  theme: "dark",
-  menu: "light",
-  expand: "lg",
-};
-
 HeaderNav.propTypes = {
   fluid: PropTypes.string,
   theme: PropTypes.string,
   bg: PropTypes.string,
   className: PropTypes.string,
+  expand: PropTypes.string,
+  menu: PropTypes.string,
+  containerClass: PropTypes.string,
 };
+
+// Defaults are now handled in destructuring
+HeaderNav.defaultProps = undefined;
 
 HamburgerMenu.defaultProps = {
   theme: "light",

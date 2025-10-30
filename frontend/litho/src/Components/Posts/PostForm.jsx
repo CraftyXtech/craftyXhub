@@ -7,11 +7,11 @@ import * as Yup from 'yup'
 import { m } from "framer-motion"
 
 // Components
-import { Input, TextArea, RichTextEditor } from '../Form/Form'
+import { Input, TextArea, BlockEditor } from '../Form/Form'
 import Buttons from '../Button/Buttons'
 
 // API & Auth
-import { useCategories, useTags } from '../../api/usePosts'
+import { useCategoriesRaw as useCategories, useTags } from '../../api/usePosts'
 import useAuth from '../../api/useAuth'
 
 // Animation
@@ -52,20 +52,28 @@ const PostFormSchema = Yup.object().shape({
 
 const PostForm = (props) => {
     const {
-        initialValues = {},
+        initialValues,
         onSubmit,
         onSaveDraft,
-        submitButtonText = "Publish Post",
-        draftButtonText = "Save as Draft",
-        loading = false,
+        submitButtonText,
+        draftButtonText,
+        loading,
         className,
-        showAdvancedFields = true,
+        showAdvancedFields,
+        isEdit, // Extract but don't use - prevents it from being spread to DOM
         ...restProps
     } = props;
+    
+    // Set defaults
+    const actualInitialValues = initialValues ?? {}
+    const actualSubmitButtonText = submitButtonText ?? "Publish Post"
+    const actualDraftButtonText = draftButtonText ?? "Save as Draft"
+    const actualLoading = loading ?? false
+    const actualShowAdvancedFields = showAdvancedFields ?? true
 
     const [featuredImage, setFeaturedImage] = useState(null);
-    const [featuredImagePreview, setFeaturedImagePreview] = useState(initialValues.featured_image || null);
-    const [selectedTags, setSelectedTags] = useState(initialValues.tag_ids || []);
+    const [featuredImagePreview, setFeaturedImagePreview] = useState(actualInitialValues.featured_image || null);
+    const [selectedTags, setSelectedTags] = useState(actualInitialValues.tag_ids || []);
     const [isDraftSaving, setIsDraftSaving] = useState(false);
     const fileInputRef = useRef(null);
 
@@ -77,13 +85,14 @@ const PostForm = (props) => {
     const defaultValues = {
         title: '',
         content: '',
+        content_blocks: null,
         excerpt: '',
         category_id: '',
         tag_ids: [],
         meta_title: '',
         meta_description: '',
         reading_time: '',
-        ...initialValues
+        ...actualInitialValues
     };
 
     // Handle featured image selection
@@ -132,6 +141,15 @@ const PostForm = (props) => {
             .replace(/\s+/g, '-')
             .replace(/-+/g, '-')
             .trim('-');
+    }, []);
+
+    // Handle BlockEditor content changes (dual-format support)
+    const handleContentChange = useCallback((contentData, setFieldValue) => {
+        // Update content_blocks with native EditorJS JSON
+        setFieldValue('content_blocks', contentData.blocks);
+        
+        // Update content with HTML
+        setFieldValue('content', contentData.html);
     }, []);
 
     // Handle form submission
@@ -196,7 +214,6 @@ const PostForm = (props) => {
         <m.div 
             className={`post-form-container${className ? ` ${className}` : ''}`}
             {...fadeIn}
-            {...restProps}
         >
             <Formik
                 initialValues={defaultValues}
@@ -235,10 +252,10 @@ const PostForm = (props) => {
                             />
                         </div>
 
-                        {/* Content Field - Rich Text Editor */}
+                        {/* Content Field - Block Editor */}
                         <div className="mb-[25px]">
-                            <RichTextEditor
-                                name="content"
+                            <BlockEditor
+                                name="content_blocks"
                                 label={
                                     <span className="text-sm font-medium text-darkgray mb-[10px] block">
                                         Content *
@@ -246,9 +263,16 @@ const PostForm = (props) => {
                                 }
                                 height={400}
                                 className="w-full"
+                                placeholder="Click here and start typing your content..."
+                                onContentChange={(contentData) => handleContentChange(contentData, setFieldValue)}
                             />
-                            <div className="text-xs text-spanishgray mt-2">
-                                Tip: Use the rich text editor to format your content with headings, lists, links, and more.
+                            <div className="text-xs text-spanishgray mt-2 bg-blue-50 border border-blue-200 rounded px-3 py-2">
+                                <strong>💡 Quick Tips:</strong>
+                                <ul className="list-disc ml-5 mt-1">
+                                    <li><strong>Start typing</strong> - just click and type normally</li>
+                                    <li><strong>Type "/"</strong> on a new line to insert special blocks (headings, lists, quotes, etc.)</li>
+                                    <li><strong>Select text</strong> to see formatting options (bold, italic, links)</li>
+                                </ul>
                             </div>
                         </div>
 
@@ -326,9 +350,9 @@ const PostForm = (props) => {
                                 className="py-[12px] px-[15px] w-full border-[1px] border-solid border-[#dfdfdf] text-sm rounded-[6px] focus:border-fastblue focus:outline-none transition-all duration-300"
                                 disabled={categoriesLoading}
                             >
-                                <option value="">Select a category...</option>
-                                {categories.map(category => (
-                                    <option key={category.id} value={category.id}>
+                                <option key="empty-category" value="">Select a category...</option>
+                                {categories.map((category, index) => (
+                                    <option key={category.id || `category-${index}`} value={category.id}>
                                         {category.name}
                                     </option>
                                 ))}
@@ -367,7 +391,7 @@ const PostForm = (props) => {
                         </div>
 
                         {/* Advanced Fields (SEO & Reading Time) */}
-                        {showAdvancedFields && (
+                        {actualShowAdvancedFields && (
                             <div className="advanced-fields border-t border-[#dfdfdf] pt-6 mt-6">
                                 <h4 className="text-lg font-serif font-medium text-darkgray mb-4">SEO & Advanced Settings</h4>
                                 
@@ -422,12 +446,12 @@ const PostForm = (props) => {
                             <Buttons
                                 type="submit"
                                 ariaLabel="submit post"
-                                className={`font-medium font-serif uppercase text-sm flex-1 ${isSubmitting || loading ? 'loading' : ''}`}
+                                className={`font-medium font-serif uppercase text-sm flex-1 ${isSubmitting || actualLoading ? 'loading' : ''}`}
                                 themeColor={["#0038e3", "#ff7a56"]}
                                 size="lg"
                                 color="#fff"
-                                title={isSubmitting || loading ? "Publishing..." : submitButtonText}
-                                disabled={isSubmitting || loading}
+                                title={isSubmitting || actualLoading ? "Publishing..." : actualSubmitButtonText}
+                                disabled={isSubmitting || actualLoading}
                             />
                             
                             {onSaveDraft && (
@@ -438,9 +462,9 @@ const PostForm = (props) => {
                                     themeColor={["#6c757d", "#495057"]}
                                     size="lg"
                                     color="#fff"
-                                    title={isDraftSaving ? "Saving..." : draftButtonText}
+                                    title={isDraftSaving ? "Saving..." : actualDraftButtonText}
                                     onClick={() => handleSaveDraft(values)}
-                                    disabled={isDraftSaving || isSubmitting || loading}
+                                    disabled={isDraftSaving || isSubmitting || actualLoading}
                                 />
                             )}
                         </div>
@@ -450,15 +474,6 @@ const PostForm = (props) => {
             </Formik>
         </m.div>
     );
-};
-
-PostForm.defaultProps = {
-    initialValues: {},
-    submitButtonText: "Publish Post",
-    draftButtonText: "Save as Draft",
-    loading: false,
-    showAdvancedFields: true,
-    className: ""
 };
 
 PostForm.propTypes = {

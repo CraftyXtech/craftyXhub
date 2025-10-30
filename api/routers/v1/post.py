@@ -1,4 +1,5 @@
 import os
+import json
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -195,12 +196,14 @@ async def create_post(
         title: str = Form(...),
         slug: Optional[str] = Form(None),
         content: str = Form(...),
+        content_blocks: Optional[str] = Form(None),
         excerpt: Optional[str] = Form(None),
         meta_title: Optional[str] = Form(None),
         meta_description: Optional[str] = Form(None),
         category_id: Optional[int] = Form(None),
         tag_ids: Optional[str] = Form(None),
         reading_time: Optional[int] = Form(None),
+        is_published: Optional[bool] = Form(False),
         featured_image: Optional[UploadFile] = File(None),
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
@@ -224,18 +227,50 @@ async def create_post(
     else:
         generated_slug = slug.strip()
 
-    post_data = PostCreate(
-        title=title,
-        slug=generated_slug,
-        content=content,
-        excerpt=excerpt,
-        meta_title=meta_title,
-        meta_description=meta_description,
-        category_id=category_id,
-        tag_ids=parsed_tag_ids,
-        reading_time=reading_time,
-        featured_image=featured_image_path
-    )
+    # Parse content_blocks JSON if provided
+    parsed_blocks = None
+    if content_blocks:
+        try:
+            parsed_blocks = json.loads(content_blocks)
+        except json.JSONDecodeError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid content_blocks format. Must be valid JSON."
+            )
+
+    # Validate input via schema; return 422 on validation errors instead of 500
+    try:
+        post_data = PostCreate(
+            title=title,
+            slug=generated_slug,
+            content=content,
+            content_blocks=parsed_blocks,
+            excerpt=excerpt,
+            meta_title=meta_title,
+            meta_description=meta_description,
+            category_id=category_id,
+            tag_ids=parsed_tag_ids,
+            reading_time=reading_time,
+            featured_image=featured_image_path,
+            is_published=is_published or False
+        )
+    except ValidationError as e:
+        if featured_image_path and os.path.exists(featured_image_path):
+            os.remove(featured_image_path)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": "Validation failed",
+                "errors": [
+                    {
+                        "field": ".".join(str(loc) for loc in error["loc"]),
+                        "message": error["msg"],
+                        "type": error["type"]
+                    }
+                    for error in e.errors()
+                ]
+            }
+        )
 
     try:
         post = await PostService.create_post(session, post_data, current_user.id)
@@ -252,12 +287,14 @@ async def update_post(
         title: Optional[str] = Form(None),
         slug: Optional[str] = Form(None),
         content: Optional[str] = Form(None),
+        content_blocks: Optional[str] = Form(None),
         excerpt: Optional[str] = Form(None),
         meta_title: Optional[str] = Form(None),
         meta_description: Optional[str] = Form(None),
         category_id: Optional[int] = Form(None),
         tag_ids: Optional[str] = Form(None),
         reading_time: Optional[int] = Form(None),
+        is_published: Optional[bool] = Form(None),
         featured_image: Optional[UploadFile] = File(None),
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
@@ -286,16 +323,32 @@ async def update_post(
                 detail="Invalid tag_ids format. Must be comma-separated integers."
             )
 
+    # Parse content_blocks JSON if provided
+    parsed_blocks = None
+    if content_blocks is not None:
+        if content_blocks == "":
+            parsed_blocks = None
+        else:
+            try:
+                parsed_blocks = json.loads(content_blocks)
+            except json.JSONDecodeError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid content_blocks format. Must be valid JSON."
+                )
+
     form_data = {
         'title': title,
         'slug': slug,
         'content': content,
+        'content_blocks': parsed_blocks,
         'excerpt': excerpt,
         'meta_title': meta_title,
         'meta_description': meta_description,
         'category_id': category_id,
         'tag_ids': parsed_tag_ids,
         'reading_time': reading_time,
+        'is_published': is_published,
     }
 
     if featured_image and featured_image.filename:
@@ -341,7 +394,7 @@ async def delete_post(
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
 ):
-    await PostService.soft_delete_post(session, post_uuid, current_user.id)
+    await PostService.soft_delete_post(session, post_uuid, current_user)
     return None
 
 
@@ -489,3 +542,13 @@ async def get_user_bookmarks(
         "page": skip // limit + 1,
         "size": limit
     }
+
+
+@router.put("/{post_uuid}/flag", response_model=PostResponse)
+async def flag_post(
+        post_uuid: str,
+        flag: bool = True,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    return await PostService.flag_post(session, post_uuid, current_user, flag)
