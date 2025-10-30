@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { aiDraftStorage } from '../utils/aiDraftStorage';
+import { aiDraftsService } from '@/api/aiDraftsService';
 import { toast } from 'react-toastify';
 
 const AiDraftContext = createContext();
@@ -17,15 +18,36 @@ export const AiDraftProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [selectedDraft, setSelectedDraft] = useState(null);
 
-  const loadDrafts = useCallback(() => {
+  const loadDrafts = useCallback(async () => {
+    try {
+      // Try server-backed drafts first
+      const res = await aiDraftsService.list({ skip: 0, limit: 50 });
+      if (res && Array.isArray(res.drafts)) {
+        setDrafts(res.drafts.map(d => ({
+          id: d.uuid,
+          name: d.name,
+          content: d.content,
+          template: d.template_id,
+          favorite: d.favorite,
+          draft_metadata: d.draft_metadata || {},
+          created_at: d.created_at,
+          updated_at: d.updated_at,
+          _serverUuid: d.uuid,
+        })));
+        return;
+      }
+    } catch (error) {
+      // Fallback to local
+      console.warn('Falling back to local drafts:', error?.message || error);
+    } finally {
+      setLoading(false);
+    }
     try {
       const docs = aiDraftStorage.getAll();
       setDrafts(docs);
     } catch (error) {
       console.error('Error loading drafts:', error);
       toast.error('Failed to load drafts');
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -41,9 +63,19 @@ export const AiDraftProvider = ({ children }) => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
-      
       aiDraftStorage.save(newDraft);
       setDrafts(prev => [newDraft, ...prev]);
+      // Best-effort sync to server
+      aiDraftsService.create({
+        name: newDraft.name,
+        content: newDraft.content,
+        template_id: newDraft.template,
+        model_used: newDraft.model_used || null,
+        favorite: newDraft.favorite || false,
+        draft_metadata: newDraft.draft_metadata || null,
+      }).then(serverDraft => {
+        setDrafts(prev => prev.map(d => d.id === newDraft.id ? { ...newDraft, _serverUuid: serverDraft.uuid } : d));
+      }).catch(() => {/* ignore */});
       toast.success('Draft saved successfully');
       return newDraft;
     } catch (error) {
@@ -56,9 +88,24 @@ export const AiDraftProvider = ({ children }) => {
   const updateDraft = useCallback((id, updates) => {
     try {
       const updated = aiDraftStorage.update(id, updates);
-      setDrafts(prev =>
-        prev.map(draft => (draft.id === id ? updated : draft))
-      );
+      setDrafts(prev => prev.map(draft => (draft.id === id ? updated : draft)));
+      // Sync to server if possible
+      const serverUuid = updated._serverUuid;
+      const payload = {
+        name: updated.name,
+        content: updated.content,
+        favorite: updated.favorite || false,
+        draft_metadata: updated.draft_metadata || null,
+      };
+      if (serverUuid) {
+        aiDraftsService.update(serverUuid, payload).catch(() => {/* ignore */});
+      } else {
+        aiDraftsService.create({ ...payload, template_id: updated.template, model_used: updated.model_used || null })
+          .then(serverDraft => {
+            setDrafts(prev => prev.map(d => d.id === id ? { ...updated, _serverUuid: serverDraft.uuid } : d));
+          })
+          .catch(() => {/* ignore */});
+      }
       toast.success('Draft updated successfully');
       return updated;
     } catch (error) {
@@ -70,10 +117,14 @@ export const AiDraftProvider = ({ children }) => {
 
   const deleteDraft = useCallback((id) => {
     try {
+      const toDelete = drafts.find(d => d.id === id);
       aiDraftStorage.delete(id);
       setDrafts(prev => prev.filter(draft => draft.id !== id));
       if (selectedDraft?.id === id) {
         setSelectedDraft(null);
+      }
+      if (toDelete?._serverUuid) {
+        aiDraftsService.delete(toDelete._serverUuid).catch(() => {/* ignore */});
       }
       toast.success('Draft deleted successfully');
     } catch (error) {
@@ -81,7 +132,7 @@ export const AiDraftProvider = ({ children }) => {
       toast.error('Failed to delete draft');
       throw error;
     }
-  }, [selectedDraft]);
+  }, [selectedDraft, drafts]);
 
   const deleteMultipleDrafts = useCallback((ids) => {
     try {
@@ -153,7 +204,7 @@ export const AiDraftProvider = ({ children }) => {
 
   const getStats = useCallback(() => {
     const totalDrafts = drafts.length;
-    const totalWords = drafts.reduce((sum, draft) => sum + (draft.metadata?.words || 0), 0);
+    const totalWords = drafts.reduce((sum, draft) => sum + (draft.draft_metadata?.words || 0), 0);
     const recentDrafts = drafts.filter(draft => {
       const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       return new Date(draft.created_at) > dayAgo;

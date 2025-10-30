@@ -22,91 +22,106 @@ class ContentVariant(BaseModel):
 
 class AIGeneratorService:
     def __init__(self):
-        self.agents = {}
+        """
+        Initialize AI service with support for multiple providers.
+        Models are created on-demand based on the requested model name.
+        """
+        self.system_prompt = (
+            "You are an expert content writer specializing in creating engaging, "
+            "SEO-optimized content. Follow the user's instructions precisely regarding "
+            "tone, length, and style. Generate high-quality, original content."
+        )
 
-        if settings.GROK_API_KEY:
-            agent = Agent(
+    def _get_agent_for_model(self, model_name: str) -> Agent:
+        """
+        Create an agent for the specified model, intelligently routing to
+        the right provider (OpenAI, Gemini, Grok, or free proxy).
+        """
+        # Grok models
+        if model_name == "grok":
+            if not settings.GROK_API_KEY:
+                raise ValueError("Grok API key not configured")
+            return Agent(
                 OpenAIModel(
                     "grok-2-1212",
                     api_key=settings.GROK_API_KEY,
                     base_url="https://api.x.ai/v1",
                 ),
                 result_type=str,
-                system_prompt=(
-                    "You are an expert content writer specializing in creating engaging, "
-                    "SEO-optimized content. Follow the user's instructions precisely regarding "
-                    "tone, length, and style. Generate high-quality, original content."
-                ),
+                system_prompt=self.system_prompt,
             )
-            self.agents["grok"] = agent
 
-        if settings.OPENAI_API_KEY:
-            base_url = None
-            if settings.OPENAI_API_KEY.startswith("sk-free-"):
-                base_url = "https://api.chatanywhere.tech/v1"
-
-            agent = Agent(
-                OpenAIModel(
-                    "gpt-3.5-turbo", api_key=settings.OPENAI_API_KEY, base_url=base_url
-                ),
-                result_type=str,
-                system_prompt=(
-                    "You are an expert content writer specializing in creating engaging, "
-                    "SEO-optimized content. Follow the user's instructions precisely regarding "
-                    "tone, length, and style. Generate high-quality, original content."
-                ),
-            )
-            self.agents["openai"] = agent
-
-        if settings.FREE_CHATGPT_TOKEN:
-            agent = Agent(
-                OpenAIModel(
-                    "gpt-3.5-turbo",
-                    api_key=settings.FREE_CHATGPT_TOKEN,
-                    base_url="https://api.chatanywhere.tech/v1",
-                ),
-                result_type=str,
-                system_prompt=(
-                    "You are an expert content writer specializing in creating engaging, "
-                    "SEO-optimized content. Follow the user's instructions precisely regarding "
-                    "tone, length, and style. Generate high-quality, original content."
-                ),
-            )
-            self.agents["chatgpt-free"] = agent
-
-        if settings.FREE_DEEPSEEK_TOKEN:
-            agent = Agent(
-                OpenAIModel(
-                    "deepseek-chat",
-                    api_key=settings.FREE_DEEPSEEK_TOKEN,
-                    base_url="https://api.chatanywhere.tech/v1",
-                ),
-                result_type=str,
-                system_prompt=(
-                    "You are an expert content writer specializing in creating engaging, "
-                    "SEO-optimized content. Follow the user's instructions precisely regarding "
-                    "tone, length, and style. Generate high-quality, original content."
-                ),
-            )
-            self.agents["deepseek-free"] = agent
-
-        if settings.GEMINI_API_KEY:
-            agent = Agent(
+        # Gemini models
+        if model_name == "gemini":
+            if not settings.GEMINI_API_KEY:
+                raise ValueError("Gemini API key not configured")
+            return Agent(
                 GeminiModel("gemini-2.0-flash-exp", api_key=settings.GEMINI_API_KEY),
                 result_type=str,
-                system_prompt=(
-                    "You are an expert content writer specializing in creating engaging, "
-                    "SEO-optimized content. Follow the user's instructions precisely regarding "
-                    "tone, length, and style. Generate high-quality, original content."
-                ),
+                system_prompt=self.system_prompt,
             )
-            self.agents["gemini"] = agent
+
+        # DeepSeek models - use free proxy if available, otherwise error
+        if model_name.startswith("deepseek"):
+            if settings.FREE_DEEPSEEK_TOKEN:
+                return Agent(
+                    OpenAIModel(
+                        "deepseek-chat",
+                        api_key=settings.FREE_DEEPSEEK_TOKEN,
+                        base_url="https://api.chatanywhere.tech/v1",
+                    ),
+                    result_type=str,
+                    system_prompt=self.system_prompt,
+                )
+            else:
+                raise ValueError(
+                    "DeepSeek is only available via free proxy. Configure FREE_DEEPSEEK_TOKEN."
+                )
+
+        # OpenAI GPT models - use free proxy if available, otherwise paid API
+        if model_name.startswith("gpt-"):
+            # Try free proxy first
+            if settings.FREE_CHATGPT_TOKEN:
+                return Agent(
+                    OpenAIModel(
+                        model_name,
+                        api_key=settings.FREE_CHATGPT_TOKEN,
+                        base_url="https://api.chatanywhere.tech/v1",
+                    ),
+                    result_type=str,
+                    system_prompt=self.system_prompt,
+                )
+            # Fall back to paid OpenAI API
+            elif settings.OPENAI_API_KEY:
+                base_url = None
+                # Check if it's a free token disguised as OPENAI_API_KEY
+                if settings.OPENAI_API_KEY.startswith("sk-free-"):
+                    base_url = "https://api.chatanywhere.tech/v1"
+
+                return Agent(
+                    OpenAIModel(
+                        model_name,
+                        api_key=settings.OPENAI_API_KEY,
+                        base_url=base_url,
+                    ),
+                    result_type=str,
+                    system_prompt=self.system_prompt,
+                )
+            else:
+                raise ValueError(f"No API key configured for {model_name}")
+
+        # Unknown model
+        raise ValueError(
+            f"Unsupported model: {model_name}. Supported: gpt-*, gemini, grok, deepseek-*"
+        )
 
     async def generate(
         self,
         template_id: str,
         model: str,
         params: dict,
+        prompt: str | None = None,
+        keywords: list[str] | str | None = None,
         tone: str = "professional",
         length: str = "medium",
         language: str = "en-US",
@@ -114,34 +129,35 @@ class AIGeneratorService:
         variant_count: int = 1,
     ) -> Dict[str, Any]:
         start_time = time.time()
+        # Try strict template validation first; if it fails but a freeform prompt exists, we allow fallback
+        try:
+            TemplateHandler.validate_params(template_id, params)
+            missing_ok = True
+        except ValueError:
+            missing_ok = False
 
-        TemplateHandler.validate_params(template_id, params)
-
-        prompt = TemplateHandler.build_prompt(
+        built_prompt = TemplateHandler.build_prompt(
             template_id=template_id,
             params=params,
             tone=tone,
             length=length,
             language=language,
+            prompt=prompt if not missing_ok else None,
+            keywords=keywords if not missing_ok else None,
         )
 
-        if model not in self.agents:
-            available = list(self.agents.keys())
-            if not available:
-                raise ValueError(
-                    "No AI models configured. Please add API keys to .env file"
-                )
-            raise ValueError(
-                f"Model '{model}' not configured. Available models: {available}"
-            )
-
-        agent = self.agents[model]
+        # Get agent for the requested model
+        try:
+            agent = self._get_agent_for_model(model)
+        except ValueError as e:
+            raise ValueError(str(e))
         variants = []
+        count = max(1, min(int(variant_count or 1), 3))
 
-        for _ in range(variant_count):
+        for _ in range(count):
             try:
                 result = await agent.run(
-                    prompt,
+                    built_prompt,
                     model_settings={
                         "temperature": creativity,
                         "max_tokens": TemplateHandler.get_max_tokens(length),
@@ -150,6 +166,8 @@ class AIGeneratorService:
 
                 content = result.data
                 word_count = len(content.split())
+                char_count = len(content)
+                reading_time = max(1, -(-word_count // 200))  # ceil division
 
                 tokens_used = None
                 if hasattr(result, "usage") and callable(result.usage):
@@ -164,6 +182,8 @@ class AIGeneratorService:
                         "content": content,
                         "metadata": {
                             "words": word_count,
+                            "characters": char_count,
+                            "readingTime": reading_time,
                             "model": model,
                             "tokens": tokens_used,
                         },
@@ -205,13 +225,17 @@ class AIGeneratorService:
             language=language,
         )
 
-        if model not in self.agents:
-            raise ValueError(f"Model {model} not configured")
+        # Get the base agent for the model
+        try:
+            base_agent = self._get_agent_for_model(model)
+        except ValueError as e:
+            raise ValueError(str(e))
 
+        # Create a new agent with structured output
         structured_agent = Agent(
-            self.agents[model].model,
+            base_agent.model,
             result_type=ContentVariant,
-            system_prompt=self.agents[model].system_prompt,
+            system_prompt=self.system_prompt,
         )
 
         result = await structured_agent.run(
@@ -247,10 +271,11 @@ class AIGeneratorService:
             language=language,
         )
 
-        if model not in self.agents:
-            raise ValueError(f"Model {model} not configured")
-
-        agent = self.agents[model]
+        # Get agent for the requested model
+        try:
+            agent = self._get_agent_for_model(model)
+        except ValueError as e:
+            raise ValueError(str(e))
 
         async with agent.run_stream(
             prompt,

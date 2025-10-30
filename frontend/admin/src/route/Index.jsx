@@ -19,6 +19,7 @@ import AiDashboard from "@/pages/ai-writer/AiDashboard";
 import AiDocuments from "@/pages/ai-writer/AiDocuments";
 import AiEditor from "@/pages/ai-writer/AiEditor";
 import AiTemplates from "@/pages/ai-writer/AiTemplates";
+import AiEditorGenerate from "@/pages/ai-writer/AiEditorGenerate";
 
 
 
@@ -207,6 +208,7 @@ const Router = () => {
                 <Route path="documents" element={<AiDocuments />}></Route>
                 <Route path="editor">
                   <Route path="new" element={<AiEditor />}></Route>
+                  <Route path="generate" element={<AiEditorGenerate />}></Route>
                   <Route path=":documentId" element={<AiEditor />}></Route>
                 </Route>
                 <Route path="templates" element={<AiTemplates />}></Route>

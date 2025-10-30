@@ -22,6 +22,8 @@ const AiWriterPanel = ({
     tone: 'professional',
     language: 'en-US',
     length: 'medium',
+    model: 'gpt-3.5-turbo',
+    creativity: 0.7,
     variantCount: 1
   });
 
@@ -38,9 +40,15 @@ const AiWriterPanel = ({
     if (onGenerate && formData.prompt.trim()) {
       const keywords = formData.keywords.split(',').map(k => k.trim()).filter(k => k);
       onGenerate({
-        ...formData,
+        prompt: formData.prompt,
         keywords,
-        template: selectedTemplate?.id
+        tone: formData.tone,
+        language: formData.language,
+        length: formData.length,
+        model: formData.model,
+        creativity: formData.creativity,
+        variant_count: formData.variantCount,
+        template_id: selectedTemplate?.id
       });
     }
   };
@@ -94,6 +102,32 @@ const AiWriterPanel = ({
         <TabContent activeTab={activeTab}>
           <TabPane tabId="1">
             <Form onSubmit={handleSubmit} className="mt-3">
+              {/* Model Selector */}
+              <FormGroup>
+                <Label>AI Model</Label>
+                <RSelect
+                  options={[
+                    { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
+                    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+                    { value: 'gpt-4o', label: 'GPT-4o' },
+                    { value: 'gemini', label: 'Google Gemini' },
+                    { value: 'grok', label: 'xAI Grok' },
+                    { value: 'deepseek-v3', label: 'DeepSeek V3' }
+                  ]}
+                  value={{ 
+                    value: formData.model, 
+                    label: formData.model === 'gpt-3.5-turbo' ? 'GPT-3.5 Turbo' :
+                           formData.model === 'gpt-4o-mini' ? 'GPT-4o Mini' :
+                           formData.model === 'gpt-4o' ? 'GPT-4o' :
+                           formData.model === 'gemini' ? 'Google Gemini' :
+                           formData.model === 'grok' ? 'xAI Grok' :
+                           formData.model === 'deepseek-v3' ? 'DeepSeek V3' :
+                           'OpenAI'
+                  }}
+                  onChange={(opt) => handleInputChange('model', opt.value)}
+                />
+              </FormGroup>
+
               {/* Template Selector */}
               <FormGroup>
                 <Label>Select Template</Label>
@@ -196,6 +230,19 @@ const AiWriterPanel = ({
                   </FormGroup>
                 </div>
               </div>
+
+              <FormGroup>
+                <Label>Creativity ({formData.creativity})</Label>
+                <Input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={formData.creativity}
+                  onChange={(e) => handleInputChange('creativity', parseFloat(e.target.value))}
+                />
+                <div className="form-note">Higher values = more creative, lower = more focused</div>
+              </FormGroup>
 
               <Button
                 type="submit"
@@ -311,4 +358,3 @@ const AiWriterPanel = ({
 };
 
 export default AiWriterPanel;
-

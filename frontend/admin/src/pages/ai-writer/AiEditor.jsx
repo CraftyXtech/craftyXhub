@@ -7,7 +7,7 @@ import Content from '@/layout/content/Content';
 import { Block, Button, Icon } from '@/components/Component';
 import AiWriterPanel from '@/components/ai-writer/AiWriterPanel';
 import { useAiDrafts } from '@/context/AiDraftContext';
-import { mockGenerator } from '@/data/mockGenerator';
+import { aiWriterService } from '@/api/aiWriterService';
 import { textUtils } from '@/utils/textUtils';
 import { toast } from 'react-toastify';
 import { AI_TEMPLATES } from '@/data/aiTemplates';
@@ -70,10 +70,17 @@ const AiEditor = () => {
   const handleGenerate = async (params) => {
     try {
       setGenerating(true);
-      const results = await mockGenerator.generate({
-        ...params,
-        variants: params.variantCount || 1,
-        template: selectedTemplate?.id
+      const results = await aiWriterService.generate({
+        template_id: params.template_id || selectedTemplate?.id,
+        params: {},
+        prompt: params.prompt,
+        keywords: params.keywords,
+        tone: params.tone,
+        language: params.language,
+        length: params.length,
+        variant_count: params.variant_count || 1,
+        creativity: params.creativity ?? 0.7,
+        model: params.model || 'openai',
       });
       setVariants(results);
       toast.success('Content generated successfully!');
@@ -103,7 +110,7 @@ const AiEditor = () => {
       type: 'blog_post',
       template: selectedTemplate?.id || null,
       favorite: isFavorite,
-      metadata: {
+      draft_metadata: {
         words: textUtils.countWords(currentContent),
         characters: textUtils.countCharacters(currentContent),
         readingTime: textUtils.estimateReadingTime(currentContent)

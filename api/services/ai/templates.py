@@ -117,34 +117,63 @@ Rewrite to match brand voice and reading level.""",
     }
     
     @staticmethod
-    def build_prompt(template_id: str, params: dict, tone: str, length: str, language: str) -> str:
+    def build_prompt(
+        template_id: str,
+        params: dict,
+        tone: str,
+        length: str,
+        language: str,
+        prompt: str | None = None,
+        keywords: list[str] | str | None = None,
+    ) -> str:
+        """Build a prompt either from a known template with required params
+        or fall back to a generic prompt using the provided freeform prompt/keywords.
+        """
         template = TemplateHandler.TEMPLATES.get(template_id)
-        if not template:
-            raise ValueError(f"Template {template_id} not found")
-        
-        filled_params = {
-            "tone": tone,
-            **params
-        }
-        
-        for field in template.get("optional_fields", []):
-            if field not in filled_params:
-                filled_params[field] = "Not specified"
-        
-        prompt = template["prompt"].format(**filled_params)
-        
         length_map = {
             "short": "50-100 words",
             "medium": "100-300 words",
             "long": "300-500 words",
-            "very-long": "500+ words"
+            "very-long": "500+ words",
         }
-        prompt += f"\n\nLength: {length_map[length]}"
-        
+
+        # If we have a valid template and params likely satisfy, render it
+        if template:
+            filled_params = {"tone": tone, **params}
+            for field in template.get("optional_fields", []):
+                if field not in filled_params:
+                    filled_params[field] = "Not specified"
+            try:
+                base = template["prompt"].format(**filled_params)
+                result = base + f"\n\nLength: {length_map.get(length, '100-300 words')}"
+                if language != "en-US":
+                    result += f"\n\nWrite in {language}."
+                return result
+            except KeyError:
+                # Fall back to generic below if fields are missing
+                pass
+
+        # Generic fallback using freeform prompt
+        if not prompt:
+            raise ValueError(
+                f"Template {template_id} requires additional fields or a freeform prompt."
+            )
+
+        kw_text = (
+            ", ".join(keywords) if isinstance(keywords, list) else (keywords or "")
+        )
+        generic = [
+            "You are an expert content writer creating engaging, SEO-optimized content.",
+            f"Tone: {tone}",
+            f"Target length: {length_map.get(length, '100-300 words')}",
+        ]
         if language != "en-US":
-            prompt += f"\n\nWrite in {language}."
-        
-        return prompt
+            generic.append(f"Language: {language}")
+        if kw_text:
+            generic.append(f"Primary keywords: {kw_text}")
+        generic.append("Instructions:")
+        generic.append(prompt)
+        return "\n".join(generic)
     
     @staticmethod
     def get_max_tokens(length: str) -> int:

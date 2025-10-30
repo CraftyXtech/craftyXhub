@@ -27,50 +27,62 @@ async def test_ai_models():
     
     available_models = []
     
-    if settings.FREE_CHATGPT_TOKEN:
-        available_models.append({
-            "name": "chatgpt-free",
-            "model": "gpt-3.5-turbo",
-            "provider": "OpenAI (via ChatAnywhere proxy)",
-            "status": "configured"
-        })
+    # OpenAI GPT models - available via paid API or free proxy
+    if settings.FREE_CHATGPT_TOKEN or settings.OPENAI_API_KEY:
+        source = "Free Proxy" if settings.FREE_CHATGPT_TOKEN else "Paid API"
+        available_models.extend([
+            {
+                "model": "gpt-3.5-turbo",
+                "provider": f"OpenAI ({source})",
+                "status": "configured",
+                "daily_limit": "200 requests" if settings.FREE_CHATGPT_TOKEN else "No limit"
+            },
+            {
+                "model": "gpt-4o-mini",
+                "provider": f"OpenAI ({source})",
+                "status": "configured",
+                "daily_limit": "200 requests" if settings.FREE_CHATGPT_TOKEN else "No limit"
+            },
+            {
+                "model": "gpt-4o",
+                "provider": f"OpenAI ({source})",
+                "status": "configured",
+                "daily_limit": "5 requests" if settings.FREE_CHATGPT_TOKEN else "No limit"
+            }
+        ])
     
+    # DeepSeek - only via free proxy
     if settings.FREE_DEEPSEEK_TOKEN:
         available_models.append({
-            "name": "deepseek-free",
-            "model": "deepseek-chat",
-            "provider": "DeepSeek (via ChatAnywhere proxy)",
-            "status": "configured"
+            "model": "deepseek-v3",
+            "provider": "DeepSeek (Free Proxy)",
+            "status": "configured",
+            "daily_limit": "30 requests"
         })
     
-    if settings.OPENAI_API_KEY:
-        available_models.append({
-            "name": "openai",
-            "model": "gpt-3.5-turbo",
-            "provider": "OpenAI",
-            "status": "configured"
-        })
-    
+    # Grok
     if settings.GROK_API_KEY:
         available_models.append({
-            "name": "grok",
-            "model": "grok-2-1212",
+            "model": "grok",
             "provider": "xAI",
-            "status": "configured"
+            "status": "configured",
+            "daily_limit": "No limit"
         })
     
+    # Gemini
     if settings.GEMINI_API_KEY:
         available_models.append({
-            "name": "gemini",
-            "model": "gemini-2.0-flash-exp",
+            "model": "gemini",
             "provider": "Google",
-            "status": "configured"
+            "status": "configured",
+            "daily_limit": "No limit"
         })
     
     return {
         "message": "AI Service is running",
         "available_models": available_models,
-        "total_models": len(available_models)
+        "total_models": len(available_models),
+        "note": "Use the 'model' field value when making generation requests"
     }
 
 
@@ -155,6 +167,8 @@ async def generate_content(
             template_id=request.template_id,
             model=request.model,
             params=request.params,
+            prompt=request.prompt,
+            keywords=request.keywords,
             tone=request.tone,
             length=request.length,
             language=request.language,
@@ -206,53 +220,7 @@ async def get_drafts(
             detail=f"Failed to retrieve drafts: {str(e)}"
         )
 
-
-@router.get("/drafts/{draft_id}", response_model=DraftResponse)
-async def get_draft(
-    draft_id: int,
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db_session)
-):
-    draft = await AIDraftService.get_draft_by_id(draft_id, current_user.id, db)
-    if not draft:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Draft not found"
-        )
-    return draft
-
-
-@router.put("/drafts/{draft_id}", response_model=DraftResponse)
-async def update_draft(
-    draft_id: int,
-    updates: DraftUpdateRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db_session)
-):
-    draft = await AIDraftService.update_draft(draft_id, current_user.id, updates, db)
-    if not draft:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Draft not found"
-        )
-    return draft
-
-
-@router.delete("/drafts/{draft_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_draft(
-    draft_id: int,
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db_session)
-):
-    deleted = await AIDraftService.delete_draft(draft_id, current_user.id, db)
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Draft not found"
-        )
-    return None
-
-
+ 
 @router.get("/drafts/favorites", response_model=DraftListResponse)
 async def get_favorite_drafts(
     skip: int = Query(0, ge=0),
@@ -274,4 +242,51 @@ async def get_favorite_drafts(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve favorite drafts: {str(e)}"
         )
+
+
+@router.get("/drafts/{draft_uuid}", response_model=DraftResponse)
+async def get_draft(
+    draft_uuid: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db_session)
+):
+    draft = await AIDraftService.get_draft_by_uuid(draft_uuid, current_user.id, db)
+    if not draft:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Draft not found"
+        )
+    return draft
+
+
+@router.put("/drafts/{draft_uuid}", response_model=DraftResponse)
+async def update_draft(
+    draft_uuid: str,
+    updates: DraftUpdateRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db_session)
+):
+    draft = await AIDraftService.update_draft_by_uuid(draft_uuid, current_user.id, updates, db)
+    if not draft:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Draft not found"
+        )
+    return draft
+
+
+@router.delete("/drafts/{draft_uuid}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_draft(
+    draft_uuid: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db_session)
+):
+    deleted = await AIDraftService.delete_draft_by_uuid(draft_uuid, current_user.id, db)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Draft not found"
+        )
+    return None
+
 

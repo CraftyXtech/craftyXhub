@@ -2,7 +2,7 @@ import axios from './axios';
 
 export const generate = async (template_id, model, params, options = {}, axiosPrivate) => {
   const api = axiosPrivate || axios;
-  const response = await api.post('/v1/ai/generate', {
+  const response = await api.post('ai/generate', {
     template_id,
     model,
     params,
@@ -18,36 +18,36 @@ export const generate = async (template_id, model, params, options = {}, axiosPr
 
 export const saveDraft = async (draft, axiosPrivate) => {
   const api = axiosPrivate || axios;
-  const response = await api.post('/v1/ai/drafts', draft);
+  const response = await api.post('ai/drafts', draft);
   return response.data;
 };
 
 export const getDrafts = async (skip = 0, limit = 50, axiosPrivate) => {
   const api = axiosPrivate || axios;
-  const response = await api.get(`/v1/ai/drafts?skip=${skip}&limit=${limit}`);
+  const response = await api.get(`ai/drafts?skip=${skip}&limit=${limit}`);
   return response.data;
 };
 
 export const getDraftById = async (id, axiosPrivate) => {
   const api = axiosPrivate || axios;
-  const response = await api.get(`/v1/ai/drafts/${id}`);
+  const response = await api.get(`ai/drafts/${id}`);
   return response.data;
 };
 
 export const updateDraft = async (id, updates, axiosPrivate) => {
   const api = axiosPrivate || axios;
-  const response = await api.put(`/v1/ai/drafts/${id}`, updates);
+  const response = await api.put(`ai/drafts/${id}`, updates);
   return response.data;
 };
 
 export const deleteDraft = async (id, axiosPrivate) => {
   const api = axiosPrivate || axios;
-  await api.delete(`/v1/ai/drafts/${id}`);
+  await api.delete(`ai/drafts/${id}`);
 };
 
 export const getFavoriteDrafts = async (skip = 0, limit = 50, axiosPrivate) => {
   const api = axiosPrivate || axios;
-  const response = await api.get(`/v1/ai/drafts/favorites?skip=${skip}&limit=${limit}`);
+  const response = await api.get(`ai/drafts/favorites?skip=${skip}&limit=${limit}`);
   return response.data;
 };
 

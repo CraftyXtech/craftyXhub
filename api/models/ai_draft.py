@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, Float, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Text, Boolean, Float, ForeignKey, Enum, JSON
 from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
 from .base import BaseTable
@@ -19,6 +19,7 @@ class AIDraft(BaseTable):
     template_id = Column(String(100), nullable=True)
     model_used = Column(Enum(AIModel), nullable=True)
     favorite = Column(Boolean, default=False)
+    draft_metadata = Column(JSON, nullable=True)
     
     user = relationship("User", back_populates="ai_drafts")
 

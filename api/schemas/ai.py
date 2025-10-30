@@ -5,8 +5,10 @@ from datetime import datetime
 
 class GenerateRequest(BaseModel):
     template_id: str = Field(..., description="ID from AI_TEMPLATES")
-    model: Literal["grok", "openai", "gemini", "chatgpt-free", "deepseek-free"] = Field(default="chatgpt-free")
+    model: str = Field(default="gpt-3.5-turbo", description="AI model name (e.g., gpt-3.5-turbo, gpt-4o, gemini, grok, deepseek-v3)")
     params: Dict[str, Any] = Field(..., description="Template-specific fields")
+    prompt: Optional[str] = Field(default=None, description="Freeform prompt to use when template params are incomplete or for generic generation")
+    keywords: Optional[List[str] | str] = Field(default=None, description="Primary keywords to guide generation; list or comma-separated string")
     
     tone: Optional[str] = Field(default="professional", description="From TONE_OPTIONS")
     length: Optional[str] = Field(default="medium", description="From LENGTH_OPTIONS")
@@ -23,14 +25,14 @@ class DraftSaveRequest(BaseModel):
     template_id: Optional[str] = None
     model_used: Optional[str] = None
     favorite: Optional[bool] = Field(default=False)
-    metadata: Optional[Dict[str, Any]] = None
+    draft_metadata: Optional[Dict[str, Any]] = None
 
 
 class DraftUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     content: Optional[str] = None
     favorite: Optional[bool] = None
-    metadata: Optional[Dict[str, Any]] = None
+    draft_metadata: Optional[Dict[str, Any]] = None
 
 
 class GenerationVariant(BaseModel):
@@ -54,6 +56,7 @@ class DraftResponse(BaseModel):
     template_id: Optional[str]
     model_used: Optional[str]
     favorite: bool
+    draft_metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
 

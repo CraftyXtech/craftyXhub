@@ -19,7 +19,8 @@ class AIDraftService:
             content=draft_data.content,
             template_id=draft_data.template_id,
             model_used=draft_data.model_used,
-            favorite=draft_data.favorite or False
+            favorite=draft_data.favorite or False,
+            draft_metadata=draft_data.draft_metadata
         )
         db.add(draft)
         await db.commit()
@@ -102,6 +103,45 @@ class AIDraftService:
     ) -> bool:
         stmt = delete(AIDraft).where(
             AIDraft.id == draft_id,
+            AIDraft.user_id == user_id
+        )
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.rowcount > 0
+
+    @staticmethod
+    async def update_draft_by_uuid(
+        draft_uuid: str,
+        user_id: int,
+        updates: DraftUpdateRequest,
+        db: AsyncSession
+    ) -> Optional[AIDraft]:
+        stmt = select(AIDraft).where(
+            AIDraft.uuid == draft_uuid,
+            AIDraft.user_id == user_id
+        )
+        result = await db.execute(stmt)
+        draft = result.scalar_one_or_none()
+
+        if not draft:
+            return None
+
+        update_data = updates.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(draft, key, value)
+
+        await db.commit()
+        await db.refresh(draft)
+        return draft
+
+    @staticmethod
+    async def delete_draft_by_uuid(
+        draft_uuid: str,
+        user_id: int,
+        db: AsyncSession
+    ) -> bool:
+        stmt = delete(AIDraft).where(
+            AIDraft.uuid == draft_uuid,
             AIDraft.user_id == user_id
         )
         result = await db.execute(stmt)
