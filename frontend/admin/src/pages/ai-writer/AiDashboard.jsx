@@ -4,9 +4,9 @@ import Head from '@/layout/head/Head';
 import Content from '@/layout/content/Content';
 import { Block, BlockHead, BlockTitle, BlockDes, BlockBetween, BlockHeadContent, Row, Col, Button, Icon, DataTable, DataTableBody, DataTableHead, DataTableRow, DataTableItem } from '@/components/Component';
 import AiStatCard from '@/components/ai-writer/AiStatCard';
-import TemplateCard from '@/components/ai-writer/TemplateCard';
+import ToolCard from '@/components/ai-writer/ToolCard';
 import { useAiDrafts } from '@/context/AiDraftContext';
-import { AI_TEMPLATES } from '@/data/aiTemplates';
+import { AI_TOOLS } from '@/data/aiTools';
 import { textUtils } from '@/utils/textUtils';
 
 const AiDashboard = () => {
@@ -20,7 +20,7 @@ const AiDashboard = () => {
       .slice(0, 5);
   }, [drafts]);
 
-  const popularTemplates = AI_TEMPLATES.slice(0, 4);
+  const popularTools = AI_TOOLS.slice(0, 4);
 
   const wordLimit = 2000;
   const draftLimit = 10;
@@ -80,13 +80,13 @@ const AiDashboard = () => {
             <Col sm="6" lg="4">
               <AiStatCard
                 title="Tools Available"
-                value={`${AI_TEMPLATES.length}`}
+                value={`${AI_TOOLS.length}`}
                 subtitle={`${toolsUsed}/${toolsLimit} tools used to generate`}
                 color="danger"
                 variant="solid"
                 icon="spark"
                 linkText="All Tools"
-                onLinkClick={() => navigate('/ai-writer/templates')}
+                onLinkClick={() => navigate('/ai-writer/tools')}
               />
             </Col>
           </Row>
@@ -96,10 +96,10 @@ const AiDashboard = () => {
           <BlockHead>
             <BlockBetween className="g-3">
               <BlockHeadContent>
-                <BlockTitle>Popular Templates</BlockTitle>
+                <BlockTitle>Popular Tools</BlockTitle>
               </BlockHeadContent>
               <BlockHeadContent>
-                <Button color="light" outline onClick={() => navigate('/ai-writer/templates')}>
+                <Button color="light" outline onClick={() => navigate('/ai-writer/tools')}>
                   <span>Explore All</span>
                   <Icon name="arrow-right" className="ms-1" />
                 </Button>
@@ -107,15 +107,15 @@ const AiDashboard = () => {
             </BlockBetween>
           </BlockHead>
           <Row className="g-gs">
-            {popularTemplates.map((template) => (
-              <Col key={template.id} sm="6" lg="3">
-                <TemplateCard
-                  icon={template.icon}
-                  title={template.title}
-                  description={template.description}
-                  color={template.color}
+            {popularTools.map((tool) => (
+              <Col key={tool.id} sm="6" lg="3">
+                <ToolCard
+                  icon={tool.icon}
+                  title={tool.title}
+                  description={tool.description}
+                  color={tool.color}
                   onClick={() => navigate('/ai-writer/editor/generate', { 
-                    state: { selectedTemplate: template } 
+                    state: { selectedTool: tool } 
                   })}
                 />
               </Col>

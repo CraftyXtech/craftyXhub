@@ -1,5 +1,5 @@
-class TemplateHandler:
-    TEMPLATES = {
+class ToolHandler:
+    TOOLS = {
         "blog-ideas": {
             "prompt": """Generate blog post ideas about {category}.
 Keywords: {keywords}
@@ -118,7 +118,7 @@ Rewrite to match brand voice and reading level.""",
     
     @staticmethod
     def build_prompt(
-        template_id: str,
+        tool_id: str,
         params: dict,
         tone: str,
         length: str,
@@ -126,10 +126,10 @@ Rewrite to match brand voice and reading level.""",
         prompt: str | None = None,
         keywords: list[str] | str | None = None,
     ) -> str:
-        """Build a prompt either from a known template with required params
+        """Build a prompt either from a known tool with required params
         or fall back to a generic prompt using the provided freeform prompt/keywords.
         """
-        template = TemplateHandler.TEMPLATES.get(template_id)
+        tool = ToolHandler.TOOLS.get(tool_id)
         length_map = {
             "short": "50-100 words",
             "medium": "100-300 words",
@@ -137,14 +137,14 @@ Rewrite to match brand voice and reading level.""",
             "very-long": "500+ words",
         }
 
-        # If we have a valid template and params likely satisfy, render it
-        if template:
+        # If we have a valid tool and params likely satisfy, render it
+        if tool:
             filled_params = {"tone": tone, **params}
-            for field in template.get("optional_fields", []):
+            for field in tool.get("optional_fields", []):
                 if field not in filled_params:
                     filled_params[field] = "Not specified"
             try:
-                base = template["prompt"].format(**filled_params)
+                base = tool["prompt"].format(**filled_params)
                 result = base + f"\n\nLength: {length_map.get(length, '100-300 words')}"
                 if language != "en-US":
                     result += f"\n\nWrite in {language}."
@@ -156,7 +156,7 @@ Rewrite to match brand voice and reading level.""",
         # Generic fallback using freeform prompt
         if not prompt:
             raise ValueError(
-                f"Template {template_id} requires additional fields or a freeform prompt."
+                f"Tool {tool_id} requires additional fields or a freeform prompt."
             )
 
         kw_text = (
@@ -185,12 +185,12 @@ Rewrite to match brand voice and reading level.""",
         }.get(length, 600)
     
     @staticmethod
-    def validate_params(template_id: str, params: dict) -> None:
-        template = TemplateHandler.TEMPLATES.get(template_id)
-        if not template:
-            raise ValueError(f"Template {template_id} not found")
+    def validate_params(tool_id: str, params: dict) -> None:
+        tool = ToolHandler.TOOLS.get(tool_id)
+        if not tool:
+            raise ValueError(f"Tool {tool_id} not found")
         
-        required = template["required_fields"]
+        required = tool["required_fields"]
         missing = [f for f in required if f not in params or not params[f]]
         if missing:
             raise ValueError(f"Missing required fields: {', '.join(missing)}")

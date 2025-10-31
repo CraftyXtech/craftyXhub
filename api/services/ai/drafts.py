@@ -17,7 +17,7 @@ class AIDraftService:
             user_id=user_id,
             name=draft_data.name,
             content=draft_data.content,
-            template_id=draft_data.template_id,
+            tool_id=draft_data.tool_id,
             model_used=draft_data.model_used,
             favorite=draft_data.favorite or False,
             draft_metadata=draft_data.draft_metadata

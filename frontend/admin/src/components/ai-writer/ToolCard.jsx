@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardBody } from 'reactstrap';
 import { Icon, Button } from '@/components/Component';
 
-const TemplateCard = ({
+const ToolCard = ({
   icon,
   title,
   description,
@@ -44,7 +44,7 @@ const TemplateCard = ({
             if (onClick) onClick();
           }}>
             <Icon name="spark" className="me-1"></Icon>
-            <span>Use Template</span>
+            <span>Use Tool</span>
           </Button>
         </div>
       </CardBody>
@@ -52,5 +52,5 @@ const TemplateCard = ({
   );
 };
 
-export default TemplateCard;
+export default ToolCard;
 

@@ -5,8 +5,8 @@ export const aiDraftsService = {
     const { data } = await axiosPrivate.get("ai/drafts", { params: { skip, limit } });
     return data;
   },
-  create: async ({ name, content, template_id = null, model_used = null, favorite = false, draft_metadata = null }) => {
-    const payload = { name, content, template_id, model_used, favorite, draft_metadata };
+  create: async ({ name, content, tool_id = null, model_used = null, favorite = false, draft_metadata = null }) => {
+    const payload = { name, content, tool_id, model_used, favorite, draft_metadata };
     const { data } = await axiosPrivate.post("ai/drafts", payload);
     return data;
   },

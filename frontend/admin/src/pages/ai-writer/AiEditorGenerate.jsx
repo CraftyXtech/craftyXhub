@@ -26,7 +26,7 @@ const AiEditorGenerate = () => {
   const theme = useTheme();
   const [documentTitle, setDocumentTitle] = useState('Untitled Draft');
   const [content, setContent] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState(location.state?.selectedTemplate || null);
+  const [selectedTool, setSelectedTool] = useState(location.state?.selectedTool || null);
   const [variants, setVariants] = useState([]);
   const [generating, setGenerating] = useState(false);
   const [wordCount, setWordCount] = useState(0);
@@ -52,7 +52,7 @@ const AiEditorGenerate = () => {
     try {
       setGenerating(true);
       const results = await aiWriterService.generate({
-        template_id: params.template_id || selectedTemplate?.id,
+        tool_id: params.tool_id || selectedTool?.id,
         params: {},
         prompt: params.prompt,
         keywords: params.keywords,
@@ -61,7 +61,7 @@ const AiEditorGenerate = () => {
         length: params.length,
         variant_count: params.variant_count || 1,
         creativity: params.creativity ?? 0.7,
-        model: params.model || 'openai',
+        model: params.model || 'gpt-5-mini',
       });
       setVariants(results);
       toast.success('Content generated successfully!');
@@ -89,7 +89,7 @@ const AiEditorGenerate = () => {
       name: documentTitle,
       content: currentContent,
       type: 'blog_post',
-      template: selectedTemplate?.id || null,
+      tool_id: selectedTool?.id || null,
       draft_metadata: {
         words: textUtils.countWords(currentContent),
         characters: textUtils.countCharacters(currentContent),
@@ -189,7 +189,7 @@ const AiEditorGenerate = () => {
             </Col>
             <Col lg="4">
               <AiWriterPanel
-                selectedTemplate={selectedTemplate}
+                selectedTool={selectedTool}
                 onGenerate={handleGenerate}
                 variants={variants}
                 onInsert={handleInsertVariant}

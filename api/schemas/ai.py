@@ -4,10 +4,10 @@ from datetime import datetime
 
 
 class GenerateRequest(BaseModel):
-    template_id: str = Field(..., description="ID from AI_TEMPLATES")
-    model: str = Field(default="gpt-3.5-turbo", description="AI model name (e.g., gpt-3.5-turbo, gpt-4o, gemini, grok, deepseek-v3)")
-    params: Dict[str, Any] = Field(..., description="Template-specific fields")
-    prompt: Optional[str] = Field(default=None, description="Freeform prompt to use when template params are incomplete or for generic generation")
+    tool_id: str = Field(..., description="ID from AI_TOOLS")
+    model: str = Field(default="gpt-5-mini", description="AI model name (e.g., gpt-5-mini, gpt-4o, gemini, grok, deepseek-v3)")
+    params: Dict[str, Any] = Field(..., description="Tool-specific fields")
+    prompt: Optional[str] = Field(default=None, description="Freeform prompt to use when tool params are incomplete or for generic generation")
     keywords: Optional[List[str] | str] = Field(default=None, description="Primary keywords to guide generation; list or comma-separated string")
     
     tone: Optional[str] = Field(default="professional", description="From TONE_OPTIONS")
@@ -22,7 +22,7 @@ class DraftSaveRequest(BaseModel):
     id: Optional[str] = Field(default=None, description="Frontend UUID")
     name: str = Field(..., min_length=1, max_length=255)
     content: str = Field(...)
-    template_id: Optional[str] = None
+    tool_id: Optional[str] = None
     model_used: Optional[str] = None
     favorite: Optional[bool] = Field(default=False)
     draft_metadata: Optional[Dict[str, Any]] = None
@@ -42,7 +42,7 @@ class GenerationVariant(BaseModel):
 
 class GenerateResponse(BaseModel):
     variants: List[GenerationVariant]
-    template_id: str
+    tool_id: str
     model_used: str
     generation_time: float
 
@@ -53,7 +53,7 @@ class DraftResponse(BaseModel):
     user_id: int
     name: str
     content: str
-    template_id: Optional[str]
+    tool_id: Optional[str]
     model_used: Optional[str]
     favorite: bool
     draft_metadata: Optional[Dict[str, Any]] = None

@@ -4,34 +4,34 @@ import { Nav, NavItem, NavLink, TabContent, TabPane } from 'reactstrap';
 import Head from '@/layout/head/Head';
 import Content from '@/layout/content/Content';
 import { Block, BlockHead, BlockTitle, BlockDes, BlockBetween, BlockHeadContent, Row, Col } from '@/components/Component';
-import TemplateCard from '@/components/ai-writer/TemplateCard';
-import { AI_TEMPLATES, TEMPLATE_CATEGORIES } from '@/data/aiTemplates';
+import ToolCard from '@/components/ai-writer/ToolCard';
+import { AI_TOOLS, TOOL_CATEGORIES } from '@/data/aiTools';
 import classnames from 'classnames';
 
-const AiTemplates = () => {
+const AiTools = () => {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('all');
 
-  const filteredTemplates = activeCategory === 'all'
-    ? AI_TEMPLATES
-    : AI_TEMPLATES.filter(template => template.category === activeCategory);
+  const filteredTools = activeCategory === 'all'
+    ? AI_TOOLS
+    : AI_TOOLS.filter(tool => tool.category === activeCategory);
 
-  const handleTemplateClick = (template) => {
+  const handleToolClick = (tool) => {
     navigate('/ai-writer/editor/new', { 
-      state: { selectedTemplate: template } 
+      state: { selectedTool: tool } 
     });
   };
 
   return (
     <>
-      <Head title="AI Templates" />
+      <Head title="AI Tools" />
       <Content>
         <BlockHead size="sm">
           <BlockBetween>
             <BlockHeadContent>
-              <BlockTitle page>AI Content Templates</BlockTitle>
+              <BlockTitle page>AI Content Tools</BlockTitle>
               <BlockDes className="text-soft">
-                <p>Choose a template to generate AI-powered content</p>
+                <p>Choose a tool to generate AI-powered content</p>
               </BlockDes>
             </BlockHeadContent>
           </BlockBetween>
@@ -39,7 +39,7 @@ const AiTemplates = () => {
 
         <Block>
           <Nav tabs className="nav-tabs-s2 mb-4">
-            {TEMPLATE_CATEGORIES.map((category) => (
+            {TOOL_CATEGORIES.map((category) => (
               <NavItem key={category.id}>
                 <NavLink
                   tag="a"
@@ -58,20 +58,20 @@ const AiTemplates = () => {
 
           <TabContent activeTab={activeCategory}>
             <TabPane tabId={activeCategory}>
-              {filteredTemplates.length === 0 ? (
+              {filteredTools.length === 0 ? (
                 <div className="text-center py-5">
-                  <p className="text-soft">No templates found in this category</p>
+                  <p className="text-soft">No tools found in this category</p>
                 </div>
               ) : (
                 <Row className="g-gs">
-                  {filteredTemplates.map((template) => (
-                    <Col key={template.id} sm="6" lg="4" xxl="3">
-                      <TemplateCard
-                        icon={template.icon}
-                        title={template.title}
-                        description={template.description}
-                        color={template.color}
-                        onClick={() => handleTemplateClick(template)}
+                  {filteredTools.map((tool) => (
+                    <Col key={tool.id} sm="6" lg="4" xxl="3">
+                      <ToolCard
+                        icon={tool.icon}
+                        title={tool.title}
+                        description={tool.description}
+                        color={tool.color}
+                        onClick={() => handleToolClick(tool)}
                       />
                     </Col>
                   ))}
@@ -85,5 +85,5 @@ const AiTemplates = () => {
   );
 };
 
-export default AiTemplates;
+export default AiTools;
 

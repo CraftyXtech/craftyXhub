@@ -2,7 +2,7 @@ import { axiosPrivate } from "@/api/axios";
 
 export const aiWriterService = {
   generate: async ({
-    template_id,
+    tool_id,
     params = {},
     prompt,
     keywords,
@@ -11,10 +11,10 @@ export const aiWriterService = {
     length = "medium",
     variant_count = 1,
     creativity = 0.7,
-    model = "openai",
+    model = "gpt-5-mini",
   }) => {
     const payload = {
-      template_id,
+      tool_id,
       model,
       params,
       prompt,

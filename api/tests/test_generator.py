@@ -25,14 +25,18 @@ class FakeAgent:
 
 
 @pytest.mark.asyncio
-async def test_generate_success_variants_count():
+async def test_generate_success_variants_count(monkeypatch):
     service = AIGeneratorService()
-    # Override agents with fakes regardless of env keys
-    service.agents = {"openai": FakeAgent()}
+    
+    # Mock the _get_agent_for_model method to return a fake agent
+    def fake_get_agent(self, model_name):
+        return FakeAgent()
+    
+    monkeypatch.setattr(AIGeneratorService, "_get_agent_for_model", fake_get_agent)
 
     res = await service.generate(
-        template_id="blog-ideas",
-        model="openai",
+        tool_id="blog-ideas",
+        model="gpt-3.5-turbo",
         params={"category": "Tech", "keywords": "ai, ml", "audience": "devs"},
         tone="friendly",
         length="medium",
@@ -41,8 +45,8 @@ async def test_generate_success_variants_count():
         variant_count=2,
     )
 
-    assert res["model_used"] == "openai"
-    assert res["template_id"] == "blog-ideas"
+    assert res["model_used"] == "gpt-3.5-turbo"
+    assert res["tool_id"] == "blog-ideas"
     assert isinstance(res["generation_time"], float)
     assert len(res["variants"]) == 2
     for v in res["variants"]:
@@ -53,14 +57,13 @@ async def test_generate_success_variants_count():
 @pytest.mark.asyncio
 async def test_generate_unknown_model_raises():
     service = AIGeneratorService()
-    service.agents = {}  # ensure no agents configured
     with pytest.raises(ValueError) as ex:
         await service.generate(
-            template_id="blog-ideas",
-            model="openai",
+            tool_id="blog-ideas",
+            model="unknown-model-xyz",
             params={"category": "Tech", "keywords": "ai"},
         )
-    assert "No AI models configured" in str(ex.value) or "not configured" in str(ex.value)
+    assert "Unsupported model" in str(ex.value) or "not configured" in str(ex.value)
 
 
 @pytest.mark.asyncio
@@ -69,7 +72,7 @@ async def test_generate_missing_template_params_raises():
     service.agents = {"openai": FakeAgent()}
     with pytest.raises(ValueError):
         await service.generate(
-            template_id="blog-ideas",
+            tool_id="blog-ideas",
             model="openai",
             params={"keywords": "ai"},  # missing 'category'
         )

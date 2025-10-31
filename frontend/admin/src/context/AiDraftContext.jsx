@@ -27,7 +27,7 @@ export const AiDraftProvider = ({ children }) => {
           id: d.uuid,
           name: d.name,
           content: d.content,
-          template: d.template_id,
+          tool_id: d.tool_id,
           favorite: d.favorite,
           draft_metadata: d.draft_metadata || {},
           created_at: d.created_at,
@@ -69,7 +69,7 @@ export const AiDraftProvider = ({ children }) => {
       aiDraftsService.create({
         name: newDraft.name,
         content: newDraft.content,
-        template_id: newDraft.template,
+        tool_id: newDraft.tool_id,
         model_used: newDraft.model_used || null,
         favorite: newDraft.favorite || false,
         draft_metadata: newDraft.draft_metadata || null,
@@ -100,7 +100,7 @@ export const AiDraftProvider = ({ children }) => {
       if (serverUuid) {
         aiDraftsService.update(serverUuid, payload).catch(() => {/* ignore */});
       } else {
-        aiDraftsService.create({ ...payload, template_id: updated.template, model_used: updated.model_used || null })
+        aiDraftsService.create({ ...payload, tool_id: updated.tool_id, model_used: updated.model_used || null })
           .then(serverDraft => {
             setDrafts(prev => prev.map(d => d.id === id ? { ...updated, _serverUuid: serverDraft.uuid } : d));
           })

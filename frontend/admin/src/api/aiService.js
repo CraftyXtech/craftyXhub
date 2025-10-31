@@ -1,9 +1,9 @@
 import axios from './axios';
 
-export const generate = async (template_id, model, params, options = {}, axiosPrivate) => {
+export const generate = async (tool_id, model, params, options = {}, axiosPrivate) => {
   const api = axiosPrivate || axios;
   const response = await api.post('ai/generate', {
-    template_id,
+    tool_id,
     model,
     params,
     tone: options.tone || 'professional',

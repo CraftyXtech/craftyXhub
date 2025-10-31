@@ -131,8 +131,8 @@ const menu = [
         ],
       },
       {
-        text: "Templates",
-        link: "/ai-writer/templates",
+        text: "Tools",
+        link: "/ai-writer/tools",
       },
     ],
   },

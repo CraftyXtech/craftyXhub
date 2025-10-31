@@ -16,7 +16,7 @@ class AIDraft(BaseTable):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
-    template_id = Column(String(100), nullable=True)
+    tool_id = Column(String(100), nullable=True)
     model_used = Column(Enum(AIModel), nullable=True)
     favorite = Column(Boolean, default=False)
     draft_metadata = Column(JSON, nullable=True)
@@ -28,7 +28,7 @@ class AIGenerationLog(BaseTable):
     __tablename__ = "ai_generation_logs"
     
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    template_id = Column(String(100), nullable=True)
+    tool_id = Column(String(100), nullable=True)
     model_used = Column(Enum(AIModel), nullable=False)
     tokens_used = Column(Integer, nullable=True)
     generation_time = Column(Float, nullable=True)

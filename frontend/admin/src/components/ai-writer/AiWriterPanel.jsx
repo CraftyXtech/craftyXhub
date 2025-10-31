@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Card, CardBody, Nav, NavItem, NavLink, TabContent, TabPane, Form, FormGroup, Label, Input, Spinner } from 'reactstrap';
 import { Button, Icon, RSelect } from '@/components/Component';
-import { TONE_OPTIONS, LANGUAGE_OPTIONS, LENGTH_OPTIONS, AI_TEMPLATES } from '@/data/aiTemplates';
+import { TONE_OPTIONS, LANGUAGE_OPTIONS, LENGTH_OPTIONS, AI_TOOLS } from '@/data/aiTools';
 import { textUtils } from '@/utils/textUtils';
 import classnames from 'classnames';
 
 const AiWriterPanel = ({
-  selectedTemplate,
-  onTemplateChange,
+  selectedTool,
+  onToolChange,
   onGenerate,
   variants = [],
   onInsert,
@@ -22,7 +22,7 @@ const AiWriterPanel = ({
     tone: 'professional',
     language: 'en-US',
     length: 'medium',
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-5-mini',
     creativity: 0.7,
     variantCount: 1
   });
@@ -48,7 +48,7 @@ const AiWriterPanel = ({
         model: formData.model,
         creativity: formData.creativity,
         variant_count: formData.variantCount,
-        template_id: selectedTemplate?.id
+        tool_id: selectedTool?.id
       });
     }
   };
@@ -107,6 +107,7 @@ const AiWriterPanel = ({
                 <Label>AI Model</Label>
                 <RSelect
                   options={[
+                    { value: 'gpt-5-mini', label: 'GPT-5 Mini (Recommended)' },
                     { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
                     { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
                     { value: 'gpt-4o', label: 'GPT-4o' },
@@ -116,7 +117,8 @@ const AiWriterPanel = ({
                   ]}
                   value={{ 
                     value: formData.model, 
-                    label: formData.model === 'gpt-3.5-turbo' ? 'GPT-3.5 Turbo' :
+                    label: formData.model === 'gpt-5-mini' ? 'GPT-5 Mini (Recommended)' :
+                           formData.model === 'gpt-3.5-turbo' ? 'GPT-3.5 Turbo' :
                            formData.model === 'gpt-4o-mini' ? 'GPT-4o Mini' :
                            formData.model === 'gpt-4o' ? 'GPT-4o' :
                            formData.model === 'gemini' ? 'Google Gemini' :
@@ -128,32 +130,32 @@ const AiWriterPanel = ({
                 />
               </FormGroup>
 
-              {/* Template Selector */}
+              {/* Tool Selector */}
               <FormGroup>
-                <Label>Select Template</Label>
+                <Label>Select Tool</Label>
                 <RSelect
-                  options={AI_TEMPLATES.map(t => ({
+                  options={AI_TOOLS.map(t => ({
                     value: t.id,
                     label: t.title
                   }))}
-                  value={selectedTemplate ? {
-                    value: selectedTemplate.id,
-                    label: selectedTemplate.title
+                  value={selectedTool ? {
+                    value: selectedTool.id,
+                    label: selectedTool.title
                   } : null}
                   onChange={(opt) => {
-                    const template = AI_TEMPLATES.find(t => t.id === opt.value);
-                    onTemplateChange && onTemplateChange(template);
+                    const tool = AI_TOOLS.find(t => t.id === opt.value);
+                    onToolChange && onToolChange(tool);
                   }}
-                  placeholder="Choose a template..."
+                  placeholder="Choose a tool..."
                 />
               </FormGroup>
 
-              {selectedTemplate && (
+              {selectedTool && (
                 <div className="mb-3 p-2 bg-light rounded">
                   <div className="d-flex align-items-center">
-                    <Icon name={selectedTemplate.icon} className={`text-${selectedTemplate.color} me-2`}></Icon>
+                    <Icon name={selectedTool.icon} className={`text-${selectedTool.color} me-2`}></Icon>
                     <div className="flex-grow-1">
-                      <small className="text-soft">{selectedTemplate.description}</small>
+                      <small className="text-soft">{selectedTool.description}</small>
                     </div>
                   </div>
                 </div>
@@ -296,7 +298,7 @@ const AiWriterPanel = ({
                           <div className="d-flex justify-content-between align-items-start mb-2">
                             <span className="badge badge-primary badge-sm">
                               <Icon name="spark" className="me-1" style={{ fontSize: '10px' }}></Icon>
-                              {selectedTemplate?.title || 'AI Generated'}
+                              {selectedTool?.title || 'AI Generated'}
                             </span>
                             <div className="d-flex gap-1">
                               <Button 

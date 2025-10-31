@@ -10,7 +10,7 @@ import { useAiDrafts } from '@/context/AiDraftContext';
 import { aiWriterService } from '@/api/aiWriterService';
 import { textUtils } from '@/utils/textUtils';
 import { toast } from 'react-toastify';
-import { AI_TEMPLATES } from '@/data/aiTemplates';
+import { AI_TOOLS } from '@/data/aiTools';
 import { useTheme } from '@/layout/provider/Theme';
 // TinyMCE imports
 import 'tinymce/tinymce';
@@ -31,7 +31,7 @@ const AiEditor = () => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [content, setContent] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [selectedTool, setSelectedTool] = useState(null);
   const [variants, setVariants] = useState([]);
   const [generating, setGenerating] = useState(false);
   const [wordCount, setWordCount] = useState(0);
@@ -40,8 +40,8 @@ const AiEditor = () => {
 
   // Load template from route state (for new documents)
   useEffect(() => {
-    if (location.state?.selectedTemplate && !isEditMode) {
-      setSelectedTemplate(location.state.selectedTemplate);
+    if (location.state?.selectedTool && !isEditMode) {
+      setSelectedTool(location.state.selectedTool);
     }
   }, [location.state, isEditMode]);
 
@@ -53,9 +53,9 @@ const AiEditor = () => {
         setDocumentTitle(draft.name);
         setContent(draft.content);
         setIsFavorite(draft.favorite || false);
-        if (draft.template) {
-          const template = AI_TEMPLATES.find(t => t.id === draft.template);
-          setSelectedTemplate(template);
+        if (draft.tool_id) {
+          const tool = AI_TOOLS.find(t => t.id === draft.tool_id);
+          setSelectedTool(tool);
         }
       }
     }
@@ -71,7 +71,7 @@ const AiEditor = () => {
     try {
       setGenerating(true);
       const results = await aiWriterService.generate({
-        template_id: params.template_id || selectedTemplate?.id,
+        tool_id: params.tool_id || selectedTool?.id,
         params: {},
         prompt: params.prompt,
         keywords: params.keywords,
@@ -108,7 +108,7 @@ const AiEditor = () => {
       name: documentTitle,
       content: currentContent,
       type: 'blog_post',
-      template: selectedTemplate?.id || null,
+      tool_id: selectedTool?.id || null,
       favorite: isFavorite,
       draft_metadata: {
         words: textUtils.countWords(currentContent),
@@ -166,8 +166,8 @@ const AiEditor = () => {
     toast.success('Draft exported as HTML');
   };
 
-  const handleTemplateChange = (template) => {
-    setSelectedTemplate(template);
+  const handleToolChange = (tool) => {
+    setSelectedTool(tool);
   };
 
   const handleTitleEdit = () => {
@@ -292,8 +292,8 @@ const AiEditor = () => {
             </div>
             <div className="col-lg-4">
               <AiWriterPanel
-                selectedTemplate={selectedTemplate}
-                onTemplateChange={handleTemplateChange}
+                selectedTool={selectedTool}
+                onToolChange={handleToolChange}
                 onGenerate={handleGenerate}
                 variants={variants}
                 onInsert={handleInsertVariant}

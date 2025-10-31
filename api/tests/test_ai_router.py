@@ -37,8 +37,8 @@ async def test_generate_ok(app, monkeypatch):
             "variants": [
                 {"content": "<p>ok</p>", "metadata": {"words": 1, "model": "openai"}}
             ],
-            "template_id": kwargs.get("template_id"),
-            "model_used": kwargs.get("model"),
+            "tool_id": kwargs.get("tool_id"),
+            "model_used": kwargs.get("model", "gpt-3.5-turbo"),
             "generation_time": 0.01,
         }
 
@@ -46,8 +46,8 @@ async def test_generate_ok(app, monkeypatch):
 
     async with AsyncClient(app=app, base_url="http://test") as ac:
         payload = {
-            "template_id": "blog-ideas",
-            "model": "openai",
+            "tool_id": "blog-ideas",
+            "model": "gpt-3.5-turbo",
             "params": {"category": "Tech", "keywords": "ai"},
             "tone": "professional",
             "length": "short",
@@ -58,8 +58,8 @@ async def test_generate_ok(app, monkeypatch):
         resp = await ac.post("/v1/ai/generate", json=payload)
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
-        assert data["model_used"] == "openai"
-        assert data["template_id"] == "blog-ideas"
+        assert data["model_used"] == "gpt-3.5-turbo"
+        assert data["tool_id"] == "blog-ideas"
         assert len(data["variants"]) == 1
 
 
@@ -72,8 +72,8 @@ async def test_generate_bad_request_from_service(app, monkeypatch):
 
     async with AsyncClient(app=app, base_url="http://test") as ac:
         payload = {
-            "template_id": "blog-ideas",
-            "model": "openai",
+            "tool_id": "blog-ideas",
+            "model": "gpt-3.5-turbo",
             "params": {},
         }
         resp = await ac.post("/v1/ai/generate", json=payload)

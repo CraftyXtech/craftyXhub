@@ -1,4 +1,4 @@
-export const AI_TEMPLATES = [
+export const AI_TOOLS = [
   // Writing
   {
     id: 'blog-ideas',
@@ -112,8 +112,8 @@ export const AI_TEMPLATES = [
   }
 ];
 
-export const TEMPLATE_CATEGORIES = [
-  { id: 'all', name: 'All Templates', icon: 'grid' },
+export const TOOL_CATEGORIES = [
+  { id: 'all', name: 'All Tools', icon: 'grid' },
   { id: 'Writing', name: 'Writing', icon: 'file-text' },
   { id: 'SEO', name: 'SEO & Optimization', icon: 'search' },
   { id: 'Quality', name: 'Quality & Editing', icon: 'check-circle' }
@@ -148,12 +148,12 @@ export const LENGTH_OPTIONS = [
   { value: 'very-long', label: 'Very Long (500+ words)' }
 ];
 
-export const getTemplateById = (id) => {
-  return AI_TEMPLATES.find(template => template.id === id);
+export const getToolById = (id) => {
+  return AI_TOOLS.find(tool => tool.id === id);
 };
 
-export const getTemplatesByCategory = (category) => {
-  if (category === 'all') return AI_TEMPLATES;
-  return AI_TEMPLATES.filter(template => template.category === category);
+export const getToolsByCategory = (category) => {
+  if (category === 'all') return AI_TOOLS;
+  return AI_TOOLS.filter(tool => tool.category === category);
 };
 

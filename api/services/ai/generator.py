@@ -3,13 +3,13 @@ from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.models.gemini import GeminiModel
 from pydantic import BaseModel, Field
 from core.config import settings
-from .templates import TemplateHandler
+from .tools import ToolHandler
 import time
 from typing import Dict, List, Any, Optional
 
 
 class GenerationDeps(BaseModel):
-    template_id: str
+    tool_id: str
     tone: str
     length: str
     language: str
@@ -78,7 +78,7 @@ class AIGeneratorService:
                     "DeepSeek is only available via free proxy. Configure FREE_DEEPSEEK_TOKEN."
                 )
 
-        # OpenAI GPT models - use free proxy if available, otherwise paid API
+        # OpenAI GPT models (including GPT-5) - use free proxy if available, otherwise paid API
         if model_name.startswith("gpt-"):
             # Try free proxy first
             if settings.FREE_CHATGPT_TOKEN:
@@ -117,7 +117,7 @@ class AIGeneratorService:
 
     async def generate(
         self,
-        template_id: str,
+        tool_id: str,
         model: str,
         params: dict,
         prompt: str | None = None,
@@ -129,15 +129,15 @@ class AIGeneratorService:
         variant_count: int = 1,
     ) -> Dict[str, Any]:
         start_time = time.time()
-        # Try strict template validation first; if it fails but a freeform prompt exists, we allow fallback
+        # Try strict tool validation first; if it fails but a freeform prompt exists, we allow fallback
         try:
-            TemplateHandler.validate_params(template_id, params)
+            ToolHandler.validate_params(tool_id, params)
             missing_ok = True
         except ValueError:
             missing_ok = False
 
-        built_prompt = TemplateHandler.build_prompt(
-            template_id=template_id,
+        built_prompt = ToolHandler.build_prompt(
+            tool_id=tool_id,
             params=params,
             tone=tone,
             length=length,
@@ -160,7 +160,7 @@ class AIGeneratorService:
                     built_prompt,
                     model_settings={
                         "temperature": creativity,
-                        "max_tokens": TemplateHandler.get_max_tokens(length),
+                        "max_tokens": ToolHandler.get_max_tokens(length),
                     },
                 )
 
@@ -196,14 +196,14 @@ class AIGeneratorService:
 
         return {
             "variants": variants,
-            "template_id": template_id,
+            "tool_id": tool_id,
             "model_used": model,
             "generation_time": round(generation_time, 2),
         }
 
     async def generate_with_structured_output(
         self,
-        template_id: str,
+        tool_id: str,
         model: str,
         params: dict,
         tone: str = "professional",
@@ -215,10 +215,10 @@ class AIGeneratorService:
         Generate content with structured output validation using Pydantic models.
         This is the recommended Pydantic AI approach for type-safe results.
         """
-        TemplateHandler.validate_params(template_id, params)
+        ToolHandler.validate_params(tool_id, params)
 
-        prompt = TemplateHandler.build_prompt(
-            template_id=template_id,
+        prompt = ToolHandler.build_prompt(
+            tool_id=tool_id,
             params=params,
             tone=tone,
             length=length,
@@ -242,7 +242,7 @@ class AIGeneratorService:
             prompt,
             model_settings={
                 "temperature": creativity,
-                "max_tokens": TemplateHandler.get_max_tokens(length),
+                "max_tokens": ToolHandler.get_max_tokens(length),
             },
         )
 
@@ -250,7 +250,7 @@ class AIGeneratorService:
 
     async def generate_stream(
         self,
-        template_id: str,
+        tool_id: str,
         model: str,
         params: dict,
         tone: str = "professional",
@@ -261,10 +261,10 @@ class AIGeneratorService:
         """
         Generate content with streaming support for real-time updates.
         """
-        TemplateHandler.validate_params(template_id, params)
+        ToolHandler.validate_params(tool_id, params)
 
-        prompt = TemplateHandler.build_prompt(
-            template_id=template_id,
+        prompt = ToolHandler.build_prompt(
+            tool_id=tool_id,
             params=params,
             tone=tone,
             length=length,
@@ -281,7 +281,7 @@ class AIGeneratorService:
             prompt,
             model_settings={
                 "temperature": creativity,
-                "max_tokens": TemplateHandler.get_max_tokens(length),
+                "max_tokens": ToolHandler.get_max_tokens(length),
             },
         ) as response:
             async for message in response.stream_text():
