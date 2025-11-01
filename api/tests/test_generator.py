@@ -29,7 +29,7 @@ async def test_generate_success_variants_count(monkeypatch):
     service = AIGeneratorService()
     
     # Mock the _get_agent_for_model method to return a fake agent
-    def fake_get_agent(self, model_name):
+    def fake_get_agent(self, model_name, system_prompt=None):
         return FakeAgent()
     
     monkeypatch.setattr(AIGeneratorService, "_get_agent_for_model", fake_get_agent)

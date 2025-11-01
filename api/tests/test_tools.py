@@ -24,7 +24,7 @@ def test_build_prompt_includes_controls():
         length="long",
         language="fr",
     )
-    assert "Generate blog post ideas about Tech" in prompt
+    assert "Category: Tech" in prompt
     assert "Keywords: ai, ml" in prompt
     assert "Tone: professional" in prompt
     assert "Length: 300-500 words" in prompt

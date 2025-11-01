@@ -3,6 +3,7 @@ import { Card, CardBody, Nav, NavItem, NavLink, TabContent, TabPane, Form, FormG
 import { Button, Icon, RSelect } from '@/components/Component';
 import { TONE_OPTIONS, LANGUAGE_OPTIONS, LENGTH_OPTIONS, AI_TOOLS } from '@/data/aiTools';
 import { textUtils } from '@/utils/textUtils';
+import { contentFormatter } from '@/utils/contentFormatter';
 import classnames from 'classnames';
 
 const AiWriterPanel = ({
@@ -61,7 +62,7 @@ const AiWriterPanel = ({
   };
 
   const handleCopyVariant = (variant) => {
-    const plainText = variant.content.replace(/<[^>]*>/g, '');
+    const plainText = contentFormatter.stripHTML(variant.content);
     navigator.clipboard.writeText(plainText);
   };
 
@@ -320,12 +321,11 @@ const AiWriterPanel = ({
                             </div>
                           </div>
 
-                          {/* Content preview */}
-                          <p className="mb-2" style={{ fontSize: '13px', lineHeight: '1.5' }}>
-                            {displayText}
-                          </p>
-
-                          {/* Footer with meta info */}
+                          <div 
+                            className="mb-2 ai-content-preview" 
+                            style={{ fontSize: '13px', lineHeight: '1.6' }}
+                            dangerouslySetInnerHTML={{ __html: contentFormatter.markdownToHTML(displayText) }}
+                          />
                           <div className="d-flex justify-content-between align-items-center text-soft small">
                             <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                             <span>{variant.metadata?.words || textUtils.countWords(variant.content)} Words</span>

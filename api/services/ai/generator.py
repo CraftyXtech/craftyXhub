@@ -32,11 +32,14 @@ class AIGeneratorService:
             "tone, length, and style. Generate high-quality, original content."
         )
 
-    def _get_agent_for_model(self, model_name: str) -> Agent:
+    def _get_agent_for_model(self, model_name: str, system_prompt: Optional[str] = None) -> Agent:
         """
         Create an agent for the specified model, intelligently routing to
         the right provider (OpenAI, Gemini, Grok, or free proxy).
         """
+        # Choose system prompt (tool-specific overrides global)
+        system_prompt = system_prompt or self.system_prompt
+
         # Grok models
         if model_name == "grok":
             if not settings.GROK_API_KEY:
@@ -48,7 +51,7 @@ class AIGeneratorService:
                     base_url="https://api.x.ai/v1",
                 ),
                 result_type=str,
-                system_prompt=self.system_prompt,
+                system_prompt=system_prompt,
             )
 
         # Gemini models
@@ -58,7 +61,7 @@ class AIGeneratorService:
             return Agent(
                 GeminiModel("gemini-2.0-flash-exp", api_key=settings.GEMINI_API_KEY),
                 result_type=str,
-                system_prompt=self.system_prompt,
+                system_prompt=system_prompt,
             )
 
         # DeepSeek models - use free proxy if available, otherwise error
@@ -71,7 +74,7 @@ class AIGeneratorService:
                         base_url="https://api.chatanywhere.tech/v1",
                     ),
                     result_type=str,
-                    system_prompt=self.system_prompt,
+                    system_prompt=system_prompt,
                 )
             else:
                 raise ValueError(
@@ -89,7 +92,7 @@ class AIGeneratorService:
                         base_url="https://api.chatanywhere.tech/v1",
                     ),
                     result_type=str,
-                    system_prompt=self.system_prompt,
+                    system_prompt=system_prompt,
                 )
             # Fall back to paid OpenAI API
             elif settings.OPENAI_API_KEY:
@@ -105,7 +108,7 @@ class AIGeneratorService:
                         base_url=base_url,
                     ),
                     result_type=str,
-                    system_prompt=self.system_prompt,
+                    system_prompt=system_prompt,
                 )
             else:
                 raise ValueError(f"No API key configured for {model_name}")
@@ -136,6 +139,8 @@ class AIGeneratorService:
         except ValueError:
             missing_ok = False
 
+        tool_cfg = ToolHandler.get_tool(tool_id) or {}
+
         built_prompt = ToolHandler.build_prompt(
             tool_id=tool_id,
             params=params,
@@ -146,13 +151,34 @@ class AIGeneratorService:
             keywords=keywords if not missing_ok else None,
         )
 
+        # JSON mode preface when requested
+        json_mode = False
+        try:
+            json_mode = bool(params.get("return_json")) or tool_cfg.get("output_mode") == "json"
+        except Exception:
+            json_mode = tool_cfg.get("output_mode") == "json"
+
+        if json_mode:
+            keys_hint = ToolHandler.get_json_keys_hint(tool_id)
+            hint_text = (
+                f"Return ONLY valid JSON{': with keys ' + ', '.join(keys_hint) if keys_hint else ''}. "
+                "No prose, no markdown fences."
+            )
+            built_prompt = hint_text + "\n\n" + built_prompt
+
         # Get agent for the requested model
         try:
-            agent = self._get_agent_for_model(model)
+            system_prompt_override = tool_cfg.get("system_prompt") if tool_cfg else None
+            agent = self._get_agent_for_model(model, system_prompt=system_prompt_override)
         except ValueError as e:
             raise ValueError(str(e))
         variants = []
-        count = max(1, min(int(variant_count or 1), 3))
+        # Enforce variants policy
+        variants_policy = (tool_cfg or {}).get("variants_policy", "single_piece")
+        if variants_policy == "list_tool":
+            count = 1
+        else:
+            count = max(1, min(int(variant_count or 1), 3))
 
         for _ in range(count):
             try:
@@ -227,7 +253,8 @@ class AIGeneratorService:
 
         # Get the base agent for the model
         try:
-            base_agent = self._get_agent_for_model(model)
+            system_prompt_override = (ToolHandler.get_tool(tool_id) or {}).get("system_prompt")
+            base_agent = self._get_agent_for_model(model, system_prompt=system_prompt_override)
         except ValueError as e:
             raise ValueError(str(e))
 
@@ -235,7 +262,7 @@ class AIGeneratorService:
         structured_agent = Agent(
             base_agent.model,
             result_type=ContentVariant,
-            system_prompt=self.system_prompt,
+            system_prompt=system_prompt_override or self.system_prompt,
         )
 
         result = await structured_agent.run(
@@ -273,7 +300,8 @@ class AIGeneratorService:
 
         # Get agent for the requested model
         try:
-            agent = self._get_agent_for_model(model)
+            system_prompt_override = (ToolHandler.get_tool(tool_id) or {}).get("system_prompt")
+            agent = self._get_agent_for_model(model, system_prompt=system_prompt_override)
         except ValueError as e:
             raise ValueError(str(e))
 

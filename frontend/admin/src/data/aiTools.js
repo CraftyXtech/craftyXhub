@@ -109,6 +109,43 @@ export const AI_TOOLS = [
     description: 'Adapt to brand voice and reading level',
     fields: ['content', 'tone', 'reading_level'],
     color: 'success'
+  },
+  // Marketing
+  {
+    id: 'social-media-post',
+    category: 'Marketing',
+    icon: 'share-2',
+    title: 'Social Media Post Generator',
+    description: 'Platform-optimized posts (LinkedIn, Twitter, Facebook, Instagram)',
+    fields: ['platform', 'topic', 'cta_goal', 'character_limit', 'tone'],
+    color: 'primary'
+  },
+  {
+    id: 'email-campaign',
+    category: 'Marketing',
+    icon: 'mail',
+    title: 'Email Campaign Creator',
+    description: 'Subject lines, body copy, CTAs with A/B variants',
+    fields: ['campaign_type', 'audience', 'offer', 'tone'],
+    color: 'info'
+  },
+  {
+    id: 'product-description',
+    category: 'Marketing',
+    icon: 'shopping-bag',
+    title: 'Product Description Writer',
+    description: 'E-commerce copy: short/long descriptions, feature bullets',
+    fields: ['product_name', 'features', 'benefits', 'target_audience', 'tone'],
+    color: 'success'
+  },
+  {
+    id: 'ad-copy-generator',
+    category: 'Marketing',
+    icon: 'target',
+    title: 'Ad Copy Generator',
+    description: 'Google RSA, Facebook, LinkedIn ads with character limits',
+    fields: ['platform', 'objective', 'audience', 'offer', 'tone'],
+    color: 'warning'
   }
 ];
 
@@ -116,7 +153,8 @@ export const TOOL_CATEGORIES = [
   { id: 'all', name: 'All Tools', icon: 'grid' },
   { id: 'Writing', name: 'Writing', icon: 'file-text' },
   { id: 'SEO', name: 'SEO & Optimization', icon: 'search' },
-  { id: 'Quality', name: 'Quality & Editing', icon: 'check-circle' }
+  { id: 'Quality', name: 'Quality & Editing', icon: 'check-circle' },
+  { id: 'Marketing', name: 'Marketing', icon: 'target' }
 ];
 
 export const TONE_OPTIONS = [

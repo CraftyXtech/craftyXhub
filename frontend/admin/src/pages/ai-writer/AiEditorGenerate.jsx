@@ -9,6 +9,7 @@ import AiWriterPanel from '@/components/ai-writer/AiWriterPanel';
 import { useAiDrafts } from '@/context/AiDraftContext';
 import { aiWriterService } from '@/api/aiWriterService';
 import { textUtils } from '@/utils/textUtils';
+import { contentFormatter } from '@/utils/contentFormatter';
 import { toast } from 'react-toastify';
 import { useTheme } from '@/layout/provider/Theme';
 // TinyMCE imports
@@ -76,10 +77,11 @@ const AiEditorGenerate = () => {
   const handleInsertVariant = (variant) => {
     if (editorRef.current) {
       const currentContent = editorRef.current.getContent();
-      const newContent = currentContent + (currentContent ? '<br/><br/>' : '') + variant.content;
+      const formattedContent = contentFormatter.toHTML(variant.content);
+      const newContent = currentContent + (currentContent ? '<div class="mt-4"></div>' : '') + formattedContent;
       editorRef.current.setContent(newContent);
       setContent(newContent);
-      toast.success('Content inserted');
+      toast.success('Content inserted with formatting');
     }
   };
 
