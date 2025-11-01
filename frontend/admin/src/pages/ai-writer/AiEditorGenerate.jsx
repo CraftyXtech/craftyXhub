@@ -7,8 +7,9 @@ import Content from '@/layout/content/Content';
 import { Block, BlockHead, BlockBetween, BlockHeadContent, Row, Col, Button, Icon } from '@/components/Component';
 import AiWriterPanel from '@/components/ai-writer/AiWriterPanel';
 import { useAiDrafts } from '@/context/AiDraftContext';
-import { mockGenerator } from '@/data/mockGenerator';
+import { aiWriterService } from '@/api/aiWriterService';
 import { textUtils } from '@/utils/textUtils';
+import { contentFormatter } from '@/utils/contentFormatter';
 import { toast } from 'react-toastify';
 import { useTheme } from '@/layout/provider/Theme';
 // TinyMCE imports
@@ -26,7 +27,7 @@ const AiEditorGenerate = () => {
   const theme = useTheme();
   const [documentTitle, setDocumentTitle] = useState('Untitled Draft');
   const [content, setContent] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState(location.state?.selectedTemplate || null);
+  const [selectedTool, setSelectedTool] = useState(location.state?.selectedTool || null);
   const [variants, setVariants] = useState([]);
   const [generating, setGenerating] = useState(false);
   const [wordCount, setWordCount] = useState(0);
@@ -51,9 +52,17 @@ const AiEditorGenerate = () => {
   const handleGenerate = async (params) => {
     try {
       setGenerating(true);
-      const results = await mockGenerator.generate({
-        ...params,
-        variants: params.variantCount || 1
+      const results = await aiWriterService.generate({
+        tool_id: params.tool_id || selectedTool?.id,
+        params: {},
+        prompt: params.prompt,
+        keywords: params.keywords,
+        tone: params.tone,
+        language: params.language,
+        length: params.length,
+        variant_count: params.variant_count || 1,
+        creativity: params.creativity ?? 0.7,
+        model: params.model || 'gpt-5-mini',
       });
       setVariants(results);
       toast.success('Content generated successfully!');
@@ -68,10 +77,11 @@ const AiEditorGenerate = () => {
   const handleInsertVariant = (variant) => {
     if (editorRef.current) {
       const currentContent = editorRef.current.getContent();
-      const newContent = currentContent + (currentContent ? '<br/><br/>' : '') + variant.content;
+      const formattedContent = contentFormatter.toHTML(variant.content);
+      const newContent = currentContent + (currentContent ? '<div class="mt-4"></div>' : '') + formattedContent;
       editorRef.current.setContent(newContent);
       setContent(newContent);
-      toast.success('Content inserted');
+      toast.success('Content inserted with formatting');
     }
   };
 
@@ -81,8 +91,8 @@ const AiEditorGenerate = () => {
       name: documentTitle,
       content: currentContent,
       type: 'blog_post',
-      template: selectedTemplate?.id || null,
-      metadata: {
+      tool_id: selectedTool?.id || null,
+      draft_metadata: {
         words: textUtils.countWords(currentContent),
         characters: textUtils.countCharacters(currentContent),
         readingTime: textUtils.estimateReadingTime(currentContent)
@@ -181,7 +191,7 @@ const AiEditorGenerate = () => {
             </Col>
             <Col lg="4">
               <AiWriterPanel
-                selectedTemplate={selectedTemplate}
+                selectedTool={selectedTool}
                 onGenerate={handleGenerate}
                 variants={variants}
                 onInsert={handleInsertVariant}

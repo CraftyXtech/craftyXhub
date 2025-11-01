@@ -6,7 +6,7 @@ import { Formik, Form } from 'formik'
 import * as Yup from 'yup'
 
 // Components
-import { BlockEditor } from '../Form/Form'
+import BlockEditor from '../Form/BlockEditor'
 import FloatingToolbar from './FloatingToolbar'
 import PostSettingsSidebar from './PostSettingsSidebar'
 

@@ -56,6 +56,9 @@ class User(BaseTable):
         cascade="all, delete"
     )
     
+    ai_drafts = relationship("AIDraft", back_populates="user", cascade="all, delete-orphan")
+    ai_generation_logs = relationship("AIGenerationLog", back_populates="user", cascade="all, delete-orphan")
+    
     
     def is_admin(self) -> bool:
         return self.role == UserRole.ADMIN

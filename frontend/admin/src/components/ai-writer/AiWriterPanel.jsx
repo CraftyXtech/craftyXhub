@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Card, CardBody, Nav, NavItem, NavLink, TabContent, TabPane, Form, FormGroup, Label, Input, Spinner } from 'reactstrap';
 import { Button, Icon, RSelect } from '@/components/Component';
-import { TONE_OPTIONS, LANGUAGE_OPTIONS, LENGTH_OPTIONS, AI_TEMPLATES } from '@/data/aiTemplates';
+import { TONE_OPTIONS, LANGUAGE_OPTIONS, LENGTH_OPTIONS, AI_TOOLS } from '@/data/aiTools';
 import { textUtils } from '@/utils/textUtils';
+import { contentFormatter } from '@/utils/contentFormatter';
 import classnames from 'classnames';
 
 const AiWriterPanel = ({
-  selectedTemplate,
-  onTemplateChange,
+  selectedTool,
+  onToolChange,
   onGenerate,
   variants = [],
   onInsert,
@@ -22,6 +23,8 @@ const AiWriterPanel = ({
     tone: 'professional',
     language: 'en-US',
     length: 'medium',
+    model: 'gpt-5-mini',
+    creativity: 0.7,
     variantCount: 1
   });
 
@@ -38,9 +41,15 @@ const AiWriterPanel = ({
     if (onGenerate && formData.prompt.trim()) {
       const keywords = formData.keywords.split(',').map(k => k.trim()).filter(k => k);
       onGenerate({
-        ...formData,
+        prompt: formData.prompt,
         keywords,
-        template: selectedTemplate?.id
+        tone: formData.tone,
+        language: formData.language,
+        length: formData.length,
+        model: formData.model,
+        creativity: formData.creativity,
+        variant_count: formData.variantCount,
+        tool_id: selectedTool?.id
       });
     }
   };
@@ -53,7 +62,7 @@ const AiWriterPanel = ({
   };
 
   const handleCopyVariant = (variant) => {
-    const plainText = variant.content.replace(/<[^>]*>/g, '');
+    const plainText = contentFormatter.stripHTML(variant.content);
     navigator.clipboard.writeText(plainText);
   };
 
@@ -94,32 +103,60 @@ const AiWriterPanel = ({
         <TabContent activeTab={activeTab}>
           <TabPane tabId="1">
             <Form onSubmit={handleSubmit} className="mt-3">
-              {/* Template Selector */}
+              {/* Model Selector */}
               <FormGroup>
-                <Label>Select Template</Label>
+                <Label>AI Model</Label>
                 <RSelect
-                  options={AI_TEMPLATES.map(t => ({
-                    value: t.id,
-                    label: t.title
-                  }))}
-                  value={selectedTemplate ? {
-                    value: selectedTemplate.id,
-                    label: selectedTemplate.title
-                  } : null}
-                  onChange={(opt) => {
-                    const template = AI_TEMPLATES.find(t => t.id === opt.value);
-                    onTemplateChange && onTemplateChange(template);
+                  options={[
+                    { value: 'gpt-5-mini', label: 'GPT-5 Mini (Recommended)' },
+                    { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
+                    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+                    { value: 'gpt-4o', label: 'GPT-4o' },
+                    { value: 'gemini', label: 'Google Gemini' },
+                    { value: 'grok', label: 'xAI Grok' },
+                    { value: 'deepseek-v3', label: 'DeepSeek V3' }
+                  ]}
+                  value={{ 
+                    value: formData.model, 
+                    label: formData.model === 'gpt-5-mini' ? 'GPT-5 Mini (Recommended)' :
+                           formData.model === 'gpt-3.5-turbo' ? 'GPT-3.5 Turbo' :
+                           formData.model === 'gpt-4o-mini' ? 'GPT-4o Mini' :
+                           formData.model === 'gpt-4o' ? 'GPT-4o' :
+                           formData.model === 'gemini' ? 'Google Gemini' :
+                           formData.model === 'grok' ? 'xAI Grok' :
+                           formData.model === 'deepseek-v3' ? 'DeepSeek V3' :
+                           'OpenAI'
                   }}
-                  placeholder="Choose a template..."
+                  onChange={(opt) => handleInputChange('model', opt.value)}
                 />
               </FormGroup>
 
-              {selectedTemplate && (
+              {/* Tool Selector */}
+              <FormGroup>
+                <Label>Select Tool</Label>
+                <RSelect
+                  options={AI_TOOLS.map(t => ({
+                    value: t.id,
+                    label: t.title
+                  }))}
+                  value={selectedTool ? {
+                    value: selectedTool.id,
+                    label: selectedTool.title
+                  } : null}
+                  onChange={(opt) => {
+                    const tool = AI_TOOLS.find(t => t.id === opt.value);
+                    onToolChange && onToolChange(tool);
+                  }}
+                  placeholder="Choose a tool..."
+                />
+              </FormGroup>
+
+              {selectedTool && (
                 <div className="mb-3 p-2 bg-light rounded">
                   <div className="d-flex align-items-center">
-                    <Icon name={selectedTemplate.icon} className={`text-${selectedTemplate.color} me-2`}></Icon>
+                    <Icon name={selectedTool.icon} className={`text-${selectedTool.color} me-2`}></Icon>
                     <div className="flex-grow-1">
-                      <small className="text-soft">{selectedTemplate.description}</small>
+                      <small className="text-soft">{selectedTool.description}</small>
                     </div>
                   </div>
                 </div>
@@ -197,6 +234,19 @@ const AiWriterPanel = ({
                 </div>
               </div>
 
+              <FormGroup>
+                <Label>Creativity ({formData.creativity})</Label>
+                <Input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={formData.creativity}
+                  onChange={(e) => handleInputChange('creativity', parseFloat(e.target.value))}
+                />
+                <div className="form-note">Higher values = more creative, lower = more focused</div>
+              </FormGroup>
+
               <Button
                 type="submit"
                 color="primary"
@@ -249,7 +299,7 @@ const AiWriterPanel = ({
                           <div className="d-flex justify-content-between align-items-start mb-2">
                             <span className="badge badge-primary badge-sm">
                               <Icon name="spark" className="me-1" style={{ fontSize: '10px' }}></Icon>
-                              {selectedTemplate?.title || 'AI Generated'}
+                              {selectedTool?.title || 'AI Generated'}
                             </span>
                             <div className="d-flex gap-1">
                               <Button 
@@ -271,12 +321,11 @@ const AiWriterPanel = ({
                             </div>
                           </div>
 
-                          {/* Content preview */}
-                          <p className="mb-2" style={{ fontSize: '13px', lineHeight: '1.5' }}>
-                            {displayText}
-                          </p>
-
-                          {/* Footer with meta info */}
+                          <div 
+                            className="mb-2 ai-content-preview" 
+                            style={{ fontSize: '13px', lineHeight: '1.6' }}
+                            dangerouslySetInnerHTML={{ __html: contentFormatter.markdownToHTML(displayText) }}
+                          />
                           <div className="d-flex justify-content-between align-items-center text-soft small">
                             <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                             <span>{variant.metadata?.words || textUtils.countWords(variant.content)} Words</span>
@@ -311,4 +360,3 @@ const AiWriterPanel = ({
 };
 
 export default AiWriterPanel;
-
