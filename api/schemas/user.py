@@ -41,11 +41,11 @@ class UserResponse(BaseModel):
     uuid: str
     username: str
     full_name: str
-    email: str
-    is_active: bool
-    role: str
-    created_at: datetime
-    updated_at: datetime
+    # email: str
+    # is_active: bool
+    # role: str
+    # created_at: datetime
+    # updated_at: datetime
 
     @computed_field
     @property

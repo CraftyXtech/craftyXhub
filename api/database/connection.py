@@ -9,13 +9,6 @@ logger = logging.getLogger(__name__)
 
 Base = declarative_base()
 
-# engine = create_async_engine(
-#     settings.DATABASE_URL,
-#     pool_size=5,
-#     max_overflow=10,
-#     pool_timeout=30,
-#     pool_pre_ping=True,
-# )
 engine = create_async_engine(
     settings.DATABASE_URL,
     pool_size=5,

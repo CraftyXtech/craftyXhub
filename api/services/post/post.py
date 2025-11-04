@@ -15,6 +15,7 @@ from schemas.post import (
     ReportCreate
 )
 from utils.slug_generator import generate_slug, generate_random_slug
+from services.user.notification import NotificationService
 from fastapi import HTTPException, status, UploadFile
 from pathlib import Path
 import uuid
@@ -40,7 +41,12 @@ class PostService:
                 selectinload(Post.author),
                 selectinload(Post.category),
                 selectinload(Post.tags),
-                selectinload(Post.comments).selectinload(Comment.replies),
+                selectinload(Post.comments).options(
+                    selectinload(Comment.author),
+                    selectinload(Comment.replies).options(
+                        selectinload(Comment.author)
+                    )
+                ),
                 selectinload(Post.liked_by),
                 selectinload(Post.bookmarked_by)
             )
@@ -268,9 +274,9 @@ class PostService:
 
     @staticmethod
     async def publish_post(
-            session: AsyncSession,
-            post_uuid: str,
-            current_user: User
+        session: AsyncSession,
+        post_uuid: str,
+        current_user: User
     ) -> Post:
         try:
             db_post = await PostService.get_post_by_uuid(session, post_uuid)
@@ -284,6 +290,13 @@ class PostService:
             db_post.published_at = datetime.utcnow()
             await session.commit()
             await session.refresh(db_post)
+            
+            await NotificationService.notify_followers_new_post(
+                session=session,
+                post=db_post,
+                author_id=db_post.author_id
+            )
+            
             return db_post
         except HTTPException:
             raise
@@ -466,10 +479,10 @@ class PostService:
 
     @staticmethod
     async def report_post(
-            session: AsyncSession,
-            post_uuid: str,
-            report_data: ReportCreate,
-            user_id: int
+        session: AsyncSession,
+        post_uuid: str,
+        report_data: ReportCreate,
+        user_id: int
     ) -> Report:
         try:
             db_post = await PostService.get_post_by_uuid(session, post_uuid)
@@ -485,6 +498,13 @@ class PostService:
             session.add(db_report)
             await session.commit()
             await session.refresh(db_report)
+            
+            await NotificationService.notify_post_reported(
+                session=session,
+                post=db_post,
+                reporter_id=user_id
+            )
+            
             return db_report
         except HTTPException:
             raise
@@ -791,9 +811,9 @@ class PostService:
 
     @staticmethod
     async def toggle_post_like(
-            session: AsyncSession,
-            post_uuid: str,
-            user_id: int
+        session: AsyncSession,
+        post_uuid: str,
+        user_id: int
     ) -> bool:
         try:
             db_post = await PostService.get_post_by_uuid(session, post_uuid, include_deleted=False)
@@ -812,6 +832,12 @@ class PostService:
             else:
                 db_post.liked_by.append(user)
                 liked = True
+                
+                await NotificationService.notify_post_like(
+                    session=session,
+                    post=db_post,
+                    liker_id=user_id
+                )
 
             await session.commit()
             return liked
@@ -826,12 +852,11 @@ class PostService:
 
     @staticmethod
     async def flag_post(
-            session: AsyncSession,
-            post_uuid: str,
-            current_user: User,
-            flag: bool = True
+        session: AsyncSession,
+        post_uuid: str,
+        current_user: User,
+        flag: bool = True
     ) -> Post:
-        """Admin can flag/unflag a post. Flagging also unpublishes the post."""
         try:
             if not current_user.is_admin():
                 raise HTTPException(
@@ -847,6 +872,13 @@ class PostService:
             if flag:
                 db_post.is_published = False
                 db_post.published_at = None
+                
+                await NotificationService.notify_post_flagged(
+                    session=session,
+                    post=db_post,
+                    admin_id=current_user.id
+                )
+            
             await session.commit()
             await session.refresh(db_post)
             return db_post

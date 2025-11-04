@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from schemas.comment import CommentCreate
 from fastapi import HTTPException, status
+from services.user.notification import NotificationService
 from typing import List
 import logging
 
@@ -15,10 +16,10 @@ logger = logging.getLogger(__name__)
 class CommentService:
     @staticmethod
     async def create_comment(
-            session: AsyncSession,
-            post_uuid: str,
-            comment_data: CommentCreate,
-            user_id: int
+        session: AsyncSession,
+        post_uuid: str,
+        comment_data: CommentCreate,
+        user_id: int
     ) -> Comment:
         try:
             db_post = await PostService.get_post_by_uuid(session, post_uuid)
@@ -28,8 +29,8 @@ class CommentService:
                     detail="Post not found"
                 )
 
-            # Resolve parent reference from uuid if provided
             parent_id_val = comment_data.parent_id
+            parent_comment = None
             if getattr(comment_data, "parent_uuid", None):
                 parent_comment = await CommentService.get_comment_by_uuid(session, comment_data.parent_uuid)
                 if parent_comment.post_id != db_post.id:
@@ -53,11 +54,32 @@ class CommentService:
                 select(Comment)
                 .options(
                     selectinload(Comment.author),
+                    selectinload(Comment.post), 
                     selectinload(Comment.replies).selectinload(Comment.author),
                 )
                 .where(Comment.id == db_comment.id)
             )
-            return result.scalar_one()
+            db_comment = result.scalar_one()
+            
+            try:
+                if parent_comment:
+                    await NotificationService.notify_comment_reply(
+                        session=session,
+                        parent_comment=parent_comment,
+                        replier_id=user_id,
+                        reply_id=db_comment.id
+                    )
+                else:
+                    await NotificationService.notify_post_comment(
+                        session=session,
+                        post=db_post,
+                        commenter_id=user_id,
+                        comment_id=db_comment.id
+                    )
+            except Exception as notification_error:
+                logger.error(f"Notification failed but comment was created: {notification_error}")
+            
+            return db_comment
 
         except HTTPException:
             raise
@@ -82,7 +104,6 @@ class CommentService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred"
             )
-
     @staticmethod
     async def get_post_comments(
             session: AsyncSession,

@@ -6,11 +6,11 @@ load_dotenv()
 
 
 class Settings:
-    database_username: str = os.getenv("DB_USER") or ""
-    database_password: str = os.getenv("DB_PASSWORD") or ""
+    database_username: str = os.getenv("DB_USER", "") 
+    database_password: str = os.getenv("DB_PASSWORD", "")
     database_host: str = os.getenv("DB_HOST", "localhost")
     database_port: str = os.getenv("DB_PORT", "5432")
-    database_name: str = os.getenv("DB_NAME") or ""
+    database_name: str = os.getenv("DB_NAME", "") 
 
     _encoded_password = quote_plus(database_password) if database_password else ""
 
