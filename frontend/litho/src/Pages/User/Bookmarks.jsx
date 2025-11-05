@@ -9,6 +9,7 @@ import { m } from "framer-motion";
 import Header, { HeaderNav, Menu, SearchBar } from "../../Components/Header/Header";
 import Logo from '../../Components/Logo'
 import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
+import NotificationBell from '../../Components/Header/NotificationBell'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05';
 
 import BlogClassic from '../../Components/Blogs/BlogClassic';
@@ -58,7 +59,10 @@ const BookmarksPage = (props) => {
             </div>
             <Navbar.Collapse className="col-auto px-0 justify-end">
               <Menu {...props} />
-              <UserProfileDropdown className="ms-4" />
+              <div className="flex items-center gap-2 ms-4">
+                <UserProfileDropdown />
+                <NotificationBell />
+              </div>
             </Navbar.Collapse>
           </HeaderNav>
         </Header>
@@ -113,7 +117,10 @@ const BookmarksPage = (props) => {
           </div>
           <Navbar.Collapse className="col-auto px-0 justify-end">
             <Menu {...props} />
-            <UserProfileDropdown className="ms-4" />
+            <div className="flex items-center gap-2 ms-4">
+              <UserProfileDropdown />
+              <NotificationBell />
+            </div>
           </Navbar.Collapse>
         </HeaderNav>
       </Header>

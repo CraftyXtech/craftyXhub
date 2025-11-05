@@ -10,6 +10,7 @@ import { PropTypes } from "prop-types"
 import { Header, HeaderNav, Menu, SearchBar } from '../../Components/Header/Header'
 import Logo from '../../Components/Logo'
 import UserProfileDropdown from '../../Components/Header/UserProfileDropdown'
+import NotificationBell from '../../Components/Header/NotificationBell'
 import FooterStyle05 from '../../Components/Footers/FooterStyle05'
 
 import ProfileManagement from '../../Components/ProfileManagement'
@@ -44,7 +45,10 @@ const Profile = (props) => {
                         </div>
                         <Navbar.Collapse className="col-auto px-0 justify-end">
                             <Menu {...props} />
-                            <UserProfileDropdown className="ms-4" />
+                            <div className="flex items-center gap-2 ms-4">
+                                <UserProfileDropdown />
+                                <NotificationBell />
+                            </div>
                         </Navbar.Collapse>
                     </HeaderNav>
                 </Header>
@@ -102,7 +106,10 @@ const Profile = (props) => {
                     </div>
                     <Navbar.Collapse className="col-auto px-0 justify-end">
                         <Menu {...props} />
-                        <UserProfileDropdown className="ms-4" />
+                        <div className="flex items-center gap-2 ms-4">
+                            <UserProfileDropdown />
+                            <NotificationBell />
+                        </div>
                     </Navbar.Collapse>
                 </HeaderNav>
             </Header>

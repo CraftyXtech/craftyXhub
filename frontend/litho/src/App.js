@@ -8,6 +8,7 @@ import { AnimatePresence } from "framer-motion";
 // Context
 import GlobalContext from "./Context/Context";
 import { AuthProvider } from "./Components/auth/AuthProvider";
+import { NotificationProvider } from "./Context/NotificationContext";
 
 // Components
 import ScrollToTopButton from "./Components/ScrollToTop";
@@ -36,6 +37,7 @@ const TrendingArticlesPage = lazy(() => import("./Pages/Home/TrendingArticlesPag
 // Additional Pages (only keep NotFound and SearchResult)
 const NotFoundPage = lazy(() => import("./Pages/404"));
 const SearchResultPage = lazy(() => import("./Pages/AdditionalPages/SearchResultPage"));
+const NotificationsPage = lazy(() => import("./Pages/Notifications/NotificationsPage"));
 
 
 const Privacy = lazy(() => import("./Pages/Privacy"));
@@ -138,18 +140,19 @@ function App() {
 
   return (
     <AuthProvider>
-      <GlobalContext.Provider
-        value={{
-          headerHeight,
-          setHeaderHeight,
-          footerHeight,
-          setFooterHeight,
-          isModalOpen,
-          setIsModalOpen,
-          customModal,
-          setCustomModal,
-        }}
-      >
+      <NotificationProvider>
+        <GlobalContext.Provider
+          value={{
+            headerHeight,
+            setHeaderHeight,
+            footerHeight,
+            setFooterHeight,
+            isModalOpen,
+            setIsModalOpen,
+            customModal,
+            setCustomModal,
+          }}
+        >
         <div className="App" style={{ "--header-height": `${headerHeight}px` }}>
         {
           <main style={{ marginTop: headerHeight, marginBottom: footerHeight }}>
@@ -321,6 +324,10 @@ function App() {
                       <SearchResultPage style={{ "--base-color": "#0038e3" }} />
                     }
                   />
+                  
+                  {/* Notifications */}
+                  <Route path="/notifications" element={<NotificationsPage />} />
+                  
                   <Route path="*" element={<NotFoundPage />} />
                   <Route
                     path="/privacy"
@@ -333,6 +340,7 @@ function App() {
         }
       </div>
     </GlobalContext.Provider>
+    </NotificationProvider>
     </AuthProvider>
   );
 }

@@ -14,6 +14,9 @@ import PostDetail from "@/pages/posts/PostDetail";
 import CommentModeration from "@/pages/moderation/CommentModeration";
 import PostReports from "@/pages/moderation/PostReports";
 
+// Notifications
+import NotificationsPage from "@/pages/notifications/NotificationsPage";
+
 // AI Writer Components
 import AiDashboard from "@/pages/ai-writer/AiDashboard";
 import AiDocuments from "@/pages/ai-writer/AiDocuments";
@@ -194,6 +197,9 @@ const Router = () => {
               {/* Content Moderation Routes */}
               <Route path="moderation/comments" element={<CommentModeration />}></Route>
               <Route path="moderation/reports" element={<PostReports />}></Route>
+
+              {/* Notifications Route */}
+              <Route path="notifications" element={<NotificationsPage />}></Route>
 
          
       

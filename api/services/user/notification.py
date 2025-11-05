@@ -418,6 +418,14 @@ class NotificationService:
             if not replier:
                 return
 
+            # Get post for UUID
+            post_result = await session.execute(
+                select(Post).where(Post.id == parent_comment.post_id)
+            )
+            post = post_result.scalar_one_or_none()
+            if not post:
+                return
+
             await NotificationService.create_notification(
                 session=session,
                 recipient_id=parent_comment.author_id,
@@ -426,7 +434,8 @@ class NotificationService:
                 title="New Reply to Your Comment",
                 message=f"{replier.username} replied to your comment",
                 post_id=parent_comment.post_id,
-                comment_id=reply_id
+                comment_id=reply_id,
+                action_url=f"/posts/{post.uuid}#comment-{reply_id}"
             )
         except Exception as e:
             logger.error(f"Error creating comment reply notification: {str(e)}")
@@ -441,7 +450,6 @@ class NotificationService:
         """Notify the post author about a new comment"""
         try:
             if post.author_id == commenter_id:
-                print(post.author_id, commenter_id)
                 return
 
             commenter_result = await session.execute(
@@ -451,6 +459,7 @@ class NotificationService:
             if not commenter:
                 return
             
+            # Create notification (this commits internally)
             await NotificationService.create_notification(
                 session=session,
                 recipient_id=post.author_id,
@@ -459,7 +468,8 @@ class NotificationService:
                 title="New Comment on Your Post",
                 message=f"{commenter.username} commented on your post: {post.title}",
                 post_id=post.id,
-                comment_id=comment_id
+                comment_id=comment_id,
+                action_url=f"/posts/{post.uuid}#comment-{comment_id}"
             )
         except Exception as e:
             logger.error(f"Error creating post comment notification: {str(e)}")

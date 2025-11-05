@@ -30,7 +30,11 @@
 //////  APPLICATONS - Common Uses
 @import "apps/asterisk"; 
 @import "apps/reply-comment"; 
-@import "apps/attach"; 
+@import "apps/attach";
+
+////// CUSTOM STYLES
+@import "custom/notifications";
+@import "custom/comment-highlight"; 
 
 //////  Apps
 @import "apps/messages";  		// - Support Messages

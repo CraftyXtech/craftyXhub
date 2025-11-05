@@ -9,7 +9,10 @@ from fastapi_sso.sso.facebook import FacebookSSO
 from models.user import User
 from schemas.user import UserCreate, UserLogin, UserResponse, Token, ResetPasswordRequest, AuthResult
 from services.user.auth import AuthService, get_current_active_user
+from services.user.notification import NotificationService
+from schemas.notification import NotificationType
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, or_
 from urllib.parse import urlencode
 
 
@@ -60,6 +63,30 @@ async def register(
     session.add(db_user)
     await session.commit()
     await session.refresh(db_user)
+
+    # Notify all admins about new user registration
+    try:
+        from models.user import UserRole
+        
+        admins_query = select(User.id).where(
+            or_(User.role == UserRole.ADMIN, User.role == UserRole.MODERATOR)
+        )
+        admins_result = await session.execute(admins_query)
+        admin_ids = [row[0] for row in admins_result.all()]
+
+        for admin_id in admin_ids:
+            await NotificationService.create_notification(
+                session=session,
+                recipient_id=admin_id,
+                sender_id=db_user.id,
+                notification_type=NotificationType.WELCOME,
+                title="New User Registration",
+                message=f"New user {db_user.username} ({db_user.email}) has registered",
+                action_url=f"/admin/users/{db_user.uuid}"
+            )
+    except Exception as e:
+        # Don't fail registration if notification fails
+        print(f"Failed to send admin notification: {str(e)}")
 
     return db_user
 

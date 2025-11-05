@@ -97,9 +97,29 @@ const PostDetails = (props) => {
     } else if (!loading && !post) {
       let getData;
       // Legacy fallback removed: this page expects a server UUID in URL.
-    setData(getData);
+      setData(getData);
     }
   }, [post, loading, isAuthenticated, user]);
+
+  // Scroll to comment if hash is present in URL (e.g., #comment-123)
+  useEffect(() => {
+    if (window.location.hash && data && !loading) {
+      const hash = window.location.hash.substring(1); // Remove the #
+      const timer = setTimeout(() => {
+        const element = document.getElementById(hash);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('highlight-comment');
+          // Remove highlight after 3 seconds
+          setTimeout(() => {
+            element.classList.remove('highlight-comment');
+          }, 3000);
+        }
+      }, 800); // Wait longer for Litho's animations
+      
+      return () => clearTimeout(timer);
+    }
+  }, [window.location.hash, data, loading]);
 
   const handleLike = async () => {
     if (!isAuthenticated) {

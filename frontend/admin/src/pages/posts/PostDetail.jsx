@@ -23,6 +23,7 @@ const PostDetail = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const postUuid = searchParams.get('id'); // This should be UUID from URL
+  const commentId = searchParams.get('comment'); // Comment ID for scrolling
   
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,6 +56,26 @@ const PostDetail = () => {
       setLoading(false);
     }
   }, [postUuid, fetchedPost]);
+
+  // Scroll to comment if comment ID is in URL
+  useEffect(() => {
+    if (commentId && post && !loading) {
+      // Wait for DOM to render
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`comment-${commentId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('highlight-comment');
+          // Remove highlight after 3 seconds
+          setTimeout(() => {
+            element.classList.remove('highlight-comment');
+          }, 3000);
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [commentId, post, loading]);
 
   // Handle delete post
   const handleDeletePost = async () => {

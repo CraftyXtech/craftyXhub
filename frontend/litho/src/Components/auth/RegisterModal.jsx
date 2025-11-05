@@ -35,6 +35,21 @@ const RegisterModal = ({ show, onHide, onSwitchToLogin }) => {
         setLoading(true)
         setError('')
 
+        // Validate username format
+        const usernamePattern = /^[a-zA-Z0-9_-]+$/;
+        if (!usernamePattern.test(formData.username)) {
+            setError('Username can only contain letters, numbers, underscores (_), and hyphens (-). No spaces or special characters allowed.')
+            setLoading(false)
+            return
+        }
+
+        // Validate username length
+        if (formData.username.length < 3) {
+            setError('Username must be at least 3 characters long')
+            setLoading(false)
+            return
+        }
+
         if (formData.password !== formData.confirmPassword) {
             setError('Passwords do not match')
             setLoading(false)
@@ -90,11 +105,42 @@ const RegisterModal = ({ show, onHide, onSwitchToLogin }) => {
             if (error.response?.data?.detail) {
                 if (Array.isArray(error.response.data.detail)) {
                     // Handle validation errors from FastAPI
-                    errorMessage = error.response.data.detail
-                        .map(err => err.msg || err.message || 'Validation error')
-                        .join(', ')
+                    const errors = error.response.data.detail.map(err => {
+                        const msg = err.msg || err.message || 'Validation error';
+                        const field = err.loc ? err.loc[err.loc.length - 1] : '';
+                        
+                        // Make username pattern errors user-friendly
+                        if (msg.includes("String should match pattern") && field === 'username') {
+                            return 'Username can only contain letters, numbers, underscores (_), and hyphens (-). No spaces or special characters allowed.';
+                        }
+                        
+                        // Make other validation errors friendly
+                        if (msg.includes('value is not a valid email')) {
+                            return 'Please enter a valid email address.';
+                        }
+                        
+                        if (msg.includes('ensure this value has at least')) {
+                            return `${field} is too short. ${msg}`;
+                        }
+                        
+                        if (msg.includes('field required')) {
+                            return `${field} is required.`;
+                        }
+                        
+                        return msg;
+                    });
+                    errorMessage = errors.join(' ');
                 } else if (typeof error.response.data.detail === 'string') {
-                    errorMessage = error.response.data.detail
+                    errorMessage = error.response.data.detail;
+                    
+                    // Check if it's a common error and make it friendly
+                    if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
+                        if (errorMessage.toLowerCase().includes('email')) {
+                            errorMessage = 'This email is already registered. Please login or use a different email.';
+                        } else if (errorMessage.toLowerCase().includes('username')) {
+                            errorMessage = 'This username is already taken. Please choose a different one.';
+                        }
+                    }
                 }
             } else if (error.response?.data?.message) {
                 errorMessage = error.response.data.message
@@ -171,11 +217,16 @@ const RegisterModal = ({ show, onHide, onSwitchToLogin }) => {
                                 className="py-[10px] px-[12px] w-full border-[1px] border-solid border-[#dfdfdf] text-sm rounded-[4px] focus:border-darkgray focus:outline-none"
                                 type="text"
                                 name="username"
-                                placeholder="Choose a username"
+                                placeholder="e.g. john_doe or john-doe123"
                                 value={formData.username}
                                 onChange={handleInputChange}
+                                pattern="[a-zA-Z0-9_-]+"
+                                title="Only letters, numbers, underscores, and hyphens allowed"
                                 required
                             />
+                            <small className="text-xs text-gray-500 mt-1 block">
+                                Only letters, numbers, underscores (_), and hyphens (-) allowed. No spaces.
+                            </small>
                         </div>
                         <div className="mb-[15px]">
                             <label className="text-sm font-medium text-darkgray mb-[8px] block">
