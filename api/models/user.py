@@ -13,6 +13,7 @@ class MediaType(PyEnum):
 
 
 class UserRole(PyEnum):
+    SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
     MODERATOR = "moderator"
     USER = "user"
@@ -60,11 +61,16 @@ class User(BaseTable):
     ai_generation_logs = relationship("AIGenerationLog", back_populates="user", cascade="all, delete-orphan")
     
     
+    def is_super_admin(self) -> bool:
+        return self.role == UserRole.SUPER_ADMIN
+
     def is_admin(self) -> bool:
-        return self.role == UserRole.ADMIN
+        # Treat SUPER_ADMIN as having admin privileges as well
+        return self.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN]
     
     def is_moderator(self) -> bool:
-        return self.role in [UserRole.ADMIN, UserRole.MODERATOR]
+        # Moderation privileges apply to moderators, admins, and super-admins
+        return self.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR]
     
     def follow(self, user):
         if not self.is_following(user):
@@ -82,6 +88,22 @@ class User(BaseTable):
 
     def get_following_count(self):
         return len(self.following) if self.following else 0
+
+
+class UserRoleChange(BaseTable):
+    __tablename__ = "user_role_changes"
+
+    # The user whose role was changed
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    # The admin / super-admin who performed the change
+    changed_by_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    old_role = Column(String(50), nullable=False)
+    new_role = Column(String(50), nullable=False)
+    reason = Column(Text, nullable=True)
+
+    user = relationship("User", foreign_keys=[user_id], backref="role_change_events")
+    changed_by = relationship("User", foreign_keys=[changed_by_id])
 
 class Profile(BaseTable):
     __tablename__ = 'profiles'

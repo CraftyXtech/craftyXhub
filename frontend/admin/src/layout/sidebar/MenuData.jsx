@@ -3,6 +3,7 @@ const menu = [
     icon: "home",
     text: "Dashboard",
     link: "/",
+    roles: ["admin", "moderator", "user"],
   },
   /*{
     heading: "Pre-built Pages",
@@ -24,26 +25,11 @@ const menu = [
   {
     icon: "users",
     text: "User Manage",
+    roles: ["admin"],
     subMenu: [
       {
-        text: "User List - Regular",
+        text: "User List",
         link: "/user-list-regular",
-      },
-      {
-        text: "User List - Compact",
-        link: "/user-list-compact",
-      },
-      {
-        text: "User Details - Regular",
-        link: "/user-details-regular/1",
-      },
-      {
-        text: "User Profile - Regular",
-        link: "/user-profile-regular",
-      },
-      {
-        text: "User Contact - Card",
-        link: "/user-contact-card",
       },
     ],
   },
@@ -108,6 +94,7 @@ const menu = [
     icon: "spark",
     text: "Content Generator",
     link: "/ai-writer/dashboard",
+    roles: ["admin", "moderator", "user"],
     subMenu: [
       {
         text: "Dashboard",
@@ -140,6 +127,7 @@ const menu = [
   {
     icon: "file-text",
     text: "Posts Management",
+    roles: ["admin", "moderator", "user"],
     subMenu: [
       {
         text: "Create Post",
@@ -166,6 +154,7 @@ const menu = [
   {
     icon: "shield-check",
     text: "Content Moderation",
+    roles: ["admin", "moderator"],
     subMenu: [
       {
         text: "Comment Moderation",

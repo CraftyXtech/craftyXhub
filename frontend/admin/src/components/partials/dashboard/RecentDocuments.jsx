@@ -1,5 +1,17 @@
 import React from 'react';
-import { Button, Icon, DataTable, DataTableBody, DataTableHead, DataTableRow, DataTableItem, BlockHead, BlockBetween, BlockHeadContent, BlockTitle } from '@/components/Component';
+import {
+  Button,
+  Icon,
+  DataTable,
+  DataTableBody,
+  DataTableHead,
+  DataTableRow,
+  DataTableItem,
+  BlockHead,
+  BlockBetween,
+  BlockHeadContent,
+  BlockTitle,
+} from '@/components/Component';
 
 const mockRecentDocuments = [
   { id: 'r1', name: 'The Impact of Artificial Intelligence on the Future of Work', type: 'Document', category: 'Blog Content', updated_at: '2023-02-15T14:31:00Z' },
@@ -21,7 +33,9 @@ const TypeBadge = ({ type }) => {
   return <span className={`badge badge-dim badge-sm badge-${color}`}>{type}</span>;
 };
 
-const RecentDocuments = ({ onSeeAll }) => {
+const RecentDocuments = ({ documents = [], onSeeAll }) => {
+  const items = documents && documents.length > 0 ? documents : mockRecentDocuments;
+
   return (
     <div className="card card-bordered">
       <div className="card-inner">
@@ -55,7 +69,7 @@ const RecentDocuments = ({ onSeeAll }) => {
             </DataTableRow>
           </DataTableHead>
           <DataTableBody>
-            {mockRecentDocuments.map((doc) => (
+            {items.map((doc) => (
               <DataTableItem key={doc.id}>
                 <DataTableRow>
                   <div className="user-card">
@@ -69,7 +83,11 @@ const RecentDocuments = ({ onSeeAll }) => {
                   <TypeBadge type={doc.type} />
                 </DataTableRow>
                 <DataTableRow size="sm">
-                  <span>Feb 15,2023 02:31 PM</span>
+                  <span>
+                    {doc.updated_at
+                      ? new Date(doc.updated_at).toLocaleString()
+                      : ''}
+                  </span>
                 </DataTableRow>
                 <DataTableRow size="sm" className="nk-tb-col-tools">
                   <ul className="nk-tb-actions gx-1">

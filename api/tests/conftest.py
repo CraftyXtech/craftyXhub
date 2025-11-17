@@ -85,6 +85,22 @@ async def admin_user(test_session: AsyncSession) -> User:
     return user
 
 
+@pytest_asyncio.fixture
+async def super_admin_user(test_session: AsyncSession) -> User:
+    user = User(
+        email="superadmin@example.com",
+        username="superadmin",
+        full_name="Super Admin User",
+        password="hashed",
+        role=UserRole.SUPER_ADMIN,
+        is_active=True,
+    )
+    test_session.add(user)
+    await test_session.commit()
+    await test_session.refresh(user)
+    return user
+
+
 def make_db_override(session: AsyncSession):
     async def _override():
         try:
@@ -114,5 +130,16 @@ async def client_admin(test_session: AsyncSession, admin_user: User):
     app = create_application()
     app.dependency_overrides[get_db_session] = make_db_override(test_session)
     app.dependency_overrides[get_current_active_user] = _make_auth_override(admin_user)
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
+
+
+@pytest_asyncio.fixture
+async def client_super_admin(test_session: AsyncSession, super_admin_user: User):
+    app = create_application()
+    app.dependency_overrides[get_db_session] = make_db_override(test_session)
+    app.dependency_overrides[get_current_active_user] = _make_auth_override(
+        super_admin_user
+    )
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac

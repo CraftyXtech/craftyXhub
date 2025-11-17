@@ -1,10 +1,6 @@
-import React, { useContext, useEffect, useState } from "react";
-import {
-  DropdownMenu,
-  DropdownToggle,
-  UncontrolledDropdown,
-  DropdownItem
-} from "reactstrap";
+import React, { useContext, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { DropdownMenu, DropdownToggle, DropdownItem, UncontrolledDropdown } from "reactstrap";
 import {
   Block,
   BlockBetween,
@@ -28,232 +24,304 @@ import {
 } from "@/components/Component";
 import Content from "@/layout/content/Content";
 import Head from "@/layout/head/Head";
-import { filterRole, filterStatus, userData } from "./UserData";
 import { bulkActionOptions, findUpper } from "@/utils/Utils";
-import { Link } from "react-router-dom";
 import { UserContext } from "./UserContext";
-import EditModal from "./EditModal";
-import AddModal from "./AddModal";
+import {
+  useAdminUserStats,
+  useDeactivateAdminUser,
+  useToggleAdminUserStatus,
+} from "@/api/adminUserHooks";
+import useAuth from "@/api/useAuth";
+import RoleModal from "./RoleModal";
+
+const roleFilterOptions = [
+  { value: "", label: "Any Role" },
+  { value: "super_admin", label: "Super Admin" },
+  { value: "admin", label: "Admin" },
+  { value: "moderator", label: "Moderator" },
+  { value: "user", label: "User" },
+];
+
+const statusFilterOptions = [
+  { value: "", label: "Any Status" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+];
+
+const pageSizeOptions = [10, 15, 25];
 
 const UserListRegularPage = () => {
-  const { contextData } = useContext(UserContext);
-  const [data, setData] = contextData;
+  const { contextData, meta, loading, error, params, setParams, refetch } = useContext(UserContext);
+  const [contextUsers] = contextData;
+
+  const { auth } = useAuth();
+  const currentUserRole = auth?.user?.role || "";
+  const currentUserUuid = auth?.user?.uuid || "";
 
   const [sm, updateSm] = useState(false);
   const [tablesm, updateTableSm] = useState(false);
-  const [onSearch, setonSearch] = useState(true);
-  const [onSearchText, setSearchText] = useState("");
-  const [modal, setModal] = useState({
-    edit: false,
-    add: false,
-  });
-  const [editId, setEditedId] = useState();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    balance: 0,
-    phone: "",
-    status: "Active",
-  });
-  const [editFormData, setEditFormData] = useState({
-    name: "",
-    email: "",
-    balance: 0,
-    phone: "",
-    status: "",
-  });
+  const [onSearch, setOnSearch] = useState(true);
+  const [searchText, setSearchText] = useState(params.search || "");
+  const [tableData, setTableData] = useState([]);
+  const [selectedIds, setSelectedIds] = useState(new Set());
   const [actionText, setActionText] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemPerPage, setItemPerPage] = useState(10);
-  const [sort, setSortState] = useState("");
+  const [roleFilter, setRoleFilter] = useState(params.role || "");
+  const [statusFilter, setStatusFilter] = useState(params.status || "");
+  const [sortDirection, setSortDirection] = useState(params.sort === "full_name" ? "asc" : "dsc");
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [selectedUserForRole, setSelectedUserForRole] = useState(null);
 
-  // Sorting data
-  const sortFunc = (params) => {
-    let defaultData = data;
-    if (params === "asc") {
-      let sortedData = defaultData.sort((a, b) => a.name.localeCompare(b.name));
-      setData([...sortedData]);
-    } else if (params === "dsc") {
-      let sortedData = defaultData.sort((a, b) => b.name.localeCompare(a.name));
-      setData([...sortedData]);
+  const { mutate: toggleStatus, loading: statusMutating } = useToggleAdminUserStatus();
+  const { mutate: deactivateUser, loading: deactivateMutating } = useDeactivateAdminUser();
+  const {
+    stats,
+    loading: statsLoading,
+    error: statsError,
+  } = useAdminUserStats();
+  const isMutating = statusMutating || deactivateMutating;
+
+  const normalizedCurrentRole = currentUserRole.toLowerCase();
+
+  const canManageUser = (user) => {
+    if (!normalizedCurrentRole) return false;
+
+    const targetRole = (user.raw?.role || "user").toLowerCase();
+    const targetUuid = user.raw?.uuid || user.uuid || user.id || "";
+
+    // Never allow changing own account from here
+    if (currentUserUuid && targetUuid && currentUserUuid === targetUuid) {
+      return false;
     }
+
+    if (normalizedCurrentRole === "super_admin") {
+      return true;
+    }
+
+    if (normalizedCurrentRole === "admin") {
+      // Admins cannot touch admins or super-admins
+      if (targetRole === "admin" || targetRole === "super_admin") {
+        return false;
+      }
+      // Admins can manage moderators and users (status, deactivate, etc.)
+      return targetRole === "moderator" || targetRole === "user";
+    }
+
+    // Moderators and users cannot manage accounts here (route is admin only, but keep safe)
+    return false;
   };
 
-  // unselects the data on mount
   useEffect(() => {
-    let newData;
-    newData = userData.map((item) => {
-      item.checked = false;
-      return item;
-    });
-    setData([...newData]);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    setSearchText(params.search || "");
+  }, [params.search]);
 
-  // Changing state value when searching name
   useEffect(() => {
-    if (onSearchText !== "") {
-      const filteredObject = userData.filter((item) => {
-        return (
-          item.name.toLowerCase().includes(onSearchText.toLowerCase()) ||
-          item.email.toLowerCase().includes(onSearchText.toLowerCase())
-        );
+    setRoleFilter(params.role || "");
+  }, [params.role]);
+
+  useEffect(() => {
+    setStatusFilter(params.status || "");
+  }, [params.status]);
+
+  useEffect(() => {
+    const reset = (contextUsers || []).map((user) => ({ ...user, checked: false }));
+    setTableData(reset);
+    setSelectedIds(new Set());
+  }, [contextUsers]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const normalized = searchText.trim();
+      const sanitized = normalized === "" ? undefined : normalized;
+      if ((params.search || undefined) === sanitized) {
+        return;
+      }
+      setParams((prev) => {
+        const next = { ...prev, page: 1 };
+        if (sanitized) {
+          next.search = sanitized;
+        } else {
+          delete next.search;
+        }
+        return next;
       });
-      setData([...filteredObject]);
-    } else {
-      setData([...userData]);
+    }, 400);
+
+    return () => clearTimeout(handler);
+  }, [searchText, params.search, setParams]);
+
+  const handleRoleFilterChange = (option) => {
+    const value = option?.value || "";
+    setRoleFilter(value);
+    setParams((prev) => {
+      const next = { ...prev, page: 1 };
+      if (value) {
+        next.role = value;
+      } else {
+        delete next.role;
+      }
+      return next;
+    });
+  };
+
+  const handleStatusFilterChange = (option) => {
+    const value = option?.value || "";
+    setStatusFilter(value);
+    setParams((prev) => {
+      const next = { ...prev, page: 1 };
+      if (value) {
+        next.status = value;
+      } else {
+        delete next.status;
+      }
+      return next;
+    });
+  };
+
+  const resetFilters = () => {
+    setRoleFilter("");
+    setStatusFilter("");
+    setParams((prev) => {
+      const next = { ...prev, page: 1 };
+      delete next.role;
+      delete next.status;
+      return next;
+    });
+  };
+
+  const toggleSearch = () => setOnSearch((prev) => !prev);
+
+  const handleSortChange = (direction) => {
+    setSortDirection(direction);
+    const sortValue = direction === "asc" ? "full_name" : "-full_name";
+    setParams((prev) => ({ ...prev, sort: sortValue, page: 1 }));
+  };
+
+  const handlePageChange = (pageNumber) => {
+    const totalPages = meta?.pages || 0;
+    if (pageNumber < 1 || pageNumber === meta.page || (totalPages && pageNumber > totalPages)) {
+      return;
     }
-  }, [onSearchText, setData]);
-
-  // function to set the action to be taken in table header
-  const onActionText = (e) => {
-    setActionText(e.value);
+    setParams((prev) => ({ ...prev, page: pageNumber }));
   };
 
-  // onChange function for searching name
-  const onFilterChange = (e) => {
-    setSearchText(e.target.value);
+  const handlePageSizeChange = (size) => {
+    if (size === params.size) return;
+    setParams((prev) => ({ ...prev, size, page: 1 }));
   };
 
-  // function to change the selected property of an item
-  const onSelectChange = (e, id) => {
-    let newData = data;
-    let index = newData.findIndex((item) => item.id === id);
-    newData[index].checked = e.currentTarget.checked;
-    setData([...newData]);
-  };
-
-  // function to reset the form
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      email: "",
-      balance:0,
-      phone: "",
-      status: "Active",
-    });
-  };
-
-  const closeModal = () => {
-    setModal({ add: false })
-    resetForm();
-  };
-
-  const closeEditModal = () => {
-    setModal({ edit: false })
-    resetForm();
-  };
-
-  // submit function to add a new item
-  const onFormSubmit = (submitData) => {
-    const { name, email, balance, phone } = submitData;
-    let submittedData = {
-      id: data.length + 1,
-      avatarBg: "purple",
-      name: name,
-      role: "Customer",
-      email: email,
-      balance: balance,
-      phone: phone,
-      emailStatus: "success",
-      kycStatus: "alert",
-      lastLogin: "10 Feb 2020",
-      status: formData.status,
-      country: "Bangladesh",
-    };
-    setData([submittedData, ...data]);
-    resetForm();
-    setModal({ edit: false }, { add: false });
-  };
-
-  // submit function to update a new item
-  const onEditSubmit = (submitData) => {
-    const { name, email, phone } = submitData;
-    let submittedData;
-    let newitems = data;
-    newitems.forEach((item) => {
-      if (item.id === editId) {
-        submittedData = {
-          id: item.id,
-          avatarBg: item.avatarBg,
-          name: name,
-          image: item.image,
-          role: item.role,
-          email: email,
-          balance: editFormData.balance,
-          phone: phone,
-          emailStatus: item.emailStatus,
-          kycStatus: item.kycStatus,
-          lastLogin: item.lastLogin,
-          status: editFormData.status,
-          country: item.country,
-        };
-      }
-    });
-    let index = newitems.findIndex((item) => item.id === editId);
-    newitems[index] = submittedData;
-    setModal({ edit: false });
-  };
-
-  // function that loads the want to editted data
-  const onEditClick = (id) => {
-    data.forEach((item) => {
-      if (item.id === id) {
-        setEditFormData({
-          name: item.name,
-          email: item.email,
-          status: item.status,
-          phone: item.phone,
-          balance: item.balance,
-        });
-        setModal({ edit: true }, { add: false });
-        setEditedId(id);
-      }
-    });
-  };
-  
-  // function to change to suspend property for an item
-  const suspendUser = (id) => {
-    let newData = data;
-    let index = newData.findIndex((item) => item.id === id);
-    newData[index].status = "Suspend";
-    setData([...newData]);
-  };
-
-  // function to change the check property of an item
   const selectorCheck = (e) => {
-    let newData;
-    newData = data.map((item) => {
-      item.checked = e.currentTarget.checked;
-      return item;
-    });
-    setData([...newData]);
-  };
-
-  // function which fires on applying selected action
-  const onActionClick = (e) => {
-    if (actionText === "suspend") {
-      let newData = data.map((item) => {
-        if (item.checked === true) item.status = "Suspend";
-        return item;
-      });
-      setData([...newData]);
-    } else if (actionText === "delete") {
-      let newData;
-      newData = data.filter((item) => item.checked !== true);
-      setData([...newData]);
+    const checked = e.target.checked;
+    if (checked) {
+      const ids = new Set(tableData.filter((user) => canManageUser(user)).map((user) => user.id));
+      setSelectedIds(ids);
+      setTableData((prev) =>
+        prev.map((user) => ({ ...user, checked: canManageUser(user) ? true : false }))
+      );
+    } else {
+      setSelectedIds(new Set());
+      setTableData((prev) => prev.map((user) => ({ ...user, checked: false })));
     }
   };
 
-  // function to toggle the search option
-  const toggle = () => setonSearch(!onSearch);
+  const onSelectChange = (e, id) => {
+    const checked = e.target.checked;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+    setTableData((prev) => prev.map((user) => (user.id === id ? { ...user, checked } : user)));
+  };
 
-  // Get current list, pagination
-  const indexOfLastItem = currentPage * itemPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemPerPage;
-  const currentItems = data.slice(indexOfFirstItem, indexOfLastItem);
+  const onActionText = (option) => setActionText(option?.value || "");
 
-  // Change Page
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const handleBulkAction = async () => {
+    if (!actionText || selectedIds.size === 0) return;
+    try {
+      if (actionText === "suspend") {
+        await Promise.all([...selectedIds].map((id) => toggleStatus(id, false)));
+      } else if (actionText === "delete") {
+        await Promise.all([...selectedIds].map((id) => deactivateUser(id)));
+      }
+      setActionText("");
+      setSelectedIds(new Set());
+      refetch();
+    } catch (err) {
+      console.error("Bulk action failed", err);
+    }
+  };
+
+  const handleToggleUserStatus = async (user) => {
+    try {
+      await toggleStatus(user.id, !user.raw?.is_active);
+      refetch();
+    } catch (err) {
+      console.error("Failed to toggle status", err);
+    }
+  };
+
+  const handleDeactivateUser = async (user) => {
+    try {
+      await deactivateUser(user.id);
+      refetch();
+    } catch (err) {
+      console.error("Failed to deactivate user", err);
+    }
+  };
+
+  const formatLastLogin = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  };
+
+  const totalUsers = meta?.total ?? 0;
+  const currentItems = tableData;
+  const selectedRoleOption = useMemo(
+    () => roleFilterOptions.find((option) => option.value === roleFilter) || null,
+    [roleFilter]
+  );
+  const selectedStatusOption = useMemo(
+    () => statusFilterOptions.find((option) => option.value === statusFilter) || null,
+    [statusFilter]
+  );
+  const selectedBulkOption = useMemo(
+    () => bulkActionOptions.find((option) => option.value === actionText) || null,
+    [actionText]
+  );
+
+  const openRoleModal = (user) => {
+    if (!canManageUser(user)) return;
+    setSelectedUserForRole(user);
+    setRoleModalOpen(true);
+  };
+
+  const closeRoleModal = () => {
+    setRoleModalOpen(false);
+    setSelectedUserForRole(null);
+  };
+
+  const handleRoleUpdated = (updatedUser) => {
+    if (!updatedUser?.uuid || !updatedUser?.role) return;
+    const displayRole = updatedUser.role.charAt(0).toUpperCase() + updatedUser.role.slice(1);
+
+    setTableData((prev) =>
+      prev.map((user) =>
+        user.id === updatedUser.uuid
+          ? {
+              ...user,
+              role: displayRole,
+              raw: updatedUser,
+            }
+          : user
+      )
+    );
+    refetch();
+  };
 
   return (
     <React.Fragment>
@@ -263,10 +331,10 @@ const UserListRegularPage = () => {
           <BlockBetween>
             <BlockHeadContent>
               <BlockTitle tag="h3" page>
-                Users Lists
+                User List
               </BlockTitle>
               <BlockDes className="text-soft">
-                <p>You have total 2,595 users.</p>
+                <p>You have total {totalUsers} users.</p>
               </BlockDes>
             </BlockHeadContent>
             <BlockHeadContent>
@@ -285,17 +353,83 @@ const UserListRegularPage = () => {
                         <span>Export</span>
                       </Button>
                     </li>
-                    <li className="nk-block-tools-opt">
-                      <Button color="primary" className="btn-icon" onClick={() => setModal({ add: true })}>
-                        <Icon name="plus"></Icon>
-                      </Button>
-                    </li>
                   </ul>
                 </div>
               </div>
             </BlockHeadContent>
           </BlockBetween>
         </BlockHead>
+
+        {statsError && (
+          <div className="alert alert-warning" role="alert">
+            Failed to load user statistics: {statsError}
+          </div>
+        )}
+
+        {!statsLoading && stats && (
+          <>
+            <Row className="g-gs mb-3">
+              <Col sm="6" xl="3">
+                <div className="card card-bordered">
+                  <div className="card-inner">
+                    <span className="text-soft">Total Users</span>
+                    <div className="h4 mb-0">{stats.total_users}</div>
+                  </div>
+                </div>
+              </Col>
+              <Col sm="6" xl="3">
+                <div className="card card-bordered">
+                  <div className="card-inner">
+                    <span className="text-soft">Active</span>
+                    <div className="h4 mb-0 text-success">{stats.active_users}</div>
+                  </div>
+                </div>
+              </Col>
+              <Col sm="6" xl="3">
+                <div className="card card-bordered">
+                  <div className="card-inner">
+                    <span className="text-soft">Inactive</span>
+                    <div className="h4 mb-0 text-danger">{stats.inactive_users}</div>
+                  </div>
+                </div>
+              </Col>
+              <Col sm="6" xl="3">
+                <div className="card card-bordered">
+                  <div className="card-inner">
+                    <span className="text-soft">Signups (30d)</span>
+                    <div className="h4 mb-0">{stats.recent_registrations}</div>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+            <Row className="g-gs mb-3">
+              <Col sm="6" xl="4">
+                <div className="card card-bordered">
+                  <div className="card-inner">
+                    <span className="text-soft">Admins</span>
+                    <div className="h4 mb-0">{stats.admin_count}</div>
+                  </div>
+                </div>
+              </Col>
+              <Col sm="6" xl="4">
+                <div className="card card-bordered">
+                  <div className="card-inner">
+                    <span className="text-soft">Moderators</span>
+                    <div className="h4 mb-0">{stats.moderator_count}</div>
+                  </div>
+                </div>
+              </Col>
+              <Col sm="6" xl="4">
+                <div className="card card-bordered">
+                  <div className="card-inner">
+                    <span className="text-soft">Standard Users</span>
+                    <div className="h4 mb-0">{stats.user_count}</div>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </>
+        )}
 
         <Block>
           <DataTable className="card-stretch">
@@ -308,17 +442,18 @@ const UserListRegularPage = () => {
                         options={bulkActionOptions}
                         className="w-130px"
                         placeholder="Bulk Action"
-                        onChange={(e) => onActionText(e)}
+                        value={selectedBulkOption}
+                        onChange={onActionText}
                       />
                     </div>
                     <div className="btn-wrap">
                       <span className="d-none d-md-block">
                         <Button
-                          disabled={actionText !== "" ? false : true}
+                          disabled={selectedIds.size === 0 || !actionText || isMutating}
                           color="light"
                           outline
                           className="btn-dim"
-                          onClick={(e) => onActionClick(e)}
+                          onClick={handleBulkAction}
                         >
                           Apply
                         </Button>
@@ -327,9 +462,9 @@ const UserListRegularPage = () => {
                         <Button
                           color="light"
                           outline
-                          disabled={actionText !== "" ? false : true}
+                          disabled={selectedIds.size === 0 || !actionText || isMutating}
                           className="btn-dim btn-icon"
-                          onClick={(e) => onActionClick(e)}
+                          onClick={handleBulkAction}
                         >
                           <Icon name="arrow-right"></Icon>
                         </Button>
@@ -344,7 +479,7 @@ const UserListRegularPage = () => {
                         href="#search"
                         onClick={(ev) => {
                           ev.preventDefault();
-                          toggle();
+                          toggleSearch();
                         }}
                         className="btn btn-icon search-toggle toggle-search"
                       >
@@ -368,81 +503,59 @@ const UserListRegularPage = () => {
                               </Button>
                             </li>
                             <li>
-                              <UncontrolledDropdown >
+                              <UncontrolledDropdown>
                                 <DropdownToggle tag="a" className="btn btn-trigger btn-icon dropdown-toggle">
                                   <div className="dot dot-primary"></div>
                                   <Icon name="filter-alt"></Icon>
                                 </DropdownToggle>
-                                <DropdownMenu
-                                  end
-                                  className="filter-wg dropdown-menu-xl"
-                                  style={{ overflow: "visible" }}
-                                >
+                                <DropdownMenu end className="filter-wg dropdown-menu-xl" style={{ overflow: "visible" }}>
                                   <div className="dropdown-head">
                                     <span className="sub-title dropdown-title">Filter Users</span>
-                                    <a href="#more" onClick={(ev) => { ev.preventDefault(); }} className="btn btn-sm btn-icon btn-trigger">
+                                    <a
+                                      href="#more"
+                                      onClick={(ev) => {
+                                        ev.preventDefault();
+                                      }}
+                                      className="btn btn-sm btn-icon btn-trigger"
+                                    >
                                       <Icon name="more-h"></Icon>
                                     </a>
                                   </div>
                                   <div className="dropdown-body dropdown-body-rg">
                                     <Row className="gx-6 gy-3">
                                       <Col size="6">
-                                        <div className="custom-control custom-control-sm custom-checkbox">
-                                          <input
-                                            type="checkbox"
-                                            className="custom-control-input"
-                                            id="hasBalance"
-                                          />
-                                          <label className="custom-control-label" htmlFor="hasBalance">
-                                            {" "}
-                                            Have Balance
-                                          </label>
-                                        </div>
-                                      </Col>
-                                      <Col size="6">
-                                        <div className="custom-control custom-control-sm custom-checkbox">
-                                          <input
-                                            type="checkbox"
-                                            className="custom-control-input"
-                                            id="hasKYC"
-                                          />
-                                          <label className="custom-control-label" htmlFor="hasKYC">
-                                            {" "}
-                                            KYC Verified
-                                          </label>
-                                        </div>
-                                      </Col>
-                                      <Col size="6">
                                         <div className="form-group">
                                           <label className="overline-title overline-title-alt">Role</label>
-                                          <RSelect options={filterRole} placeholder="Any Role" />
+                                          <RSelect
+                                            options={roleFilterOptions}
+                                            placeholder="Any Role"
+                                            value={selectedRoleOption}
+                                            onChange={handleRoleFilterChange}
+                                          />
                                         </div>
                                       </Col>
                                       <Col size="6">
                                         <div className="form-group">
                                           <label className="overline-title overline-title-alt">Status</label>
-                                          <RSelect options={filterStatus} placeholder="Any Status" />
+                                          <RSelect
+                                            options={statusFilterOptions}
+                                            placeholder="Any Status"
+                                            value={selectedStatusOption}
+                                            onChange={handleStatusFilterChange}
+                                          />
                                         </div>
                                       </Col>
                                       <Col size="12">
-                                        <div className="form-group">
-                                          <button type="button" className="btn btn-secondary">
-                                            Filter
-                                          </button>
+                                        <div className="form-group text-end">
+                                          <Button size="sm" color="secondary" onClick={resetFilters}>
+                                            Reset Filters
+                                          </Button>
                                         </div>
                                       </Col>
                                     </Row>
                                   </div>
                                   <div className="dropdown-foot between">
-                                    <a
-                                      href="#reset"
-                                      onClick={(ev) => {
-                                        ev.preventDefault();
-                                      }}
-                                      className="clickable"
-                                    >
-                                      Reset Filter
-                                    </a>
+                                    <span className="small">Filters apply immediately</span>
                                     <a
                                       href="#save"
                                       onClick={(ev) => {
@@ -456,7 +569,7 @@ const UserListRegularPage = () => {
                               </UncontrolledDropdown>
                             </li>
                             <li>
-                              <UncontrolledDropdown >
+                              <UncontrolledDropdown>
                                 <DropdownToggle color="tranparent" className="btn btn-trigger btn-icon dropdown-toggle">
                                   <Icon name="setting"></Icon>
                                 </DropdownToggle>
@@ -465,56 +578,44 @@ const UserListRegularPage = () => {
                                     <li>
                                       <span>Show</span>
                                     </li>
-                                    <li className={itemPerPage === 10 ? "active" : ""}>
-                                      <DropdownItem
-                                        tag="a"
-                                        href="#dropdownitem"
-                                        onClick={(ev) => {
-                                          ev.preventDefault();
-                                          setItemPerPage(10);
-                                        }}
-                                      >
-                                        10
-                                      </DropdownItem>
-                                    </li>
-                                    <li className={itemPerPage === 15 ? "active" : ""}>
-                                      <DropdownItem
-                                        tag="a"
-                                        href="#dropdownitem"
-                                        onClick={(ev) => {
-                                          ev.preventDefault();
-                                          setItemPerPage(15);
-                                        }}
-                                      >
-                                        15
-                                      </DropdownItem>
-                                    </li>
+                                    {pageSizeOptions.map((size) => (
+                                      <li className={params.size === size ? "active" : ""} key={size}>
+                                        <DropdownItem
+                                          tag="a"
+                                          href="#dropdownitem"
+                                          onClick={(ev) => {
+                                            ev.preventDefault();
+                                            handlePageSizeChange(size);
+                                          }}
+                                        >
+                                          {size}
+                                        </DropdownItem>
+                                      </li>
+                                    ))}
                                   </ul>
                                   <ul className="link-check">
                                     <li>
                                       <span>Order</span>
                                     </li>
-                                    <li className={sort === "dsc" ? "active" : ""}>
+                                    <li className={sortDirection === "dsc" ? "active" : ""}>
                                       <DropdownItem
                                         tag="a"
                                         href="#dropdownitem"
                                         onClick={(ev) => {
                                           ev.preventDefault();
-                                          setSortState("dsc");
-                                          sortFunc("dsc");
+                                          handleSortChange("dsc");
                                         }}
                                       >
                                         DESC
                                       </DropdownItem>
                                     </li>
-                                    <li className={sort === "asc" ? "active" : ""}>
+                                    <li className={sortDirection === "asc" ? "active" : ""}>
                                       <DropdownItem
                                         tag="a"
                                         href="#dropdownitem"
                                         onClick={(ev) => {
                                           ev.preventDefault();
-                                          setSortState("asc");
-                                          sortFunc("asc");
+                                          handleSortChange("asc");
                                         }}
                                       >
                                         ASC
@@ -538,7 +639,7 @@ const UserListRegularPage = () => {
                       className="search-back btn-icon toggle-search active"
                       onClick={() => {
                         setSearchText("");
-                        toggle();
+                        toggleSearch();
                       }}
                     >
                       <Icon name="arrow-left"></Icon>
@@ -546,9 +647,9 @@ const UserListRegularPage = () => {
                     <input
                       type="text"
                       className="border-transparent form-focus-none form-control"
-                      placeholder="Search by user or email"
-                      value={onSearchText}
-                      onChange={(e) => onFilterChange(e)}
+                      placeholder="Search by name or email"
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
                     />
                     <Button className="search-submit btn-icon">
                       <Icon name="search"></Icon>
@@ -557,287 +658,203 @@ const UserListRegularPage = () => {
                 </div>
               </div>
             </div>
+            {error && (
+              <div className="alert alert-danger mb-0 mx-3" role="alert">
+                {error}
+              </div>
+            )}
             <DataTableBody>
               <DataTableHead>
                 <DataTableRow className="nk-tb-col-check">
                   <div className="custom-control custom-control-sm custom-checkbox notext">
-                    <input
-                      type="checkbox"
-                      className="custom-control-input"
-                      onChange={(e) => selectorCheck(e)}
-                      id="uid"
-                    />
+                    <input type="checkbox" className="custom-control-input" onChange={selectorCheck} id="uid" />
                     <label className="custom-control-label" htmlFor="uid"></label>
                   </div>
                 </DataTableRow>
                 <DataTableRow>
                   <span className="sub-text">User</span>
                 </DataTableRow>
-                <DataTableRow size="mb">
-                  <span className="sub-text">Balance</span>
+                <DataTableRow size="md">
+                  <span className="sub-text">Role</span>
                 </DataTableRow>
                 <DataTableRow size="md">
-                  <span className="sub-text">Phone</span>
-                </DataTableRow>
-                <DataTableRow size="lg">
-                  <span className="sub-text">Verified</span>
-                </DataTableRow>
-                <DataTableRow size="lg">
                   <span className="sub-text">Last Login</span>
                 </DataTableRow>
-                <DataTableRow size="md">
+                <DataTableRow size="sm">
                   <span className="sub-text">Status</span>
                 </DataTableRow>
                 <DataTableRow className="nk-tb-col-tools text-end">
-                  <UncontrolledDropdown >
-                    <DropdownToggle
-                      color="tranparent"
-                      className="btn btn-xs btn-outline-light btn-icon dropdown-toggle"
-                    >
-                      <Icon name="plus"></Icon>
-                    </DropdownToggle>
-                    <DropdownMenu end className="dropdown-menu-xs">
-                      <ul className="link-tidy sm no-bdr">
-                        <li>
-                          <div className="custom-control custom-control-sm custom-checkbox">
-                            <input type="checkbox" className="custom-control-input" id="bl" />
-                            <label className="custom-control-label" htmlFor="bl">
-                              Balance
-                            </label>
-                          </div>
-                        </li>
-                        <li>
-                          <div className="custom-control custom-control-sm custom-checkbox">
-                            <input type="checkbox" className="custom-control-input" id="ph" />
-                            <label className="custom-control-label" htmlFor="ph">
-                              Phone
-                            </label>
-                          </div>
-                        </li>
-                        <li>
-                          <div className="custom-control custom-control-sm custom-checkbox">
-                            <input type="checkbox" className="custom-control-input" id="vri" />
-                            <label className="custom-control-label" htmlFor="vri">
-                              Verified
-                            </label>
-                          </div>
-                        </li>
-                        <li>
-                          <div className="custom-control custom-control-sm custom-checkbox">
-                            <input type="checkbox" className="custom-control-input" id="st" />
-                            <label className="custom-control-label" htmlFor="st">
-                              Status
-                            </label>
-                          </div>
-                        </li>
-                      </ul>
-                    </DropdownMenu>
-                  </UncontrolledDropdown>
+                  <span className="sub-text">Actions</span>
                 </DataTableRow>
               </DataTableHead>
-              {/*Head*/}
-              {currentItems.length > 0
-                ? currentItems.map((item) => {
-                    return (
-                      <DataTableItem key={item.id}>
-                        <DataTableRow className="nk-tb-col-check">
-                          <div className="custom-control custom-control-sm custom-checkbox notext">
-                            <input
-                              type="checkbox"
-                              className="custom-control-input"
-                              defaultChecked={item.checked}
-                              id={item.id + "uid1"}
-                              key={Math.random()}
-                              onChange={(e) => onSelectChange(e, item.id)}
-                            />
-                            <label className="custom-control-label" htmlFor={item.id + "uid1"}></label>
-                          </div>
-                        </DataTableRow>
-                        <DataTableRow>
-                          <Link to={`/user-details-regular/${item.id}`}>
-                            <div className="user-card">
-                              <UserAvatar
-                                theme={item.avatarBg}
-                                text={findUpper(item.name)}
-                                image={item.image}
-                              ></UserAvatar>
-                              <div className="user-info">
-                                <span className="tb-lead">
-                                  {item.name}{" "}
-                                  <span
-                                    className={`dot dot-${
-                                      item.status === "Active"
-                                        ? "success"
-                                        : item.status === "Pending"
-                                        ? "warning"
-                                        : "danger"
-                                    } d-md-none ms-1`}
-                                  ></span>
-                                </span>
-                                <span>{item.email}</span>
-                              </div>
+              {loading ? (
+                <DataTableItem>
+                  <DataTableRow className="w-100 text-center py-4">
+                    <div className="text-center w-100">Loading users...</div>
+                  </DataTableRow>
+                </DataTableItem>
+              ) : currentItems.length > 0 ? (
+                currentItems.map((item) => {
+                  const detailLink = `/user-details-regular/${item.uuid || item.id}`;
+                  const isActive = item.raw?.is_active;
+                  const canManage = canManageUser(item);
+                  const canChangeRole = normalizedCurrentRole === "super_admin";
+                  return (
+                    <DataTableItem key={item.id}>
+                      <DataTableRow className="nk-tb-col-check">
+                        <div className="custom-control custom-control-sm custom-checkbox notext">
+                          <input
+                            type="checkbox"
+                            className="custom-control-input"
+                            checked={item.checked && canManage}
+                            onChange={canManage ? (e) => onSelectChange(e, item.id) : undefined}
+                            disabled={!canManage}
+                            id={`${item.id}-uid`}
+                          />
+                          <label className="custom-control-label" htmlFor={`${item.id}-uid`}></label>
+                        </div>
+                      </DataTableRow>
+                      <DataTableRow>
+                        <Link to={detailLink}>
+                          <div className="user-card">
+                            <UserAvatar
+                              className="sm"
+                              theme={item.avatarBg || "primary"}
+                              text={findUpper(item.name || "U")}
+                            ></UserAvatar>
+                            <div className="user-info">
+                              <span className="tb-lead">
+                                {item.name} <span className="dot dot-success d-md-none ms-1"></span>
+                              </span>
+                              <span>{item.email}</span>
                             </div>
-                          </Link>
-                        </DataTableRow>
-                        <DataTableRow size="mb">
-                          <span className="tb-amount">
-                            {item.balance} <span className="currency">USD</span>
-                          </span>
-                        </DataTableRow>
-                        <DataTableRow size="md">
-                          <span>{item.phone}</span>
-                        </DataTableRow>
-                        <DataTableRow size="lg">
-                          <ul className="list-status">
-                            <li>
-                              <Icon
-                                className={`text-${
-                                  item.emailStatus === "success"
-                                    ? "success"
-                                    : item.emailStatus === "pending"
-                                    ? "info"
-                                    : "secondary"
-                                }`}
-                                name={`${
-                                  item.emailStatus === "success"
-                                    ? "check-circle"
-                                    : item.emailStatus === "alert"
-                                    ? "alert-circle"
-                                    : "alarm-alt"
-                                }`}
-                              ></Icon>{" "}
-                              <span>Email</span>
-                            </li>
-                            <li>
-                              <Icon
-                                className={`text-${
-                                  item.kycStatus === "success"
-                                    ? "success"
-                                    : item.kycStatus === "pending"
-                                    ? "info"
-                                    : item.kycStatus === "warning"
-                                    ? "warning"
-                                    : "secondary"
-                                }`}
-                                name={`${
-                                  item.kycStatus === "success"
-                                    ? "check-circle"
-                                    : item.kycStatus === "pending"
-                                    ? "alarm-alt"
-                                    : "alert-circle"
-                                }`}
-                              ></Icon>{" "}
-                              <span>KYC</span>
-                            </li>
-                          </ul>
-                        </DataTableRow>
-                        <DataTableRow size="lg">
-                          <span>{item.lastLogin}</span>
-                        </DataTableRow>
-                        <DataTableRow size="md">
-                          <span
-                            className={`tb-status text-${
-                              item.status === "Active" ? "success" : item.status === "Pending" ? "warning" : "danger"
-                            }`}
-                          >
-                            {item.status}
-                          </span>
-                        </DataTableRow>
-                        <DataTableRow className="nk-tb-col-tools">
-                          <ul className="nk-tb-actions gx-1">
-                            <li className="nk-tb-action-hidden" onClick={() => onEditClick(item.id)}>
-                              <TooltipComponent
-                                tag="a"
-                                containerClassName="btn btn-trigger btn-icon"
-                                id={"edit" + item.id}
-                                icon="edit-alt-fill"
-                                direction="top"
-                                text="Edit"
-                              />
-                            </li>
-                            {item.status !== "Suspend" && (
-                              <React.Fragment>
-                                <li className="nk-tb-action-hidden" onClick={() => suspendUser(item.id)}>
-                                  <TooltipComponent
-                                    tag="a"
-                                    containerClassName="btn btn-trigger btn-icon"
-                                    id={"suspend" + item.id}
-                                    icon="user-cross-fill"
-                                    direction="top"
-                                    text="Suspend"
-                                  />
-                                </li>
-                              </React.Fragment>
-                            )}
-                            <li>
-                              <UncontrolledDropdown >
-                                <DropdownToggle tag="a" className="dropdown-toggle btn btn-icon btn-trigger">
-                                  <Icon name="more-h"></Icon>
-                                </DropdownToggle>
-                                <DropdownMenu end>
-                                  <ul className="link-list-opt no-bdr">
-                                    <li onClick={() => onEditClick(item.id)}>
-                                      <DropdownItem
-                                        tag="a"
-                                        href="#edit"
-                                        onClick={(ev) => {
-                                          ev.preventDefault();
-                                        }}
-                                      >
-                                        <Icon name="edit"></Icon>
-                                        <span>Edit</span>
-                                      </DropdownItem>
-                                    </li>
-                                    {item.status !== "Suspend" && (
-                                      <React.Fragment>
-                                        <li className="divider"></li>
-                                        <li onClick={() => suspendUser(item.id)}>
-                                          <DropdownItem
-                                            tag="a"
-                                            href="#suspend"
-                                            onClick={(ev) => {
-                                              ev.preventDefault();
-                                            }}
-                                          >
-                                            <Icon name="na"></Icon>
-                                            <span>Suspend User</span>
-                                          </DropdownItem>
-                                        </li>
-                                      </React.Fragment>
-                                    )}
-                                  </ul>
-                                </DropdownMenu>
-                              </UncontrolledDropdown>
-                            </li>
-                          </ul>
-                        </DataTableRow>
-                      </DataTableItem>
-                    );
-                  })
-                : null}
+                          </div>
+                        </Link>
+                      </DataTableRow>
+                      <DataTableRow size="md">
+                        <span className="badge badge-dim badge-info text-capitalize">{item.role || "user"}</span>
+                      </DataTableRow>
+                      <DataTableRow size="md">
+                        <span className="tb-sub">{formatLastLogin(item.raw?.last_login)}</span>
+                      </DataTableRow>
+                      <DataTableRow size="sm">
+                        <span className={`badge badge-dim ${isActive ? "badge-success" : "badge-danger"}`}>
+                          {isActive ? "Active" : "Inactive"}
+                        </span>
+                      </DataTableRow>
+                      <DataTableRow className="nk-tb-col-tools">
+                        <ul className="nk-tb-actions gx-1">
+                          <li className="nk-tb-action-hidden">
+                            <TooltipComponent icon="eye" direction="top" text="View Details">
+                              <Link to={detailLink} className="btn btn-trigger btn-icon">
+                                <Icon name="eye"></Icon>
+                              </Link>
+                            </TooltipComponent>
+                          </li>
+                          <li className="nk-tb-action-hidden">
+                            <TooltipComponent
+                              icon="user-check"
+                              direction="top"
+                              text={isActive ? "Deactivate user" : "Activate user"}
+                            >
+                              <Button
+                                className="btn btn-trigger btn-icon"
+                                onClick={canManage ? () => handleToggleUserStatus(item) : undefined}
+                                disabled={isMutating || !canManage}
+                                color="transparent"
+                              >
+                                <Icon name={isActive ? "user-cross" : "user-check"}></Icon>
+                              </Button>
+                            </TooltipComponent>
+                          </li>
+                          <li>
+                            <UncontrolledDropdown>
+                              <DropdownToggle tag="a" className="dropdown-toggle btn btn-icon btn-trigger">
+                                <Icon name="more-h"></Icon>
+                              </DropdownToggle>
+                              <DropdownMenu end>
+                                <DropdownItem tag={Link} to={detailLink}>
+                                  <Icon name="eye"></Icon>
+                                  <span>View</span>
+                                </DropdownItem>
+                                {canChangeRole && (
+                                  <DropdownItem
+                                    href="#change-role"
+                                    onClick={(ev) => {
+                                      ev.preventDefault();
+                                      if (canChangeRole) {
+                                        openRoleModal(item);
+                                      }
+                                    }}
+                                  >
+                                    <Icon name="shield"></Icon>
+                                    <span>Change Role</span>
+                                  </DropdownItem>
+                                )}
+                                <DropdownItem
+                                  href="#toggle"
+                                  onClick={(ev) => {
+                                    ev.preventDefault();
+                                    if (canManage) {
+                                      handleToggleUserStatus(item);
+                                    }
+                                  }}
+                                  disabled={!canManage}
+                                >
+                                  <Icon name="repeat"></Icon>
+                                  <span>{isActive ? "Set Inactive" : "Activate"}</span>
+                                </DropdownItem>
+                                <DropdownItem
+                                  href="#deactivate"
+                                  onClick={(ev) => {
+                                    ev.preventDefault();
+                                    if (canManage) {
+                                      handleDeactivateUser(item);
+                                    }
+                                  }}
+                                  disabled={!canManage}
+                                >
+                                  <Icon name="user-cross"></Icon>
+                                  <span>Deactivate</span>
+                                </DropdownItem>
+                              </DropdownMenu>
+                            </UncontrolledDropdown>
+                          </li>
+                        </ul>
+                      </DataTableRow>
+                    </DataTableItem>
+                  );
+                })
+              ) : (
+                <DataTableItem>
+                  <DataTableRow className="w-100 text-center py-4">
+                    <div className="text-center w-100">No users found</div>
+                  </DataTableRow>
+                </DataTableItem>
+              )}
             </DataTableBody>
             <div className="card-inner">
-              {currentItems.length > 0 ? (
-                <PaginationComponent
-                  itemPerPage={itemPerPage}
-                  totalItems={data.length}
-                  paginate={paginate}
-                  currentPage={currentPage}
-                />
-              ) : (
-                <div className="text-center">
-                  <span className="text-silent">No data found</span>
-                </div>
-              )}
+              <PaginationComponent
+                itemPerPage={params.size || 10}
+                totalItems={totalUsers}
+                paginate={handlePageChange}
+                currentPage={meta?.page || 1}
+              />
             </div>
           </DataTable>
         </Block>
-
-        <AddModal modal={modal.add} formData={formData} setFormData={setFormData} closeModal={closeModal} onSubmit={onFormSubmit} filterStatus={filterStatus} />
-        <EditModal modal={modal.edit} formData={editFormData} setFormData={setEditFormData} closeModal={closeEditModal} onSubmit={onEditSubmit} filterStatus={filterStatus} />
-        
+        {selectedUserForRole && (
+          <RoleModal
+            isOpen={roleModalOpen}
+            onClose={closeRoleModal}
+            userUuid={selectedUserForRole.uuid}
+            currentRole={selectedUserForRole.raw?.role || selectedUserForRole.role?.toLowerCase()}
+            onRoleChange={handleRoleUpdated}
+          />
+        )}
       </Content>
     </React.Fragment>
   );
 };
+
 export default UserListRegularPage;

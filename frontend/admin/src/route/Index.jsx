@@ -83,9 +83,7 @@ import SVGIconPage from "@/pages/components/crafted-icons/SvgIcons";
 import ProjectCardPage from "@/pages/pre-built/projects/ProjectCard";
 import ProjectListPage from "@/pages/pre-built/projects/ProjectList";
 import UserListRegular from "@/pages/pre-built/user-manage/UserListRegular";
-import UserContactCard from "@/pages/pre-built/user-manage/UserContactCard";
 import UserDetails from "@/pages/pre-built/user-manage/UserDetailsRegular";
-import UserListCompact from "@/pages/pre-built/user-manage/UserListCompact";
 import UserProfileRegular from "@/pages/pre-built/user-manage/UserProfileRegular";
 import UserProfileSetting from "@/pages/pre-built/user-manage/UserProfileSetting";
 import UserProfileNotification from "@/pages/pre-built/user-manage/UserProfileNotification";
@@ -141,6 +139,7 @@ import Layout from "@/layout/Index";
 import LayoutNoSidebar from "@/layout/Index-nosidebar";
 import ThemeProvider from "@/layout/provider/Theme";
 import PrivateRoute from "@/route/PrivateRoute";
+import RoleRoute from "@/route/RoleRoute";
 
 const ScrollToTop = (props) => {
   const location = useLocation();
@@ -170,10 +169,9 @@ const Router = () => {
 
               
               <Route element={<UserContextProvider />} >
-                <Route path="user-list-regular" element={<UserListRegular />}></Route>
-                <Route path="user-list-compact" element={<UserListCompact />}></Route>
-                <Route path="user-contact-card" element={<UserContactCard />}></Route>
-                <Route path="user-details-regular/:userId" element={<UserDetails />}></Route>
+                {/* Admin (and super-admin) only */}
+                <Route path="user-list-regular" element={<RoleRoute allowedRoles={['admin']}><UserListRegular /></RoleRoute>}></Route>
+                <Route path="user-details-regular/:userId" element={<RoleRoute allowedRoles={['admin']}><UserDetails /></RoleRoute>}></Route>
               </Route>
 
               <Route >
@@ -194,9 +192,9 @@ const Router = () => {
               <Route path="posts-edit/:postId" element={<PostForm />}></Route>
               <Route path="posts-detail" element={<PostDetail />}></Route>
 
-              {/* Content Moderation Routes */}
-              <Route path="moderation/comments" element={<CommentModeration />}></Route>
-              <Route path="moderation/reports" element={<PostReports />}></Route>
+              {/* Content Moderation Routes - moderator and above */}
+              <Route path="moderation/comments" element={<RoleRoute allowedRoles={['moderator']}><CommentModeration /></RoleRoute>}></Route>
+              <Route path="moderation/reports" element={<RoleRoute allowedRoles={['moderator']}><PostReports /></RoleRoute>}></Route>
 
               {/* Notifications Route */}
               <Route path="notifications" element={<NotificationsPage />}></Route>

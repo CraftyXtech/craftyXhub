@@ -3,7 +3,7 @@ from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from models import Post, Category, Tag, User, Report, Comment
 from models.base import post_likes, post_bookmarks
 from schemas.post import (
@@ -167,7 +167,8 @@ class PostService:
             query = select(Post).where(Post.is_published == True)
             query = PostService._apply_post_relationships(query)
             query = PostService._add_soft_delete_filter(query, include_deleted)
-            query = query.where(Post.created_at >= datetime.now(timezone.utc) - timedelta(days=7))
+            # Use timezone-naive datetimes to match the database column type
+            query = query.where(Post.created_at >= datetime.utcnow() - timedelta(days=7))
             query = query.outerjoin(like_count_subquery, Post.id == like_count_subquery.c.post_id)
             query = query.order_by((Post.view_count + func.coalesce(like_count_subquery.c.like_count, 0)).desc())
             query = query.offset(skip).limit(limit)

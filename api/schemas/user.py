@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, validator, Field, EmailStr, computed_field
+from pydantic import BaseModel, EmailStr, validator, Field, computed_field
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -6,6 +6,7 @@ from uuid import UUID
 from .base import TimestampMixin, BaseSchema
 
 class UserRole(str, Enum):
+    SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
     MODERATOR = "moderator"
     USER = "user"
@@ -39,13 +40,15 @@ class UserLogin(BaseModel):
 
 class UserResponse(BaseModel):
     uuid: str
+    email: EmailStr
     username: str
     full_name: str
-    # email: str
-    # is_active: bool
-    # role: str
-    # created_at: datetime
-    # updated_at: datetime
+    is_active: bool
+    is_verified: bool
+    role: UserRole
+    last_login: Optional[datetime] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
     @computed_field
     @property
@@ -91,20 +94,18 @@ class ProfileBase(BaseModel):
     birth_date: Optional[datetime] = None
     follower_notifications: Optional[bool] = True
 
+
 class ProfileCreate(ProfileBase):
     pass
+
 
 class ProfileUpdate(ProfileBase):
     avatar: Optional[str] = None
 
+
 class ProfileResponse(ProfileBase, TimestampMixin, BaseSchema):
     uuid: str
 
-class ProfileCreate(ProfileBase):
-    pass
-
-class ProfileUpdate(ProfileBase):
-    pass
 
 class UserWithProfileResponse(UserResponse):
     profile: Optional[ProfileResponse] = None
@@ -149,3 +150,66 @@ class MediaResponse(BaseModel):
     
 class MediaUpdateRequest(BaseModel):
     description: Optional[str]
+
+
+class AdminUserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    username: Optional[str] = Field(None, min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")
+    full_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    is_verified: Optional[bool] = None
+
+
+class UserRoleUpdate(BaseModel):
+    role: UserRole
+    reason: Optional[str] = None
+
+
+class UserStatusUpdate(BaseModel):
+    is_active: bool
+
+
+class AdminUserResponse(UserWithProfileResponse):
+    class Config:
+        from_attributes = True
+
+
+class AdminUserListResponse(BaseModel):
+    users: List[AdminUserResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
+    has_next: bool
+    has_prev: bool
+
+
+class AdminUserStatsResponse(BaseModel):
+    total_users: int
+    active_users: int
+    inactive_users: int
+    admin_count: int
+    moderator_count: int
+    user_count: int
+    recent_registrations: int
+
+
+class UserRoleChangeResponse(BaseModel):
+    uuid: str
+    old_role: UserRole
+    new_role: UserRole
+    reason: Optional[str] = None
+    created_at: datetime
+    changed_by: Optional[UserResponse] = None
+
+    class Config:
+        from_attributes = True
+
+
+class UserRoleChangeListResponse(BaseModel):
+    changes: List[UserRoleChangeResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
+    has_next: bool
+    has_prev: bool
