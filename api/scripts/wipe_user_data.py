@@ -28,7 +28,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 # Ensure project imports work when this script is executed directly.
-sys.path.insert(0, "/home/wetende/Projects/craftyxhub/api")
+from pathlib import Path
+PROJECT_ROOT = Path(__file__).resolve().parents[1]  # points to the `api/` directory
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from core.config import settings  # type: ignore
 
