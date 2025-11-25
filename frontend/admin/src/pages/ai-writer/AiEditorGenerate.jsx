@@ -24,6 +24,7 @@ const AiEditorGenerate = () => {
   const location = useLocation();
   const { documentId } = useParams();
   const editorRef = useRef(null);
+  const [editorReady, setEditorReady] = useState(false);
   const theme = useTheme();
   const [documentTitle, setDocumentTitle] = useState('Untitled Draft');
   const [content, setContent] = useState('');
@@ -35,14 +36,19 @@ const AiEditorGenerate = () => {
   const { addDraft, updateDraft, getDraftById } = useAiDrafts();
 
   useEffect(() => {
-    if (documentId) {
-      const draft = getDraftById(documentId);
-      if (draft) {
-        setDocumentTitle(draft.name);
-        setContent(draft.content);
-      }
+    if (!documentId || !editorReady || !editorRef.current) {
+      return;
     }
-  }, [documentId, getDraftById]);
+
+    const draft = getDraftById(documentId);
+    if (!draft) {
+      return;
+    }
+
+    setDocumentTitle(draft.name);
+    setContent(draft.content);
+    editorRef.current.setContent(draft.content);
+  }, [documentId, getDraftById, editorReady]);
 
   useEffect(() => {
     setWordCount(textUtils.countWords(content));
@@ -171,19 +177,23 @@ const AiEditorGenerate = () => {
                 <CardBody className="card-inner">
                   <Editor
                     licenseKey="gpl"
-                    onInit={(evt, editor) => (editorRef.current = editor)}
+                    onInit={(evt, editor) => {
+                      editorRef.current = editor;
+                      setEditorReady(true);
+                    }}
                     initialValue={content}
-                    value={content}
                     onEditorChange={(newContent) => setContent(newContent)}
                     init={{
                       height: 600,
                       menubar: false,
                       toolbar:
                         'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat',
-                      content_style: theme.skin === 'dark' ? 
-                        'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; color: #fff; background-color: #1a1a1a; }' : 
-                        'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; color: #000; background-color: #fff; }',
-                      branding: false
+                      content_style:
+                        theme.skin === 'dark'
+                          ? 'body { direction: ltr; text-align: left; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; color: #fff; background-color: #1a1a1a; }'
+                          : 'body { direction: ltr; text-align: left; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; color: #000; background-color: #fff; }',
+                      branding: false,
+                      directionality: 'ltr',
                     }}
                   />
                 </CardBody>

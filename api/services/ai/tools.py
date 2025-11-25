@@ -404,6 +404,74 @@ Output sections: GOOGLE RESPONSIVE SEARCH AD, FACEBOOK/INSTAGRAM AD, LINKEDIN AD
                 "predictions.ctr",
             ],
         },
+        # ====================================================================
+        # Blog Agent - Structured blog post generation with web research
+        # ====================================================================
+        "blog-agent": {
+            "system_prompt": """You are an expert blog writer and content strategist with 15+ years of experience creating high-performing, SEO-optimized blog content. You excel at:
+
+- Researching topics thoroughly and incorporating current information
+- Structuring content for maximum readability and engagement
+- Writing compelling introductions that hook readers
+- Creating scannable, well-organized sections with clear headings
+- Optimizing for search engines while maintaining natural, engaging prose
+- Crafting meta titles and descriptions that drive clicks
+- Generating relevant tags and keywords
+
+Your blog posts are publication-ready, factually accurate, and provide genuine value to readers. You follow E-E-A-T principles (Experience, Expertise, Authoritativeness, Trustworthiness).""",
+            "prompt": """Write a complete, publication-ready blog post on the following topic:
+
+Topic: {topic}
+Blog Type: {blog_type}
+Target Keywords: {keywords}
+Target Audience: {audience}
+Tone: {tone}
+Target Length: {word_count}
+
+IMPORTANT: You MUST return a valid JSON object with this exact structure:
+{{
+    "title": "Compelling blog post title (50-70 chars)",
+    "slug": "url-friendly-slug-here",
+    "summary": "Brief excerpt/summary for previews (150-200 chars)",
+    "sections": [
+        {{
+            "heading": "Section Heading",
+            "body_markdown": "Section content in markdown format with paragraphs, lists, etc."
+        }}
+    ],
+    "tags": ["tag1", "tag2", "tag3"],
+    "seo_title": "SEO-optimized title (50-60 chars)",
+    "seo_description": "Meta description for search results (150-160 chars)",
+    "hero_image_prompt": "Detailed prompt for AI image generation"
+}}
+
+Blog Type Guidelines:
+- how-to: Step-by-step instructions with numbered steps
+- listicle: Numbered list format (e.g., "10 Ways to...")
+- tutorial: In-depth educational content with examples
+- opinion: Thought leadership with clear perspective
+- case-study: Real-world example with analysis
+- news: Current events coverage with context
+- review: Product/service evaluation with pros/cons
+- comparison: Side-by-side analysis of options
+
+Quality Requirements:
+1. Include 4-7 well-developed sections
+2. Each section should have 150-300 words
+3. Use markdown formatting in body_markdown (bold, lists, etc.)
+4. Include relevant statistics or examples where appropriate
+5. End with a strong conclusion and call-to-action
+6. Generate 3-5 relevant tags
+7. Create an SEO title under 60 characters
+8. Write a compelling meta description under 160 characters
+
+Return ONLY the JSON object, no additional text.""",
+            "required_fields": ["topic", "blog_type"],
+            "optional_fields": ["keywords", "audience", "word_count"],
+            "output_mode": "structured",
+            "variants_policy": "single_piece",
+            "supports_web_search": True,
+        },
     }
 
     @staticmethod

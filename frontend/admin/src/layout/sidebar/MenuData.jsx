@@ -101,6 +101,11 @@ const menu = [
         link: "/ai-writer/dashboard",
       },
       {
+        text: "Blog Agent",
+        link: "/ai-writer/blog-agent",
+        badge: "new",
+      },
+      {
         text: "Drafts",
         link: "/ai-writer/documents",
       },

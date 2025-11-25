@@ -23,6 +23,7 @@ import AiDocuments from "@/pages/ai-writer/AiDocuments";
 import AiEditor from "@/pages/ai-writer/AiEditor";
 import AiTools from "@/pages/ai-writer/AiTools";
 import AiEditorGenerate from "@/pages/ai-writer/AiEditorGenerate";
+import BlogAgent from "@/pages/ai-writer/BlogAgent";
 
 
 
@@ -216,6 +217,7 @@ const Router = () => {
                   <Route path=":documentId" element={<AiEditor />}></Route>
                 </Route>
                 <Route path="tools" element={<AiTools />}></Route>
+                <Route path="blog-agent" element={<BlogAgent />}></Route>
               </Route>
 
               <Route path="pages">

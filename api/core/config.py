@@ -52,18 +52,31 @@ class Settings:
         ),
     )
     # Parse origins, filtering out empty strings and malformed entries
-    _parsed_origins = [o.strip() for o in _origins.split(",") if o.strip() and not o.strip().endswith(">")]
+    _parsed_origins = [
+        o.strip() for o in _origins.split(",") if o.strip() and not o.strip().endswith(">")
+    ]
+
     # Always ensure admin subdomain is included for production
     _required_production_origins = [
         "https://craftyxhub.com",
         "https://www.craftyxhub.com",
         "https://admin.craftyxhub.com",
     ]
+
+    # Standard development origins (React, Vite)
+    _default_dev_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
     ALLOWED_ORIGINS = (
-        list(set(_parsed_origins + _required_production_origins)) if _parsed_origins else [
-            "http://localhost:3000",
-            "https://admin.craftyxhub.com",
-        ]
+        # If we have at least one valid origin from env, merge with required production origins
+        list(set(_parsed_origins + _required_production_origins))
+        # Otherwise, fall back to dev-friendly localhost origins plus production domains
+        if _parsed_origins
+        else _default_dev_origins + _required_production_origins
     )
 
     ALLOW_ORIGIN_REGEX: str | None = os.getenv("ALLOW_ORIGIN_REGEX") or None

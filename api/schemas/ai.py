@@ -70,3 +70,85 @@ class DraftListResponse(BaseModel):
     page: int
     size: int
 
+
+# ============================================================================
+# Blog Agent Schemas
+# ============================================================================
+
+class BlogSection(BaseModel):
+    """A single section of a blog post."""
+    heading: str = Field(..., description="Section heading (H2)")
+    body_markdown: str = Field(..., description="Section content in markdown")
+
+
+class BlogPost(BaseModel):
+    """Structured blog post output from the Blog Agent."""
+    title: str = Field(..., description="Blog post title")
+    slug: str = Field(..., description="URL-friendly slug")
+    summary: str = Field(..., description="Brief summary/excerpt (150-200 chars)")
+    sections: List[BlogSection] = Field(..., description="List of content sections")
+    tags: List[str] = Field(default_factory=list, description="Relevant tags")
+    seo_title: str = Field(..., description="SEO meta title (50-60 chars)")
+    seo_description: str = Field(..., description="SEO meta description (150-160 chars)")
+    hero_image_prompt: Optional[str] = Field(
+        default=None, description="AI image generation prompt for hero image"
+    )
+
+
+class BlogGenerateRequest(BaseModel):
+    """Request to generate a complete blog post."""
+    topic: str = Field(..., min_length=3, max_length=500, description="Blog topic or title idea")
+    blog_type: Literal[
+        "how-to", "listicle", "tutorial", "opinion", "case-study", "news", "review", "comparison"
+    ] = Field(default="how-to", description="Type of blog post to generate")
+    keywords: Optional[List[str]] = Field(
+        default=None, description="Target SEO keywords"
+    )
+    audience: Optional[str] = Field(
+        default=None, description="Target audience description"
+    )
+    word_count: Optional[Literal["short", "medium", "long", "very-long"]] = Field(
+        default="medium", description="Target length"
+    )
+    tone: Optional[str] = Field(default="professional", description="Writing tone")
+    language: Optional[str] = Field(default="en-US", description="Output language")
+    model: str = Field(
+        default="gpt-5-mini",
+        description="AI model (gpt-5-mini, gpt-4o, gemini, grok, deepseek-v3)"
+    )
+    creativity: Optional[float] = Field(
+        default=0.7, ge=0.0, le=1.0, description="Creativity/temperature"
+    )
+    use_web_search: Optional[bool] = Field(
+        default=True, description="Enable web search for research (if model supports)"
+    )
+    # Save/publish options
+    save_draft: Optional[bool] = Field(
+        default=True, description="Save as AI draft"
+    )
+    publish_post: Optional[bool] = Field(
+        default=False, description="Publish directly to Posts"
+    )
+    category_id: Optional[int] = Field(
+        default=None, description="Category ID for publishing"
+    )
+    is_published: Optional[bool] = Field(
+        default=False, description="Set published status when creating post"
+    )
+
+
+class BlogGenerateResponse(BaseModel):
+    """Response from blog generation."""
+    blog_post: BlogPost = Field(..., description="Generated blog post")
+    draft_id: Optional[str] = Field(
+        default=None, description="AI Draft UUID if saved"
+    )
+    post_id: Optional[str] = Field(
+        default=None, description="Post UUID if published"
+    )
+    model_used: str = Field(..., description="AI model used")
+    generation_time: float = Field(..., description="Time taken in seconds")
+    web_search_used: bool = Field(
+        default=False, description="Whether web search was used"
+    )
+

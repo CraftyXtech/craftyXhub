@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.connection import get_db_session
 from services.user.auth import get_current_active_user
-from services.ai import AIGeneratorService, AIDraftService
+from services.ai import AIGeneratorService, AIDraftService, BlogAgentService
+from services.post import PostService
 from schemas.ai import (
     GenerateRequest,
     GenerateResponse,
@@ -10,7 +11,11 @@ from schemas.ai import (
     DraftUpdateRequest,
     DraftResponse,
     DraftListResponse,
+    BlogGenerateRequest,
+    BlogGenerateResponse,
+    BlogPost,
 )
+from schemas.post import PostCreate, TagCreate
 from models import User
 from typing import List
 
@@ -313,3 +318,150 @@ async def delete_draft(
             status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found"
         )
     return None
+
+
+# ============================================================================
+# Blog Agent Endpoints
+# ============================================================================
+
+
+@router.post("/generate/blog", response_model=BlogGenerateResponse)
+async def generate_blog(
+    request: BlogGenerateRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """
+    Generate a complete, structured blog post using the Blog Agent.
+    
+    This endpoint uses PydanticAI to generate publication-ready blog posts with:
+    - Structured sections with headings and markdown content
+    - SEO-optimized title and meta description
+    - Relevant tags
+    - Optional hero image prompt
+    
+    Options:
+    - save_draft: Save the generated content as an AI draft
+    - publish_post: Create a post directly in the Posts system
+    - use_web_search: Enable web search for research (model-dependent)
+    """
+    try:
+        # Initialize the blog agent service
+        blog_agent = BlogAgentService()
+
+        # Generate the blog post
+        blog_post, generation_time, web_search_used = await blog_agent.generate(
+            topic=request.topic,
+            blog_type=request.blog_type,
+            keywords=request.keywords,
+            audience=request.audience,
+            word_count=request.word_count or "medium",
+            tone=request.tone or "professional",
+            language=request.language or "en-US",
+            model=request.model,
+            creativity=request.creativity or 0.7,
+            use_web_search=request.use_web_search if request.use_web_search is not None else True,
+        )
+
+        draft_id = None
+        post_id = None
+
+        # Save as AI draft if requested
+        if request.save_draft:
+            try:
+                # Convert blog post to markdown for draft content
+                draft_content = blog_agent.blog_post_to_markdown(blog_post)
+                
+                draft_data = DraftSaveRequest(
+                    name=blog_post.title,
+                    content=draft_content,
+                    tool_id="blog-agent",
+                    model_used=request.model,
+                    favorite=False,
+                    draft_metadata={
+                        "blog_type": request.blog_type,
+                        "seo_title": blog_post.seo_title,
+                        "seo_description": blog_post.seo_description,
+                        "tags": blog_post.tags,
+                        "slug": blog_post.slug,
+                        "web_search_used": web_search_used,
+                    },
+                )
+                saved_draft = await AIDraftService.create_draft(
+                    draft_data, current_user.id, db
+                )
+                draft_id = saved_draft.uuid
+            except Exception as draft_error:
+                # Log but don't fail the whole request
+                print(f"Warning: Failed to save draft: {draft_error}")
+
+        # Publish as post if requested
+        if request.publish_post:
+            try:
+                # Convert blog post to HTML for post content
+                html_content = blog_agent.blog_post_to_html(blog_post)
+
+                # Calculate reading time (average 200 words per minute)
+                word_count = sum(
+                    len(section.body_markdown.split())
+                    for section in blog_post.sections
+                )
+                reading_time = max(1, word_count // 200)
+
+                # Create tags if they don't exist and get their IDs
+                tag_ids = []
+                for tag_name in blog_post.tags[:5]:  # Limit to 5 tags
+                    try:
+                        # Try to create or get existing tag
+                        existing_tag = await PostService.get_tag_by_slug(
+                            db, tag_name.lower().replace(" ", "-")
+                        )
+                        if existing_tag:
+                            tag_ids.append(existing_tag.id)
+                        else:
+                            tag_data = TagCreate(name=tag_name)
+                            new_tag = await PostService.create_tag(db, tag_data)
+                            tag_ids.append(new_tag.id)
+                    except Exception:
+                        # Skip tag if creation fails
+                        pass
+
+                # Create the post
+                post_data = PostCreate(
+                    title=blog_post.title,
+                    slug=blog_post.slug,
+                    content=html_content,
+                    excerpt=blog_post.summary,
+                    meta_title=blog_post.seo_title,
+                    meta_description=blog_post.seo_description,
+                    category_id=request.category_id,
+                    tag_ids=tag_ids,
+                    reading_time=reading_time,
+                    is_published=request.is_published if request.is_published is not None else False,
+                    is_featured=False,
+                )
+
+                created_post = await PostService.create_post(
+                    db, post_data, current_user.id
+                )
+                post_id = created_post.uuid
+            except Exception as post_error:
+                # Log but don't fail the whole request
+                print(f"Warning: Failed to create post: {post_error}")
+
+        return BlogGenerateResponse(
+            blog_post=blog_post,
+            draft_id=draft_id,
+            post_id=post_id,
+            model_used=request.model,
+            generation_time=round(generation_time, 2),
+            web_search_used=web_search_used,
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Blog generation failed: {str(e)}",
+        )

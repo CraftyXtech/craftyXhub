@@ -1,4 +1,16 @@
 export const AI_TOOLS = [
+  // Blog Agent - Featured at top
+  {
+    id: 'blog-agent',
+    category: 'Writing',
+    icon: 'article',
+    title: 'Blog Agent',
+    description: 'Generate complete blog posts with research, SEO, and direct publishing',
+    fields: ['topic', 'blog_type', 'keywords', 'audience', 'word_count'],
+    color: 'danger',
+    featured: true,
+    isAgent: true
+  },
   // Writing
   {
     id: 'blog-ideas',
@@ -184,6 +196,24 @@ export const LENGTH_OPTIONS = [
   { value: 'medium', label: 'Medium (100-300 words)' },
   { value: 'long', label: 'Long (300-500 words)' },
   { value: 'very-long', label: 'Very Long (500+ words)' }
+];
+
+export const BLOG_TYPE_OPTIONS = [
+  { value: 'how-to', label: 'How-To Guide', description: 'Step-by-step instructions' },
+  { value: 'listicle', label: 'Listicle', description: 'Numbered list format (e.g., "10 Ways to...")' },
+  { value: 'tutorial', label: 'Tutorial', description: 'In-depth educational content' },
+  { value: 'opinion', label: 'Opinion Piece', description: 'Thought leadership with perspective' },
+  { value: 'case-study', label: 'Case Study', description: 'Real-world example with analysis' },
+  { value: 'news', label: 'News Article', description: 'Current events coverage' },
+  { value: 'review', label: 'Review', description: 'Product/service evaluation' },
+  { value: 'comparison', label: 'Comparison', description: 'Side-by-side analysis' }
+];
+
+export const BLOG_LENGTH_OPTIONS = [
+  { value: 'short', label: 'Short (800-1200 words)' },
+  { value: 'medium', label: 'Medium (1500-2500 words)' },
+  { value: 'long', label: 'Long (2500-4000 words)' },
+  { value: 'very-long', label: 'Very Long (4000+ words)' }
 ];
 
 export const getToolById = (id) => {

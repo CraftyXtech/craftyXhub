@@ -25,6 +25,7 @@ const AiEditor = () => {
   const location = useLocation();
   const { documentId } = useParams();
   const editorRef = useRef(null);
+  const [editorReady, setEditorReady] = useState(false);
   const theme = useTheme();
   const isEditMode = !!documentId;
   
@@ -46,21 +47,28 @@ const AiEditor = () => {
     }
   }, [location.state, isEditMode]);
 
-  // Load draft if in edit mode
+  // Load draft if in edit mode, once editor is ready
   useEffect(() => {
-    if (isEditMode && documentId) {
-      const draft = getDraftById(documentId);
-      if (draft) {
-        setDocumentTitle(draft.name);
-        setContent(draft.content);
-        setIsFavorite(draft.favorite || false);
-        if (draft.tool_id) {
-          const tool = AI_TOOLS.find(t => t.id === draft.tool_id);
-          setSelectedTool(tool);
-        }
-      }
+    if (!isEditMode || !documentId || !editorReady || !editorRef.current) {
+      return;
     }
-  }, [documentId, isEditMode, getDraftById]);
+
+    const draft = getDraftById(documentId);
+    if (!draft) {
+      return;
+    }
+
+    setDocumentTitle(draft.name);
+    setContent(draft.content);
+    setIsFavorite(draft.favorite || false);
+
+    if (draft.tool_id) {
+      const tool = AI_TOOLS.find((t) => t.id === draft.tool_id);
+      setSelectedTool(tool);
+    }
+
+    editorRef.current.setContent(draft.content);
+  }, [documentId, isEditMode, getDraftById, editorReady]);
 
   // Update word and character count
   useEffect(() => {
@@ -271,9 +279,11 @@ const AiEditor = () => {
                 <CardBody className="card-inner">
                   <Editor
                     licenseKey="gpl"
-                    onInit={(evt, editor) => (editorRef.current = editor)}
+                    onInit={(evt, editor) => {
+                      editorRef.current = editor;
+                      setEditorReady(true);
+                    }}
                     initialValue={content}
-                    value={content}
                     onEditorChange={(newContent) => setContent(newContent)}
                     init={{
                       height: 'calc(100vh - 280px)',
@@ -283,10 +293,12 @@ const AiEditor = () => {
                       menubar: false,
                       toolbar:
                         'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat',
-                      content_style: theme.skin === 'dark' ? 
-                        'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #fff; background-color: #1a1a1a; }' : 
-                        'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #000; background-color: #fff; }',
-                      branding: false
+                      content_style:
+                        theme.skin === 'dark'
+                          ? 'body { direction: ltr; text-align: left; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #fff; background-color: #1a1a1a; }'
+                          : 'body { direction: ltr; text-align: left; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #000; background-color: #fff; }',
+                      branding: false,
+                      directionality: 'ltr',
                     }}
                   />
                 </CardBody>
