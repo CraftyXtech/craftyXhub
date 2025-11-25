@@ -58,10 +58,31 @@ const Login = () => {
       navigate(redirectTo, { replace: true });
     } catch (error) {
       console.error('Login error:', error);
-      const errorMessage = error.response?.data?.detail || 
-                          error.response?.data?.message || 
-                          error.message || 
-                          "Login failed. Please check your credentials.";
+      
+      // Handle CORS/network errors
+      if (error.code === 'ERR_NETWORK' || !error.response) {
+        setError("Network error. Please check your connection and try again.");
+        return;
+      }
+      
+      // Handle FastAPI validation errors (422) - detail is an array of error objects
+      const detail = error.response?.data?.detail;
+      let errorMessage = error.response?.data?.message || error.message || "Login failed. Please check your credentials.";
+      
+      if (detail) {
+        if (Array.isArray(detail)) {
+          // Pydantic validation errors - format them nicely
+          const validationErrors = detail.map(err => {
+            const field = Array.isArray(err.loc) ? err.loc.slice(1).join('.') : 'field';
+            return `${field}: ${err.msg}`;
+          }).join('; ');
+          errorMessage = validationErrors || errorMessage;
+        } else if (typeof detail === 'string') {
+          // Simple string error
+          errorMessage = detail;
+        }
+      }
+      
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -106,7 +127,6 @@ const Login = () => {
                   id="default-01"
                   {...register('name', { required: "This field is required" })}
                   placeholder="Enter your email address"
-                  defaultValue="admin@craftyx.com"
                   className="form-control-lg form-control" />
                 {errors.name && <span className="invalid">{errors.name.message}</span>}
               </div>
@@ -136,8 +156,7 @@ const Login = () => {
                 <input
                   type={passState ? "text" : "password"}
                   id="password"
-                  {...register('passcode', { required: "This field is required" })}
-                  defaultValue="admin123"
+                {...register('passcode', { required: "This field is required" })}
                   placeholder="Enter your passcode"
                   className={`form-control-lg form-control ${passState ? "is-hidden" : "is-shown"}`} />
                 {errors.passcode && <span className="invalid">{errors.passcode.message}</span>}

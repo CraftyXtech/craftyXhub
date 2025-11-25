@@ -134,15 +134,22 @@ def create_application() -> FastAPI:
             {settings.FRONTEND_URL, *[o for o in allow_origins if o != "*"]}
         )
 
+    # Prepare CORS middleware kwargs
+    cors_kwargs = {
+        "allow_origins": allow_origins,
+        "allow_credentials": settings.ALLOW_CREDENTIALS,
+        "allow_methods": settings.ALLOW_METHODS,
+        "allow_headers": settings.ALLOW_HEADERS,
+        "expose_headers": settings.EXPOSE_HEADERS,
+        "max_age": settings.CORS_MAX_AGE,
+    }
+    # Only add regex if it's provided and not None
+    if settings.ALLOW_ORIGIN_REGEX:
+        cors_kwargs["allow_origin_regex"] = settings.ALLOW_ORIGIN_REGEX
+    
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=allow_origins,
-        allow_origin_regex=settings.ALLOW_ORIGIN_REGEX,
-        allow_credentials=settings.ALLOW_CREDENTIALS,
-        allow_methods=settings.ALLOW_METHODS,
-        allow_headers=settings.ALLOW_HEADERS,
-        expose_headers=settings.EXPOSE_HEADERS,
-        max_age=settings.CORS_MAX_AGE,
+        **cors_kwargs
     )
     include_routers(app)
     return app

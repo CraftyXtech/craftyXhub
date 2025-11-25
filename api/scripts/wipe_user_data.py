@@ -63,7 +63,7 @@ async def wipe_user_data() -> None:
 
     async with async_session() as session:
         print("DANGER: This will permanently delete ALL users and their content.")
-        print("    Affected tables (via TRUNCATE ... CASCADE):")
+        print("    Target tables (will skip any that do not exist):")
         for name in TARGET_TABLES:
             print(f"      - {name}")
         print()
@@ -73,10 +73,26 @@ async def wipe_user_data() -> None:
             await engine.dispose()
             return
 
-        table_list = ", ".join(TARGET_TABLES)
+        # Filter to only tables that actually exist in the current database.
+        existing_tables: list[str] = []
+        for name in TARGET_TABLES:
+            # to_regclass returns NULL if the relation does not exist
+            result = await session.execute(text("SELECT to_regclass(:name)"), {"name": name})
+            if result.scalar():
+                existing_tables.append(name)
+
+        if not existing_tables:
+            print("No matching tables found in this database. Nothing to truncate.")
+            await engine.dispose()
+            return
+
+        table_list = ", ".join(existing_tables)
         sql = text(f"TRUNCATE TABLE {table_list} RESTART IDENTITY CASCADE;")
 
-        print("\nTruncating tables...")
+        print("\nTruncating tables:")
+        for name in existing_tables:
+            print(f"  - {name}")
+
         await session.execute(sql)
         await session.commit()
         print("All user data and related content has been wiped.")

@@ -51,9 +51,18 @@ class Settings:
             ]
         ),
     )
+    # Parse origins, filtering out empty strings and malformed entries
+    _parsed_origins = [o.strip() for o in _origins.split(",") if o.strip() and not o.strip().endswith(">")]
+    # Always ensure admin subdomain is included for production
+    _required_production_origins = [
+        "https://craftyxhub.com",
+        "https://www.craftyxhub.com",
+        "https://admin.craftyxhub.com",
+    ]
     ALLOWED_ORIGINS = (
-        [o.strip() for o in _origins.split(",")] if _origins else [
-            "http://localhost:3000"
+        list(set(_parsed_origins + _required_production_origins)) if _parsed_origins else [
+            "http://localhost:3000",
+            "https://admin.craftyxhub.com",
         ]
     )
 
