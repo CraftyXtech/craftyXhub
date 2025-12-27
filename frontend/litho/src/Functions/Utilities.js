@@ -93,7 +93,7 @@ export const InputField = (value) => {
 };
 
 export const sendEmail = async (data) => {
-  const req = await fetch(`${process.env.REACT_APP_API_URL}/send`, {
+  const req = await fetch(`${import.meta.env.VITE_API_URL}/send`, {
     method: "post",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

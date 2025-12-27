@@ -30,22 +30,22 @@ import { usePosts, usePopularPosts } from '../../api';
 const SocialIconsData = [
   {
     color: "#fff",
-    link: process.env.REACT_APP_FACEBOOK_URL,
+    link: import.meta.env.VITE_FACEBOOK_URL,
     icon: "fab fa-facebook-f text-white",
   },
   {
     color: "#fff",
-    link: process.env.REACT_APP_DRIBBBLE_URL,
+    link: import.meta.env.VITE_DRIBBBLE_URL,
     icon: "fab fa-dribbble"
   },
   {
     color: "#fff",
-    link: process.env.REACT_APP_TWITTER_URL,
+    link: import.meta.env.VITE_TWITTER_URL,
     icon: "fab fa-twitter text-white",
   },
   {
     color: "#fff",
-    link: process.env.REACT_APP_INSTAGRAM_URL,
+    link: import.meta.env.VITE_INSTAGRAM_URL,
     icon: "fab fa-instagram"
   }
 ].filter(item => item.link)
@@ -67,13 +67,13 @@ const MagazinePage = (props) => {
   // Explicit hero slides from public assets
   const heroSlides = [
     {
-      image: `${process.env.PUBLIC_URL}/assets/img/hero/hero.jpg`,
+      image: '/assets/img/hero/hero.jpg',
       label: 'Featured',
       title: 'Featured Articles',
       to: '/featured-articles',
     },
     {
-      image: `${process.env.PUBLIC_URL}/assets/img/hero/hero2.jpg`,
+      image: '/assets/img/hero/hero2.jpg',
       label: 'Trending',
       title: 'Trending Articles',
       to: '/trending-articles',

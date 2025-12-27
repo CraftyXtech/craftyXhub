@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use localhost:8000 for development, can be overridden with REACT_APP_API_BASE_URL
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/v1';
+// Use localhost:8000 for development, can be overridden with VITE_API_BASE_URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/v1';
 
 const axiosInstance = axios.create({
     baseURL: API_BASE_URL,

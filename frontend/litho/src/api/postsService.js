@@ -8,7 +8,7 @@ export const getImageUrl = (imagePath, folder) => {
 
   const filename = imagePath.split("/").pop();
   const baseUrl =
-    process.env.REACT_APP_API_BASE_URL || "http://localhost:8000/v1";
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/v1";
 
   // Remove /v1 from baseUrl if present, then construct the full URL
   const apiBase = baseUrl.replace("/v1", "").replace(/\/$/, "");

@@ -17,22 +17,22 @@ import useAuth from '../../api/useAuth'
 const SocialIconsData = [
   {
     color: "#fff",
-    link: process.env.REACT_APP_FACEBOOK_URL,
+    link: import.meta.env.VITE_FACEBOOK_URL,
     icon: "fab fa-facebook-f text-white",
   },
   {
     color: "#fff",
-    link: process.env.REACT_APP_DRIBBBLE_URL,
+    link: import.meta.env.VITE_DRIBBBLE_URL,
     icon: "fab fa-dribbble"
   },
   {
     color: "#fff",
-    link: process.env.REACT_APP_TWITTER_URL,
+    link: import.meta.env.VITE_TWITTER_URL,
     icon: "fab fa-twitter text-white",
   },
   {
     color: "#fff",
-    link: process.env.REACT_APP_INSTAGRAM_URL,
+    link: import.meta.env.VITE_INSTAGRAM_URL,
     icon: "fab fa-instagram"
   }
 ].filter(item => item.link)

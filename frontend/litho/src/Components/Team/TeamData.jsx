@@ -1,28 +1,28 @@
 // Helper function to generate social links from environment variables
 const getSocialLinks = () => [
-  process.env.REACT_APP_FACEBOOK_URL && {
+  import.meta.env.VITE_FACEBOOK_URL && {
     title: "facebook",
-    link: process.env.REACT_APP_FACEBOOK_URL,
+    link: import.meta.env.VITE_FACEBOOK_URL,
     icon: "fab fa-facebook-f",
   },
-  process.env.REACT_APP_INSTAGRAM_URL && {
+  import.meta.env.VITE_INSTAGRAM_URL && {
     title: "instagram",
-    link: process.env.REACT_APP_INSTAGRAM_URL,
+    link: import.meta.env.VITE_INSTAGRAM_URL,
     icon: "fa-brands fa-instagram",
   },
-  process.env.REACT_APP_TWITTER_URL && {
+  import.meta.env.VITE_TWITTER_URL && {
     title: "twitter",
-    link: process.env.REACT_APP_TWITTER_URL,
+    link: import.meta.env.VITE_TWITTER_URL,
     icon: "fa-brands fa-twitter",
   },
-  process.env.REACT_APP_LINKEDIN_URL && {
+  import.meta.env.VITE_LINKEDIN_URL && {
     title: "linkedin",
-    link: process.env.REACT_APP_LINKEDIN_URL,
+    link: import.meta.env.VITE_LINKEDIN_URL,
     icon: "fa-brands fa-linkedin-in",
   },
-  process.env.REACT_APP_DRIBBBLE_URL && {
+  import.meta.env.VITE_DRIBBBLE_URL && {
     title: "dribbble",
-    link: process.env.REACT_APP_DRIBBBLE_URL,
+    link: import.meta.env.VITE_DRIBBBLE_URL,
     icon: "fa-brands fa-dribbble",
   },
 ].filter(Boolean);

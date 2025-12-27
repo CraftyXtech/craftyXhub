@@ -178,11 +178,11 @@ const ContactUsModernPage = (props) => {
                           name="comment"
                           rows="6"
                           placeholder="How can we help you?"></TextArea>
-                        {process.env.REACT_APP_GRECAPTCHA_API_KEY && (
+                        {import.meta.env.VITE_GRECAPTCHA_API_KEY && (
                           <ReCAPTCHA
                             ref={recaptcha}
                             className="mb-[35px]"
-                            sitekey={process.env.REACT_APP_GRECAPTCHA_API_KEY}
+                            sitekey={import.meta.env.VITE_GRECAPTCHA_API_KEY}
                             onChange={(response) => { setFieldValue("recaptcha", response) }}
                           />
                         )}

@@ -21,13 +21,13 @@ const LoginModal = ({ show, onHide, onSwitchToRegister, onSwitchToPasswordReset 
 
     const handleGoogleSignIn = () => {
         // Redirect to Google OAuth endpoint
-        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '/v1'
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1'
         window.location.href = `${API_BASE_URL}/auth/google/login`
     }
 
     const handleFacebookSignIn = () => {
         // Redirect to Facebook OAuth endpoint
-        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '/v1'
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/v1'
         window.location.href = `${API_BASE_URL}/auth/facebook/login`
     }
 

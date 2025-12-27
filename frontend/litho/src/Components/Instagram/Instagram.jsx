@@ -22,7 +22,7 @@ const Instagram = ({
 
     useEffect(() => {
         const fetchData = async () => {
-            const url = await fetch(`https://graph.instagram.com/me/media?fields=id,media_url,timestamp,permalink&access_token=${process.env.REACT_APP_INSTA_API_KEY}`);
+            const url = await fetch(`https://graph.instagram.com/me/media?fields=id,media_url,timestamp,permalink&access_token=${import.meta.env.VITE_INSTA_API_KEY}`);
             const res = await url.json()
             const data = await res.data;
             setInstaFeed(data)

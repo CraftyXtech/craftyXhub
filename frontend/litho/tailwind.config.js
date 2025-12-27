@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   content: ["./src/**/*.{js,jsx}", "./src/**/**/*.{js,jsx}", "./src/**/**/**/*.{js,jsx}"],
   theme: {
     screens: {

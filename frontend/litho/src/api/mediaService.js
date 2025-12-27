@@ -85,7 +85,7 @@ export const getImageUrl = (filePath) => {
         return filePath
     }
     
-    const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/v1'
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/v1'
     const apiBase = baseUrl.replace('/v1', '').replace(/\/$/, '')
     return `${apiBase}/media/files/${filePath}`
 }

@@ -36,27 +36,27 @@ import { fadeIn } from '../../../Functions/GlobalAnimations'
 const SocialIconsData = [
   {
     color: "#3b5998",
-    link: process.env.REACT_APP_FACEBOOK_URL,
+    link: import.meta.env.VITE_FACEBOOK_URL,
     icon: "fab fa-facebook-f"
   },
   {
     color: "#ea4c89",
-    link: process.env.REACT_APP_DRIBBBLE_URL,
+    link: import.meta.env.VITE_DRIBBBLE_URL,
     icon: "fab fa-dribbble"
   },
   {
     color: "#00aced",
-    link: process.env.REACT_APP_TWITTER_URL,
+    link: import.meta.env.VITE_TWITTER_URL,
     icon: "fab fa-twitter"
   },
   {
     color: "#fe1f49",
-    link: process.env.REACT_APP_INSTAGRAM_URL,
+    link: import.meta.env.VITE_INSTAGRAM_URL,
     icon: "fab fa-instagram"
   },
   {
     color: "#0077b5",
-    link: process.env.REACT_APP_LINKEDIN_URL,
+    link: import.meta.env.VITE_LINKEDIN_URL,
     icon: "fab fa-linkedin-in"
   }
 ].filter(item => item.link)
