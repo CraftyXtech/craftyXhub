@@ -1,15 +1,11 @@
-import { marked } from 'marked';
-
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-});
+import { processContent } from './markdown';
 
 export const contentFormatter = {
   markdownToHTML(text) {
     if (!text) return '';
     
-    let html = marked.parse(text);
+    // Use the central utility for conversion and sanitization
+    let html = processContent(text);
     
     html = html.replace(/<h1>/g, '<h1 class="fw-bold mb-3" style="font-size: 1.5rem;">');
     html = html.replace(/<h2>/g, '<h2 class="fw-bold mb-3" style="font-size: 1.25rem;">');

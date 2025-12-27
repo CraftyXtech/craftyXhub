@@ -6,6 +6,7 @@ import Content from '@/layout/content/Content';
 import { Block, BlockHead, BlockBetween, BlockHeadContent, BlockTitle, BlockDes, Row, Col, Button, Icon } from '@/components/Component';
 import BlogAgentPanel from '@/components/ai-writer/BlogAgentPanel';
 import { aiWriterService } from '@/api/aiWriterService';
+import { processContent } from '@/utils/markdown';
 import { toast } from 'react-toastify';
 
 const BlogAgent = () => {
@@ -284,13 +285,11 @@ const BlogAgent = () => {
                             <div 
                               className="blog-content"
                               style={{ 
-                                whiteSpace: 'pre-wrap',
                                 lineHeight: '1.7',
                                 fontSize: '14px'
                               }}
-                            >
-                              {section.body_markdown}
-                            </div>
+                              dangerouslySetInnerHTML={{ __html: processContent(section.body_markdown) }}
+                            />
                           </div>
                         </Collapse>
                       </CardBody>
@@ -346,4 +345,9 @@ const BlogAgent = () => {
 };
 
 export default BlogAgent;
+
+
+
+
+
 
