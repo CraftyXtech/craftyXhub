@@ -6,6 +6,7 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 
 // Components
 import RequireRole from '@/components/RequireRole';
+import RequireAuth from '@/components/RequireAuth';
 
 // Public Views
 import Home from '@/views/public/Home';
@@ -37,6 +38,9 @@ import Categories from '@/views/dashboard/Admin/Categories';
 import Tags from '@/views/dashboard/Admin/Tags';
 import Settings from '@/views/dashboard/Admin/Settings';
 
+// Dashboard Views - AI Writer
+import AiWriter from '@/views/dashboard/AiWriter';
+
 function App() {
   return (
     <Routes>
@@ -56,7 +60,14 @@ function App() {
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />
 
       {/* Dashboard Routes (protected) */}
-      <Route path="/dashboard" element={<DashboardLayout />}>
+      <Route
+        path="/dashboard"
+        element={
+          <RequireAuth>
+            <DashboardLayout />
+          </RequireAuth>
+        }
+      >
         {/* All authenticated users */}
         <Route index element={<DashboardOverview />} />
         <Route path="posts" element={<Posts />} />
@@ -71,7 +82,7 @@ function App() {
           path="ai-writer"
           element={
             <RequireRole role="moderator">
-              <ComingSoon title="AI Writer" />
+              <AiWriter />
             </RequireRole>
           }
         />
@@ -141,21 +152,5 @@ function App() {
   );
 }
 
-// Placeholder for AI Writer (Phase 3)
-function ComingSoon({ title }) {
-  return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column',
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      padding: '60px 20px',
-      textAlign: 'center'
-    }}>
-      <h2 style={{ margin: 0, marginBottom: 8, color: '#14213D' }}>{title}</h2>
-      <p style={{ margin: 0, color: '#666' }}>This page is coming soon.</p>
-    </div>
-  );
-}
 
 export default App;

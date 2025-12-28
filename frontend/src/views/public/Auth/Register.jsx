@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -25,6 +25,7 @@ import {
   IconBrandGithub
 } from '@tabler/icons-react';
 import Logo from '@/components/Logo';
+import { register as registerApi } from '@/api';
 
 const MotionBox = motion.create(Box);
 
@@ -32,6 +33,8 @@ const MotionBox = motion.create(Box);
  * Register Page
  */
 export default function Register() {
+  const navigate = useNavigate();
+  
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -42,6 +45,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;
@@ -49,16 +53,25 @@ export default function Register() {
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
       setLoading(false);
       return;
     }
@@ -69,11 +82,45 @@ export default function Register() {
       return;
     }
 
-    // TODO: Replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    console.log('Register attempt:', formData);
-    setLoading(false);
+    try {
+      // Split full name into first and last name
+      const nameParts = formData.fullName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      await registerApi({
+        email: formData.email,
+        password: formData.password,
+        first_name: firstName,
+        last_name: lastName,
+        full_name: formData.fullName
+      });
+      
+      setSuccess('Account created successfully! Redirecting to login...');
+      
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        navigate('/auth/login', { 
+          state: { message: 'Registration successful! Please sign in.' }
+        });
+      }, 1500);
+    } catch (err) {
+      console.error('Register error:', err);
+      // Handle different error types
+      if (err.response?.status === 400) {
+        setError(err.response.data?.detail || 'Invalid registration data');
+      } else if (err.response?.status === 409) {
+        setError('An account with this email already exists');
+      } else if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('An error occurred. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -112,6 +159,13 @@ export default function Register() {
           <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 4 }}>
             Join thousands of writers and readers
           </Typography>
+
+          {/* Success Alert */}
+          {success && (
+            <Alert severity="success" sx={{ mb: 3 }}>
+              {success}
+            </Alert>
+          )}
 
           {/* Error Alert */}
           {error && (
@@ -166,6 +220,7 @@ export default function Register() {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                helperText="Minimum 6 characters"
                 slotProps={{
                   input: {
                     startAdornment: (
@@ -295,3 +350,4 @@ export default function Register() {
     </Box>
   );
 }
+

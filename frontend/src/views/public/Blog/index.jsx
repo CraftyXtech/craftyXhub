@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -7,85 +7,17 @@ import {
   FormControl,
   Select,
   MenuItem,
-  Stack
+  Stack,
+  Skeleton
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import PostCard from '@/components/PostCard';
 import Sidebar from '@/components/Blog/Sidebar';
 import Pagination from '@/components/Pagination';
 import SectionHeader from '@/components/SectionHeader';
+import { getPosts } from '@/api/services/postService';
 
 const MotionBox = motion.create(Box);
-
-// Sample posts data (will be replaced with API data)
-const samplePosts = [
-  {
-    id: 1,
-    slug: 'design-thinking-guide',
-    title: 'Design Thinking: A Practical Guide for Beginners',
-    excerpt: 'Learn the fundamentals of design thinking and how to apply it to solve complex problems in your daily work.',
-    category: 'Design',
-    author: { full_name: 'Emma Wilson', avatar: '' },
-    created_at: '2024-12-27',
-    read_time: '6 min read',
-    featured_image: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=800&h=600&fit=crop'
-  },
-  {
-    id: 2,
-    slug: 'startup-funding-tips',
-    title: 'Startup Funding in 2024: What VCs Are Looking For',
-    excerpt: 'Insights from top venture capitalists on what makes a startup investment-worthy in the current market.',
-    category: 'Startups',
-    author: { full_name: 'James Chen', avatar: '' },
-    created_at: '2024-12-26',
-    read_time: '8 min read',
-    featured_image: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=600&fit=crop'
-  },
-  {
-    id: 3,
-    slug: 'productivity-hacks',
-    title: '10 Productivity Hacks That Actually Work',
-    excerpt: 'Evidence-based strategies to boost your productivity without burning out.',
-    category: 'Productivity',
-    author: { full_name: 'Sarah Miller', avatar: '' },
-    created_at: '2024-12-25',
-    read_time: '5 min read',
-    featured_image: 'https://images.unsplash.com/photo-1483058712412-4245e9b90334?w=800&h=600&fit=crop'
-  },
-  {
-    id: 4,
-    slug: 'future-of-web3',
-    title: 'Web3 in 2024: Beyond the Hype',
-    excerpt: 'A realistic look at where Web3 technology stands and its practical applications today.',
-    category: 'Technology',
-    author: { full_name: 'Alex Johnson', avatar: '' },
-    created_at: '2024-12-24',
-    read_time: '7 min read',
-    featured_image: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&h=600&fit=crop'
-  },
-  {
-    id: 5,
-    slug: 'marketing-trends-2025',
-    title: 'Top Marketing Trends to Watch in 2025',
-    excerpt: 'Stay ahead of the curve with these emerging marketing strategies and technologies.',
-    category: 'Marketing',
-    author: { full_name: 'Lisa Park', avatar: '' },
-    created_at: '2024-12-23',
-    read_time: '6 min read',
-    featured_image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop'
-  },
-  {
-    id: 6,
-    slug: 'ux-research-methods',
-    title: 'Essential UX Research Methods Every Designer Should Know',
-    excerpt: 'A comprehensive guide to user research techniques for better product design.',
-    category: 'Design',
-    author: { full_name: 'Emma Wilson', avatar: '' },
-    created_at: '2024-12-22',
-    read_time: '10 min read',
-    featured_image: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&h=600&fit=crop'
-  }
-];
 
 /**
  * Blog List Page
@@ -94,11 +26,50 @@ const samplePosts = [
 export default function BlogList() {
   const [sortBy, setSortBy] = useState('latest');
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [posts, setPosts] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const postsPerPage = 6;
 
-  // TODO: Replace with API call
-  const posts = samplePosts;
-  const totalPages = Math.ceil(posts.length / postsPerPage);
+  const fetchPosts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = {
+        skip: (page - 1) * postsPerPage,
+        limit: postsPerPage,
+        published: true
+      };
+
+      // Add search if provided
+      if (search) {
+        params.search = search;
+      }
+
+      const response = await getPosts(
+        params.skip,
+        params.limit,
+        params.published
+      );
+      
+      setPosts(response.posts || response.items || response || []);
+      setTotal(response.total || (Array.isArray(response) ? response.length : 0));
+    } catch (err) {
+      console.error('Failed to fetch posts:', err);
+      setError('Failed to load posts');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, search]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  const totalPages = Math.ceil(total / postsPerPage) || 1;
 
   const handleSortChange = (event) => {
     setSortBy(event.target.value);
@@ -111,8 +82,8 @@ export default function BlogList() {
   };
 
   const handleSearch = (query) => {
-    console.log('Search query:', query);
-    // TODO: Implement search with API
+    setSearch(query);
+    setPage(1); // Reset to first page on search
   };
 
   return (
@@ -153,7 +124,7 @@ export default function BlogList() {
               }}
             >
               <Typography variant="body2" color="text.secondary">
-                Showing {posts.length} articles
+                {loading ? 'Loading...' : `Showing ${posts.length} of ${total} articles`}
               </Typography>
               <Stack direction="row" spacing={2} alignItems="center">
                 <Typography variant="body2" color="text.secondary">
@@ -178,15 +149,41 @@ export default function BlogList() {
 
             {/* Posts Grid */}
             <Grid container spacing={3}>
-              {posts.map((post, index) => (
-                <Grid size={{ xs: 12, sm: 6 }} key={post.id}>
-                  <PostCard post={post} animationDelay={index * 0.05} />
+              {loading ? (
+                // Loading skeletons
+                [...Array(6)].map((_, index) => (
+                  <Grid size={{ xs: 12, sm: 6 }} key={index}>
+                    <Box>
+                      <Skeleton variant="rounded" height={200} sx={{ mb: 2 }} />
+                      <Skeleton width="60%" height={20} sx={{ mb: 1 }} />
+                      <Skeleton width="90%" height={24} sx={{ mb: 1 }} />
+                      <Skeleton width="100%" height={40} />
+                    </Box>
+                  </Grid>
+                ))
+              ) : error ? (
+                <Grid size={{ xs: 12 }}>
+                  <Typography color="error" textAlign="center" py={4}>
+                    {error}
+                  </Typography>
                 </Grid>
-              ))}
+              ) : posts.length === 0 ? (
+                <Grid size={{ xs: 12 }}>
+                  <Typography color="text.secondary" textAlign="center" py={4}>
+                    {search ? `No articles found for "${search}"` : 'No articles available yet.'}
+                  </Typography>
+                </Grid>
+              ) : (
+                posts.map((post, index) => (
+                  <Grid size={{ xs: 12, sm: 6 }} key={post.uuid || post.id}>
+                    <PostCard post={post} animationDelay={index * 0.05} />
+                  </Grid>
+                ))
+              )}
             </Grid>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {!loading && totalPages > 1 && (
               <Pagination
                 count={totalPages}
                 page={page}
@@ -204,3 +201,4 @@ export default function BlogList() {
     </Box>
   );
 }
+

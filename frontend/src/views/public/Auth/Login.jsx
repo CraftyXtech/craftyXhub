@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -22,6 +22,8 @@ import {
   IconBrandGithub
 } from '@tabler/icons-react';
 import Logo from '@/components/Logo';
+import { login as loginApi } from '@/api';
+import { useAuth } from '@/api/AuthProvider';
 
 const MotionBox = motion.create(Box);
 
@@ -29,13 +31,22 @@ const MotionBox = motion.create(Box);
  * Login Page
  */
 export default function Login() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+  
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Get the redirect path from location state or default to dashboard
+  const from = location.state?.from?.pathname || '/dashboard';
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
@@ -43,12 +54,29 @@ export default function Login() {
     setLoading(true);
     setError('');
     
-    // TODO: Replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulate login - replace with actual auth logic
-    console.log('Login attempt:', formData);
-    setLoading(false);
+    try {
+      const response = await loginApi(formData);
+      
+      // Store auth data using the auth context
+      login(response.access_token, response.user);
+      
+      // Redirect to the page they tried to visit or dashboard
+      navigate(from, { replace: true });
+    } catch (err) {
+      console.error('Login error:', err);
+      // Handle different error types
+      if (err.response?.status === 401) {
+        setError('Invalid email or password');
+      } else if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('An error occurred. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -225,3 +253,4 @@ export default function Login() {
     </Box>
   );
 }
+

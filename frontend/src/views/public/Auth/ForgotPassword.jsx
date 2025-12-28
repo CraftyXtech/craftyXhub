@@ -13,6 +13,7 @@ import {
 import { motion } from 'framer-motion';
 import { IconMail, IconArrowLeft } from '@tabler/icons-react';
 import Logo from '@/components/Logo';
+import { requestPasswordReset } from '@/api';
 
 const MotionBox = motion.create(Box);
 
@@ -30,12 +31,25 @@ export default function ForgotPassword() {
     setLoading(true);
     setError('');
     
-    // TODO: Replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    console.log('Password reset request:', email);
-    setSubmitted(true);
-    setLoading(false);
+    try {
+      await requestPasswordReset(email);
+      setSubmitted(true);
+    } catch (err) {
+      console.error('Password reset error:', err);
+      // Handle different error types
+      if (err.response?.status === 404) {
+        // Don't reveal if email exists for security, show success anyway
+        setSubmitted(true);
+      } else if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('An error occurred. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -89,7 +103,7 @@ export default function ForgotPassword() {
                 Check your email
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 4 }}>
-                We've sent a password reset link to <strong>{email}</strong>. 
+                If an account exists for <strong>{email}</strong>, we've sent a password reset link. 
                 Please check your inbox and follow the instructions.
               </Typography>
               <Button
@@ -128,7 +142,10 @@ export default function ForgotPassword() {
                     label="Email Address"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (error) setError('');
+                    }}
                     required
                     slotProps={{
                       input: {
@@ -181,3 +198,4 @@ export default function ForgotPassword() {
     </Box>
   );
 }
+

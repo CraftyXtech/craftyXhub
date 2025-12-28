@@ -1,13 +1,17 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
+import secrets
 from core.config import settings
 from database.connection import get_db_session
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 from fastapi_sso.sso.google import GoogleSSO
 from fastapi_sso.sso.facebook import FacebookSSO
-from models.user import User
-from schemas.user import UserCreate, UserLogin, UserResponse, Token, ResetPasswordRequest, AuthResult
+from models.user import User, PasswordResetToken, EmailVerificationToken
+from schemas.user import (
+    UserCreate, UserLogin, UserResponse, Token, ResetPasswordRequest, AuthResult,
+    PasswordResetRequestEmail, PasswordResetConfirm, EmailVerificationRequest, PasswordResetResponse
+)
 from services.user.auth import AuthService, get_current_active_user
 from services.user.notification import NotificationService
 from schemas.notification import NotificationType
@@ -227,6 +231,152 @@ async def reset_password(
 
     return {"message": "Password updated successfully"}
 
+
+# ============================================================================
+# PUBLIC PASSWORD RESET FLOW (for users who forgot password)
+# ============================================================================
+
+@router.post("/password-reset/request", response_model=PasswordResetResponse)
+async def request_password_reset(
+        request_data: PasswordResetRequestEmail,
+        session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Request password reset via email (public endpoint).
+    Generates a token and would send it via email.
+    For now, returns success regardless of whether email exists (security best practice).
+    """
+    user = await AuthService.get_user_by_email(session, request_data.email)
+    
+    if user:
+        # Generate a secure token
+        token = secrets.token_urlsafe(32)
+        
+        # Create password reset token (expires in 1 hour)
+        reset_token = PasswordResetToken(
+            user_id=user.id,
+            token=token,
+            expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=1)
+        )
+        session.add(reset_token)
+        await session.commit()
+        
+        # TODO: Send email with reset link
+        # In production, you would send an email like:
+        # reset_url = f"{settings.FRONTEND_URL}/auth/reset-password?token={token}"
+        # await send_password_reset_email(user.email, reset_url)
+        
+        print(f"[DEV] Password reset token for {user.email}: {token}")
+    
+    # Always return success to prevent email enumeration attacks
+    return PasswordResetResponse(
+        message="If an account with that email exists, a password reset link has been sent.",
+        success=True
+    )
+
+
+@router.post("/password-reset/confirm", response_model=PasswordResetResponse)
+async def confirm_password_reset(
+        request_data: PasswordResetConfirm,
+        session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Confirm password reset with token (public endpoint).
+    Validates the token and updates the user's password.
+    """
+    # Find the token
+    result = await session.execute(
+        select(PasswordResetToken)
+        .where(PasswordResetToken.token == request_data.token)
+        .where(PasswordResetToken.used == False)
+    )
+    reset_token = result.scalar_one_or_none()
+    
+    if not reset_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    # Check if token is expired
+    if reset_token.expires_at < datetime.now(timezone.utc).replace(tzinfo=None):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset token has expired"
+        )
+    
+    # Get the user
+    user = await AuthService.get_user_by_id(session, reset_token.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found"
+        )
+    
+    # Update password
+    user.password = AuthService.get_password_hash(request_data.new_password)
+    user.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    
+    # Mark token as used
+    reset_token.used = True
+    
+    await session.commit()
+    
+    return PasswordResetResponse(
+        message="Password has been reset successfully. You can now log in with your new password.",
+        success=True
+    )
+
+
+@router.post("/verify-email", response_model=PasswordResetResponse)
+async def verify_email(
+        request_data: EmailVerificationRequest,
+        session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Verify email address with token (public endpoint).
+    """
+    # Find the token
+    result = await session.execute(
+        select(EmailVerificationToken)
+        .where(EmailVerificationToken.token == request_data.token)
+        .where(EmailVerificationToken.used == False)
+    )
+    verification_token = result.scalar_one_or_none()
+    
+    if not verification_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token"
+        )
+    
+    # Check if token is expired
+    if verification_token.expires_at < datetime.now(timezone.utc).replace(tzinfo=None):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification token has expired"
+        )
+    
+    # Get the user and mark as verified
+    user = await AuthService.get_user_by_id(session, verification_token.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found"
+        )
+    
+    user.is_verified = True
+    user.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    
+    # Mark token as used
+    verification_token.used = True
+    
+    await session.commit()
+    
+    return PasswordResetResponse(
+        message="Email verified successfully!",
+        success=True
+    )
 
 @router.get("/google/login")
 async def google_login():

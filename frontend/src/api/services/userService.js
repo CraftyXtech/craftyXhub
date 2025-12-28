@@ -112,3 +112,49 @@ export const getUserStats = async () => {
   const response = await axiosPrivate.get('/admin/users/stats');
   return response.data;
 };
+
+// =============================================================================
+// USER FOLLOW FUNCTIONS (Phase 6)
+// =============================================================================
+
+/**
+ * Follow a user
+ * @param {string} userUuid - UUID of user to follow
+ * @returns {Promise<object>} Follow response
+ */
+export const followUser = async (userUuid) => {
+  const response = await axiosPrivate.post(`/users/${userUuid}/follow`);
+  return response.data;
+};
+
+/**
+ * Unfollow a user
+ * @param {string} userUuid - UUID of user to unfollow
+ * @returns {Promise<object>} Unfollow response
+ */
+export const unfollowUser = async (userUuid) => {
+  const response = await axiosPrivate.post(`/users/${userUuid}/unfollow`);
+  return response.data;
+};
+
+/**
+ * Get followers of a user
+ * @param {string} userUuid - UUID of user
+ * @param {object} params - { skip, limit }
+ * @returns {Promise<object>} { followers, total, page, size }
+ */
+export const getFollowers = async (userUuid, params = {}) => {
+  const response = await axiosPrivate.get(`/users/${userUuid}/followers`, { params });
+  return response.data;
+};
+
+/**
+ * Get users that a user is following
+ * @param {string} userUuid - UUID of user
+ * @param {object} params - { skip, limit }
+ * @returns {Promise<object>} { following, total, page, size }
+ */
+export const getFollowing = async (userUuid, params = {}) => {
+  const response = await axiosPrivate.get(`/users/${userUuid}/following`, { params });
+  return response.data;
+};

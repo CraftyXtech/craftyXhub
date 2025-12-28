@@ -74,6 +74,35 @@ class ResetPasswordRequest(BaseModel):
     current_password: str
     new_password: str
     confirm_new_password: str
+
+
+class PasswordResetRequestEmail(BaseModel):
+    """Request password reset via email (public endpoint)"""
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    """Confirm password reset with token (public endpoint)"""
+    token: str
+    new_password: str = Field(..., min_length=8)
+    confirm_password: str
+    
+    @validator('confirm_password')
+    def passwords_match(cls, v, values):
+        if 'new_password' in values and v != values['new_password']:
+            raise ValueError('Passwords do not match')
+        return v
+
+
+class EmailVerificationRequest(BaseModel):
+    """Verify email with token"""
+    token: str
+
+
+class PasswordResetResponse(BaseModel):
+    """Response for password reset operations"""
+    message: str
+    success: bool = True
     
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None

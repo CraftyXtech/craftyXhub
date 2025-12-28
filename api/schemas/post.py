@@ -55,6 +55,11 @@ class TagCreate(TagBase):
     pass
 
 
+class TagUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=50)
+    slug: Optional[str] = Field(None, min_length=1, max_length=50)
+
+
 class TagResponse(TagBase, BaseSchema):
     id: int
     created_at: datetime

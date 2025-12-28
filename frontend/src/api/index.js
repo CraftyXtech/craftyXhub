@@ -55,6 +55,9 @@ export * from './services/aiService';
 // Search
 export * from './services/searchService';
 
+// Dashboard
+export * from './services/dashboardService';
+
 // ===== HOOKS =====
 // Core hooks
 export { default as useAxiosPrivate } from './hooks/useAxiosPrivate';
@@ -108,6 +111,20 @@ export {
   useNotificationStats,
   useMarkNotificationRead,
 } from './hooks/useNotifications';
+
+// Dashboard hooks
+export {
+  useAdminDashboard,
+  useUserDashboard,
+  useDashboard,
+} from './hooks/useDashboard';
+
+// Follow hooks
+export {
+  useFollow,
+  useFollowers,
+  useFollowing,
+} from './hooks/useFollow';
 
 // ===== UTILITIES =====
 // Token utilities

@@ -11,6 +11,9 @@ import Stack from '@mui/material/Stack';
 import Avatar from '@mui/material/Avatar';
 import Chip from '@mui/material/Chip';
 import LinearProgress from '@mui/material/LinearProgress';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Skeleton from '@mui/material/Skeleton';
 
 // Icons
 import {
@@ -21,11 +24,13 @@ import {
   IconPlus,
   IconTrendingUp,
   IconClock,
-  IconEdit
+  IconEdit,
+  IconRefresh
 } from '@tabler/icons-react';
 
-// Auth
+// API
 import { useAuth } from '@/api/AuthProvider';
+import { useDashboard } from '@/api';
 
 // Role display names
 const roleLabels = {
@@ -35,7 +40,7 @@ const roleLabels = {
 };
 
 // Stats card component
-const StatCard = ({ icon: Icon, title, value, change, color = 'primary' }) => (
+const StatCard = ({ icon: Icon, title, value, change, color = 'primary', loading }) => (
   <Card 
     elevation={0} 
     sx={{ 
@@ -50,10 +55,14 @@ const StatCard = ({ icon: Icon, title, value, change, color = 'primary' }) => (
           <Typography variant="body2" color="text.secondary" gutterBottom>
             {title}
           </Typography>
-          <Typography variant="h4" fontWeight={600}>
-            {value}
-          </Typography>
-          {change && (
+          {loading ? (
+            <Skeleton width={60} height={40} />
+          ) : (
+            <Typography variant="h4" fontWeight={600}>
+              {value ?? '—'}
+            </Typography>
+          )}
+          {change && !loading && (
             <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1 }}>
               <IconTrendingUp size={14} color="#4CAF50" />
               <Typography variant="caption" color="success.main">
@@ -83,6 +92,7 @@ const StatCard = ({ icon: Icon, title, value, change, color = 'primary' }) => (
  */
 export default function Overview() {
   const { user } = useAuth();
+  const { data, isLoading, error, refetch } = useDashboard();
   
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -92,6 +102,12 @@ export default function Overview() {
   }, []);
 
   const roleLabel = roleLabels[user?.role?.toLowerCase()] || 'Author';
+
+  // Extract stats from API response
+  const stats = data?.post_stats || {};
+  const engagement = data?.engagement || {};
+  const topPosts = data?.top_posts || [];
+  const draftsCount = stats.drafts || data?.drafts?.length || 0;
 
   return (
     <Box>
@@ -139,7 +155,24 @@ export default function Overview() {
         >
           View Drafts
         </Button>
+        {error && (
+          <Button
+            variant="text"
+            startIcon={<IconRefresh size={18} />}
+            onClick={refetch}
+            color="error"
+          >
+            Retry
+          </Button>
+        )}
       </Stack>
+
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          Could not load dashboard data: {error}
+        </Alert>
+      )}
 
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -147,8 +180,8 @@ export default function Overview() {
           <StatCard
             icon={IconFileText}
             title="Total Posts"
-            value="24"
-            change="+3 this week"
+            value={stats.total ?? stats.published ?? 0}
+            loading={isLoading}
             color="primary"
           />
         </Grid>
@@ -156,8 +189,8 @@ export default function Overview() {
           <StatCard
             icon={IconEye}
             title="Total Views"
-            value="1,842"
-            change="+12% from last month"
+            value={engagement.total_views?.toLocaleString() ?? 0}
+            loading={isLoading}
             color="info"
           />
         </Grid>
@@ -165,8 +198,8 @@ export default function Overview() {
           <StatCard
             icon={IconMessageCircle}
             title="Comments"
-            value="156"
-            change="+8 new"
+            value={engagement.total_comments?.toLocaleString() ?? 0}
+            loading={isLoading}
             color="success"
           />
         </Grid>
@@ -174,8 +207,8 @@ export default function Overview() {
           <StatCard
             icon={IconHeart}
             title="Likes"
-            value="489"
-            change="+23 this week"
+            value={engagement.total_likes?.toLocaleString() ?? 0}
+            loading={isLoading}
             color="error"
           />
         </Grid>
@@ -263,7 +296,11 @@ export default function Overview() {
               </Stack>
               
               <Typography variant="body2" color="text.secondary">
-                You have <strong>3 drafts</strong> waiting to be published.
+                {isLoading ? (
+                  <Skeleton width={200} />
+                ) : (
+                  <>You have <strong>{draftsCount} {draftsCount === 1 ? 'draft' : 'drafts'}</strong> waiting to be published.</>
+                )}
               </Typography>
               
               <Button

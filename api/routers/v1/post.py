@@ -141,6 +141,81 @@ async def get_reports(
     return reports
 
 
+@router.put("/reports/{report_id}/dismiss")
+async def dismiss_report(
+        report_id: int,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    """Dismiss a report without taking action (moderator/admin only)"""
+    from models import Report
+    
+    # Check if user is moderator/admin
+    if not current_user.is_moderator():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only moderators and admins can dismiss reports"
+        )
+    
+    # Find the report
+    result = await session.execute(select(Report).where(Report.id == report_id))
+    report = result.scalar_one_or_none()
+    
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Report not found"
+        )
+    
+    # Delete the report (dismiss)
+    await session.delete(report)
+    await session.commit()
+    
+    return {"message": "Report dismissed successfully", "success": True}
+
+
+@router.put("/reports/{report_id}/resolve")
+async def resolve_report(
+        report_id: int,
+        action: str = Query(..., description="Action to take: 'warning', 'remove_content', 'ban_user'"),
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    """Resolve a report by taking action (moderator/admin only)"""
+    from models import Report
+    
+    # Check if user is moderator/admin
+    if not current_user.is_moderator():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only moderators and admins can resolve reports"
+        )
+    
+    # Validate action
+    valid_actions = ['warning', 'remove_content', 'ban_user']
+    if action not in valid_actions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid action. Must be one of: {', '.join(valid_actions)}"
+        )
+    
+    # Find the report
+    result = await session.execute(select(Report).where(Report.id == report_id))
+    report = result.scalar_one_or_none()
+    
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Report not found"
+        )
+    
+    # TODO: Implement actual action logic based on action type
+    # For now, just delete the report
+    await session.delete(report)
+    await session.commit()
+    
+    return {"message": f"Report resolved with action: {action}", "success": True, "action": action}
+
 @router.get("/", response_model=PostListResponse)
 async def get_posts(
         skip: int = Query(0, ge=0),
@@ -467,6 +542,57 @@ async def create_tag(
         session: AsyncSession = Depends(get_db_session)
 ):
     return await PostService.create_tag(session, tag_data)
+
+
+@router.put("/tags/{tag_id}", response_model=TagResponse)
+async def update_tag(
+        tag_id: int,
+        tag_data: TagCreate,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    """Update an existing tag"""
+    # Check if tag exists
+    result = await session.execute(select(Tag).where(Tag.id == tag_id))
+    tag = result.scalar_one_or_none()
+    
+    if not tag:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tag not found"
+        )
+    
+    # Update tag fields
+    if tag_data.name:
+        tag.name = tag_data.name
+    if tag_data.slug:
+        tag.slug = tag_data.slug
+    
+    await session.commit()
+    await session.refresh(tag)
+    return tag
+
+
+@router.delete("/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_tag(
+        tag_id: int,
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    """Delete a tag"""
+    # Check if tag exists
+    result = await session.execute(select(Tag).where(Tag.id == tag_id))
+    tag = result.scalar_one_or_none()
+    
+    if not tag:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tag not found"
+        )
+    
+    await session.delete(tag)
+    await session.commit()
+    return None
 
 
 @router.get("/stats/", response_model=PostStatsResponse)

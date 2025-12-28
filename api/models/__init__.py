@@ -1,5 +1,5 @@
 from .base import Base
-from .user import User, Profile, UserRoleChange
+from .user import User, Profile, UserRoleChange, PasswordResetToken, EmailVerificationToken
 from .post import Post, Category, Tag
 from .comment import Comment
 from .report import Report
@@ -11,6 +11,8 @@ __all__ = [
     'User',
     'Profile',
     'UserRoleChange',
+    'PasswordResetToken',
+    'EmailVerificationToken',
     'Post',
     'Category',
     'Tag',

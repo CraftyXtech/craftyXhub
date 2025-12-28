@@ -1,45 +1,31 @@
-import { Box, Container, Grid } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Box, Container, Grid, Skeleton, Typography } from '@mui/material';
 import PostCard from '@/components/PostCard';
 import SectionHeader from '@/components/SectionHeader';
-
-// Sample data (will be replaced with API data)
-const popularPosts = [
-  {
-    id: 7,
-    slug: 'python-best-practices',
-    title: 'Python Best Practices Every Developer Should Know',
-    excerpt: 'Master Python with these essential coding patterns and practices used by top developers.',
-    category: 'Programming',
-    author: { full_name: 'David Kim', avatar: '' },
-    created_at: '2024-12-20',
-    read_time: '10 min read',
-    featured_image: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=800&h=600&fit=crop'
-  },
-  {
-    id: 8,
-    slug: 'mental-health-tech',
-    title: 'Mental Health in the Tech Industry: Breaking the Stigma',
-    excerpt: 'How the tech industry is finally addressing mental health and what you can do to support yourself.',
-    category: 'Wellness',
-    author: { full_name: 'Lisa Park', avatar: '' },
-    created_at: '2024-12-18',
-    read_time: '8 min read',
-    featured_image: 'https://images.unsplash.com/photo-1544027993-37dbfe43562a?w=800&h=600&fit=crop'
-  },
-  {
-    id: 9,
-    slug: 'react-vs-vue-2024',
-    title: 'React vs Vue in 2024: Which Should You Choose?',
-    excerpt: 'An honest comparison of the two most popular frontend frameworks for modern web development.',
-    category: 'Technology',
-    author: { full_name: 'Mike Brown', avatar: '' },
-    created_at: '2024-12-15',
-    read_time: '12 min read',
-    featured_image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop'
-  }
-];
+import { getPopularPosts } from '@/api/services/postService';
 
 export default function PopularPosts() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        const data = await getPopularPosts(0, 3);
+        setPosts(data || []);
+      } catch (err) {
+        console.error('Failed to fetch popular posts:', err);
+        setError('Failed to load posts');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
   return (
     <Box sx={{ py: { xs: 6, md: 10 }, bgcolor: 'grey.50' }}>
       <Container maxWidth="lg">
@@ -50,13 +36,40 @@ export default function PopularPosts() {
         />
 
         <Grid container spacing={3}>
-          {popularPosts.map((post, index) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={post.id}>
-              <PostCard post={post} animationDelay={index * 0.1} />
+          {loading ? (
+            // Loading skeletons
+            [...Array(3)].map((_, index) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+                <Box>
+                  <Skeleton variant="rounded" height={200} sx={{ mb: 2 }} />
+                  <Skeleton width="60%" height={20} sx={{ mb: 1 }} />
+                  <Skeleton width="90%" height={24} sx={{ mb: 1 }} />
+                  <Skeleton width="100%" height={40} />
+                </Box>
+              </Grid>
+            ))
+          ) : error ? (
+            <Grid size={{ xs: 12 }}>
+              <Typography color="text.secondary" textAlign="center" py={4}>
+                {error}
+              </Typography>
             </Grid>
-          ))}
+          ) : posts.length === 0 ? (
+            <Grid size={{ xs: 12 }}>
+              <Typography color="text.secondary" textAlign="center" py={4}>
+                No popular posts yet. Check back soon!
+              </Typography>
+            </Grid>
+          ) : (
+            posts.map((post, index) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={post.uuid || post.id}>
+                <PostCard post={post} animationDelay={index * 0.1} />
+              </Grid>
+            ))
+          )}
         </Grid>
       </Container>
     </Box>
   );
 }
+

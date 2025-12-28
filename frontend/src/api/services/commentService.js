@@ -21,12 +21,13 @@ export const getComments = async (postUuid, params = {}) => {
 
 /**
  * Get a single comment by UUID
+ * TODO: Backend endpoint not implemented yet
  * @param {string} commentUuid - Comment UUID
  * @returns {Promise<object>} Comment data
  */
-export const getComment = async (commentUuid) => {
-  const response = await axiosPublic.get(`/comments/${commentUuid}`);
-  return response.data;
+export const getComment = async (/* commentUuid */) => {
+  console.warn('getComment: Backend endpoint for single comment not implemented');
+  throw new Error('Get single comment functionality is not yet available');
 };
 
 /**
@@ -66,23 +67,25 @@ export const deleteComment = async (commentUuid) => {
 
 /**
  * Toggle like on a comment
+ * TODO: Backend endpoint not implemented yet
  * @param {string} commentUuid - Comment UUID
  * @returns {Promise<object>} Updated like status
  */
-export const toggleCommentLike = async (commentUuid) => {
-  const response = await axiosPrivate.post(`/comments/${commentUuid}/like`);
-  return response.data;
+export const toggleCommentLike = async (/* commentUuid */) => {
+  console.warn('toggleCommentLike: Backend endpoint not implemented');
+  throw new Error('Comment like functionality is not yet available');
 };
 
 /**
  * Report a comment
+ * TODO: Backend endpoint not implemented yet
  * @param {string} commentUuid - Comment UUID
  * @param {object} reportData - { reason, details }
  * @returns {Promise<object>} Report response
  */
-export const reportComment = async (commentUuid, reportData) => {
-  const response = await axiosPrivate.post(`/comments/${commentUuid}/report`, reportData);
-  return response.data;
+export const reportComment = async (/* commentUuid, reportData */) => {
+  console.warn('reportComment: Backend endpoint not implemented');
+  throw new Error('Comment report functionality is not yet available');
 };
 
 /**

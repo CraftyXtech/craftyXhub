@@ -133,3 +133,27 @@ class Media(BaseTable):
     description = Column(String(500), nullable=True)
 
     user = relationship("User", backref="media")
+
+
+class PasswordResetToken(BaseTable):
+    """Token for password reset via email (public, unauthenticated flow)"""
+    __tablename__ = 'password_reset_tokens'
+
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    token = Column(String(255), unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
+
+    user = relationship("User", backref="password_reset_tokens")
+
+
+class EmailVerificationToken(BaseTable):
+    """Token for email verification"""
+    __tablename__ = 'email_verification_tokens'
+
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    token = Column(String(255), unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
+
+    user = relationship("User", backref="email_verification_tokens")

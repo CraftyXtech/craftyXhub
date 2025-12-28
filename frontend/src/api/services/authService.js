@@ -43,10 +43,14 @@ export const getCurrentUser = async () => {
   return response.data;
 };
 
+// =============================================================================
+// PUBLIC PASSWORD RESET & EMAIL VERIFICATION (Phase 3)
+// =============================================================================
+
 /**
- * Request password reset
- * @param {string} email - User email
- * @returns {Promise<object>} Response
+ * Request password reset via email
+ * @param {string} email - User email address
+ * @returns {Promise<object>} { message, success }
  */
 export const requestPasswordReset = async (email) => {
   const response = await axiosPublic.post('/auth/password-reset/request', { email });
@@ -55,24 +59,27 @@ export const requestPasswordReset = async (email) => {
 
 /**
  * Reset password with token
- * @param {string} token - Reset token
+ * @param {string} token - Reset token from email
  * @param {string} newPassword - New password
- * @returns {Promise<object>} Response
+ * @param {string} confirmPassword - Confirm new password
+ * @returns {Promise<object>} { message, success }
  */
-export const resetPassword = async (token, newPassword) => {
+export const resetPassword = async (token, newPassword, confirmPassword) => {
   const response = await axiosPublic.post('/auth/password-reset/confirm', {
     token,
     new_password: newPassword,
+    confirm_password: confirmPassword,
   });
   return response.data;
 };
 
 /**
  * Verify email with token
- * @param {string} token - Verification token
- * @returns {Promise<object>} Response
+ * @param {string} token - Verification token from email
+ * @returns {Promise<object>} { message, success }
  */
 export const verifyEmail = async (token) => {
   const response = await axiosPublic.post('/auth/verify-email', { token });
   return response.data;
 };
+

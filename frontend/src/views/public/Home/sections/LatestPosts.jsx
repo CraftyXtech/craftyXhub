@@ -1,58 +1,33 @@
-import { Box, Container, Grid, Button } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Box, Container, Grid, Button, Skeleton, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { IconArrowRight } from '@tabler/icons-react';
 import PostCard from '@/components/PostCard';
 import SectionHeader from '@/components/SectionHeader';
-
-// Sample data (will be replaced with API data)
-const latestPosts = [
-  {
-    id: 3,
-    slug: 'design-thinking-guide',
-    title: 'Design Thinking: A Practical Guide for Beginners',
-    excerpt: 'Learn the fundamentals of design thinking and how to apply it to solve complex problems in your daily work.',
-    category: 'Design',
-    author: { full_name: 'Emma Wilson', avatar: '' },
-    created_at: '2024-12-27',
-    read_time: '6 min read',
-    featured_image: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=800&h=600&fit=crop'
-  },
-  {
-    id: 4,
-    slug: 'startup-funding-tips',
-    title: 'Startup Funding in 2024: What VCs Are Looking For',
-    excerpt: 'Insights from top venture capitalists on what makes a startup investment-worthy in the current market.',
-    category: 'Startups',
-    author: { full_name: 'James Chen', avatar: '' },
-    created_at: '2024-12-26',
-    read_time: '8 min read',
-    featured_image: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=600&fit=crop'
-  },
-  {
-    id: 5,
-    slug: 'productivity-hacks',
-    title: '10 Productivity Hacks That Actually Work',
-    excerpt: 'Evidence-based strategies to boost your productivity without burning out.',
-    category: 'Productivity',
-    author: { full_name: 'Sarah Miller', avatar: '' },
-    created_at: '2024-12-25',
-    read_time: '5 min read',
-    featured_image: 'https://images.unsplash.com/photo-1483058712412-4245e9b90334?w=800&h=600&fit=crop'
-  },
-  {
-    id: 6,
-    slug: 'future-of-web3',
-    title: 'Web3 in 2024: Beyond the Hype',
-    excerpt: 'A realistic look at where Web3 technology stands and its practical applications today.',
-    category: 'Technology',
-    author: { full_name: 'Alex Johnson', avatar: '' },
-    created_at: '2024-12-24',
-    read_time: '7 min read',
-    featured_image: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&h=600&fit=crop'
-  }
-];
+import { getRecentPosts } from '@/api/services/postService';
 
 export default function LatestPosts() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        const data = await getRecentPosts(0, 4);
+        setPosts(data || []);
+      } catch (err) {
+        console.error('Failed to fetch latest posts:', err);
+        setError('Failed to load posts');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
   return (
     <Box sx={{ py: { xs: 6, md: 10 } }}>
       <Container maxWidth="lg">
@@ -63,11 +38,37 @@ export default function LatestPosts() {
         />
 
         <Grid container spacing={3}>
-          {latestPosts.map((post, index) => (
-            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={post.id}>
-              <PostCard post={post} animationDelay={index * 0.1} />
+          {loading ? (
+            // Loading skeletons
+            [...Array(4)].map((_, index) => (
+              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+                <Box>
+                  <Skeleton variant="rounded" height={200} sx={{ mb: 2 }} />
+                  <Skeleton width="60%" height={20} sx={{ mb: 1 }} />
+                  <Skeleton width="90%" height={24} sx={{ mb: 1 }} />
+                  <Skeleton width="100%" height={40} />
+                </Box>
+              </Grid>
+            ))
+          ) : error ? (
+            <Grid size={{ xs: 12 }}>
+              <Typography color="text.secondary" textAlign="center" py={4}>
+                {error}
+              </Typography>
             </Grid>
-          ))}
+          ) : posts.length === 0 ? (
+            <Grid size={{ xs: 12 }}>
+              <Typography color="text.secondary" textAlign="center" py={4}>
+                No posts available yet. Check back soon!
+              </Typography>
+            </Grid>
+          ) : (
+            posts.map((post, index) => (
+              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={post.uuid || post.id}>
+                <PostCard post={post} animationDelay={index * 0.1} />
+              </Grid>
+            ))
+          )}
         </Grid>
 
         {/* View All Button */}
@@ -93,3 +94,4 @@ export default function LatestPosts() {
     </Box>
   );
 }
+

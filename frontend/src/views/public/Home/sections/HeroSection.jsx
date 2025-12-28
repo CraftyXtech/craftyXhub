@@ -1,17 +1,18 @@
-import { Box, Container, Grid, Typography, Chip, IconButton, Stack } from '@mui/material';
+import { Box, Container, Grid, Typography, Chip, IconButton, Stack, Skeleton } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Keyboard } from 'swiper/modules';
 import { IconArrowRight, IconArrowLeft } from '@tabler/icons-react';
+import { getFeaturedPosts, getImageUrl } from '@/api/services/postService';
 
 // Swiper styles
 import 'swiper/css';
 
 const MotionBox = motion.create(Box);
 
-// Hero slides data
+// Hero slides data (static - could be made dynamic later)
 const heroSlides = [
   {
     image: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1600&h=900&fit=crop',
@@ -27,29 +28,13 @@ const heroSlides = [
   }
 ];
 
-// Featured posts data
-const featuredPosts = [
-  {
-    id: 1,
-    slug: 'ai-revolution-2024',
-    title: 'The AI Revolution: What It Means for Content Creators',
-    category: 'Technology',
-    date: '05 March 2024',
-    featured_image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=600&fit=crop'
-  },
-  {
-    id: 2,
-    slug: 'remote-work-future',
-    title: 'Remote Work Is Here to Stay: Best Practices for 2024',
-    category: 'Lifestyle',
-    date: '28 February 2024',
-    featured_image: 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&h=600&fit=crop'
-  }
-];
-
 // Featured Post Card Component
 function FeaturedPostCard({ post, height = '100%' }) {
-  const postUrl = `/blog/${post.slug || post.id}`;
+  const postUrl = `/blog/${post.slug || post.uuid || post.id}`;
+  const imageUrl = getImageUrl(post.featured_image) || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=600&fit=crop';
+  const categoryName = typeof post.category === 'object' ? post.category?.name : post.category;
+  const postDate = post.published_at || post.created_at;
+  const formattedDate = postDate ? new Date(postDate).toLocaleDateString('en-US', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
 
   return (
     <Box
@@ -69,7 +54,7 @@ function FeaturedPostCard({ post, height = '100%' }) {
       {/* Background Image */}
       <Box
         component="img"
-        src={post.featured_image}
+        src={imageUrl}
         alt={post.title}
         sx={{
           position: 'absolute',
@@ -93,7 +78,7 @@ function FeaturedPostCard({ post, height = '100%' }) {
       {/* Category Chip */}
       <Box sx={{ position: 'absolute', top: 16, left: 16, zIndex: 1 }}>
         <Chip
-          label={post.category}
+          label={categoryName || 'Article'}
           size="small"
           sx={{
             bgcolor: 'rgba(255,255,255,0.9)',
@@ -121,7 +106,7 @@ function FeaturedPostCard({ post, height = '100%' }) {
           variant="caption"
           sx={{ opacity: 0.9, display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 1 }}
         >
-          {post.date}
+          {formattedDate}
         </Typography>
         <Typography
           variant="h6"
@@ -140,6 +125,24 @@ function FeaturedPostCard({ post, height = '100%' }) {
 
 export default function HeroSection() {
   const swiperRef = useRef(null);
+  const [featuredPosts, setFeaturedPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeaturedPosts = async () => {
+      try {
+        setLoading(true);
+        const data = await getFeaturedPosts(0, 2);
+        setFeaturedPosts(data || []);
+      } catch (err) {
+        console.error('Failed to fetch featured posts:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedPosts();
+  }, []);
 
   return (
     <Box sx={{ bgcolor: '#f8f4f0', py: { xs: 4, md: 6 }, px: { xs: 2, md: 6 } }}>
@@ -257,18 +260,32 @@ export default function HeroSection() {
           {/* Right: Featured Posts - Side by Side */}
           <Grid size={{ xs: 12, lg: 6 }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ height: { xs: 'auto', lg: 500 } }}>
-              {featuredPosts.map((post, index) => (
-                <MotionBox
-                  key={post.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  sx={{ flex: 1, minHeight: { xs: 250, lg: 'auto' } }}
-                >
-                  <FeaturedPostCard post={post} height="100%" />
-                </MotionBox>
-              ))}
+              {loading ? (
+                // Loading skeletons
+                [...Array(2)].map((_, index) => (
+                  <Box key={index} sx={{ flex: 1, minHeight: { xs: 250, lg: 'auto' } }}>
+                    <Skeleton variant="rounded" height="100%" sx={{ minHeight: 250 }} />
+                  </Box>
+                ))
+              ) : featuredPosts.length > 0 ? (
+                featuredPosts.map((post, index) => (
+                  <MotionBox
+                    key={post.uuid || post.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    sx={{ flex: 1, minHeight: { xs: 250, lg: 'auto' } }}
+                  >
+                    <FeaturedPostCard post={post} height="100%" />
+                  </MotionBox>
+                ))
+              ) : (
+                // Fallback placeholders when no posts
+                <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.200', minHeight: 250 }}>
+                  <Typography color="text.secondary">Featured posts coming soon</Typography>
+                </Box>
+              )}
             </Stack>
           </Grid>
         </Grid>
