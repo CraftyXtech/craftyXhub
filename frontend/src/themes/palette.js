@@ -2,24 +2,24 @@ import { alpha } from '@mui/material/styles';
 
 /**
  * CraftyXHub Color Palette
- * Black & White base with Teal Blue (#1F7DAD) accent
+ * Black & White base with Oxford Blue (#14213D) accent
  */
 export default function palette(mode) {
   const isLight = mode === 'light';
 
   // Core colors
-  const primaryMain = '#1F7DAD';  // Teal Blue accent
+  const primaryMain = '#14213D';  // Oxford Blue accent
   const textPrimary = '#1A1A1A'; // Near-black
   const textSecondary = '#666666'; // Dark gray
 
   return {
     mode,
     primary: {
-      lighter: '#E3F2F9',
-      light: '#7FBDD3',
+      lighter: '#e8eaf0',
+      light: '#4a5a7a',
       main: primaryMain,
-      dark: '#186089',
-      darker: '#0F4560',
+      dark: '#0d1629',
+      darker: '#060b14',
       contrastText: '#FFFFFF'
     },
     secondary: {
@@ -57,6 +57,15 @@ export default function palette(mode) {
       main: '#2196F3',
       dark: '#1565C0',
       darker: '#0D47A1'
+    },
+    // Warm amber accent for CTAs, highlights, featured labels
+    accent: {
+      lighter: '#fef3e8',
+      light: '#f7b885',
+      main: '#f39F5A',
+      dark: '#d68640',
+      darker: '#b86d2a',
+      contrastText: '#FFFFFF'
     },
     grey: {
       50: '#FAFAFA',

@@ -15,7 +15,6 @@ import Logo from '@/components/Logo';
 const footerLinks = {
   company: [
     { label: 'About', path: '/about' },
-    { label: 'Contact', path: '/contact' },
     { label: 'Careers', path: '/careers' }
   ],
   resources: [
