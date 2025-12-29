@@ -11,6 +11,17 @@ from fastapi import Query
 router = APIRouter(prefix="/comments", tags=["comments"])
 
 
+@router.get("/user/me", response_model=CommentListResponse)
+async def get_user_comments(
+        skip: int = Query(0, ge=0),
+        limit: int = Query(10, ge=1, le=100),
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    """Get all comments made by the current user"""
+    comments = await CommentService.get_user_comments(session, current_user.id, skip=skip, limit=limit)
+    return CommentListResponse(comments=comments)
+
 
 @router.get("/{post_uuid}/comments", response_model=CommentListResponse)
 async def get_post_comments(

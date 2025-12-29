@@ -23,8 +23,20 @@ import DashboardOverview from '@/views/dashboard/Overview';
 import Posts from '@/views/dashboard/Posts';
 import PostForm from '@/views/dashboard/Posts/PostForm';
 import Drafts from '@/views/dashboard/Drafts';
+import Bookmarks from '@/views/dashboard/Bookmarks';
 import Media from '@/views/dashboard/Media';
 import Profile from '@/views/dashboard/Profile';
+
+// Dashboard Views - Social
+import Followers from '@/views/dashboard/Social/Followers';
+import Following from '@/views/dashboard/Social/Following';
+
+// Dashboard Views - Notifications
+import Notifications from '@/views/dashboard/Notifications';
+
+// Dashboard Views - Collection
+import Collection from '@/views/dashboard/Collection';
+import ListDetail from '@/views/dashboard/Collection/ListDetail';
 
 // Dashboard Views - Moderation (Editor+)
 import CommentModeration from '@/views/dashboard/Moderation/Comments';
@@ -72,10 +84,18 @@ function App() {
         <Route path="posts/create" element={<PostForm />} />
         <Route path="posts/edit/:id" element={<PostForm />} />
         <Route path="drafts" element={<Drafts />} />
+        <Route path="bookmarks" element={<Bookmarks />} />
         <Route path="media" element={<Media />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="followers" element={<Followers />} />
+        <Route path="following" element={<Following />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="collection" element={<Collection />} />
+        <Route path="collection/list/:uuid" element={<ListDetail />} />
 
         {/* Editor+ routes */}
+
+
         <Route
           path="ai-writer"
           element={

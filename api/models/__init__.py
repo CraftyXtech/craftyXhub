@@ -5,6 +5,7 @@ from .comment import Comment
 from .report import Report
 from .ai_draft import AIDraft, AIGenerationLog, AIModel
 from .notification import Notification
+from .collection import ReadingList, ReadingListItem, ReadingHistory, Highlight
 
 __all__ = [
     'Base',
@@ -22,4 +23,8 @@ __all__ = [
     'AIGenerationLog',
     'AIModel',
     'Notification',
+    'ReadingList',
+    'ReadingListItem',
+    'ReadingHistory',
+    'Highlight',
 ]

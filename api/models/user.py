@@ -60,6 +60,11 @@ class User(BaseTable):
     ai_drafts = relationship("AIDraft", back_populates="user", cascade="all, delete-orphan")
     ai_generation_logs = relationship("AIGenerationLog", back_populates="user", cascade="all, delete-orphan")
     
+    # Collection relationships
+    reading_lists = relationship("ReadingList", back_populates="user", cascade="all, delete-orphan")
+    reading_history = relationship("ReadingHistory", back_populates="user", cascade="all, delete-orphan")
+    highlights = relationship("Highlight", back_populates="user", cascade="all, delete-orphan")
+    
     
     def is_super_admin(self) -> bool:
         return self.role == UserRole.SUPER_ADMIN

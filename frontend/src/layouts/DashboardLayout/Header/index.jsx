@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useLocation, Link as RouterLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useLocation, Link as RouterLink, useNavigate } from 'react-router-dom';
 
 // MUI
 import { styled } from '@mui/material/styles';
@@ -16,6 +16,7 @@ import Divider from '@mui/material/Divider';
 import Badge from '@mui/material/Badge';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Link from '@mui/material/Link';
+import Tooltip from '@mui/material/Tooltip';
 
 // Icons
 import {
@@ -28,9 +29,10 @@ import {
   IconChevronRight
 } from '@tabler/icons-react';
 
-// Auth
+// Auth & API
 import { useAuth } from '@/api/AuthProvider';
 import { dashboardTokens } from '@/config/dashboard';
+import { getNotificationStats } from '@/api/services/notificationService';
 
 // Styled AppBar
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -45,8 +47,28 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
  */
 export default function Header({ onMenuClick }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread notification count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const stats = await getNotificationStats();
+        setUnreadCount(stats.unread || 0);
+      } catch (err) {
+        console.error('Failed to fetch notification stats:', err);
+      }
+    };
+
+    fetchUnreadCount();
+    
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -59,6 +81,10 @@ export default function Header({ onMenuClick }) {
   const handleLogout = () => {
     handleMenuClose();
     logout();
+  };
+
+  const handleNotificationsClick = () => {
+    navigate('/dashboard/notifications');
   };
 
   // Generate breadcrumbs from path
@@ -122,11 +148,26 @@ export default function Header({ onMenuClick }) {
         {/* Right side - Notifications and user menu */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Notifications */}
-          <IconButton color="inherit">
-            <Badge badgeContent={3} color="error" variant="dot">
-              <IconBell size={20} />
-            </Badge>
-          </IconButton>
+          <Tooltip title={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}>
+            <IconButton 
+              color="inherit" 
+              onClick={handleNotificationsClick}
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'action.hover'
+                }
+              }}
+            >
+              <Badge 
+                badgeContent={unreadCount} 
+                color="error" 
+                max={99}
+                invisible={unreadCount === 0}
+              >
+                <IconBell size={20} />
+              </Badge>
+            </IconButton>
+          </Tooltip>
 
           {/* User Avatar */}
           <IconButton onClick={handleMenuOpen} sx={{ ml: 1 }}>
@@ -186,11 +227,27 @@ export default function Header({ onMenuClick }) {
 
             <Divider />
 
+            <MenuItem component={RouterLink} to="/">
+              <ListItemIcon>
+                <IconHome size={18} />
+              </ListItemIcon>
+              Home
+            </MenuItem>
+
             <MenuItem component={RouterLink} to="/dashboard/profile">
               <ListItemIcon>
                 <IconUser size={18} />
               </ListItemIcon>
-              {user?.username || 'Profile'}
+              Profile
+            </MenuItem>
+
+            <MenuItem component={RouterLink} to="/dashboard/notifications">
+              <ListItemIcon>
+                <Badge badgeContent={unreadCount} color="error" max={9}>
+                  <IconBell size={18} />
+                </Badge>
+              </ListItemIcon>
+              Notifications
             </MenuItem>
 
             <MenuItem component={RouterLink} to="/dashboard/settings">

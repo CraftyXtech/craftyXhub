@@ -6,6 +6,14 @@
 // Icons from @tabler/icons-react
 export const menuItems = [
   {
+    id: 'home',
+    title: 'Home',
+    icon: 'IconHome',
+    url: '/dashboard/home',
+    roles: ['user', 'moderator', 'admin'],
+    breadcrumbs: false
+  },
+  {
     id: 'dashboard',
     title: 'Dashboard',
     icon: 'IconLayoutGrid',
@@ -41,6 +49,38 @@ export const menuItems = [
     title: 'Media Library',
     icon: 'IconPhoto',
     url: '/dashboard/media',
+    roles: ['user', 'moderator', 'admin']
+  },
+  {
+    id: 'collection',
+    title: 'My Collection',
+    icon: 'IconLibrary',
+    url: '/dashboard/collection',
+    roles: ['user', 'moderator', 'admin']
+  },
+  {
+    id: 'social',
+    title: 'Social',
+    icon: 'IconUsers',
+    roles: ['user', 'moderator', 'admin'],
+    children: [
+      {
+        id: 'followers',
+        title: 'Followers',
+        url: '/dashboard/followers'
+      },
+      {
+        id: 'following',
+        title: 'Following',
+        url: '/dashboard/following'
+      }
+    ]
+  },
+  {
+    id: 'notifications',
+    title: 'Notifications',
+    icon: 'IconBell',
+    url: '/dashboard/notifications',
     roles: ['user', 'moderator', 'admin']
   },
   {

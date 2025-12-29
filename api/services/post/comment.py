@@ -144,6 +144,39 @@ class CommentService:
             )
 
     @staticmethod
+    async def get_user_comments(
+            session: AsyncSession,
+            user_id: int,
+            skip: int = 0,
+            limit: int = 10
+    ) -> List[Comment]:
+        """Get all comments made by a specific user"""
+        try:
+            from sqlalchemy import func
+            
+            query = select(Comment).where(Comment.author_id == user_id).options(
+                selectinload(Comment.author),
+                selectinload(Comment.post),
+                selectinload(Comment.parent)
+            ).offset(skip).limit(limit).order_by(Comment.created_at.desc())
+
+            result = await session.execute(query)
+            return result.scalars().all()
+
+        except SQLAlchemyError as e:
+            logger.error(f"Database error getting user comments: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve comments"
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error getting user comments: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred"
+            )
+
+    @staticmethod
     async def get_comment_by_uuid(
             session: AsyncSession,
             comment_uuid: str

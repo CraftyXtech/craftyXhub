@@ -23,7 +23,8 @@ class Settings:
     FACEBOOK_CLIENT_ID = os.getenv("FACEBOOK_CLIENT_ID")
     FACEBOOK_CLIENT_SECRET = os.getenv("FACEBOOK_CLIENT_SECRET")
 
-    ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
+    # Token expiry: 1440 minutes = 24 hours (adjust for production as needed)
+    ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
     SECRET_KEY = os.getenv("SECRET_KEY")
     ALGORITHM = os.getenv("ALGORITHM", "HS256")
 

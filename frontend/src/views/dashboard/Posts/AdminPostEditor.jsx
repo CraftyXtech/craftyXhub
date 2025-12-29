@@ -284,7 +284,7 @@ export default function AdminPostEditor() {
       )}
 
       {/* Main Content */}
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ minHeight: 'calc(100vh - 150px)' }}>
         {/* Editor Column */}
         <Grid item xs={12} lg={8}>
           <Stack spacing={3}>
@@ -451,8 +451,17 @@ export default function AdminPostEditor() {
         </Grid>
 
         {/* AI Panel Column (Large screens) */}
-        <Grid item xs={12} lg={4} sx={{ display: { xs: 'none', lg: 'block' } }}>
-          <Box sx={{ position: 'sticky', top: 80 }}>
+        <Grid 
+          item 
+          xs={12} 
+          lg={4} 
+          sx={{ 
+            display: { xs: 'none', lg: 'block' },
+            mr: -3,  // Negative margin to extend to edge
+            pr: 3,   // Add padding back inside
+          }}
+        >
+          <Box sx={{ position: 'sticky', top: 80, pr: 0 }}>
             <Stack spacing={3}>
               {/* Featured Image */}
               <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>

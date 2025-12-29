@@ -32,9 +32,11 @@ import {
 } from '@tabler/icons-react';
 import CommentSection from '@/components/CommentSection';
 import Sidebar from '@/components/Blog/Sidebar';
+import SaveToListMenu from '@/components/SaveToListMenu';
 import { getPostBySlug, getRelatedPosts } from '@/api/services/postService';
 import { getCategoryBySlug } from '@/api/services/categoryService';
 import { getImageUrl } from '@/api/utils/imageUrl';
+import { recordPostView } from '@/api/services/collectionService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -236,6 +238,15 @@ export default function BlogDetail() {
     };
 
     fetchPost();
+  }, [slug]);
+
+  // Track reading history when post loads
+  useEffect(() => {
+    if (post?.uuid && isAuthenticated) {
+      recordPostView(post.uuid).catch(err => {
+        console.error('Failed to record view:', err);
+      });
+    }
   }, [slug]);
 
   const handleLike = () => {
@@ -511,16 +522,25 @@ export default function BlogDetail() {
                 >
                   {likesCount}
                 </Button>
-                <IconButton
-                  onClick={handleBookmark}
-                  sx={{
-                    border: '1px solid',
-                    borderColor: isBookmarked ? 'primary.main' : 'grey.300',
-                    color: isBookmarked ? 'primary.main' : 'text.secondary'
-                  }}
-                >
-                  <IconBookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
-                </IconButton>
+                {isAuthenticated && (
+                  <SaveToListMenu
+                    postUuid={post.uuid}
+                    isBookmarked={isBookmarked}
+                    onBookmarkChange={setIsBookmarked}
+                  />
+                )}
+                {!isAuthenticated && (
+                  <IconButton
+                    onClick={handleBookmark}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'grey.300',
+                      color: 'text.secondary'
+                    }}
+                  >
+                    <IconBookmark size={18} />
+                  </IconButton>
+                )}
               </Stack>
             </Stack>
 
