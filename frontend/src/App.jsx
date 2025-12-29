@@ -10,7 +10,6 @@ import RequireAuth from '@/components/RequireAuth';
 
 // Public Views
 import Home from '@/views/public/Home';
-import BlogList from '@/views/public/Blog';
 import BlogDetail from '@/views/public/Blog/Detail';
 import Category from '@/views/public/Category';
 import Author from '@/views/public/Author';
@@ -47,9 +46,8 @@ function App() {
       {/* Public Routes with Layout */}
       <Route element={<PublicLayout />}>
         <Route index element={<Home />} />
-        <Route path="/blog" element={<BlogList />} />
-        <Route path="/blog/category/:slug" element={<Category />} />
-        <Route path="/blog/:slug" element={<BlogDetail />} />
+        <Route path="/category/:slug" element={<Category />} />
+        <Route path="/post/:slug" element={<BlogDetail />} />
         <Route path="/author/:username" element={<Author />} />
         <Route path="/about" element={<About />} />
       </Route>

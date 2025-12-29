@@ -133,8 +133,7 @@ export default function Hero() {
                 Start Writing
               </Button>
               <Button
-                component={RouterLink}
-                to="/blog"
+                onClick={() => window.scrollTo({ top: 600, behavior: 'smooth' })}
                 variant="outlined"
                 color="secondary"
                 size="large"

@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Container, Grid, Button, Skeleton, Typography } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
-import { IconArrowRight } from '@tabler/icons-react';
+import { Box, Container, Grid, Skeleton, Typography } from '@mui/material';
 import PostCard from '@/components/PostCard';
 import SectionHeader from '@/components/SectionHeader';
 import { getRecentPosts } from '@/api/services/postService';
@@ -15,8 +13,9 @@ export default function LatestPosts() {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const data = await getRecentPosts(0, 4);
-        setPosts(data || []);
+        const data = await getRecentPosts({ limit: 4 });
+        // API returns { posts: [...] } - extract the array
+        setPosts(data?.posts || []);
       } catch (err) {
         console.error('Failed to fetch latest posts:', err);
         setError('Failed to load posts');
@@ -70,26 +69,6 @@ export default function LatestPosts() {
             ))
           )}
         </Grid>
-
-        {/* View All Button */}
-        <Box sx={{ textAlign: 'center', mt: 5 }}>
-          <Button
-            component={RouterLink}
-            to="/blog"
-            variant="outlined"
-            endIcon={<IconArrowRight size={18} />}
-            sx={{
-              borderColor: 'grey.300',
-              color: 'text.primary',
-              '&:hover': {
-                borderColor: 'grey.400',
-                bgcolor: 'grey.50'
-              }
-            }}
-          >
-            View All Articles
-          </Button>
-        </Box>
       </Container>
     </Box>
   );

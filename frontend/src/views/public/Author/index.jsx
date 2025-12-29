@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -8,9 +8,10 @@ import {
   Avatar,
   Stack,
   IconButton,
-  Card,
-  CardContent,
-  Divider
+  Divider,
+  Skeleton,
+  Alert,
+  Button
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import {
@@ -22,78 +23,10 @@ import {
 } from '@tabler/icons-react';
 import PostCard from '@/components/PostCard';
 import Breadcrumb from '@/components/Breadcrumb';
+import { getUserByUsername } from '@/api/services/userService';
+import { getPostsByAuthor } from '@/api/services/postService';
 
 const MotionBox = motion.create(Box);
-const MotionCard = motion.create(Card);
-
-// Sample author data (will be replaced with API data)
-const authorData = {
-  emma_wilson: {
-    username: 'emma_wilson',
-    full_name: 'Emma Wilson',
-    avatar: '',
-    bio: 'Design Lead at Creative Studio. Passionate about user experience and design systems. With over 10 years of experience in product design, I help teams build beautiful, functional products.',
-    location: 'San Francisco, CA',
-    website: 'https://emmawilson.design',
-    twitter: 'emmawilson',
-    linkedin: 'emmawilson',
-    stats: {
-      posts: 24,
-      likes: 1520
-    }
-  },
-  james_chen: {
-    username: 'james_chen',
-    full_name: 'James Chen',
-    avatar: '',
-    bio: 'Venture Partner at TechCapital. Former founder with 2 successful exits. Writing about startups, fundraising, and building teams.',
-    location: 'New York, NY',
-    website: 'https://jameschen.vc',
-    twitter: 'jameschen',
-    linkedin: 'jameschen',
-    stats: {
-      posts: 18,
-      likes: 980
-    }
-  }
-};
-
-// Sample posts data (will be replaced with API data)
-const authorPosts = [
-  {
-    id: 1,
-    slug: 'design-thinking-guide',
-    title: 'Design Thinking: A Practical Guide for Beginners',
-    excerpt: 'Learn the fundamentals of design thinking and how to apply it to solve complex problems.',
-    category: 'Design',
-    author: { full_name: 'Emma Wilson', username: 'emma_wilson' },
-    created_at: '2024-12-27',
-    read_time: '6 min read',
-    featured_image: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=800&h=600&fit=crop'
-  },
-  {
-    id: 2,
-    slug: 'ux-research-methods',
-    title: 'Essential UX Research Methods Every Designer Should Know',
-    excerpt: 'A comprehensive guide to user research techniques for better product design.',
-    category: 'Design',
-    author: { full_name: 'Emma Wilson', username: 'emma_wilson' },
-    created_at: '2024-12-22',
-    read_time: '10 min read',
-    featured_image: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&h=600&fit=crop'
-  },
-  {
-    id: 3,
-    slug: 'building-design-systems',
-    title: 'Building Scalable Design Systems from Scratch',
-    excerpt: 'How to create and maintain a design system that grows with your product.',
-    category: 'Design',
-    author: { full_name: 'Emma Wilson', username: 'emma_wilson' },
-    created_at: '2024-12-20',
-    read_time: '8 min read',
-    featured_image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&h=600&fit=crop'
-  }
-];
 
 /**
  * Author Page
@@ -101,23 +34,99 @@ const authorPosts = [
  */
 export default function Author() {
   const { username } = useParams();
+  const [author, setAuthor] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showAllPosts, setShowAllPosts] = useState(false);
 
-  // TODO: Replace with API call
-  const author = authorData[username] || {
-    username,
-    full_name: username,
-    bio: 'Author not found.',
-    stats: { posts: 0, likes: 0 }
-  };
+  // Fetch author and their posts
+  useEffect(() => {
+    const fetchAuthorData = async () => {
+      if (!username) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch author profile
+        const authorData = await getUserByUsername(username);
+        setAuthor(authorData);
+        
+        // Fetch author's posts
+        if (authorData?.id) {
+          const postsData = await getPostsByAuthor(authorData.id, { limit: 20 });
+          setPosts(postsData.posts || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch author:', err);
+        setError(err.message || 'Author not found');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const posts = authorPosts; // Filter by author in real implementation
+    fetchAuthorData();
+  }, [username]);
+
   const displayedPosts = showAllPosts ? posts : posts.slice(0, 6);
-
+  
   const breadcrumbItems = [
-    { label: 'Blog', to: '/blog' },
-    { label: author.full_name }
+    { label: 'Home', to: '/' },
+    { label: author?.full_name || username }
   ];
+
+  // Loading state
+  if (loading) {
+    return (
+      <Box>
+        <Box sx={{ bgcolor: 'grey.50', py: { xs: 6, md: 8 } }}>
+          <Container maxWidth="lg">
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems="center">
+              <Skeleton variant="circular" width={120} height={120} />
+              <Box sx={{ flex: 1, width: '100%' }}>
+                <Skeleton variant="text" width="40%" height={48} />
+                <Skeleton variant="text" width="60%" />
+                <Skeleton variant="text" width="80%" />
+              </Box>
+            </Stack>
+          </Container>
+        </Box>
+        <Container maxWidth="lg" sx={{ py: 6 }}>
+          <Grid container spacing={3}>
+            {[...Array(3)].map((_, i) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
+                <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
+                <Skeleton variant="text" height={32} sx={{ mt: 2 }} />
+                <Skeleton variant="text" width="80%" />
+              </Grid>
+            ))}
+          </Grid>
+        </Container>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (error || !author) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 8, textAlign: 'center' }}>
+        <Alert severity="error" sx={{ mb: 4, maxWidth: 400, mx: 'auto' }}>
+          {error || 'Author not found'}
+        </Alert>
+        <Button variant="contained" href="/">
+          Back to Home
+        </Button>
+      </Container>
+    );
+  }
+
+  // Get profile data safely
+  const profile = author.profile || {};
+  const stats = {
+    posts: posts.length,
+    likes: author.total_likes || 0
+  };
 
   return (
     <Box>
@@ -142,7 +151,7 @@ export default function Author() {
               {/* Avatar */}
               <Grid size={{ xs: 12, md: 'auto' }}>
                 <Avatar
-                  src={author.avatar}
+                  src={profile.avatar}
                   sx={{
                     width: 120,
                     height: 120,
@@ -163,14 +172,14 @@ export default function Author() {
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     @{author.username}
-                    {author.location && ` · ${author.location}`}
+                    {profile.location && ` · ${profile.location}`}
                   </Typography>
                   <Typography
                     variant="body1"
                     color="text.secondary"
                     sx={{ mb: 3, maxWidth: 600 }}
                   >
-                    {author.bio}
+                    {profile.bio || 'No bio available.'}
                   </Typography>
 
                   {/* Stats & Social */}
@@ -185,13 +194,13 @@ export default function Author() {
                       <Stack direction="row" spacing={1} alignItems="center">
                         <IconArticle size={18} />
                         <Typography variant="body2">
-                          <strong>{author.stats.posts}</strong> Posts
+                          <strong>{stats.posts}</strong> Posts
                         </Typography>
                       </Stack>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <IconHeart size={18} />
                         <Typography variant="body2">
-                          <strong>{author.stats.likes}</strong> Likes
+                          <strong>{stats.likes}</strong> Likes
                         </Typography>
                       </Stack>
                     </Stack>
@@ -200,10 +209,10 @@ export default function Author() {
 
                     {/* Social Links */}
                     <Stack direction="row" spacing={1}>
-                      {author.website && (
+                      {profile.website && (
                         <IconButton
                           component="a"
-                          href={author.website}
+                          href={profile.website}
                           target="_blank"
                           size="small"
                           sx={{ color: 'text.secondary' }}
@@ -211,10 +220,10 @@ export default function Author() {
                           <IconWorld size={20} />
                         </IconButton>
                       )}
-                      {author.twitter && (
+                      {profile.twitter && (
                         <IconButton
                           component="a"
-                          href={`https://twitter.com/${author.twitter}`}
+                          href={`https://twitter.com/${profile.twitter}`}
                           target="_blank"
                           size="small"
                           sx={{ color: '#1DA1F2' }}
@@ -222,10 +231,10 @@ export default function Author() {
                           <IconBrandTwitter size={20} />
                         </IconButton>
                       )}
-                      {author.linkedin && (
+                      {profile.linkedin && (
                         <IconButton
                           component="a"
-                          href={`https://linkedin.com/in/${author.linkedin}`}
+                          href={`https://linkedin.com/in/${profile.linkedin}`}
                           target="_blank"
                           size="small"
                           sx={{ color: '#0077B5' }}
@@ -248,13 +257,21 @@ export default function Author() {
           Articles by {author.full_name}
         </Typography>
 
-        <Grid container spacing={3}>
-          {displayedPosts.map((post, index) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={post.id}>
-              <PostCard post={post} animationDelay={index * 0.05} />
-            </Grid>
-          ))}
-        </Grid>
+        {posts.length > 0 ? (
+          <Grid container spacing={3}>
+            {displayedPosts.map((post, index) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={post.id || post.uuid}>
+                <PostCard post={post} animationDelay={index * 0.05} />
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography color="text.secondary">
+              No published posts yet
+            </Typography>
+          </Box>
+        )}
 
         {/* Show More */}
         {posts.length > 6 && !showAllPosts && (

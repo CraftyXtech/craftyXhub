@@ -202,18 +202,7 @@ export default function Sidebar({ open, mobileOpen, isMobile, onToggle, onMobile
         </List>
       </Box>
 
-      {/* User info at bottom */}
-      <Box sx={{ p: 2, borderTop: `1px solid ${dashboardTokens.sidebar.divider}` }}>
-        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-          Logged in as
-        </Typography>
-        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-          {user?.full_name || user?.username || 'User'}
-        </Typography>
-        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', textTransform: 'capitalize' }}>
-          {user?.role || 'Author'}
-        </Typography>
-      </Box>
+
     </>
   );
 

@@ -22,8 +22,9 @@ import {
   IconBrandGithub
 } from '@tabler/icons-react';
 import Logo from '@/components/Logo';
-import { login as loginApi } from '@/api';
+import { login as loginApi, getCurrentUser } from '@/api';
 import { useAuth } from '@/api/AuthProvider';
+import { TOKEN_KEY } from '@/api/axios';
 
 const MotionBox = motion.create(Box);
 
@@ -56,9 +57,16 @@ export default function Login() {
     
     try {
       const response = await loginApi(formData);
+      const token = response.access_token;
+      
+      // Store token first so axiosPrivate can use it
+      localStorage.setItem(TOKEN_KEY, token);
+      
+      // Fetch user data
+      const userData = await getCurrentUser();
       
       // Store auth data using the auth context
-      login(response.access_token, response.user);
+      login(token, userData);
       
       // Redirect to the page they tried to visit or dashboard
       navigate(from, { replace: true });

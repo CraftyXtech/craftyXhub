@@ -18,19 +18,19 @@ const heroSlides = [
     image: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1600&h=900&fit=crop',
     label: 'Featured',
     title: 'Discover Stories That Inspire',
-    to: '/blog?filter=featured'
+    to: '/'
   },
   {
     image: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=1600&h=900&fit=crop',
     label: 'Trending',
     title: 'What The Community Is Reading',
-    to: '/blog?filter=trending'
+    to: '/'
   }
 ];
 
 // Featured Post Card Component
 function FeaturedPostCard({ post, height = '100%' }) {
-  const postUrl = `/blog/${post.slug || post.uuid || post.id}`;
+  const postUrl = `/post/${post.slug || post.uuid || post.id}`;
   const imageUrl = getImageUrl(post.featured_image) || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=600&fit=crop';
   const categoryName = typeof post.category === 'object' ? post.category?.name : post.category;
   const postDate = post.published_at || post.created_at;
@@ -132,8 +132,9 @@ export default function HeroSection() {
     const fetchFeaturedPosts = async () => {
       try {
         setLoading(true);
-        const data = await getFeaturedPosts(0, 2);
-        setFeaturedPosts(data || []);
+        const data = await getFeaturedPosts({ limit: 2 });
+        // API returns { posts: [...] } - extract the array
+        setFeaturedPosts(data?.posts || []);
       } catch (err) {
         console.error('Failed to fetch featured posts:', err);
       } finally {

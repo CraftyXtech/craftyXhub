@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/api/AuthProvider';
 import {
   Box,
   Container,
@@ -13,7 +14,8 @@ import {
   IconButton,
   Card,
   CardContent,
-  Skeleton
+  Skeleton,
+  Alert
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import {
@@ -23,139 +25,95 @@ import {
   IconUser,
   IconHeart,
   IconBookmark,
-  IconShare,
   IconBrandFacebook,
   IconBrandTwitter,
-  IconBrandLinkedin
+  IconBrandLinkedin,
+  IconArrowLeft
 } from '@tabler/icons-react';
 import CommentSection from '@/components/CommentSection';
+import Sidebar from '@/components/Blog/Sidebar';
+import { getPostBySlug, getRelatedPosts } from '@/api/services/postService';
+import { getCategoryBySlug } from '@/api/services/categoryService';
+import { getImageUrl } from '@/api/utils/imageUrl';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const MotionBox = motion.create(Box);
 
-// Sample post data (will be replaced with API data)
-const samplePost = {
-  id: 1,
-  uuid: 'abc123',
-  slug: 'design-thinking-guide',
-  title: 'Design Thinking: A Practical Guide for Beginners',
-  excerpt: 'Learn the fundamentals of design thinking and how to apply it to solve complex problems in your daily work.',
-  content: `
-    <p>Design thinking is a problem-solving methodology that puts human needs at the center of the development process. It's not just for designers—it's a powerful approach that anyone can use to tackle complex challenges.</p>
-    
-    <h2>What is Design Thinking?</h2>
-    <p>At its core, design thinking is about understanding the people you're designing for, challenging assumptions, and redefining problems to identify alternative strategies and solutions.</p>
-    
-    <h2>The Five Stages of Design Thinking</h2>
-    <p>The design thinking process consists of five key stages:</p>
-    <ul>
-      <li><strong>Empathize</strong> – Research and understand users' needs</li>
-      <li><strong>Define</strong> – State the users' problems and needs</li>
-      <li><strong>Ideate</strong> – Challenge assumptions and create ideas</li>
-      <li><strong>Prototype</strong> – Start creating solutions</li>
-      <li><strong>Test</strong> – Try out your solutions</li>
-    </ul>
-    
-    <blockquote>
-      "Design thinking is not just about aesthetics—it's about creating meaningful solutions that truly resonate with people."
-    </blockquote>
-    
-    <h2>Getting Started</h2>
-    <p>To begin your design thinking journey, start by observing the world around you. Pay attention to problems people face in their daily lives, and think about how you might solve them in unexpected ways.</p>
-    
-    <pre><code>// Example: A simple design thinking framework
-const designThinking = {
-  empathize: () => "Understand user needs",
-  define: () => "State the problem",
-  ideate: () => "Generate solutions",
-  prototype: () => "Build quickly",
-  test: () => "Learn and iterate"
-};</code></pre>
-    
-    <p>Remember, design thinking is an iterative process. Don't be afraid to go back to earlier stages as you learn more about the problem you're trying to solve.</p>
-  `,
-  featured_image: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=1200&h=600&fit=crop',
-  category: { name: 'Design', slug: 'design' },
-  author: {
-    full_name: 'Emma Wilson',
-    username: 'emma_wilson',
-    avatar: '',
-    bio: 'Design Lead at Creative Studio. Passionate about user experience and design systems.'
-  },
-  published_at: '2024-12-27T10:00:00Z',
-  reading_time: 6,
-  tags: [
-    { name: 'Design', slug: 'design' },
-    { name: 'UX', slug: 'ux' },
-    { name: 'Product', slug: 'product' }
-  ],
-  likes_count: 142
-};
-
-// Author Box Component
+/**
+ * Author Box Component
+ */
 function AuthorBox({ author }) {
+  if (!author) return null;
+  
   return (
     <Card variant="outlined" sx={{ mb: 4 }}>
-      <CardContent sx={{ display: 'flex', gap: 3, alignItems: 'flex-start' }}>
-        <Avatar
-          src={author?.avatar}
-          sx={{ width: 80, height: 80, bgcolor: 'primary.main' }}
-        >
-          {author?.full_name?.[0] || 'A'}
-        </Avatar>
-        <Box>
-          <Typography variant="overline" color="text.secondary">
-            Written by
-          </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            {author?.full_name || 'Anonymous'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {author?.bio || 'No bio available.'}
-          </Typography>
-        </Box>
+      <CardContent>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="center">
+          <Avatar
+            src={author.avatar || author.profile?.avatar}
+            sx={{ width: 80, height: 80 }}
+          >
+            {author.full_name?.[0]}
+          </Avatar>
+          <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {author.full_name}
+            </Typography>
+            {author.profile?.bio && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                {author.profile.bio}
+              </Typography>
+            )}
+            <Button
+              component={RouterLink}
+              to={`/author/${author.username}`}
+              size="small"
+              sx={{ mt: 1 }}
+            >
+              View Profile
+            </Button>
+          </Box>
+        </Stack>
       </CardContent>
     </Card>
   );
 }
 
-// Social Share Icons
-function SocialShare({ title, url }) {
-  const shareUrl = url || window.location.href;
-  const encodedUrl = encodeURIComponent(shareUrl);
-  const encodedTitle = encodeURIComponent(title || '');
-
+/**
+ * Social Share Component
+ */
+function SocialShare({ title }) {
+  const currentUrl = window.location.href;
+  const encodedUrl = encodeURIComponent(currentUrl);
+  const encodedTitle = encodeURIComponent(title);
+  
   return (
     <Stack direction="row" spacing={1} alignItems="center">
-      <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>
+      <Typography variant="body2" color="text.secondary">
         Share:
       </Typography>
       <IconButton
-        size="small"
-        component="a"
-        href={`https://facebook.com/sharer/sharer.php?u=${encodedUrl}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        sx={{ color: '#3b5998' }}
-      >
-        <IconBrandFacebook size={18} />
-      </IconButton>
-      <IconButton
-        size="small"
         component="a"
         href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`}
         target="_blank"
-        rel="noopener noreferrer"
-        sx={{ color: '#1da1f2' }}
+        size="small"
       >
         <IconBrandTwitter size={18} />
       </IconButton>
       <IconButton
-        size="small"
         component="a"
-        href={`https://linkedin.com/shareArticle?mini=true&url=${encodedUrl}&title=${encodedTitle}`}
+        href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
         target="_blank"
-        rel="noopener noreferrer"
-        sx={{ color: '#0077b5' }}
+        size="small"
+      >
+        <IconBrandFacebook size={18} />
+      </IconButton>
+      <IconButton
+        component="a"
+        href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`}
+        target="_blank"
+        size="small"
       >
         <IconBrandLinkedin size={18} />
       </IconButton>
@@ -163,58 +121,46 @@ function SocialShare({ title, url }) {
   );
 }
 
-// Related Posts Component
+/**
+ * Related Posts Component
+ */
 function RelatedPosts({ posts }) {
+  if (!posts || posts.length === 0) return null;
+  
   return (
-    <Box sx={{ py: { xs: 6, md: 10 }, bgcolor: 'grey.100' }}>
+    <Box sx={{ bgcolor: 'grey.50', py: 6 }}>
       <Container maxWidth="lg">
-        <Box sx={{ textAlign: 'center', mb: 6 }}>
-          <Typography variant="overline" color="text.secondary">
-            You may also like
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 600 }}>
-            Related Posts
-          </Typography>
-        </Box>
+        <Typography variant="h5" sx={{ fontWeight: 600, mb: 4 }}>
+          Related Articles
+        </Typography>
         <Grid container spacing={3}>
           {posts.map((post) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={post.id}>
+            <Grid size={{ xs: 12, md: 4 }} key={post.id || post.uuid}>
               <Card
                 component={RouterLink}
-                to={`/blog/${post.slug}`}
+                to={`/post/${post.slug}`}
                 sx={{
                   textDecoration: 'none',
                   height: '100%',
-                  '&:hover img': { transform: 'scale(1.05)' }
+                  display: 'flex',
+                  flexDirection: 'column',
+                  '&:hover': { boxShadow: 4 }
                 }}
               >
-                <Box sx={{ overflow: 'hidden' }}>
-                  <Box
-                    component="img"
-                    src={post.featured_image}
-                    alt={post.title}
-                    sx={{
-                      width: '100%',
-                      height: 200,
-                      objectFit: 'cover',
-                      transition: 'transform 0.3s'
-                    }}
-                  />
-                </Box>
+                <Box
+                  component="img"
+                  src={getImageUrl(post.featured_image) || 'https://via.placeholder.com/400x200'}
+                  alt={post.title}
+                  sx={{
+                    width: '100%',
+                    height: 180,
+                    objectFit: 'cover'
+                  }}
+                />
                 <CardContent>
-                  <Chip
-                    label={post.category?.name || post.category}
-                    size="small"
-                    sx={{
-                      mb: 1,
-                      bgcolor: 'transparent',
-                      color: 'primary.main',
-                      border: '1px solid',
-                      borderColor: 'primary.main',
-                      fontWeight: 600,
-                      fontSize: '0.65rem'
-                    }}
-                  />
+                  <Typography variant="body2" color="primary.main" sx={{ mb: 1 }}>
+                    {post.category?.name}
+                  </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     {post.title}
                   </Typography>
@@ -228,51 +174,93 @@ function RelatedPosts({ posts }) {
   );
 }
 
-// Related posts sample data
-const relatedPosts = [
-  {
-    id: 2,
-    slug: 'ux-research-methods',
-    title: 'Essential UX Research Methods Every Designer Should Know',
-    category: 'UX',
-    featured_image: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&h=600&fit=crop'
-  },
-  {
-    id: 3,
-    slug: 'building-design-systems',
-    title: 'Building Scalable Design Systems from Scratch',
-    category: 'Design',
-    featured_image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&h=600&fit=crop'
-  },
-  {
-    id: 4,
-    slug: 'user-centered-design',
-    title: 'The Principles of User-Centered Design',
-    category: 'Product',
-    featured_image: 'https://images.unsplash.com/photo-1553484771-371a605b060b?w=800&h=600&fit=crop'
-  }
-];
-
+/**
+ * Blog Detail Page
+ * Displays a single post with author info, content, and related posts
+ */
 export default function BlogDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
+  
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [relatedPosts, setRelatedPosts] = useState([]);
+  const [categoryData, setCategoryData] = useState(null);
+  
+  // User interaction state
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [likesCount, setLikesCount] = useState(samplePost.likes_count);
+  const [likesCount, setLikesCount] = useState(0);
 
-  // TODO: Replace with actual API call using slug
-  const post = samplePost;
-  const loading = false;
+  // Fetch post data
+  useEffect(() => {
+    const fetchPost = async () => {
+      if (!slug) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const postData = await getPostBySlug(slug);
+        setPost(postData);
+        setLikesCount(postData.likes_count || 0);
+        
+        // Fetch related posts if we have UUID
+        if (postData.uuid) {
+          try {
+            const related = await getRelatedPosts(postData.uuid, { limit: 3 });
+            setRelatedPosts(related.posts || []);
+          } catch (err) {
+            console.error('Failed to fetch related posts:', err);
+          }
+        }
+        
+        // Fetch category data for sidebar context
+        if (postData.category?.slug) {
+          try {
+            const catData = await getCategoryBySlug(postData.category.slug);
+            setCategoryData(catData);
+          } catch (err) {
+            console.error('Failed to fetch category data:', err);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch post:', err);
+        setError(err.message || 'Failed to load post');
+        setPost(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPost();
+  }, [slug]);
 
   const handleLike = () => {
+    if (!isAuthenticated) {
+      // Redirect to login with return URL
+      navigate('/auth/login', { state: { from: { pathname: `/post/${slug}` } } });
+      return;
+    }
     setIsLiked(!isLiked);
     setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+    // TODO: Call API to toggle like
   };
 
   const handleBookmark = () => {
+    if (!isAuthenticated) {
+      // Redirect to login with return URL
+      navigate('/auth/login', { state: { from: { pathname: `/post/${slug}` } } });
+      return;
+    }
     setIsBookmarked(!isBookmarked);
+    // TODO: Call API to toggle bookmark
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'long',
@@ -280,14 +268,34 @@ export default function BlogDetail() {
     });
   };
 
+  // Loading state
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 8 }}>
         <Skeleton variant="text" width="60%" height={60} />
-        <Skeleton variant="rectangular" height={400} sx={{ my: 4 }} />
+        <Skeleton variant="rectangular" height={400} sx={{ my: 4, borderRadius: 2 }} />
         <Skeleton variant="text" />
         <Skeleton variant="text" />
         <Skeleton variant="text" width="80%" />
+      </Container>
+    );
+  }
+
+  // Error state
+  if (error || !post) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 8, textAlign: 'center' }}>
+        <Alert severity="error" sx={{ mb: 4 }}>
+          {error || 'Post not found'}
+        </Alert>
+        <Button
+          component={RouterLink}
+          to="/"
+          startIcon={<IconArrowLeft />}
+          variant="contained"
+        >
+          Back to Home
+        </Button>
       </Container>
     );
   }
@@ -326,7 +334,7 @@ export default function BlogDetail() {
                   <IconFolder size={16} color="#14213D" />
                   <Typography
                     component={RouterLink}
-                    to={`/blog/category/${post.category.slug}`}
+                    to={`/category/${post.category.slug}`}
                     variant="body2"
                     color="primary.main"
                     sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
@@ -372,7 +380,7 @@ export default function BlogDetail() {
               >
                 <Box
                   component="img"
-                  src={post.featured_image}
+                  src={getImageUrl(post.featured_image)}
                   alt={post.title}
                   sx={{
                     width: '100%',
@@ -403,11 +411,13 @@ export default function BlogDetail() {
             <Box
               sx={{
                 mb: 4,
-                '& h2': {
-                  typography: 'h5',
+                '& h1, & h2, & h3, & h4, & h5, & h6': {
                   fontWeight: 600,
                   mt: 4,
                   mb: 2
+                },
+                '& h2': {
+                  typography: 'h5'
                 },
                 '& p': {
                   typography: 'body1',
@@ -455,8 +465,11 @@ export default function BlogDetail() {
                   fontSize: '0.875rem'
                 }
               }}
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
+            >
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {post.content}
+              </ReactMarkdown>
+            </Box>
 
             <Divider sx={{ my: 4 }} />
 
@@ -472,10 +485,10 @@ export default function BlogDetail() {
               <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
                 {post.tags?.map((tag) => (
                   <Chip
-                    key={tag.slug}
+                    key={tag.slug || tag.id}
                     label={tag.name}
                     component={RouterLink}
-                    to={`/blog/tag/${tag.slug}`}
+                    to={`/tag/${tag.slug}`}
                     clickable
                     size="small"
                     variant="outlined"
@@ -522,8 +535,10 @@ export default function BlogDetail() {
 
           {/* Sidebar */}
           <Grid size={{ xs: 12, lg: 4 }}>
-            {/* Sidebar content can be added here */}
-            {/* Search, Categories, Popular Posts, etc. */}
+            <Sidebar 
+              category={categoryData} 
+              activeCategory={post.category?.slug}
+            />
           </Grid>
         </Grid>
       </Container>

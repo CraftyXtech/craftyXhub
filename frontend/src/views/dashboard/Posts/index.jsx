@@ -120,7 +120,7 @@ export default function Posts() {
 
   const handleView = () => {
     if (selectedPost) {
-      window.open(`/blog/${selectedPost.slug}`, '_blank');
+      window.open(`/post/${selectedPost.slug}`, '_blank');
     }
     handleMenuClose();
   };

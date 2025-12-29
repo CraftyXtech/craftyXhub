@@ -13,8 +13,9 @@ export default function PopularPosts() {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const data = await getPopularPosts(0, 3);
-        setPosts(data || []);
+        const data = await getPopularPosts({ limit: 3 });
+        // API returns { posts: [...] } - extract the array
+        setPosts(data?.posts || []);
       } catch (err) {
         console.error('Failed to fetch popular posts:', err);
         setError('Failed to load posts');

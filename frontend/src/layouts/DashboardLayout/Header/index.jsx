@@ -177,7 +177,7 @@ export default function Header({ onMenuClick }) {
             {/* User info */}
             <Box sx={{ px: 2, py: 1.5 }}>
               <Typography variant="subtitle2" noWrap>
-                {user?.full_name || user?.username}
+                {user?.username || user?.full_name || user?.email?.split('@')[0]}
               </Typography>
               <Typography variant="caption" color="text.secondary" noWrap>
                 {user?.email}
@@ -190,7 +190,7 @@ export default function Header({ onMenuClick }) {
               <ListItemIcon>
                 <IconUser size={18} />
               </ListItemIcon>
-              Profile
+              {user?.username || 'Profile'}
             </MenuItem>
 
             <MenuItem component={RouterLink} to="/dashboard/settings">

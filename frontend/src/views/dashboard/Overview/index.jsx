@@ -9,7 +9,6 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Avatar from '@mui/material/Avatar';
-import Chip from '@mui/material/Chip';
 import LinearProgress from '@mui/material/LinearProgress';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
@@ -32,12 +31,6 @@ import {
 import { useAuth } from '@/api/AuthProvider';
 import { useDashboard } from '@/api';
 
-// Role display names
-const roleLabels = {
-  user: 'Author',
-  moderator: 'Editor',
-  admin: 'Admin'
-};
 
 // Stats card component
 const StatCard = ({ icon: Icon, title, value, change, color = 'primary', loading }) => (
@@ -101,32 +94,25 @@ export default function Overview() {
     return 'Good evening';
   }, []);
 
-  const roleLabel = roleLabels[user?.role?.toLowerCase()] || 'Author';
-
   // Extract stats from API response
   const stats = data?.post_stats || {};
   const engagement = data?.engagement || {};
   const topPosts = data?.top_posts || [];
   const draftsCount = stats.drafts || data?.drafts?.length || 0;
 
+  // Compute display name with fallbacks
+  const displayName = user?.username || user?.full_name || user?.email?.split('@')[0] || 'there';
+
   return (
     <Box>
       {/* Welcome Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" gutterBottom fontWeight={600}>
-          {greeting}, {user?.full_name || user?.username || 'there'}! 👋
+          {greeting}, {displayName}! 👋
         </Typography>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography variant="body1" color="text.secondary">
-            Welcome back to your dashboard.
-          </Typography>
-          <Chip 
-            label={roleLabel} 
-            size="small" 
-            color="primary" 
-            variant="outlined"
-          />
-        </Stack>
+        <Typography variant="body1" color="text.secondary">
+          Welcome back to your dashboard.
+        </Typography>
       </Box>
 
       {/* Quick Actions */}
@@ -176,7 +162,7 @@ export default function Overview() {
 
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={IconFileText}
             title="Total Posts"
@@ -185,7 +171,7 @@ export default function Overview() {
             color="primary"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={IconEye}
             title="Total Views"
@@ -194,7 +180,7 @@ export default function Overview() {
             color="info"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={IconMessageCircle}
             title="Comments"
@@ -203,7 +189,7 @@ export default function Overview() {
             color="success"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={IconHeart}
             title="Likes"
@@ -216,7 +202,7 @@ export default function Overview() {
 
       {/* Recent Activity */}
       <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom fontWeight={600}>
@@ -244,7 +230,7 @@ export default function Overview() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom fontWeight={600}>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -10,9 +11,10 @@ import {
   Card,
   CardContent,
   Divider,
-  IconButton
+  Alert
 } from '@mui/material';
-import { IconHeart, IconMessageCircle, IconCornerDownRight } from '@tabler/icons-react';
+import { IconHeart, IconMessageCircle, IconCornerDownRight, IconLock } from '@tabler/icons-react';
+import { useAuth } from '@/api/AuthProvider';
 
 // Sample comments data
 const sampleComments = [
@@ -55,9 +57,10 @@ const sampleComments = [
 ];
 
 // Single Comment Component
-function Comment({ comment, isReply = false }) {
+function Comment({ comment, isReply = false, isAuthenticated = false }) {
   const [liked, setLiked] = useState(false);
   const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyText, setReplyText] = useState('');
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -74,6 +77,17 @@ function Comment({ comment, isReply = false }) {
       day: 'numeric',
       year: 'numeric'
     });
+  };
+
+  const handleLike = () => {
+    if (!isAuthenticated) return;
+    setLiked(!liked);
+    // TODO: Call API to toggle like
+  };
+
+  const handleReply = () => {
+    if (!isAuthenticated) return;
+    setShowReplyForm(!showReplyForm);
   };
 
   return (
@@ -107,7 +121,8 @@ function Comment({ comment, isReply = false }) {
             <Button
               size="small"
               startIcon={<IconHeart size={16} fill={liked ? 'currentColor' : 'none'} />}
-              onClick={() => setLiked(!liked)}
+              onClick={handleLike}
+              disabled={!isAuthenticated}
               sx={{ 
                 color: liked ? 'error.main' : 'text.secondary',
                 minWidth: 'auto',
@@ -116,11 +131,11 @@ function Comment({ comment, isReply = false }) {
             >
               {(comment.likes || 0) + (liked ? 1 : 0)}
             </Button>
-            {!isReply && (
+            {!isReply && isAuthenticated && (
               <Button
                 size="small"
                 startIcon={<IconCornerDownRight size={16} />}
-                onClick={() => setShowReplyForm(!showReplyForm)}
+                onClick={handleReply}
                 sx={{ color: 'text.secondary', minWidth: 'auto', px: 1 }}
               >
                 Reply
@@ -129,7 +144,7 @@ function Comment({ comment, isReply = false }) {
           </Stack>
           
           {/* Reply Form */}
-          {showReplyForm && (
+          {showReplyForm && isAuthenticated && (
             <Box sx={{ mt: 2 }}>
               <TextField
                 fullWidth
@@ -137,15 +152,17 @@ function Comment({ comment, isReply = false }) {
                 placeholder="Write a reply..."
                 multiline
                 rows={2}
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
                 sx={{ mb: 1 }}
               />
               <Stack direction="row" spacing={1}>
-                <Button variant="contained" size="small">
+                <Button variant="contained" size="small" disabled={!replyText.trim()}>
                   Post Reply
                 </Button>
                 <Button 
                   size="small" 
-                  onClick={() => setShowReplyForm(false)}
+                  onClick={() => { setShowReplyForm(false); setReplyText(''); }}
                 >
                   Cancel
                 </Button>
@@ -155,7 +172,7 @@ function Comment({ comment, isReply = false }) {
           
           {/* Nested Replies */}
           {comment.replies?.map((reply) => (
-            <Comment key={reply.id} comment={reply} isReply />
+            <Comment key={reply.id} comment={reply} isReply isAuthenticated={isAuthenticated} />
           ))}
         </Box>
       </Stack>
@@ -165,12 +182,13 @@ function Comment({ comment, isReply = false }) {
 
 // Main Comment Section Component
 export default function CommentSection({ postUuid, comments = sampleComments }) {
+  const { isAuthenticated, user } = useAuth();
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !isAuthenticated) return;
     
     setIsSubmitting(true);
     // TODO: Implement actual API call
@@ -194,37 +212,67 @@ export default function CommentSection({ postUuid, comments = sampleComments }) 
             </Typography>
           </Stack>
           
-          {/* Comment Form */}
-          <Card variant="outlined" sx={{ mb: 4 }}>
-            <CardContent>
-              <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                Leave a Comment
-              </Typography>
-              <form onSubmit={handleSubmit}>
-                <TextField
-                  fullWidth
-                  placeholder="Share your thoughts..."
-                  multiline
-                  rows={3}
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  sx={{ mb: 2 }}
-                />
+          {/* Comment Form - Only show for authenticated users */}
+          {isAuthenticated ? (
+            <Card variant="outlined" sx={{ mb: 4 }}>
+              <CardContent>
+                <Stack direction="row" spacing={2} alignItems="flex-start">
+                  <Avatar sx={{ bgcolor: 'primary.main' }}>
+                    {user?.full_name?.[0] || user?.username?.[0] || 'U'}
+                  </Avatar>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
+                      Commenting as <strong>{user?.full_name || user?.username}</strong>
+                    </Typography>
+                    <form onSubmit={handleSubmit}>
+                      <TextField
+                        fullWidth
+                        placeholder="Share your thoughts..."
+                        multiline
+                        rows={3}
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        sx={{ mb: 2 }}
+                      />
+                      <Button 
+                        type="submit" 
+                        variant="contained" 
+                        disabled={!newComment.trim() || isSubmitting}
+                      >
+                        {isSubmitting ? 'Posting...' : 'Post Comment'}
+                      </Button>
+                    </form>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          ) : (
+            <Alert 
+              severity="info" 
+              icon={<IconLock size={20} />}
+              sx={{ mb: 4 }}
+              action={
                 <Button 
-                  type="submit" 
-                  variant="contained" 
-                  disabled={!newComment.trim() || isSubmitting}
+                  component={RouterLink} 
+                  to="/auth/login" 
+                  color="inherit" 
+                  size="small"
+                  variant="outlined"
                 >
-                  {isSubmitting ? 'Posting...' : 'Post Comment'}
+                  Sign In
                 </Button>
-              </form>
-            </CardContent>
-          </Card>
+              }
+            >
+              <Typography variant="body2">
+                <strong>Join the conversation!</strong> Sign in to leave a comment.
+              </Typography>
+            </Alert>
+          )}
           
           {/* Comments List */}
           <Stack spacing={3} divider={<Divider />}>
             {comments.map((comment) => (
-              <Comment key={comment.id} comment={comment} />
+              <Comment key={comment.id} comment={comment} isAuthenticated={isAuthenticated} />
             ))}
           </Stack>
           

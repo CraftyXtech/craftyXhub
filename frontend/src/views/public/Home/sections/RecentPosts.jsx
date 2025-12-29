@@ -1,26 +1,34 @@
-import { Box, Container, Grid } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Box, Container, Grid, Skeleton } from '@mui/material';
 import PostCardOverlay from '@/components/PostCard/PostCardOverlay';
 import SectionHeader from '@/components/SectionHeader';
-
-// Sample data (will be replaced with API data)
-const recentPosts = [
-  {
-    id: 1,
-    slug: 'ai-revolution-2024',
-    title: 'The AI Revolution: What It Means for Content Creators',
-    category: 'Technology',
-    featured_image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=600&fit=crop'
-  },
-  {
-    id: 2,
-    slug: 'remote-work-future',
-    title: 'Remote Work Is Here to Stay: Best Practices for 2024',
-    category: 'Lifestyle',
-    featured_image: 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&h=600&fit=crop'
-  }
-];
+import { getRecentPosts } from '@/api/services/postService';
 
 export default function RecentPosts() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        const data = await getRecentPosts({ limit: 2 });
+        setPosts(data.posts || []);
+      } catch (err) {
+        console.error('Failed to fetch recent posts:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  // Don't render section if no posts
+  if (!loading && posts.length === 0) {
+    return null;
+  }
+
   return (
     <Box sx={{ py: { xs: 6, md: 10 }, bgcolor: 'grey.50' }}>
       <Container maxWidth="lg">
@@ -31,15 +39,24 @@ export default function RecentPosts() {
         />
 
         <Grid container spacing={3}>
-          {recentPosts.map((post, index) => (
-            <Grid size={{ xs: 12, md: 6 }} key={post.id}>
-              <PostCardOverlay
-                post={post}
-                height={350}
-                animationDelay={index * 0.1}
-              />
-            </Grid>
-          ))}
+          {loading ? (
+            // Loading skeletons
+            [...Array(2)].map((_, index) => (
+              <Grid size={{ xs: 12, md: 6 }} key={index}>
+                <Skeleton variant="rectangular" height={350} sx={{ borderRadius: 2 }} />
+              </Grid>
+            ))
+          ) : (
+            posts.map((post, index) => (
+              <Grid size={{ xs: 12, md: 6 }} key={post.id || post.uuid}>
+                <PostCardOverlay
+                  post={post}
+                  height={350}
+                  animationDelay={index * 0.1}
+                />
+              </Grid>
+            ))
+          )}
         </Grid>
       </Container>
     </Box>

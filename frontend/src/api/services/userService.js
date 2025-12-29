@@ -1,20 +1,25 @@
-import { axiosPrivate } from '../axios';
+import { axiosPrivate, axiosPublic } from '../axios';
 
 /**
  * User Service
  * Handles user management operations (both standard and admin)
  */
 
-// ===== STANDARD USER OPERATIONS =====
+// ===== PUBLIC USER OPERATIONS =====
 
 /**
- * Get current authenticated user
- * @returns {Promise<object>} Current user data
+ * Get user by username (public profile)
+ * @param {string} username - Username
+ * @returns {Promise<object>} User data
  */
-export const getCurrentUser = async () => {
-  const response = await axiosPrivate.get('/auth/me');
+export const getUserByUsername = async (username) => {
+  const response = await axiosPublic.get(`/users/username/${username}`);
   return response.data;
 };
+
+// ===== STANDARD USER OPERATIONS =====
+
+// NOTE: getCurrentUser is in authService.js
 
 /**
  * Get user by UUID

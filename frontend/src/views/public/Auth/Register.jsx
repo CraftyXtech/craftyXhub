@@ -25,7 +25,9 @@ import {
   IconBrandGithub
 } from '@tabler/icons-react';
 import Logo from '@/components/Logo';
-import { register as registerApi } from '@/api';
+import { register as registerApi, login as loginApi, getCurrentUser } from '@/api';
+import { useAuth } from '@/api/AuthProvider';
+import { TOKEN_KEY } from '@/api/axios';
 
 const MotionBox = motion.create(Box);
 
@@ -34,9 +36,11 @@ const MotionBox = motion.create(Box);
  */
 export default function Register() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   
   const [formData, setFormData] = useState({
     fullName: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -70,8 +74,8 @@ export default function Register() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       setLoading(false);
       return;
     }
@@ -82,37 +86,79 @@ export default function Register() {
       return;
     }
 
-    try {
-      // Split full name into first and last name
-      const nameParts = formData.fullName.trim().split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
+    // Validate username
+    if (!formData.username || formData.username.length < 3) {
+      setError('Username must be at least 3 characters');
+      setLoading(false);
+      return;
+    }
 
+    if (!/^[a-zA-Z0-9_-]+$/.test(formData.username)) {
+      setError('Username can only contain letters, numbers, underscores, and hyphens');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Register the user
       await registerApi({
         email: formData.email,
+        username: formData.username,
         password: formData.password,
-        first_name: firstName,
-        last_name: lastName,
+        confirm_password: formData.confirmPassword,
         full_name: formData.fullName
       });
       
-      setSuccess('Account created successfully! Redirecting to login...');
+      setSuccess('Account created successfully! Signing you in...');
       
-      // Redirect to login after a short delay
-      setTimeout(() => {
-        navigate('/auth/login', { 
-          state: { message: 'Registration successful! Please sign in.' }
+      // Automatically login after registration
+      try {
+        const loginResponse = await loginApi({
+          email: formData.email,
+          password: formData.password
         });
-      }, 1500);
+        
+        const token = loginResponse.access_token;
+        
+        // Temporarily store token so axiosPrivate can use it for getCurrentUser
+        localStorage.setItem(TOKEN_KEY, token);
+        
+        // Get user details using the stored token
+        const userResponse = await getCurrentUser();
+        
+        // Authenticate in context (this will also store properly)
+        login(token, userResponse);
+        
+        // Redirect to dashboard
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 500);
+      } catch (loginErr) {
+        // If auto-login fails, redirect to login page
+        console.error('Auto-login failed:', loginErr);
+        // Clear any partial auth data
+        localStorage.removeItem(TOKEN_KEY);
+        setTimeout(() => {
+          navigate('/auth/login', { 
+            state: { message: 'Registration successful! Please sign in.' }
+          });
+        }, 1500);
+      }
     } catch (err) {
       console.error('Register error:', err);
       // Handle different error types
-      if (err.response?.status === 400) {
-        setError(err.response.data?.detail || 'Invalid registration data');
+      const detail = err.response?.data?.detail;
+      
+      if (err.response?.status === 422 && Array.isArray(detail)) {
+        // FastAPI validation errors return an array of objects with {type, loc, msg, input}
+        const messages = detail.map(e => e.msg || 'Validation error').join('. ');
+        setError(messages || 'Please check your input and try again.');
+      } else if (err.response?.status === 400) {
+        setError(typeof detail === 'string' ? detail : 'Invalid registration data');
       } else if (err.response?.status === 409) {
         setError('An account with this email already exists');
-      } else if (err.response?.data?.detail) {
-        setError(err.response.data.detail);
+      } else if (typeof detail === 'string') {
+        setError(detail);
       } else if (err.message) {
         setError(err.message);
       } else {
@@ -196,6 +242,24 @@ export default function Register() {
               />
               <TextField
                 fullWidth
+                label="Username"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+                helperText="3-50 characters, letters, numbers, underscores, hyphens"
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <IconUser size={20} />
+                      </InputAdornment>
+                    )
+                  }
+                }}
+              />
+              <TextField
+                fullWidth
                 label="Email Address"
                 name="email"
                 type="email"
@@ -220,7 +284,7 @@ export default function Register() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                helperText="Minimum 6 characters"
+                helperText="Minimum 8 characters"
                 slotProps={{
                   input: {
                     startAdornment: (

@@ -21,7 +21,7 @@ export default function PostCard({ post, animationDelay = 0 }) {
     read_time
   } = post;
 
-  const postUrl = `/blog/${slug || id}`;
+  const postUrl = `/post/${slug || id}`;
   const imageUrl = featured_image || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=600&fit=crop';
   const authorName = author?.full_name || author?.username || 'Anonymous';
   const categoryName = category?.name || category || 'General';

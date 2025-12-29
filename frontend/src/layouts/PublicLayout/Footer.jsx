@@ -18,7 +18,6 @@ const footerLinks = {
     { label: 'Careers', path: '/careers' }
   ],
   resources: [
-    { label: 'Blog', path: '/blog' },
     { label: 'Newsletter', path: '/newsletter' },
     { label: 'Help Center', path: '/help' }
   ],

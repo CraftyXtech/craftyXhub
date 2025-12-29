@@ -50,7 +50,7 @@ export default function Categories() {
             <Grid size={{ xs: 6, sm: 4, md: 2 }} key={category.name}>
               <MotionPaper
                 component={RouterLink}
-                to={`/blog?category=${category.name.toLowerCase()}`}
+                to={`/category/${category.name.toLowerCase()}`}
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}

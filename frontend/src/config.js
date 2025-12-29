@@ -21,7 +21,6 @@ export const ThemeFonts = {
 export const ROUTES = {
   HOME: '/',
   ABOUT: '/about',
-  BLOG: '/blog',
   CONTACT: '/contact',
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',

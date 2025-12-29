@@ -48,6 +48,41 @@ export const getPost = async (postUuid) => {
 };
 
 /**
+ * Get a single post by slug
+ * First tries to get by UUID (in case slug is a uuid), 
+ * then fallback to querying posts list and finding match
+ * @param {string} slug - Post slug or UUID
+ * @returns {Promise<object>} Post data
+ */
+export const getPostBySlug = async (slug) => {
+  // First try direct UUID fetch (works if slug is actually UUID)
+  try {
+    const response = await axiosPublic.get(`/posts/${slug}`);
+    return response.data;
+  } catch (err) {
+    // Not found by UUID, search by slug in posts list
+    if (err.response?.status === 404 || err.response?.status === 422) {
+      const postsResponse = await axiosPublic.get('/posts/', {
+        params: { limit: 1, published: true }
+      });
+      
+      // Need to search through posts - get more to find by slug
+      const allPostsResponse = await axiosPublic.get('/posts/', {
+        params: { limit: 100, published: true }
+      });
+      
+      const post = allPostsResponse.data.posts?.find(p => p.slug === slug);
+      if (post) {
+        // Get full post data by UUID
+        return await getPost(post.uuid);
+      }
+      throw new Error('Post not found');
+    }
+    throw err;
+  }
+};
+
+/**
  * Get popular posts
  * @param {object} params - { limit }
  * @returns {Promise<object>} Posts list
