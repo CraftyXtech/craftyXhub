@@ -123,6 +123,16 @@ export const getFeaturedPosts = async (params = {}) => {
 };
 
 /**
+ * Get personalized "For You" posts based on following and reading history
+ * @param {object} params - { limit }
+ * @returns {Promise<object>} Personalized posts list
+ */
+export const getForYouPosts = async (params = {}) => {
+  const response = await axiosPrivate.get('/posts/for-you', { params });
+  return response.data;
+};
+
+/**
  * Get related posts for a specific post
  * @param {string} postUuid - Post UUID
  * @param {object} params - { limit }

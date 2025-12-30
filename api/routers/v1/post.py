@@ -67,6 +67,28 @@ async def get_featured_posts(
     }
 
 
+@router.get("/for-you", response_model=PostListResponse)
+async def get_for_you_posts(
+        skip: int = Query(0, ge=0),
+        limit: int = Query(20, ge=1, le=100),
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    """Get personalized posts based on following and reading history."""
+    posts = await PostService.get_for_you_posts(
+        session, 
+        user_id=current_user.id, 
+        skip=skip, 
+        limit=limit
+    )
+    return {
+        "posts": posts,
+        "total": len(posts),
+        "page": skip // limit + 1,
+        "size": limit
+    }
+
+
 @router.get("/recent", response_model=PostListResponse)
 async def get_recent_posts(
         skip: int = Query(0, ge=0),

@@ -20,6 +20,7 @@ import ForgotPassword from '@/views/public/Auth/ForgotPassword';
 
 // Dashboard Views - Core
 import DashboardOverview from '@/views/dashboard/Overview';
+import DashboardHome from '@/views/dashboard/Home';
 import Posts from '@/views/dashboard/Posts';
 import PostForm from '@/views/dashboard/Posts/PostForm';
 import Drafts from '@/views/dashboard/Drafts';
@@ -80,6 +81,7 @@ function App() {
       >
         {/* All authenticated users */}
         <Route index element={<DashboardOverview />} />
+        <Route path="home" element={<DashboardHome />} />
         <Route path="posts" element={<Posts />} />
         <Route path="posts/create" element={<PostForm />} />
         <Route path="posts/edit/:id" element={<PostForm />} />

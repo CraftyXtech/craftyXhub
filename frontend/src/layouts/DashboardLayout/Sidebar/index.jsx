@@ -26,7 +26,9 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconChevronLeft,
-  IconX
+  IconX,
+  IconHome,
+  IconBookmark
 } from '@tabler/icons-react';
 
 // Menu & Utils
@@ -37,12 +39,14 @@ import { DRAWER_WIDTH, DRAWER_WIDTH_COLLAPSED, dashboardTokens } from '@/config/
 
 // Icon mapping
 const iconMap = {
+  IconHome,
   IconLayoutGrid,
   IconFileText,
   IconPhoto,
   IconSparkles,
   IconShieldCheck,
-  IconSettings
+  IconSettings,
+  IconBookmark
 };
 
 // Styled drawer

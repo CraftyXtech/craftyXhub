@@ -1,10 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import and_, func
-from models import User
+from sqlalchemy import and_, func, not_, distinct
+from models import User, Post
 from models.base import user_follows
-from schemas.user import FollowActionResponse, UserFollowersResponse, UserFollowingResponse, UserResponse
+from models.collection import ReadingHistory
+from schemas.user import FollowActionResponse, UserFollowersResponse, UserFollowingResponse, UserResponse, UserSuggestionsResponse
 from fastapi import HTTPException, status
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from typing import List, Tuple, Union
@@ -406,4 +407,97 @@ class UserFollowService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Error building response"
+            )
+
+    @staticmethod
+    async def get_suggested_users(
+            session: AsyncSession,
+            current_user_id: int,
+            limit: int = 5
+    ) -> UserSuggestionsResponse:
+        """
+        Get suggested users to follow based on:
+        1. Authors of posts user has read (from reading history)
+        2. Popular users (by follower count)
+        Excludes current user and already followed users.
+        """
+        try:
+            # Get IDs of users current user already follows
+            followed_subq = (
+                select(user_follows.c.followed_id)
+                .where(user_follows.c.follower_id == current_user_id)
+            )
+            
+            # Get authors from reading history (posts user has read)
+            reading_authors_subq = (
+                select(distinct(Post.author_id))
+                .join(ReadingHistory, ReadingHistory.post_id == Post.id)
+                .where(ReadingHistory.user_id == current_user_id)
+            )
+            
+            # Count followers for each user (for sorting)
+            follower_count_subq = (
+                select(
+                    user_follows.c.followed_id.label('user_id'),
+                    func.count(user_follows.c.follower_id).label('follower_count')
+                )
+                .group_by(user_follows.c.followed_id)
+                .subquery()
+            )
+            
+            # Main query: get users not followed, prioritize reading history authors
+            query = (
+                select(User, func.coalesce(follower_count_subq.c.follower_count, 0).label('fcount'))
+                .outerjoin(follower_count_subq, User.id == follower_count_subq.c.user_id)
+                .where(
+                    and_(
+                        User.id != current_user_id,
+                        User.is_active == True,
+                        not_(User.id.in_(followed_subq))
+                    )
+                )
+                .order_by(
+                    # Prioritize authors from reading history
+                    User.id.in_(reading_authors_subq).desc(),
+                    # Then by follower count
+                    func.coalesce(follower_count_subq.c.follower_count, 0).desc()
+                )
+                .limit(limit)
+                .options(selectinload(User.profile))
+            )
+            
+            result = await session.execute(query)
+            users_with_counts = result.all()
+            
+            user_responses = []
+            for user, fcount in users_with_counts:
+                user_data = {
+                    "uuid": user.uuid,
+                    "email": user.email,
+                    "username": user.username,
+                    "full_name": user.full_name,
+                    "is_active": user.is_active,
+                    "is_verified": user.is_verified,
+                    "role": user.role,
+                    "last_login": user.last_login,
+                    "is_following": False,
+                    "created_at": user.created_at,
+                    "updated_at": user.updated_at
+                }
+                user_responses.append(UserResponse(**user_data))
+            
+            return UserSuggestionsResponse(
+                users=user_responses,
+                total=len(user_responses)
+            )
+            
+        except SQLAlchemyError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred"
             )

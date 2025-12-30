@@ -9,11 +9,33 @@ from models import User
 from schemas.user import (
     UserFollowersResponse, 
     UserFollowingResponse, 
-    FollowActionResponse
+    FollowActionResponse,
+    UserSuggestionsResponse
 )
 from services.user.user_follow import UserFollowService
 
 router = APIRouter(prefix="/users", tags=["User Following"])
+
+
+@router.get(
+    "/suggestions",
+    response_model=UserSuggestionsResponse,
+    summary="Get suggested users to follow",
+    responses={
+        200: {"description": "List of suggested users"}
+    }
+)
+async def get_suggested_users(
+    limit: int = Query(5, ge=1, le=20, description="Number of suggestions"),
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_active_user)
+) -> UserSuggestionsResponse:
+    """Get users the current user might want to follow based on reading history."""
+    return await UserFollowService.get_suggested_users(
+        session=session,
+        current_user_id=current_user.id,
+        limit=limit
+    )
 
 @router.post(
     "/{user_uuid}/follow", 

@@ -167,6 +167,12 @@ class UserFollowingResponse(BaseModel):
     pages: int
     has_next: bool
     has_prev: bool
+
+
+class UserSuggestionsResponse(BaseModel):
+    """Response for user suggestions endpoint"""
+    users: List[UserResponse]
+    total: int
     
 class MediaResponse(BaseModel):
     uuid: UUID

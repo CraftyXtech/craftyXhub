@@ -54,7 +54,7 @@ export const menuItems = [
   {
     id: 'collection',
     title: 'My Collection',
-    icon: 'IconLibrary',
+    icon: 'IconBookmark',
     url: '/dashboard/collection',
     roles: ['user', 'moderator', 'admin']
   },

@@ -163,3 +163,13 @@ export const getFollowing = async (userUuid, params = {}) => {
   const response = await axiosPrivate.get(`/users/${userUuid}/following`, { params });
   return response.data;
 };
+
+/**
+ * Get suggested users to follow
+ * @param {number} limit - Number of suggestions (default 5)
+ * @returns {Promise<object>} { users, total }
+ */
+export const getSuggestedUsers = async (limit = 5) => {
+  const response = await axiosPrivate.get('/users/suggestions', { params: { limit } });
+  return response.data;
+};

@@ -243,6 +243,84 @@ class PostService:
             )
 
     @staticmethod
+    async def get_for_you_posts(
+            session: AsyncSession,
+            user_id: int,
+            skip: int = 0,
+            limit: int = 20,
+            include_deleted: bool = False
+    ) -> List[Post]:
+        """
+        Get personalized posts for user based on:
+        1. Posts from authors they follow
+        2. Posts in categories they've interacted with (read, liked, bookmarked)
+        """
+        from models.base import user_follows
+        from models.collection import ReadingHistory
+        
+        try:
+            # Get IDs of authors user follows
+            followed_authors_subq = (
+                select(user_follows.c.followed_id)
+                .where(user_follows.c.follower_id == user_id)
+            )
+            
+            # Get category IDs from user's reading history
+            read_categories_subq = (
+                select(Post.category_id)
+                .join(ReadingHistory, ReadingHistory.post_id == Post.id)
+                .where(ReadingHistory.user_id == user_id)
+                .distinct()
+            )
+            
+            # Get category IDs from user's bookmarks
+            bookmark_categories_subq = (
+                select(Post.category_id)
+                .join(post_bookmarks, post_bookmarks.c.post_id == Post.id)
+                .where(post_bookmarks.c.user_id == user_id)
+                .distinct()
+            )
+            
+            # Get category IDs from user's liked posts
+            liked_categories_subq = (
+                select(Post.category_id)
+                .join(post_likes, post_likes.c.post_id == Post.id)
+                .where(post_likes.c.user_id == user_id)
+                .distinct()
+            )
+            
+            # Main query: posts from followed authors OR from interacted categories
+            query = select(Post).where(
+                and_(
+                    Post.is_published == True,
+                    or_(
+                        # Posts from followed authors
+                        Post.author_id.in_(followed_authors_subq),
+                        # Posts in categories user has read
+                        Post.category_id.in_(read_categories_subq),
+                        # Posts in categories user has bookmarked
+                        Post.category_id.in_(bookmark_categories_subq),
+                        # Posts in categories user has liked
+                        Post.category_id.in_(liked_categories_subq)
+                    )
+                )
+            )
+            
+            query = PostService._apply_post_relationships(query)
+            query = PostService._add_soft_delete_filter(query, include_deleted)
+            query = query.order_by(Post.created_at.desc())
+            query = query.offset(skip).limit(limit)
+            
+            result = await session.execute(query)
+            return result.scalars().all()
+            
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to get personalized posts: {str(e)}"
+            )
+
+    @staticmethod
     async def get_related_posts(
             session: AsyncSession,
             post_uuid: str,
