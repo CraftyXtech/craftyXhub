@@ -48,26 +48,34 @@ export default function Profile() {
       username: '',
       email: '',
       bio: '',
-      website: '',
       twitter: '',
-      linkedin: ''
+      linkedin: '',
+      instagram: '',
+      facebook: ''
     }
   });
 
   // Load profile
   useEffect(() => {
     const loadProfile = async () => {
+      if (!user?.uuid) {
+        // No user yet, wait for auth
+        setLoading(false);
+        return;
+      }
+      
       try {
         setLoading(true);
-        const profile = await getProfile();
+        const profile = await getProfile(user.uuid);
         reset({
-          full_name: profile.full_name || '',
-          username: profile.username || '',
-          email: profile.email || '',
+          full_name: profile.full_name || user.full_name || '',
+          username: profile.username || user.username || '',
+          email: profile.email || user.email || '',
           bio: profile.bio || '',
-          website: profile.website || '',
-          twitter: profile.twitter || '',
-          linkedin: profile.linkedin || ''
+          twitter: profile.twitter_handle || '',
+          linkedin: profile.linkedin_handle || '',
+          instagram: profile.instagram_handle || '',
+          facebook: profile.facebook_handle || ''
         });
         if (profile.avatar) {
           setAvatarPreview(profile.avatar);
@@ -80,14 +88,12 @@ export default function Profile() {
             full_name: user.full_name || '',
             username: user.username || '',
             email: user.email || '',
-            bio: user.bio || '',
-            website: '',
+            bio: '',
             twitter: '',
-            linkedin: ''
+            linkedin: '',
+            instagram: '',
+            facebook: ''
           });
-          if (user.avatar) {
-            setAvatarPreview(user.avatar);
-          }
         }
       } finally {
         setLoading(false);
@@ -117,16 +123,20 @@ export default function Profile() {
       setError(null);
       setSuccess(false);
 
-      const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        if (value) formData.append(key, value);
-      });
+      // Map form field names to API field names
+      const profileData = {
+        bio: data.bio || '',
+        twitter_handle: data.twitter || '',
+        linkedin_handle: data.linkedin || '',
+        instagram_handle: data.instagram || '',
+        facebook_handle: data.facebook || '',
+      };
       
       if (avatarFile) {
-        formData.append('avatar', avatarFile);
+        profileData.avatar = avatarFile;
       }
 
-      const updatedProfile = await updateProfile(formData);
+      const updatedProfile = await updateProfile(user.uuid, profileData);
       
       // Update auth context
       if (updateUser) {
@@ -288,13 +298,6 @@ export default function Profile() {
                 </Typography>
 
                 <Stack spacing={2}>
-                  <Controller
-                    name="website"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField {...field} label="Website" fullWidth placeholder="https://" />
-                    )}
-                  />
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
                       <Controller
@@ -311,6 +314,26 @@ export default function Profile() {
                         control={control}
                         render={({ field }) => (
                           <TextField {...field} label="LinkedIn" fullWidth placeholder="linkedin.com/in/..." />
+                        )}
+                      />
+                    </Grid>
+                  </Grid>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Controller
+                        name="instagram"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField {...field} label="Instagram" fullWidth placeholder="@username" />
+                        )}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Controller
+                        name="facebook"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField {...field} label="Facebook" fullWidth placeholder="facebook.com/..." />
                         )}
                       />
                     </Grid>

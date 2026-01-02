@@ -88,6 +88,12 @@ class AuthService:
             session.add(user)
             await session.commit()
             await session.refresh(user)
+            
+            # Create empty profile for the new user
+            from models.user import Profile
+            profile = Profile(user_id=user.id)
+            session.add(profile)
+            await session.commit()
         else:
             if name:
                 user.full_name = name

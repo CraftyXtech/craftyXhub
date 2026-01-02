@@ -27,7 +27,16 @@ import 'tinymce/tinymce';
 import 'tinymce/models/dom/model';
 import 'tinymce/themes/silver';
 import 'tinymce/icons/default';
-import 'tinymce/skins/content/default/content';
+
+// TinyMCE plugins
+import 'tinymce/plugins/link';
+import 'tinymce/plugins/image';
+import 'tinymce/plugins/lists';
+
+// TinyMCE skins (UI and content)
+import 'tinymce/skins/ui/oxide/skin.min.css';
+import 'tinymce/skins/ui/oxide/content.min.css';
+import 'tinymce/skins/content/default/content.min.css';
 
 // Icons
 import {
@@ -284,9 +293,9 @@ export default function AdminPostEditor() {
       )}
 
       {/* Main Content */}
-      <Grid container spacing={3} sx={{ minHeight: 'calc(100vh - 150px)' }}>
+      <Grid container spacing={3} sx={{ minHeight: 'calc(100vh - 150px)', width: '100%' }}>
         {/* Editor Column */}
-        <Grid item xs={12} lg={8}>
+        <Grid item xs={12} lg={8} sx={{ display: 'flex', flexDirection: 'column' }}>
           <Stack spacing={3}>
             {/* Title */}
             <TextField
@@ -320,6 +329,7 @@ export default function AdminPostEditor() {
                   init={{
                     height: 500,
                     menubar: false,
+                    plugins: 'link image lists',
                     toolbar:
                       'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | link image',
                     content_style:
@@ -328,7 +338,8 @@ export default function AdminPostEditor() {
                         : 'body { font-family: "Open Sans", sans-serif; font-size: 14px; color: #000; background-color: #fff; }',
                     branding: false,
                     directionality: 'ltr',
-                    skin: 'oxide',
+                    skin: false,
+                    content_css: false,
                   }}
                 />
               </CardContent>
@@ -457,11 +468,9 @@ export default function AdminPostEditor() {
           lg={4} 
           sx={{ 
             display: { xs: 'none', lg: 'block' },
-            mr: -3,  // Negative margin to extend to edge
-            pr: 3,   // Add padding back inside
           }}
         >
-          <Box sx={{ position: 'sticky', top: 80, pr: 0 }}>
+          <Box sx={{ position: 'sticky', top: 80 }}>
             <Stack spacing={3}>
               {/* Featured Image */}
               <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>

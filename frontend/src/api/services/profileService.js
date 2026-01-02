@@ -25,10 +25,10 @@ export const createProfile = async (profileData) => {
   
   if (profileData.bio) formData.append('bio', profileData.bio);
   if (profileData.location) formData.append('location', profileData.location);
-  if (profileData.website) formData.append('website', profileData.website);
   if (profileData.twitter_handle) formData.append('twitter_handle', profileData.twitter_handle);
-  if (profileData.github_handle) formData.append('github_handle', profileData.github_handle);
   if (profileData.linkedin_handle) formData.append('linkedin_handle', profileData.linkedin_handle);
+  if (profileData.instagram_handle) formData.append('instagram_handle', profileData.instagram_handle);
+  if (profileData.facebook_handle) formData.append('facebook_handle', profileData.facebook_handle);
   if (profileData.birth_date) formData.append('birth_date', profileData.birth_date);
   
   // Avatar file
@@ -53,10 +53,10 @@ export const updateProfile = async (userUuid, profileData) => {
   
   if (profileData.bio !== undefined) formData.append('bio', profileData.bio || '');
   if (profileData.location !== undefined) formData.append('location', profileData.location || '');
-  if (profileData.website !== undefined) formData.append('website', profileData.website || '');
   if (profileData.twitter_handle !== undefined) formData.append('twitter_handle', profileData.twitter_handle || '');
-  if (profileData.github_handle !== undefined) formData.append('github_handle', profileData.github_handle || '');
   if (profileData.linkedin_handle !== undefined) formData.append('linkedin_handle', profileData.linkedin_handle || '');
+  if (profileData.instagram_handle !== undefined) formData.append('instagram_handle', profileData.instagram_handle || '');
+  if (profileData.facebook_handle !== undefined) formData.append('facebook_handle', profileData.facebook_handle || '');
   if (profileData.birth_date !== undefined) formData.append('birth_date', profileData.birth_date || '');
   
   if (profileData.avatar instanceof File) {

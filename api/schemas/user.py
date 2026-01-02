@@ -116,10 +116,10 @@ class ProfileBase(BaseModel):
     avatar: Optional[str] = Field(None, max_length=500)
     bio: Optional[str] = Field(None, max_length=500)
     location: Optional[str] = Field(None, max_length=100)
-    website: Optional[str] = Field(None, max_length=200)
-    twitter_handle: Optional[str] = Field(None, max_length=50)
-    github_handle: Optional[str] = Field(None, max_length=50)
-    linkedin_handle: Optional[str] = Field(None, max_length=50)
+    twitter_handle: Optional[str] = Field(None, max_length=100)
+    linkedin_handle: Optional[str] = Field(None, max_length=100)
+    instagram_handle: Optional[str] = Field(None, max_length=100)
+    facebook_handle: Optional[str] = Field(None, max_length=100)
     birth_date: Optional[datetime] = None
     follower_notifications: Optional[bool] = True
 

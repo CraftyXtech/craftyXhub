@@ -30,7 +30,15 @@ import 'tinymce/tinymce';
 import 'tinymce/models/dom/model';
 import 'tinymce/themes/silver';
 import 'tinymce/icons/default';
-import 'tinymce/skins/content/default/content';
+
+// TinyMCE plugins
+import 'tinymce/plugins/link';
+import 'tinymce/plugins/lists';
+
+// TinyMCE skins (UI and content)
+import 'tinymce/skins/ui/oxide/skin.min.css';
+import 'tinymce/skins/ui/oxide/content.min.css';
+import 'tinymce/skins/content/default/content.min.css';
 
 // Icons
 import {
@@ -296,7 +304,7 @@ export default function AiWriter() {
 
       {/* Generate Tab */}
       {activeTab === 0 && (
-        <Grid container spacing={3}>
+        <Grid container spacing={3} sx={{ width: '100%' }}>
           {/* Left: Generation Form */}
           <Grid item xs={12} md={4}>
             <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
@@ -453,11 +461,14 @@ export default function AiWriter() {
                     init={{
                       height: 450,
                       menubar: false,
+                      plugins: 'link lists',
                       toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | removeformat',
                       content_style: theme.palette.mode === 'dark'
                         ? 'body { font-family: "Open Sans", sans-serif; font-size: 14px; color: #fff; background-color: #1a1a1a; }'
                         : 'body { font-family: "Open Sans", sans-serif; font-size: 14px; color: #000; background-color: #fff; }',
                       branding: false,
+                      skin: false,
+                      content_css: false,
                     }}
                   />
                 </Box>

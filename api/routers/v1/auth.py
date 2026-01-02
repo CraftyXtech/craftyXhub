@@ -68,6 +68,12 @@ async def register(
     await session.commit()
     await session.refresh(db_user)
 
+    # Create empty profile for the new user
+    from models.user import Profile
+    profile = Profile(user_id=db_user.id)
+    session.add(profile)
+    await session.commit()
+
     # Notify all admins about new user registration
     try:
         from models.user import UserRole

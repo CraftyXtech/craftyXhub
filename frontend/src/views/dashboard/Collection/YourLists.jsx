@@ -93,7 +93,6 @@ export default function YourLists() {
           variant="contained"
           startIcon={<IconPlus size={18} />}
           onClick={() => setDialogOpen(true)}
-          sx={{ bgcolor: '#f39F5A', '&:hover': { bgcolor: '#e8904f' } }}
         >
           New List
         </Button>

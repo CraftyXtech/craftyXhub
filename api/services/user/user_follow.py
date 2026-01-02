@@ -3,6 +3,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import and_, func, not_, distinct
 from models import User, Post
+from models.user import UserRole
 from models.base import user_follows
 from models.collection import ReadingHistory
 from schemas.user import FollowActionResponse, UserFollowersResponse, UserFollowingResponse, UserResponse, UserSuggestionsResponse
@@ -446,6 +447,9 @@ class UserFollowService:
             )
             
             # Main query: get users not followed, prioritize reading history authors
+            # Exclude admin roles - only suggest regular users
+            excluded_roles = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR]
+            
             query = (
                 select(User, func.coalesce(follower_count_subq.c.follower_count, 0).label('fcount'))
                 .outerjoin(follower_count_subq, User.id == follower_count_subq.c.user_id)
@@ -453,7 +457,8 @@ class UserFollowService:
                     and_(
                         User.id != current_user_id,
                         User.is_active == True,
-                        not_(User.id.in_(followed_subq))
+                        not_(User.id.in_(followed_subq)),
+                        not_(User.role.in_(excluded_roles))  # Exclude admin roles
                     )
                 )
                 .order_by(

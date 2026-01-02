@@ -22,10 +22,10 @@ def clean_form_data(**kwargs):
 async def create_profile(
         bio: Optional[str] = Form(None),
         location: Optional[str] = Form(None),
-        website: Optional[str] = Form(None),
         twitter_handle: Optional[str] = Form(None),
-        github_handle: Optional[str] = Form(None),
         linkedin_handle: Optional[str] = Form(None),
+        instagram_handle: Optional[str] = Form(None),
+        facebook_handle: Optional[str] = Form(None),
         birth_date: Optional[str] = Form(None),
         avatar: Optional[UploadFile] = File(None),
         current_user: User = Depends(get_current_active_user),
@@ -36,10 +36,10 @@ async def create_profile(
     profile_data = ProfileCreate(
         bio=bio,
         location=location,
-        website=website,
         twitter_handle=twitter_handle,
-        github_handle=github_handle,
         linkedin_handle=linkedin_handle,
+        instagram_handle=instagram_handle,
+        facebook_handle=facebook_handle,
         birth_date=processed_birth_date
     )
     return await ProfileService.create_profile(
@@ -63,10 +63,10 @@ async def update_profile(
         user_uuid: str,
         bio: Optional[str] = Form(None),
         location: Optional[str] = Form(None),
-        website: Optional[str] = Form(None),
         twitter_handle: Optional[str] = Form(None),
-        github_handle: Optional[str] = Form(None),
         linkedin_handle: Optional[str] = Form(None),
+        instagram_handle: Optional[str] = Form(None),
+        facebook_handle: Optional[str] = Form(None),
         birth_date: Optional[str] = Form(None),
         avatar: Optional[UploadFile] = File(None),
         current_user: User = Depends(get_current_active_user),
@@ -75,10 +75,10 @@ async def update_profile(
     cleaned_data = clean_form_data(
         bio=bio,
         location=location,
-        website=website,
         twitter_handle=twitter_handle,
-        github_handle=github_handle,
         linkedin_handle=linkedin_handle,
+        instagram_handle=instagram_handle,
+        facebook_handle=facebook_handle,
         birth_date=birth_date
     )
 
