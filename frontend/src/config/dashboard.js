@@ -17,11 +17,11 @@ export const DRAWER_TRANSITION = 225;
 // Theme tokens for dashboard
 export const dashboardTokens = {
   sidebar: {
-    background: '#14213D', // Oxford Blue from palette
-    textColor: '#FFFFFF',
-    activeBackground: 'rgba(255, 255, 255, 0.1)',
-    hoverBackground: 'rgba(255, 255, 255, 0.05)',
-    divider: 'rgba(255, 255, 255, 0.12)'
+    background: '#FFFFFF',
+    textColor: '#14213D',
+    activeBackground: 'rgba(20, 33, 61, 0.08)',
+    hoverBackground: 'rgba(20, 33, 61, 0.04)',
+    divider: 'rgba(0, 0, 0, 0.08)'
   },
   header: {
     background: '#FFFFFF',

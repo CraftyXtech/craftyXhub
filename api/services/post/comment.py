@@ -307,3 +307,138 @@ class CommentService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred"
             )
+
+    @staticmethod
+    async def toggle_like(
+            session: AsyncSession,
+            comment_uuid: str,
+            user_id: int
+    ) -> dict:
+        """Toggle like on a comment"""
+        try:
+            from models import User
+            from models.base import comment_likes
+            
+            db_comment = await CommentService.get_comment_by_uuid(session, comment_uuid)
+            if not db_comment:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Comment not found"
+                )
+            
+            # Check if user already liked the comment
+            result = await session.execute(
+                select(comment_likes).where(
+                    comment_likes.c.user_id == user_id,
+                    comment_likes.c.comment_id == db_comment.id
+                )
+            )
+            existing_like = result.first()
+            
+            if existing_like:
+                # Unlike - remove the like
+                await session.execute(
+                    comment_likes.delete().where(
+                        comment_likes.c.user_id == user_id,
+                        comment_likes.c.comment_id == db_comment.id
+                    )
+                )
+                db_comment.likes_count = max(0, (db_comment.likes_count or 0) - 1)
+                liked = False
+            else:
+                # Like - add the like
+                await session.execute(
+                    comment_likes.insert().values(
+                        user_id=user_id,
+                        comment_id=db_comment.id
+                    )
+                )
+                db_comment.likes_count = (db_comment.likes_count or 0) + 1
+                liked = True
+            
+            session.add(db_comment)
+            await session.commit()
+            
+            return {"liked": liked, "likes_count": db_comment.likes_count}
+
+        except HTTPException:
+            raise
+        except SQLAlchemyError as e:
+            logger.error(f"Database error toggling comment like: {str(e)}")
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to toggle like"
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error toggling comment like: {str(e)}")
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred"
+            )
+
+    @staticmethod
+    async def report_comment(
+            session: AsyncSession,
+            comment_uuid: str,
+            user_id: int,
+            reason: str,
+            description: str = None
+    ):
+        """Report a comment"""
+        try:
+            from models import CommentReport
+            
+            db_comment = await CommentService.get_comment_by_uuid(session, comment_uuid)
+            if not db_comment:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Comment not found"
+                )
+            
+            # Check if user already reported this comment
+            result = await session.execute(
+                select(CommentReport).where(
+                    CommentReport.comment_id == db_comment.id,
+                    CommentReport.user_id == user_id
+                )
+            )
+            existing_report = result.scalar_one_or_none()
+            
+            if existing_report:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="You have already reported this comment"
+                )
+            
+            # Create new report
+            report = CommentReport(
+                comment_id=db_comment.id,
+                user_id=user_id,
+                reason=reason,
+                description=description,
+                status='pending'
+            )
+            session.add(report)
+            await session.commit()
+            await session.refresh(report)
+            
+            return report
+
+        except HTTPException:
+            raise
+        except SQLAlchemyError as e:
+            logger.error(f"Database error reporting comment: {str(e)}")
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to report comment"
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error reporting comment: {str(e)}")
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred"
+            )

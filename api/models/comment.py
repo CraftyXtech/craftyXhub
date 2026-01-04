@@ -2,7 +2,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, DateTime, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from .base import Base
+from .base import Base, comment_likes
 import uuid
 
 
@@ -17,6 +17,7 @@ class Comment(Base):
     parent_id = Column(Integer, ForeignKey('comments.id'), nullable=True)
     # Comments are auto-approved; no manual admin approval needed
     is_approved = Column(Boolean, default=True)
+    likes_count = Column(Integer, default=0)
     # created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     # updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     created_at = Column(DateTime(timezone=True), server_default=text("(datetime('now'))"))
@@ -30,3 +31,5 @@ class Comment(Base):
     post = relationship("Post", back_populates="comments")
     parent = relationship("Comment", remote_side=[id])
     replies = relationship("Comment", back_populates="parent", cascade="all, delete-orphan")
+    liked_by = relationship("User", secondary=comment_likes, backref="liked_comments")
+

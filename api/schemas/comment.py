@@ -30,6 +30,7 @@ class CommentResponse(CommentBase, TimestampMixin, BaseSchema):
     post_id: int
     parent_id: Optional[int] = None
     is_approved: bool
+    likes_count: int = 0
 
     author: UserResponse
     replies: List['CommentResponse'] = []
@@ -45,3 +46,23 @@ class PaginatedCommentResponse(BaseModel):
     pages: int
     has_next: bool
     has_prev: bool
+
+
+# Comment Like Response
+class CommentLikeResponse(BaseModel):
+    liked: bool
+    likes_count: int
+
+
+# Comment Report Schemas
+class CommentReportCreate(BaseModel):
+    reason: str = Field(..., min_length=3, max_length=100)
+    description: Optional[str] = Field(None, max_length=1000)
+
+
+class CommentReportResponse(BaseSchema, TimestampMixin):
+    uuid: str
+    comment_id: int
+    reason: str
+    description: Optional[str] = None
+    status: str

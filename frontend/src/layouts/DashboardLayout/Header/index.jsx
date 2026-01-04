@@ -17,6 +17,7 @@ import Badge from '@mui/material/Badge';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Link from '@mui/material/Link';
 import Tooltip from '@mui/material/Tooltip';
+import Button from '@mui/material/Button';
 
 // Icons
 import {
@@ -26,7 +27,11 @@ import {
   IconSettings,
   IconLogout,
   IconHome,
-  IconChevronRight
+  IconChevronRight,
+  IconEdit,
+  IconSearch,
+  IconCompass,
+  IconExternalLink
 } from '@tabler/icons-react';
 
 // Auth & API
@@ -50,6 +55,7 @@ export default function Header({ onMenuClick }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
+  const [searchAnchorEl, setSearchAnchorEl] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Fetch unread notification count
@@ -69,6 +75,20 @@ export default function Header({ onMenuClick }) {
     const interval = setInterval(fetchUnreadCount, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  // Search dropdown handlers
+  const handleSearchClick = (event) => {
+    setSearchAnchorEl(event.currentTarget);
+  };
+
+  const handleSearchClose = () => {
+    setSearchAnchorEl(null);
+  };
+
+  const handleExploreTopics = () => {
+    handleSearchClose();
+    navigate('/#categories');
+  };
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -143,10 +163,84 @@ export default function Header({ onMenuClick }) {
               {location.pathname !== '/dashboard' && generateBreadcrumbs().slice(1)}
             </Breadcrumbs>
           </Box>
+
+          {/* Search Input - Medium style */}
+          <Box
+            onClick={handleSearchClick}
+            sx={{
+              display: { xs: 'none', sm: 'flex' },
+              alignItems: 'center',
+              bgcolor: 'grey.100',
+              borderRadius: 5,
+              px: 1.5,
+              py: 0.75,
+              ml: 2,
+              minWidth: 200,
+              cursor: 'pointer',
+              '&:hover': {
+                bgcolor: 'grey.200'
+              }
+            }}
+          >
+            <IconSearch size={18} style={{ color: '#666', marginRight: 8 }} />
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Search
+            </Typography>
+          </Box>
+
+          {/* Search Dropdown Menu */}
+          <Menu
+            anchorEl={searchAnchorEl}
+            open={Boolean(searchAnchorEl)}
+            onClose={handleSearchClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            PaperProps={{
+              sx: {
+                mt: 1,
+                minWidth: 220,
+                borderRadius: 2,
+                boxShadow: 3
+              }
+            }}
+          >
+            <MenuItem onClick={handleExploreTopics} sx={{ py: 1.5 }}>
+              <ListItemIcon>
+                <IconCompass size={20} />
+              </ListItemIcon>
+              <Typography variant="body2">Explore topics</Typography>
+              <Box sx={{ flex: 1 }} />
+              <IconExternalLink size={16} style={{ color: '#999' }} />
+            </MenuItem>
+          </Menu>
         </Box>
 
-        {/* Right side - Notifications and user menu */}
+        {/* Right side - Write button, Notifications and user menu */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Write Button */}
+          <Button
+            variant="text"
+            startIcon={<IconEdit size={18} />}
+            onClick={() => {
+              const role = user?.role || 'user';
+              if (role === 'admin' || role === 'moderator') {
+                navigate('/dashboard/ai-writer');
+              } else {
+                navigate('/dashboard/posts/create');
+              }
+            }}
+            sx={{
+              color: 'text.primary',
+              fontWeight: 500,
+              textTransform: 'none',
+              '&:hover': {
+                backgroundColor: 'action.hover'
+              }
+            }}
+          >
+            Write
+          </Button>
+
           {/* Notifications */}
           <Tooltip title={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}>
             <IconButton 

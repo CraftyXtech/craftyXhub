@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -11,56 +11,21 @@ import {
   Card,
   CardContent,
   Divider,
-  Alert
+  Alert,
+  Skeleton,
+  CircularProgress
 } from '@mui/material';
 import { IconHeart, IconMessageCircle, IconCornerDownRight, IconLock } from '@tabler/icons-react';
 import { useAuth } from '@/api/AuthProvider';
-
-// Sample comments data
-const sampleComments = [
-  {
-    id: 1,
-    author: {
-      name: 'John Smith',
-      avatar: '',
-      username: 'johnsmith'
-    },
-    content: 'This is a fantastic article! I learned so much about design thinking. The five stages breakdown was particularly helpful.',
-    created_at: '2024-12-26T14:30:00Z',
-    likes: 12,
-    replies: [
-      {
-        id: 2,
-        author: {
-          name: 'Emma Wilson',
-          avatar: '',
-          username: 'emmawilson'
-        },
-        content: 'Thank you John! Glad you found it helpful. Let me know if you have any questions.',
-        created_at: '2024-12-26T15:00:00Z',
-        likes: 5
-      }
-    ]
-  },
-  {
-    id: 3,
-    author: {
-      name: 'Sarah Johnson',
-      avatar: '',
-      username: 'sarahj'
-    },
-    content: 'I have been applying these principles in my work and the results are amazing. Design thinking really changes how you approach problems.',
-    created_at: '2024-12-25T10:15:00Z',
-    likes: 8,
-    replies: []
-  }
-];
+import { getComments, createComment, toggleCommentLike } from '@/api';
 
 // Single Comment Component
-function Comment({ comment, isReply = false, isAuthenticated = false }) {
+function Comment({ comment, isReply = false, isAuthenticated = false, onReplySubmit }) {
   const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(comment.likes_count || 0);
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyText, setReplyText] = useState('');
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -79,15 +44,44 @@ function Comment({ comment, isReply = false, isAuthenticated = false }) {
     });
   };
 
-  const handleLike = () => {
+  const handleLike = async () => {
     if (!isAuthenticated) return;
-    setLiked(!liked);
-    // TODO: Call API to toggle like
+    
+    // Optimistic update
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikesCount(prev => wasLiked ? prev - 1 : prev + 1);
+    
+    try {
+      const result = await toggleCommentLike(comment.uuid);
+      setLiked(result.liked);
+      setLikesCount(result.likes_count);
+    } catch (err) {
+      console.error('Failed to toggle comment like:', err);
+      // Rollback on error
+      setLiked(wasLiked);
+      setLikesCount(prev => wasLiked ? prev + 1 : prev - 1);
+    }
   };
 
   const handleReply = () => {
     if (!isAuthenticated) return;
     setShowReplyForm(!showReplyForm);
+  };
+
+  const handleReplySubmit = async () => {
+    if (!replyText.trim() || !isAuthenticated || !onReplySubmit) return;
+    
+    setIsSubmittingReply(true);
+    try {
+      await onReplySubmit(replyText, comment.uuid || comment.id);
+      setReplyText('');
+      setShowReplyForm(false);
+    } catch (err) {
+      console.error('Failed to submit reply:', err);
+    } finally {
+      setIsSubmittingReply(false);
+    }
   };
 
   return (
@@ -101,12 +95,12 @@ function Comment({ comment, isReply = false, isAuthenticated = false }) {
             bgcolor: 'primary.main' 
           }}
         >
-          {comment.author?.name?.[0] || 'U'}
+          {comment.author?.full_name?.[0] || comment.author?.name?.[0] || 'U'}
         </Avatar>
         <Box sx={{ flex: 1 }}>
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
             <Typography variant="subtitle2" fontWeight={600}>
-              {comment.author?.name || 'Anonymous'}
+              {comment.author?.full_name || comment.author?.name || 'Anonymous'}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               · {formatDate(comment.created_at)}
@@ -129,7 +123,7 @@ function Comment({ comment, isReply = false, isAuthenticated = false }) {
                 px: 1
               }}
             >
-              {(comment.likes || 0) + (liked ? 1 : 0)}
+              {likesCount}
             </Button>
             {!isReply && isAuthenticated && (
               <Button
@@ -157,8 +151,13 @@ function Comment({ comment, isReply = false, isAuthenticated = false }) {
                 sx={{ mb: 1 }}
               />
               <Stack direction="row" spacing={1}>
-                <Button variant="contained" size="small" disabled={!replyText.trim()}>
-                  Post Reply
+                <Button 
+                  variant="contained" 
+                  size="small" 
+                  disabled={!replyText.trim() || isSubmittingReply}
+                  onClick={handleReplySubmit}
+                >
+                  {isSubmittingReply ? 'Posting...' : 'Post Reply'}
                 </Button>
                 <Button 
                   size="small" 
@@ -172,7 +171,13 @@ function Comment({ comment, isReply = false, isAuthenticated = false }) {
           
           {/* Nested Replies */}
           {comment.replies?.map((reply) => (
-            <Comment key={reply.id} comment={reply} isReply isAuthenticated={isAuthenticated} />
+            <Comment 
+              key={reply.uuid || reply.id} 
+              comment={reply} 
+              isReply 
+              isAuthenticated={isAuthenticated}
+              onReplySubmit={onReplySubmit}
+            />
           ))}
         </Box>
       </Stack>
@@ -180,24 +185,93 @@ function Comment({ comment, isReply = false, isAuthenticated = false }) {
   );
 }
 
+// Comment Skeleton for loading state
+function CommentSkeleton() {
+  return (
+    <Box>
+      <Stack direction="row" spacing={2}>
+        <Skeleton variant="circular" width={40} height={40} />
+        <Box sx={{ flex: 1 }}>
+          <Skeleton variant="text" width={150} />
+          <Skeleton variant="text" width="100%" />
+          <Skeleton variant="text" width="80%" />
+        </Box>
+      </Stack>
+    </Box>
+  );
+}
+
 // Main Comment Section Component
-export default function CommentSection({ postUuid, comments = sampleComments }) {
+export default function CommentSection({ postUuid }) {
   const { isAuthenticated, user } = useAuth();
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
+  // Fetch comments from API
+  const fetchComments = useCallback(async () => {
+    if (!postUuid) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getComments(postUuid, { limit: 50 });
+      setComments(response.comments || []);
+    } catch (err) {
+      console.error('Failed to fetch comments:', err);
+      setError('Failed to load comments');
+      setComments([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [postUuid]);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
+
+  // Submit new comment
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newComment.trim() || !isAuthenticated) return;
+    if (!newComment.trim() || !isAuthenticated || !postUuid) return;
     
     setIsSubmitting(true);
-    // TODO: Implement actual API call
-    console.log('Submitting comment:', newComment);
+    setSubmitError(null);
     
-    setTimeout(() => {
+    try {
+      await createComment(postUuid, { content: newComment.trim() });
       setNewComment('');
+      // Refresh comments to show the new one
+      await fetchComments();
+    } catch (err) {
+      console.error('Failed to submit comment:', err);
+      setSubmitError(err.response?.data?.detail || 'Failed to post comment. Please try again.');
+    } finally {
       setIsSubmitting(false);
-    }, 500);
+    }
+  };
+
+  // Handle reply submission
+  const handleReplySubmit = async (content, parentId) => {
+    if (!content.trim() || !isAuthenticated || !postUuid) return;
+    
+    try {
+      await createComment(postUuid, { 
+        content: content.trim(),
+        parent_id: parentId 
+      });
+      // Refresh comments to show the new reply
+      await fetchComments();
+    } catch (err) {
+      console.error('Failed to submit reply:', err);
+      throw err;
+    }
   };
 
   return (
@@ -208,7 +282,7 @@ export default function CommentSection({ postUuid, comments = sampleComments }) 
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 4 }}>
             <IconMessageCircle size={24} />
             <Typography variant="h5" fontWeight={600}>
-              Comments ({comments.length})
+              Comments {!loading && `(${comments.length})`}
             </Typography>
           </Stack>
           
@@ -224,6 +298,11 @@ export default function CommentSection({ postUuid, comments = sampleComments }) 
                     <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
                       Commenting as <strong>{user?.full_name || user?.username}</strong>
                     </Typography>
+                    {submitError && (
+                      <Alert severity="error" sx={{ mb: 2 }} onClose={() => setSubmitError(null)}>
+                        {submitError}
+                      </Alert>
+                    )}
                     <form onSubmit={handleSubmit}>
                       <TextField
                         fullWidth
@@ -238,6 +317,7 @@ export default function CommentSection({ postUuid, comments = sampleComments }) 
                         type="submit" 
                         variant="contained" 
                         disabled={!newComment.trim() || isSubmitting}
+                        startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : null}
                       >
                         {isSubmitting ? 'Posting...' : 'Post Comment'}
                       </Button>
@@ -269,14 +349,40 @@ export default function CommentSection({ postUuid, comments = sampleComments }) 
             </Alert>
           )}
           
-          {/* Comments List */}
-          <Stack spacing={3} divider={<Divider />}>
-            {comments.map((comment) => (
-              <Comment key={comment.id} comment={comment} isAuthenticated={isAuthenticated} />
-            ))}
-          </Stack>
+          {/* Loading State */}
+          {loading && (
+            <Stack spacing={3}>
+              <CommentSkeleton />
+              <CommentSkeleton />
+              <CommentSkeleton />
+            </Stack>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+              <Button size="small" onClick={fetchComments} sx={{ ml: 2 }}>
+                Retry
+              </Button>
+            </Alert>
+          )}
           
-          {comments.length === 0 && (
+          {/* Comments List */}
+          {!loading && !error && (
+            <Stack spacing={3} divider={<Divider />}>
+              {comments.map((comment) => (
+                <Comment 
+                  key={comment.uuid || comment.id} 
+                  comment={comment} 
+                  isAuthenticated={isAuthenticated}
+                  onReplySubmit={handleReplySubmit}
+                />
+              ))}
+            </Stack>
+          )}
+          
+          {!loading && !error && comments.length === 0 && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Typography color="text.secondary">
                 No comments yet. Be the first to share your thoughts!

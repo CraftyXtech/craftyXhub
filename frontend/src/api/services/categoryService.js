@@ -11,7 +11,7 @@ import { axiosPublic, axiosPrivate } from '../axios';
  */
 export const getCategories = async () => {
   const response = await axiosPublic.get('/posts/categories/');
-  return response.data;
+  return response.data.categories || [];
 };
 
 /**

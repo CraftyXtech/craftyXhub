@@ -233,42 +233,72 @@ export default function Overview() {
         <Grid size={{ xs: 12, md: 4 }}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom fontWeight={600}>
-                Writing Goals
-              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                <IconTrendingUp size={20} />
+                <Typography variant="h6" fontWeight={600}>
+                  Top Posts
+                </Typography>
+              </Stack>
               
-              <Box sx={{ mt: 2 }}>
-                <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Typography variant="body2">Weekly posts</Typography>
-                  <Typography variant="body2" fontWeight={600}>2/3</Typography>
+              {isLoading ? (
+                <Stack spacing={1.5}>
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} height={24} />
+                  ))}
                 </Stack>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={66} 
-                  sx={{ 
-                    height: 8, 
-                    borderRadius: 4,
-                    bgcolor: 'grey.200'
-                  }} 
-                />
-              </Box>
-
-              <Box sx={{ mt: 3 }}>
-                <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Typography variant="body2">Monthly views goal</Typography>
-                  <Typography variant="body2" fontWeight={600}>1,842/2,500</Typography>
+              ) : topPosts.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No posts yet. Your top performing posts will appear here.
+                </Typography>
+              ) : (
+                <Stack spacing={1.5}>
+                  {topPosts.slice(0, 3).map((post, index) => (
+                    <Box key={post.uuid} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          width: 20, 
+                          height: 20, 
+                          borderRadius: '50%', 
+                          bgcolor: index === 0 ? 'primary.main' : 'grey.200',
+                          color: index === 0 ? 'white' : 'text.secondary',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 600,
+                          fontSize: 11
+                        }}
+                      >
+                        {index + 1}
+                      </Typography>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" noWrap fontWeight={500}>
+                          {post.title}
+                        </Typography>
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                          <Typography variant="caption" color="text.secondary">
+                            {post.view_count?.toLocaleString() || 0} views
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {post.like_count || 0} likes
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    </Box>
+                  ))}
                 </Stack>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={74} 
-                  color="success"
-                  sx={{ 
-                    height: 8, 
-                    borderRadius: 4,
-                    bgcolor: 'grey.200'
-                  }} 
-                />
-              </Box>
+              )}
+              
+              {topPosts.length > 3 && (
+                <Button
+                  variant="text"
+                  size="small"
+                  href="/dashboard/posts"
+                  sx={{ mt: 2, px: 0 }}
+                >
+                  View all posts →
+                </Button>
+              )}
             </CardContent>
           </Card>
 

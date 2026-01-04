@@ -5,7 +5,7 @@ from services.post.comment import  CommentService
 from services.user.auth import get_current_active_user
 from database.connection import get_db_session
 from models import User
-from schemas.comment import CommentCreate, CommentResponse, CommentListResponse
+from schemas.comment import CommentCreate, CommentResponse, CommentListResponse, CommentLikeResponse, CommentReportCreate, CommentReportResponse
 from fastapi import Query
 
 router = APIRouter(prefix="/comments", tags=["comments"])
@@ -92,3 +92,32 @@ async def delete_comment(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to delete this comment")
 
     return await CommentService.delete_comment(session, db_comment)
+
+
+@router.post("/{comment_uuid}/like", response_model=CommentLikeResponse)
+async def toggle_comment_like(
+    comment_uuid: str,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db_session)
+):
+    """Toggle like on a comment"""
+    result = await CommentService.toggle_like(session, comment_uuid, current_user.id)
+    return CommentLikeResponse(**result)
+
+
+@router.post("/{comment_uuid}/report", response_model=CommentReportResponse)
+async def report_comment(
+    comment_uuid: str,
+    report_data: CommentReportCreate,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db_session)
+):
+    """Report an inappropriate comment"""
+    report = await CommentService.report_comment(
+        session, 
+        comment_uuid, 
+        current_user.id, 
+        report_data.reason, 
+        report_data.description
+    )
+    return report

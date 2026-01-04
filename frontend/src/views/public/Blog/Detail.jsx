@@ -33,7 +33,7 @@ import {
 import CommentSection from '@/components/CommentSection';
 import Sidebar from '@/components/Blog/Sidebar';
 import SaveToListMenu from '@/components/SaveToListMenu';
-import { getPostBySlug, getRelatedPosts } from '@/api/services/postService';
+import { getPostBySlug, getRelatedPosts, togglePostLike, bookmarkPost } from '@/api/services/postService';
 import { getCategoryBySlug } from '@/api/services/categoryService';
 import { getImageUrl } from '@/api/utils/imageUrl';
 import { recordPostView } from '@/api/services/collectionService';
@@ -249,25 +249,46 @@ export default function BlogDetail() {
     }
   }, [slug]);
 
-  const handleLike = () => {
+  const handleLike = async () => {
     if (!isAuthenticated) {
       // Redirect to login with return URL
       navigate('/auth/login', { state: { from: { pathname: `/post/${slug}` } } });
       return;
     }
-    setIsLiked(!isLiked);
-    setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
-    // TODO: Call API to toggle like
+    
+    // Optimistic update
+    const wasLiked = isLiked;
+    setIsLiked(!wasLiked);
+    setLikesCount(prev => wasLiked ? prev - 1 : prev + 1);
+    
+    try {
+      await togglePostLike(post.uuid);
+    } catch (err) {
+      console.error('Failed to toggle like:', err);
+      // Rollback on error
+      setIsLiked(wasLiked);
+      setLikesCount(prev => wasLiked ? prev + 1 : prev - 1);
+    }
   };
 
-  const handleBookmark = () => {
+  const handleBookmark = async () => {
     if (!isAuthenticated) {
       // Redirect to login with return URL
       navigate('/auth/login', { state: { from: { pathname: `/post/${slug}` } } });
       return;
     }
-    setIsBookmarked(!isBookmarked);
-    // TODO: Call API to toggle bookmark
+    
+    // Optimistic update
+    const wasBookmarked = isBookmarked;
+    setIsBookmarked(!wasBookmarked);
+    
+    try {
+      await bookmarkPost(post.uuid);
+    } catch (err) {
+      console.error('Failed to toggle bookmark:', err);
+      // Rollback on error
+      setIsBookmarked(wasBookmarked);
+    }
   };
 
   const formatDate = (dateString) => {

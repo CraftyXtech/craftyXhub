@@ -373,7 +373,13 @@ export default function DashboardHome() {
           top: 80,
           alignSelf: 'flex-start',
           maxHeight: 'calc(100vh - 100px)',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          // Hide scrollbar like Twitter/X
+          scrollbarWidth: 'none', // Firefox
+          msOverflowStyle: 'none', // IE/Edge
+          '&::-webkit-scrollbar': {
+            display: 'none' // Chrome, Safari, Opera
+          }
         }}
       >
         <RecommendedTopics categories={categories} loading={loadingCategories} />

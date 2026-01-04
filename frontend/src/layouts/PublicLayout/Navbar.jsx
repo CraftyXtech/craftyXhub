@@ -89,7 +89,7 @@ export default function Navbar() {
       try {
         setLoading(true);
         const data = await getCategories();
-        const navCategories = transformCategoriesToNav(data.categories || []);
+        const navCategories = transformCategoriesToNav(data || []);
         setCategories(navCategories);
         setError(null);
       } catch (err) {

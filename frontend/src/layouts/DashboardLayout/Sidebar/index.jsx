@@ -174,7 +174,7 @@ export default function Sidebar({ open, mobileOpen, isMobile, onToggle, onMobile
               width: 32,
               height: 32,
               borderRadius: 1,
-              backgroundColor: 'rgba(255,255,255,0.1)',
+              backgroundColor: 'primary.main',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
@@ -185,13 +185,13 @@ export default function Sidebar({ open, mobileOpen, isMobile, onToggle, onMobile
             </Typography>
           </Box>
           {(open || isMobile) && (
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#fff' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
               CraftyXHub
             </Typography>
           )}
         </Box>
         {isMobile && (
-          <IconButton onClick={onMobileClose} size="small" sx={{ color: '#fff' }}>
+          <IconButton onClick={onMobileClose} size="small" sx={{ color: 'text.primary' }}>
             <IconX size={20} />
           </IconButton>
         )}
