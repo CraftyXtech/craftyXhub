@@ -340,7 +340,7 @@ POSTS_DATA = {
         {
             "title": "Setting Boundaries in an Always-On Culture",
             "excerpt": "How to disconnect from work without losing your edge.",
-            "img": "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80"
         }
     ],
     "sustainable-living": [
@@ -357,7 +357,7 @@ POSTS_DATA = {
         {
             "title": "Reducing Your Carbon Footprint at Home",
             "excerpt": "Energy-saving tips that are good for the planet and your wallet.",
-            "img": "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&q=80"
         }
     ]
 }
