@@ -28,7 +28,7 @@ POSTS_DATA = {
         {
             "title": "Ethical AI: Navigating the Bias Problem",
             "excerpt": "Understanding the challenges of bias in AI systems and how developers are working to solve them.",
-            "img": "https://images.unsplash.com/photo-1620712943543-bcc4638d71d0?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&q=80"
         }
     ],
     "blockchain-and-cryptocurrencies": [
@@ -45,7 +45,7 @@ POSTS_DATA = {
         {
             "title": "Smart Contracts: Automating Trust",
             "excerpt": "How self-executing contracts on the blockchain are removing the need for intermediaries.",
-            "img": "https://images.unsplash.com/photo-1621504450181-5d356f63d3ee?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1639322537228-f710d846310a?w=800&q=80"
         }
     ],
     "automation-and-smart-tools": [
@@ -62,19 +62,19 @@ POSTS_DATA = {
         {
             "title": "Smart Home Automation for Productivity",
             "excerpt": "Using IoT devices to create an environment that fosters focus and efficiency.",
-            "img": "https://images.unsplash.com/photo-1558002038-1091a1661116?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1556155092-490a1ba16284?w=800&q=80"
         }
     ],
     "programming-and-development": [
         {
             "title": "Why TypeScript is Winning the Web",
             "excerpt": "Exploring the benefits of static typing and why major frameworks are adopting TypeScript.",
-            "img": "https://images.unsplash.com/photo-1629904853716-64f48d8e1ef1?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=800&q=80"
         },
         {
             "title": "The Rise of Rust: Performance Meets Safety",
             "excerpt": "Why developers love Rust and where it fits in the modern development stack.",
-            "img": "https://images.unsplash.com/photo-1610986603166-f78428626276?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=800&q=80"
         },
         {
             "title": "Clean Code Principles for 2024",
@@ -96,7 +96,7 @@ POSTS_DATA = {
         {
             "title": "Two-Factor Authentication (2FA) Explained",
             "excerpt": "Why passwords aren't enough and which 2FA methods are the most secure.",
-            "img": "https://images.unsplash.com/photo-1550751827-4bd377958b?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=800&q=80"
         }
     ],
 
@@ -110,7 +110,7 @@ POSTS_DATA = {
         {
             "title": "Bootstrapping vs. Venture Capital: The Honest Truth",
             "excerpt": "Weighing the pros and cons of self-funding versus seeking investor money.",
-            "img": "https://images.unsplash.com/photo-1553729459-efe149f505d?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80"
         },
         {
             "title": "The Lean Startup Method in Practice",
@@ -122,12 +122,12 @@ POSTS_DATA = {
         {
             "title": "The 50/30/20 Rule: Budgeting Made Simple",
             "excerpt": "A straightforward framework for managing your needs, wants, and savings.",
-            "img": "https://images.unsplash.com/photo-1554224155-6726f3ff858f?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80"
         },
         {
             "title": "Index Funds vs. Individual Stocks",
             "excerpt": "Why passive investing often beats active trading for long-term wealth building.",
-            "img": "https://images.unsplash.com/photo-1590283603385-17ff93a7f29f?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1633158829585-23ba8f7c8caf?w=800&q=80"
         },
         {
             "title": "Understanding Compound Interest: The 8th Wonder",
@@ -144,12 +144,12 @@ POSTS_DATA = {
         {
             "title": "Monetizing Your Newsletter: Substack and Beyond",
             "excerpt": "How writers are turning their email lists into sustainable businesses.",
-            "img": "https://images.unsplash.com/photo-1563986768427-4a572a5a5462?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80"
         },
         {
             "title": "The Economics of YouTube Revenue",
             "excerpt": "Understanding AdSense, sponsorships, and merchandise for video creators.",
-            "img": "https://images.unsplash.com/photo-1611162617474-5b211626113?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=800&q=80"
         }
     ],
     "online-business-strategies": [
@@ -173,7 +173,7 @@ POSTS_DATA = {
         {
             "title": "Dividend Investing for Beginners",
             "excerpt": "Building a portfolio that pays you regular cash flow.",
-            "img": "https://images.unsplash.com/photo-1611974765270-ca12586343bb?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1579621970795-87facc2f976d?w=800&q=80"
         },
         {
             "title": "Creating and Selling Digital Products",
@@ -202,7 +202,7 @@ POSTS_DATA = {
         {
             "title": "Navigating a Mid-Career Pivot",
             "excerpt": "How to transfer your skills to a completely new industry.",
-            "img": "https://images.unsplash.com/photo-1454165833767-151c4a92c31e?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&q=80"
         }
     ],
     "online-learning-platforms": [
@@ -231,7 +231,7 @@ POSTS_DATA = {
         {
             "title": "The Pomodoro Technique Revisited",
             "excerpt": "Using time-blocking to prevent burnout and maintain focus.",
-            "img": "https://images.unsplash.com/photo-1495914747574-050c93273658?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1434626881859-194d67b2b86f?w=800&q=80"
         },
         {
             "title": "Building a Second Brain with Notion",
@@ -248,29 +248,29 @@ POSTS_DATA = {
         {
             "title": "Async Work: The Future of Remote Teams",
             "excerpt": "Why asynchronous communication beats constant meetings for distributed teams.",
-            "img": "https://images.unsplash.com/photo-1593642632823-8f78536788c6?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80"
         },
         {
             "title": "Setting Up an Ergonomic Home Office",
             "excerpt": "Protecting your health with the right chair, desk, and monitor setup.",
-            "img": "https://images.unsplash.com/photo-1497215728101-856f4ea449174?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=800&q=80"
         }
     ],
     "personal-branding": [
         {
             "title": "Optimizing Your LinkedIn Profile",
             "excerpt": "Turning your profile from a static resume into a lead-generating landing page.",
-            "img": "https://images.unsplash.com/photo-1611926653458-39295b41c9b5?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800&q=80"
         },
         {
             "title": "Why You Should Start a Professional Blog",
             "excerpt": "How writing online establishes authority and attracts career opportunities.",
-            "img": "https://images.unsplash.com/photo-1455390582262-054a68d771df?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1504805572947-34fad45aed93?w=800&q=80"
         },
         {
             "title": "Networking for Introverts",
             "excerpt": "Building meaningful professional connections without the awkward small talk.",
-            "img": "https://images.unsplash.com/photo-1515169067750-d51a73b0512c?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1552581234-26160f608093?w=800&q=80"
         }
     ],
 
@@ -313,24 +313,24 @@ POSTS_DATA = {
         {
             "title": "Digital Minimalism: Reclaiming Your Attention",
             "excerpt": "Strategies to reduce screen time and improve focus in a distracted world.",
-            "img": "https://images.unsplash.com/photo-1494438639946-1ebd1d10bf85?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1493723843671-1d655e66ac1c?w=800&q=80"
         },
         {
             "title": "The KonMari Method for Your Digital Files",
             "excerpt": "Organizing your computer and cloud storage for peace of mind.",
-            "img": "https://images.unsplash.com/photo-1505691938895-1758d7eaa511?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1449247709967-d4461a6a6103?w=800&q=80"
         },
         {
             "title": "Essentialism: The Disciplined Pursuit of Less",
             "excerpt": "How to say no to the trivial many so you can focus on the vital few.",
-            "img": "https://images.unsplash.com/photo-1462002271871-36ba957d607e?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80"
         }
     ],
     "wellness-and-work-life-balance": [
         {
             "title": "Sleep Hygiene for High Performers",
             "excerpt": "Why sleep is your most important productivity tool and how to get more of it.",
-            "img": "https://images.unsplash.com/photo-1511296933631-18b5f07a8bb8?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80"
         },
         {
             "title": "The Benefits of Meditation for Developers",
@@ -347,12 +347,12 @@ POSTS_DATA = {
         {
             "title": "Zero Waste: A Beginner's Guide",
             "excerpt": "Practical steps to reduce your household waste and environmental footprint.",
-            "img": "https://images.unsplash.com/photo-1532629545422-7515f3d16bb8?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80"
         },
         {
             "title": "Ethical Fashion: Building a Sustainable Wardrobe",
             "excerpt": "How to choose quality over quantity and support fair labor practices.",
-            "img": "https://images.unsplash.com/photo-1483985988355-78377a5a54b?w=800&q=80"
+            "img": "https://images.unsplash.com/photo-1558171813-4c088753af8f?w=800&q=80"
         },
         {
             "title": "Reducing Your Carbon Footprint at Home",
