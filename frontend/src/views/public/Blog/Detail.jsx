@@ -205,29 +205,26 @@ export default function BlogDetail() {
         setLoading(true);
         setError(null);
         
+        // Fetch main post first (required for subsequent calls)
         const postData = await getPostBySlug(slug);
         setPost(postData);
         setLikesCount(postData.likes_count || 0);
         
-        // Fetch related posts if we have UUID
-        if (postData.uuid) {
-          try {
-            const related = await getRelatedPosts(postData.slug, { limit: 3 });
-            setRelatedPosts(related.posts || []);
-          } catch (err) {
-            console.error('Failed to fetch related posts:', err);
-          }
-        }
+        // Fetch related posts and category data IN PARALLEL
+        const [relatedResult, categoryResult] = await Promise.all([
+          // Related posts (use slug, not uuid)
+          postData.slug 
+            ? getRelatedPosts(postData.slug, { limit: 3 }).catch(() => ({ posts: [] }))
+            : Promise.resolve({ posts: [] }),
+          // Category data for sidebar
+          postData.category?.slug
+            ? getCategoryBySlug(postData.category.slug).catch(() => null)
+            : Promise.resolve(null)
+        ]);
         
-        // Fetch category data for sidebar context
-        if (postData.category?.slug) {
-          try {
-            const catData = await getCategoryBySlug(postData.category.slug);
-            setCategoryData(catData);
-          } catch (err) {
-            console.error('Failed to fetch category data:', err);
-          }
-        }
+        setRelatedPosts(relatedResult.posts || []);
+        setCategoryData(categoryResult);
+        
       } catch (err) {
         console.error('Failed to fetch post:', err);
         setError(err.message || 'Failed to load post');

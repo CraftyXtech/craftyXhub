@@ -284,8 +284,8 @@ async def get_post(
         post_slug: str,
         session: AsyncSession = Depends(get_db_session)
 ):
-    """Get a post by slug (public endpoint)"""
-    post = await PostService.get_post_by_slug(session, post_slug)
+    """Get a post by slug (public endpoint) - optimized for display"""
+    post = await PostService.get_post_for_display(session, post_slug)
     
     if not post:
         raise HTTPException(
@@ -294,7 +294,7 @@ async def get_post(
         )
 
     await PostService.increment_view_count(session, post.uuid)
-    return await PostService.get_post_with_relationships(session, post.id)
+    return post
 
 
 @router.post("/", response_model=PostResponse, status_code=status.HTTP_201_CREATED)

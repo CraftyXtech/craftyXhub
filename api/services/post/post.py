@@ -57,6 +57,26 @@ class PostService:
             )
 
     @staticmethod
+    def _apply_lightweight_relationships(query):
+        """
+        Lightweight relationship loading for public post display.
+        Only loads essential data: author, category, tags.
+        Does NOT load: comments, liked_by, bookmarked_by arrays.
+        Use this for public-facing endpoints to improve performance.
+        """
+        try:
+            return query.options(
+                selectinload(Post.author),
+                selectinload(Post.category),
+                selectinload(Post.tags)
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to apply lightweight relationships: {str(e)}"
+            )
+
+    @staticmethod
     def _add_soft_delete_filter(query, include_deleted: bool = False):
         try:
             if not include_deleted:
@@ -130,6 +150,25 @@ class PostService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to get post by slug: {str(e)}"
+            )
+
+    @staticmethod
+    async def get_post_for_display(session: AsyncSession, slug: str, include_deleted: bool = False) -> Optional[Post]:
+        """
+        Optimized post retrieval for public display.
+        Uses lightweight relationships (no comments, liked_by, bookmarked_by).
+        Use this for public-facing post detail pages.
+        """
+        try:
+            query = select(Post).where(Post.slug == slug)
+            query = PostService._apply_lightweight_relationships(query)
+            query = PostService._add_soft_delete_filter(query, include_deleted)
+            result = await session.execute(query)
+            return result.scalar_one_or_none()
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to get post for display: {str(e)}"
             )
 
     @staticmethod
