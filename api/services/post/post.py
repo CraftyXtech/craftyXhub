@@ -156,12 +156,12 @@ class PostService:
     async def get_post_for_display(session: AsyncSession, slug: str, include_deleted: bool = False) -> Optional[Post]:
         """
         Optimized post retrieval for public display.
-        Uses lightweight relationships (no comments, liked_by, bookmarked_by).
-        Use this for public-facing post detail pages.
+        Uses full relationships to avoid lazy loading issues in async context.
+        Main optimization: single query instead of two.
         """
         try:
             query = select(Post).where(Post.slug == slug)
-            query = PostService._apply_lightweight_relationships(query)
+            query = PostService._apply_post_relationships(query)
             query = PostService._add_soft_delete_filter(query, include_deleted)
             result = await session.execute(query)
             return result.scalar_one_or_none()
