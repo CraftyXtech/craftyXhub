@@ -1,20 +1,44 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import Optional
 
 from database.connection import get_db_session
-from services.user.auth import get_current_active_user
+from services.user.auth import get_current_active_user, AuthService
 from models import User
 from schemas.user import (
     UserFollowersResponse, 
     UserFollowingResponse, 
     FollowActionResponse,
-    UserSuggestionsResponse
+    UserSuggestionsResponse,
+    UserWithProfileResponse
 )
 from services.user.user_follow import UserFollowService
 
-router = APIRouter(prefix="/users", tags=["User Following"])
+router = APIRouter(prefix="/users", tags=["Users"])
+
+
+@router.get(
+    "/username/{username}",
+    response_model=UserWithProfileResponse,
+    summary="Get user by username",
+    responses={
+        200: {"description": "User found"},
+        404: {"description": "User not found"}
+    }
+)
+async def get_user_by_username(
+    username: str,
+    session: AsyncSession = Depends(get_db_session)
+) -> UserWithProfileResponse:
+    """Get a user's public profile by username (public endpoint for author pages)."""
+    user = await AuthService.get_user_by_username(session, username)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User '{username}' not found"
+        )
+    return user
 
 
 @router.get(
