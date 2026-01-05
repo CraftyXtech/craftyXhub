@@ -36,6 +36,7 @@ export default function Author() {
   const { username } = useParams();
   const [author, setAuthor] = useState(null);
   const [posts, setPosts] = useState([]);
+  const [totalPosts, setTotalPosts] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAllPosts, setShowAllPosts] = useState(false);
@@ -55,8 +56,9 @@ export default function Author() {
         
         // Fetch author's posts
         if (authorData?.uuid) {
-          const postsData = await getPostsByAuthor(authorData.uuid, { limit: 20 });
+          const postsData = await getPostsByAuthor(authorData.uuid, { limit: 100 });
           setPosts(postsData.posts || []);
+          setTotalPosts(postsData.total || 0);
         }
       } catch (err) {
         console.error('Failed to fetch author:', err);
@@ -124,7 +126,7 @@ export default function Author() {
   // Get profile data safely
   const profile = author.profile || {};
   const stats = {
-    posts: posts.length,
+    posts: totalPosts,
     likes: author.total_likes || 0
   };
 
