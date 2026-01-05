@@ -7,6 +7,7 @@ from fastapi.responses import RedirectResponse
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from models import User
 from schemas.user import TokenData
@@ -34,7 +35,10 @@ class AuthService:
 
     @staticmethod
     async def get_user_by_username(session: AsyncSession, username: str) -> Optional[User]:
-        statement = select(User).where(User.username == username)
+        """Get user by username with profile eagerly loaded for serialization."""
+        statement = select(User).where(User.username == username).options(
+            selectinload(User.profile)
+        )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
