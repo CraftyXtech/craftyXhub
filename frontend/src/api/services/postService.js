@@ -157,12 +157,12 @@ export const getPostsByCategory = async (categoryId, params = {}) => {
 
 /**
  * Get posts by author
- * @param {string} authorId - Author ID/UUID
+ * @param {string} authorUuid - Author UUID
  * @param {object} params - Pagination/filter params
  * @returns {Promise<object>} Posts list
  */
-export const getPostsByAuthor = async (authorId, params = {}) => {
-  const clientParams = { ...params, author_id: authorId, published: true };
+export const getPostsByAuthor = async (authorUuid, params = {}) => {
+  const clientParams = { ...params, author_uuid: authorUuid, published: true };
   const response = await axiosPublic.get('/posts/', { params: clientParams });
   return response.data;
 };

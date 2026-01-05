@@ -54,8 +54,8 @@ export default function Author() {
         setAuthor(authorData);
         
         // Fetch author's posts
-        if (authorData?.id) {
-          const postsData = await getPostsByAuthor(authorData.id, { limit: 20 });
+        if (authorData?.uuid) {
+          const postsData = await getPostsByAuthor(authorData.uuid, { limit: 20 });
           setPosts(postsData.posts || []);
         }
       } catch (err) {

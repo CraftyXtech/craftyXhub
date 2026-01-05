@@ -251,10 +251,18 @@ async def get_posts(
         limit: int = Query(10, ge=1, le=100),
         published: bool = Query(True),
         author_id: Optional[int] = None,
+        author_uuid: Optional[str] = None,
         category_id: Optional[int] = None,
         tag_id: Optional[int] = None,
         session: AsyncSession = Depends(get_db_session)
 ):
+    # If author_uuid provided, resolve to author_id
+    if author_uuid and not author_id:
+        from services.user.auth import AuthService
+        author = await AuthService.get_user_by_uuid(session, author_uuid)
+        if author:
+            author_id = author.id
+    
     posts = await PostService.get_posts(
         session,
         skip=skip,
