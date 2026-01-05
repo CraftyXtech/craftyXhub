@@ -7,15 +7,15 @@ import { axiosPublic, axiosPrivate } from '../axios';
 
 /**
  * Get comments for a post
- * @param {string} postUuid - Post UUID
+ * @param {string} postSlug - Post slug
  * @param {object} params - { skip, limit }
  * @returns {Promise<object>} { comments, total }
  */
-export const getComments = async (postUuid, params = {}) => {
-  if (!postUuid) {
-    throw new Error('post_uuid is required to fetch comments');
+export const getComments = async (postSlug, params = {}) => {
+  if (!postSlug) {
+    throw new Error('post_slug is required to fetch comments');
   }
-  const response = await axiosPublic.get(`/comments/${postUuid}/comments`, { params });
+  const response = await axiosPublic.get(`/comments/${postSlug}/comments`, { params });
   return response.data;
 };
 
@@ -32,15 +32,15 @@ export const getComment = async (/* commentUuid */) => {
 
 /**
  * Create a new comment
- * @param {string} postUuid - Post UUID
+ * @param {string} postSlug - Post slug
  * @param {object} commentData - { content, parent_id? }
  * @returns {Promise<object>} Created comment
  */
-export const createComment = async (postUuid, commentData) => {
-  if (!postUuid) {
-    throw new Error('post_uuid is required to create a comment');
+export const createComment = async (postSlug, commentData) => {
+  if (!postSlug) {
+    throw new Error('post_slug is required to create a comment');
   }
-  const response = await axiosPrivate.post(`/comments/${postUuid}/comments`, commentData);
+  const response = await axiosPrivate.post(`/comments/${postSlug}/comments`, commentData);
   return response.data;
 };
 

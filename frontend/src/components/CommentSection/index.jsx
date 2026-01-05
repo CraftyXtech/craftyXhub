@@ -202,7 +202,7 @@ function CommentSkeleton() {
 }
 
 // Main Comment Section Component
-export default function CommentSection({ postUuid }) {
+export default function CommentSection({ postSlug }) {
   const { isAuthenticated, user } = useAuth();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -213,7 +213,7 @@ export default function CommentSection({ postUuid }) {
 
   // Fetch comments from API
   const fetchComments = useCallback(async () => {
-    if (!postUuid) {
+    if (!postSlug) {
       setLoading(false);
       return;
     }
@@ -221,7 +221,7 @@ export default function CommentSection({ postUuid }) {
     try {
       setLoading(true);
       setError(null);
-      const response = await getComments(postUuid, { limit: 50 });
+      const response = await getComments(postSlug, { limit: 50 });
       setComments(response.comments || []);
     } catch (err) {
       console.error('Failed to fetch comments:', err);
@@ -230,7 +230,7 @@ export default function CommentSection({ postUuid }) {
     } finally {
       setLoading(false);
     }
-  }, [postUuid]);
+  }, [postSlug]);
 
   useEffect(() => {
     fetchComments();
@@ -239,13 +239,13 @@ export default function CommentSection({ postUuid }) {
   // Submit new comment
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newComment.trim() || !isAuthenticated || !postUuid) return;
+    if (!newComment.trim() || !isAuthenticated || !postSlug) return;
     
     setIsSubmitting(true);
     setSubmitError(null);
     
     try {
-      await createComment(postUuid, { content: newComment.trim() });
+      await createComment(postSlug, { content: newComment.trim() });
       setNewComment('');
       // Refresh comments to show the new one
       await fetchComments();
@@ -259,10 +259,10 @@ export default function CommentSection({ postUuid }) {
 
   // Handle reply submission
   const handleReplySubmit = async (content, parentId) => {
-    if (!content.trim() || !isAuthenticated || !postUuid) return;
+    if (!content.trim() || !isAuthenticated || !postSlug) return;
     
     try {
-      await createComment(postUuid, { 
+      await createComment(postSlug, { 
         content: content.trim(),
         parent_id: parentId 
       });

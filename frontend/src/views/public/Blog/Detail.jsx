@@ -212,7 +212,7 @@ export default function BlogDetail() {
         // Fetch related posts if we have UUID
         if (postData.uuid) {
           try {
-            const related = await getRelatedPosts(postData.uuid, { limit: 3 });
+            const related = await getRelatedPosts(postData.slug, { limit: 3 });
             setRelatedPosts(related.posts || []);
           } catch (err) {
             console.error('Failed to fetch related posts:', err);
@@ -588,7 +588,7 @@ export default function BlogDetail() {
       <RelatedPosts posts={relatedPosts} />
 
       {/* Comments */}
-      <CommentSection postUuid={post.uuid} />
+      <CommentSection postSlug={post.slug} />
     </Box>
   );
 }

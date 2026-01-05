@@ -134,12 +134,12 @@ export const getForYouPosts = async (params = {}) => {
 
 /**
  * Get related posts for a specific post
- * @param {string} postUuid - Post UUID
+ * @param {string} postSlug - Post slug
  * @param {object} params - { limit }
  * @returns {Promise<object>} Related posts list
  */
-export const getRelatedPosts = async (postUuid, params = {}) => {
-  const response = await axiosPublic.get(`/posts/${postUuid}/related`, { params });
+export const getRelatedPosts = async (postSlug, params = {}) => {
+  const response = await axiosPublic.get(`/posts/${postSlug}/related`, { params });
   return response.data;
 };
 
