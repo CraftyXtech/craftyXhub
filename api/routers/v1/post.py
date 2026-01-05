@@ -121,13 +121,20 @@ async def get_popular_posts(
     }
 
 
-@router.get("/{post_uuid}/related", response_model=PostListResponse)
+@router.get("/{post_slug}/related", response_model=PostListResponse)
 async def get_related_posts(
-        post_uuid: str,
+        post_slug: str,
         limit: int = Query(5, ge=1, le=10),
         session: AsyncSession = Depends(get_db_session)
 ):
-    posts = await PostService.get_related_posts(session, post_uuid, limit=limit)
+    """Get related posts by slug (public endpoint)"""
+    post = await PostService.get_post_by_slug(session, post_slug)
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+    posts = await PostService.get_related_posts(session, post.uuid, limit=limit)
     return {
         "posts": posts,
         "total": len(posts),
@@ -272,19 +279,21 @@ async def get_posts(
     }
 
 
-@router.get("/{post_uuid}", response_model=PostResponse)
+@router.get("/{post_slug}", response_model=PostResponse)
 async def get_post(
-        post_uuid: str,
+        post_slug: str,
         session: AsyncSession = Depends(get_db_session)
 ):
-    post = await PostService.get_post_by_uuid(session, post_uuid)
+    """Get a post by slug (public endpoint)"""
+    post = await PostService.get_post_by_slug(session, post_slug)
+    
     if not post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Post not found"
         )
 
-    await PostService.increment_view_count(session, post_uuid)
+    await PostService.increment_view_count(session, post.uuid)
     return await PostService.get_post_with_relationships(session, post.id)
 
 

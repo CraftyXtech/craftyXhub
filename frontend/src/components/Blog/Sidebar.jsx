@@ -20,7 +20,7 @@ import { IconSearch, IconArrowLeft, IconChevronRight } from '@tabler/icons-react
 import { motion } from 'framer-motion';
 import { getCategories } from '@/api/services/categoryService';
 import { getSuggestedUsers, followUser } from '@/api/services/userService';
-import { axiosPublic } from '@/api/axios';
+import { axiosPublic, TOKEN_KEY } from '@/api/axios';
 
 const MotionCard = motion.create(Card);
 
@@ -81,10 +81,13 @@ export default function Sidebar({
           console.error('Failed to fetch popular posts:', err);
         }
 
-        // Fetch suggested users
+        // Fetch suggested users only if authenticated
         try {
-          const usersData = await getSuggestedUsers(3);
-          setSuggestedUsers(usersData.users || []);
+          const token = localStorage.getItem(TOKEN_KEY);
+          if (token) {
+            const usersData = await getSuggestedUsers(3);
+            setSuggestedUsers(usersData.users || []);
+          }
         } catch (err) {
           console.error('Failed to fetch suggested users:', err);
         } finally {

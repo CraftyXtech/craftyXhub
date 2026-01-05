@@ -23,25 +23,43 @@ async def get_user_comments(
     return CommentListResponse(comments=comments)
 
 
-@router.get("/{post_uuid}/comments", response_model=CommentListResponse)
+@router.get("/{post_slug}/comments", response_model=CommentListResponse)
 async def get_post_comments(
-        post_uuid: str,
+        post_slug: str,
         skip: int = Query(0, ge=0),
         limit: int = Query(10, ge=1, le=100),
         session: AsyncSession = Depends(get_db_session)
 ):
-    comments =  await CommentService.get_post_comments(session, post_uuid, skip=skip, limit=limit)
+    """Get comments for a post by slug (public endpoint)"""
+    from services.post.post import PostService
+    
+    post = await PostService.get_post_by_slug(session, post_slug)
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+    comments = await CommentService.get_post_comments(session, post.uuid, skip=skip, limit=limit)
     return CommentListResponse(comments=comments)
 
 
-@router.post("/{post_uuid}/comments", response_model=CommentResponse)
+@router.post("/{post_slug}/comments", response_model=CommentResponse)
 async def create_comment(
-        post_uuid: str,
+        post_slug: str,
         comment_data: CommentCreate,
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
 ):
-    return await CommentService.create_comment(session, post_uuid, comment_data, current_user.id)
+    """Create a comment on a post by slug"""
+    from services.post.post import PostService
+    
+    post = await PostService.get_post_by_slug(session, post_slug)
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+    return await CommentService.create_comment(session, post.uuid, comment_data, current_user.id)
 
 
 @router.put("/{comment_uuid}", response_model=CommentResponse)
