@@ -2,7 +2,7 @@
  * Token utilities for JWT handling
  */
 
-import { TOKEN_KEY, USER_KEY } from '../axios';
+import { TOKEN_KEY, USER_KEY } from '../constants';
 
 /**
  * Decode JWT payload without verification
