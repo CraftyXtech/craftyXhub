@@ -16,19 +16,26 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // Order matters - more specific matches first
+            // TinyMCE in its own chunk - must be loaded after React
             if (id.includes('tinymce') || id.includes('@tinymce')) return 'tinymce';
+            // EditorJS in its own chunk
             if (id.includes('@editorjs')) return 'editorjs';
+            // MUI components
             if (id.includes('@mui/x-charts')) return 'charts';
             if (id.includes('@mui')) return 'mui';
+            // Icons
             if (id.includes('@tabler/icons-react')) return 'tabler-icons';
+            // Animation
             if (id.includes('framer-motion')) return 'framer';
-            // Keep react-router and react in vendor to avoid circular deps
+            // Everything else including React, React-Router in vendor
             return 'vendor';
           }
         },
       },
     },
+  },
+  optimizeDeps: {
+    include: ['tinymce', '@tinymce/tinymce-react']
   },
   resolve: {
     alias: {
