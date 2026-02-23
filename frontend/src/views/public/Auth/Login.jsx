@@ -10,21 +10,21 @@ import {
   Stack,
   Alert,
   InputAdornment,
-  IconButton
+  IconButton,
+  CircularProgress
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import {
   IconMail,
   IconLock,
   IconEye,
-  IconEyeOff,
-  IconBrandGoogle,
-  IconBrandGithub
+  IconEyeOff
 } from '@tabler/icons-react';
 import Logo from '@/components/Logo';
 import { login as loginApi, getCurrentUser } from '@/api';
 import { useAuth } from '@/api/AuthProvider';
 import { TOKEN_KEY } from '@/api/axios';
+import useGoogleSignIn from '@/api/hooks/useGoogleSignIn';
 
 const MotionBox = motion.create(Box);
 
@@ -40,6 +40,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Google Sign-In
+  const { googleButtonRef, loading: googleLoading, error: googleError } = useGoogleSignIn();
 
   // Get the redirect path from location state or default to dashboard
   const from = location.state?.from?.pathname || '/dashboard';
@@ -124,11 +127,38 @@ export default function Login() {
           </Typography>
 
           {/* Error Alert */}
-          {error && (
+          {(error || googleError) && (
             <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
+              {error || googleError}
             </Alert>
           )}
+
+          {/* Google Sign-In */}
+          <Box
+            ref={googleButtonRef}
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              minHeight: 44,
+              position: 'relative',
+            }}
+          >
+            {googleLoading && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={20} />
+                <Typography variant="body2" color="text.secondary">
+                  Signing in with Google...
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          {/* Divider */}
+          <Divider sx={{ my: 3 }}>
+            <Typography variant="body2" color="text.secondary">
+              or continue with email
+            </Typography>
+          </Divider>
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
@@ -211,33 +241,6 @@ export default function Login() {
               </Button>
             </Stack>
           </form>
-
-          {/* Divider */}
-          <Divider sx={{ my: 4 }}>
-            <Typography variant="body2" color="text.secondary">
-              or continue with
-            </Typography>
-          </Divider>
-
-          {/* Social Login */}
-          <Stack direction="row" spacing={2}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<IconBrandGoogle size={20} />}
-              sx={{ py: 1.5, color: 'text.primary', borderColor: 'grey.300' }}
-            >
-              Google
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<IconBrandGithub size={20} />}
-              sx={{ py: 1.5, color: 'text.primary', borderColor: 'grey.300' }}
-            >
-              GitHub
-            </Button>
-          </Stack>
 
           {/* Register Link */}
           <Typography variant="body2" sx={{ textAlign: 'center', mt: 4 }}>

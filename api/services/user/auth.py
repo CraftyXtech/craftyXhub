@@ -1,4 +1,5 @@
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Depends, HTTPException, status
@@ -85,7 +86,7 @@ class AuthService:
                 email=email,
                 username=username,
                 full_name=full_name,
-                password=settings.GOOGLE_CLIENT_ID,  
+                password=AuthService.get_password_hash(secrets.token_urlsafe(32)),
                 provider=provider,
                 is_verified=True
             )

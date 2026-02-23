@@ -1,49 +1,17 @@
-import { Box, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import branding from '@/branding.json';
 
 export default function Logo({ variant = 'dark', showText = true }) {
-  const color = variant === 'light' ? 'white' : 'text.primary';
-  const accentColor = 'primary.main';
+  const src = showText ? branding.logo.main : branding.logo.icon;
+  const alt = showText ? branding.brandName : 'Logo';
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      {/* Logo Icon */}
-      <Box
-        sx={{
-          width: 36,
-          height: 36,
-          borderRadius: 2,
-          bgcolor: accentColor,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <Typography
-          variant="h6"
-          sx={{
-            color: 'white',
-            fontWeight: 700,
-            fontSize: '1.25rem'
-          }}
-        >
-          C
-        </Typography>
-      </Box>
-
-      {/* Logo Text */}
-      {showText && (
-        <Typography
-          variant="h6"
-          sx={{
-            color: color,
-            fontWeight: 700,
-            letterSpacing: '-0.02em'
-          }}
-        >
-          {branding.brandName}
-        </Typography>
-      )}
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <img
+        src={src}
+        alt={alt}
+        style={{ height: 40, width: 'auto', filter: variant === 'light' ? 'brightness(0) invert(1)' : 'none' }}
+      />
     </Box>
   );
 }

@@ -5,19 +5,20 @@ import jsconfigPaths from 'vite-jsconfig-paths';
 export default defineConfig({
   plugins: [react(), jsconfigPaths()],
   server: {
-    port: 3000,
+    port: 4173,
     open: true
+  },
+  preview: {
+    port: 4173
   },
   build: {
     outDir: 'dist',
     sourcemap: false,
-    chunkSizeWarningLimit: 1600,
+    chunkSizeWarningLimit: 1800,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // TinyMCE in its own chunk - must be loaded after React
-            if (id.includes('tinymce') || id.includes('@tinymce')) return 'tinymce';
             // EditorJS in its own chunk
             if (id.includes('@editorjs')) return 'editorjs';
             // MUI components
@@ -27,7 +28,11 @@ export default defineConfig({
             if (id.includes('@tabler/icons-react')) return 'tabler-icons';
             // Animation
             if (id.includes('framer-motion')) return 'framer';
-            // Everything else including React, React-Router in vendor
+            // Swiper
+            if (id.includes('swiper')) return 'swiper';
+            // Router
+            if (id.includes('react-router') || id.includes('@remix-run')) return 'router';
+            // Everything else (React, TinyMCE, etc) in vendor
             return 'vendor';
           }
         },

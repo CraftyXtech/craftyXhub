@@ -1,5 +1,4 @@
 import { Box, Container, Grid, Typography, Chip, IconButton, Stack, Skeleton } from '@mui/material';
-import { motion } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
 import { useRef, useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -9,8 +8,6 @@ import { getFeaturedPosts, getImageUrl } from '@/api/services/postService';
 
 // Swiper styles
 import 'swiper/css';
-
-const MotionBox = motion.create(Box);
 
 // Hero slides data (static - could be made dynamic later)
 const heroSlides = [
@@ -43,6 +40,7 @@ function FeaturedPostCard({ post, height = '100%' }) {
       sx={{
         position: 'relative',
         height: height,
+        minHeight: 250,
         display: 'block',
         overflow: 'hidden',
         textDecoration: 'none',
@@ -260,26 +258,22 @@ export default function HeroSection() {
 
           {/* Right: Featured Posts - Side by Side */}
           <Grid size={{ xs: 12, lg: 6 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ height: { xs: 'auto', lg: 500 } }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ minHeight: { xs: 520, sm: 250, lg: 500 } }}>
               {loading ? (
                 // Loading skeletons
                 [...Array(2)].map((_, index) => (
-                  <Box key={index} sx={{ flex: 1, minHeight: { xs: 250, lg: 'auto' } }}>
+                  <Box key={index} sx={{ flex: 1, height: { xs: 250, lg: 'auto' }, minHeight: 250 }}>
                     <Skeleton variant="rounded" height="100%" sx={{ minHeight: 250 }} />
                   </Box>
                 ))
               ) : featuredPosts.length > 0 ? (
-                featuredPosts.map((post, index) => (
-                  <MotionBox
+                featuredPosts.map((post) => (
+                  <Box
                     key={post.uuid || post.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                    sx={{ flex: 1, minHeight: { xs: 250, lg: 'auto' } }}
+                    sx={{ flex: 1, height: { xs: 250, lg: 'auto' }, minHeight: 250 }}
                   >
                     <FeaturedPostCard post={post} height="100%" />
-                  </MotionBox>
+                  </Box>
                 ))
               ) : (
                 // Fallback placeholders when no posts

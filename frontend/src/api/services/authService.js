@@ -83,3 +83,16 @@ export const verifyEmail = async (token) => {
   return response.data;
 };
 
+// =============================================================================
+// SOCIAL LOGIN (Google Identity Services - no redirects)
+// =============================================================================
+
+/**
+ * Login/register with Google ID token (from Google Identity Services SDK)
+ * @param {string} credential - The Google ID token from the GIS callback
+ * @returns {Promise<object>} { access_token, token_type, expires_in }
+ */
+export const googleLogin = async (credential) => {
+  const response = await axiosPublic.post('/auth/google/token', { credential });
+  return response.data;
+};

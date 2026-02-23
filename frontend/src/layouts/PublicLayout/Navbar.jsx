@@ -432,7 +432,7 @@ export default function Navbar() {
           {isMobile && (
             <IconButton
               onClick={handleDrawerToggle}
-              sx={{ color: 'text.primary' }}
+              sx={{ color: 'text.primary', ml: 'auto' }}
             >
               {mobileOpen ? <IconX /> : <IconMenu2 />}
             </IconButton>

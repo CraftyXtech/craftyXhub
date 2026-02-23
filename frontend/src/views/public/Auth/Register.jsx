@@ -12,7 +12,8 @@ import {
   InputAdornment,
   IconButton,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
+  CircularProgress
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import {
@@ -20,14 +21,13 @@ import {
   IconLock,
   IconUser,
   IconEye,
-  IconEyeOff,
-  IconBrandGoogle,
-  IconBrandGithub
+  IconEyeOff
 } from '@tabler/icons-react';
 import Logo from '@/components/Logo';
 import { register as registerApi, login as loginApi, getCurrentUser } from '@/api';
 import { useAuth } from '@/api/AuthProvider';
 import { TOKEN_KEY } from '@/api/axios';
+import useGoogleSignIn from '@/api/hooks/useGoogleSignIn';
 
 const MotionBox = motion.create(Box);
 
@@ -50,6 +50,9 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Google Sign-In
+  const { googleButtonRef, loading: googleLoading, error: googleError } = useGoogleSignIn();
 
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;
@@ -214,11 +217,38 @@ export default function Register() {
           )}
 
           {/* Error Alert */}
-          {error && (
+          {(error || googleError) && (
             <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
+              {error || googleError}
             </Alert>
           )}
+
+          {/* Google Sign-In */}
+          <Box
+            ref={googleButtonRef}
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              minHeight: 44,
+              position: 'relative',
+            }}
+          >
+            {googleLoading && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={20} />
+                <Typography variant="body2" color="text.secondary">
+                  Signing in with Google...
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          {/* Divider */}
+          <Divider sx={{ my: 3 }}>
+            <Typography variant="body2" color="text.secondary">
+              or sign up with email
+            </Typography>
+          </Divider>
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
@@ -364,33 +394,6 @@ export default function Register() {
               </Button>
             </Stack>
           </form>
-
-          {/* Divider */}
-          <Divider sx={{ my: 4 }}>
-            <Typography variant="body2" color="text.secondary">
-              or sign up with
-            </Typography>
-          </Divider>
-
-          {/* Social Login */}
-          <Stack direction="row" spacing={2}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<IconBrandGoogle size={20} />}
-              sx={{ py: 1.5, color: 'text.primary', borderColor: 'grey.300' }}
-            >
-              Google
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<IconBrandGithub size={20} />}
-              sx={{ py: 1.5, color: 'text.primary', borderColor: 'grey.300' }}
-            >
-              GitHub
-            </Button>
-          </Stack>
 
           {/* Login Link */}
           <Typography variant="body2" sx={{ textAlign: 'center', mt: 4 }}>

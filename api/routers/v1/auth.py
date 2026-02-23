@@ -3,11 +3,9 @@ from typing import Optional
 import secrets
 from core.config import settings
 from database.connection import get_db_session
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.responses import RedirectResponse
-from fastapi_sso.sso.google import GoogleSSO
-from fastapi_sso.sso.facebook import FacebookSSO
+from fastapi import APIRouter, Depends, HTTPException, status
 from models.user import User, PasswordResetToken, EmailVerificationToken
+from pydantic import BaseModel
 from schemas.user import (
     UserCreate, UserLogin, UserResponse, Token, ResetPasswordRequest, AuthResult,
     PasswordResetRequestEmail, PasswordResetConfirm, EmailVerificationRequest, PasswordResetResponse
@@ -17,22 +15,7 @@ from services.user.notification import NotificationService
 from schemas.notification import NotificationType
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
-from urllib.parse import urlencode
 
-
-google_sso = GoogleSSO(
-    client_id=settings.GOOGLE_CLIENT_ID,
-    client_secret=settings.GOOGLE_CLIENT_SECRET,
-    redirect_uri=f"{settings.API_BASE_URL}/v1/auth/google/callback",
-    allow_insecure_http=False,
-)
-
-facebook_sso = FacebookSSO(
-    client_id=settings.FACEBOOK_CLIENT_ID,
-    client_secret=settings.FACEBOOK_CLIENT_SECRET,
-    redirect_uri=f"{settings.API_BASE_URL}/v1/auth/facebook/callback",
-    allow_insecure_http=False,
-)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -384,83 +367,66 @@ async def verify_email(
         success=True
     )
 
-@router.get("/google/login")
-async def google_login():
-    try:
-        async with google_sso:
-            return await google_sso.get_login_redirect()
-    except Exception as e:
+
+class GoogleTokenRequest(BaseModel):
+    credential: str
+
+
+@router.post("/google/token", response_model=Token)
+async def google_token_login(
+    request: GoogleTokenRequest,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Verify a Google ID token from the frontend (Google Identity Services SDK)
+    and return a JWT. No redirects involved.
+    """
+    google_client_id = settings.GOOGLE_CLIENT_ID
+    if not google_client_id:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google authentication is not configured",
         )
 
+    from google.oauth2 import id_token
+    from google.auth.transport import requests as google_requests
 
-@router.get("/google/callback")
-async def google_callback(request: Request, db: AsyncSession = Depends(get_db_session)):
-    async with google_sso:
-        try:
-            user_info = await google_sso.verify_and_process(request)
-        except Exception as e:
-            params = urlencode({"error": f"Google SSO failed: {str(e)}"})
-            return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/failure?{params}")
-
-        if not user_info or not user_info.email:
-            params = urlencode({"error": "Missing email from Google profile"})
-            return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/failure?{params}")
-
-        token = await AuthService.login_with_social_profile(
-            session=db,
-            email=user_info.email,
-            name=user_info.display_name,
-            picture=user_info.picture,
-            provider="google"
-        )
-
-        params = urlencode({
-            "access_token": token,
-            "token_type": "bearer",
-            "expires_in": int(settings.ACCESS_TOKEN_EXPIRE_MINUTES) * 60,
-        })
-        return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/success?{params}")
-
-
-@router.get("/facebook/login")
-async def facebook_login():
     try:
-        async with facebook_sso:
-            return await facebook_sso.get_login_redirect()
-    except Exception as e:
+        idinfo = id_token.verify_oauth2_token(
+            request.credential,
+            google_requests.Request(),
+            google_client_id
+        )
+    except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid Google token: {str(e)}"
         )
 
-
-@router.get("/facebook/callback")
-async def facebook_callback(request: Request, db: AsyncSession = Depends(get_db_session)):
-    async with facebook_sso:
-        try:
-            user_info = await facebook_sso.verify_and_process(request)
-        except Exception as e:
-            params = urlencode({"error": f"Facebook SSO failed: {str(e)}"})
-            return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/failure?{params}")
-
-        if not user_info or not user_info.email:
-            params = urlencode({"error": "Missing email from Facebook profile"})
-            return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/failure?{params}")
-
-        token = await AuthService.login_with_social_profile(
-            session=db,
-            email=user_info.email,
-            name=user_info.display_name,
-            picture=user_info.picture,
-            provider="facebook"
+    email = idinfo.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email not found in Google token"
         )
 
-        params = urlencode({
-            "access_token": token,
-            "token_type": "bearer",
-            "expires_in": int(settings.ACCESS_TOKEN_EXPIRE_MINUTES) * 60,
-        })
-        return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/success?{params}")
+    # Google best practice: only trust verified emails
+    if not idinfo.get("email_verified"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google email is not verified"
+        )
+
+    token = await AuthService.login_with_social_profile(
+        session=db,
+        email=email,
+        name=idinfo.get("name"),
+        picture=idinfo.get("picture"),
+        provider="google"
+    )
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_in": int(settings.ACCESS_TOKEN_EXPIRE_MINUTES) * 60,
+    }

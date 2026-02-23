@@ -38,46 +38,22 @@ class Settings:
     FREE_CHATGPT_TOKEN: str = os.getenv("FREE_CHATGPT_TOKEN", "")
     FREE_DEEPSEEK_TOKEN: str = os.getenv("FREE_DEEPSEEK_TOKEN", "")
 
-    _origins = os.getenv(
-        "ALLOWED_ORIGINS",
-        ",".join(
-            [
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "http://localhost:5173",
-                "http://127.0.0.1:5173",
-                "https://craftyxhub.com",
-                "https://www.craftyxhub.com",
-                "https://admin.craftyxhub.com",
-            ]
-        ),
-    )
-    # Parse origins, filtering out empty strings and malformed entries
-    _parsed_origins = [
-        o.strip() for o in _origins.split(",") if o.strip() and not o.strip().endswith(">")
-    ]
-
-    # Always ensure admin subdomain is included for production
-    _required_production_origins = [
+    _default_allowed_origins: list[str] = [
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
         "https://craftyxhub.com",
         "https://www.craftyxhub.com",
         "https://admin.craftyxhub.com",
     ]
-
-    # Standard development origins (React, Vite)
-    _default_dev_origins = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ]
-
-    ALLOWED_ORIGINS = (
-        # If we have at least one valid origin from env, merge with required production origins
-        list(set(_parsed_origins + _required_production_origins))
-        # Otherwise, fall back to dev-friendly localhost origins plus production domains
-        if _parsed_origins
-        else _default_dev_origins + _required_production_origins
+    _origins_env = os.getenv("ALLOWED_ORIGINS")
+    _parsed_allowed_origins = (
+        [o.strip() for o in _origins_env.split(",") if o.strip()]
+        if _origins_env is not None
+        else []
+    )
+    # Treat blank ALLOWED_ORIGINS as unset and keep safe defaults.
+    ALLOWED_ORIGINS: list[str] = _parsed_allowed_origins or list(
+        _default_allowed_origins
     )
 
     ALLOW_ORIGIN_REGEX: str | None = os.getenv("ALLOW_ORIGIN_REGEX") or None
