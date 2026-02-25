@@ -48,9 +48,21 @@ export const generate = async ({
     stream,
   };
   
-  const response = await axiosPrivate.post('ai/generate', payload);
+  const response = await axiosPrivate.post('ai/generate', payload, {
+    timeout: 300000, // 5 minutes — AI generation is slow
+  });
   return response.data?.variants ?? response.data;
 };
+
+/**
+ * Get blog generation options (blog types, tones, audiences, etc.)
+ * @returns {Promise<object>} { blog_types, tones, audiences, lengths, models }
+ */
+export const getBlogOptions = async () => {
+  const response = await axiosPrivate.get('ai/blog/options');
+  return response.data;
+};
+
 
 /**
  * Generate a complete blog post using the Blog Agent
@@ -106,7 +118,10 @@ export const generateBlog = async ({
     is_published,
   };
   
-  const response = await axiosPrivate.post('ai/generate/blog', payload);
+  // AI generation can take 30-120+ seconds; override the default 10s timeout
+  const response = await axiosPrivate.post('ai/generate/blog', payload, {
+    timeout: 300000, // 5 minutes
+  });
   return response.data;
 };
 
@@ -138,7 +153,7 @@ export const getDrafts = async (skip = 0, limit = 50) => {
  * @param {string|number} id - Draft ID
  * @returns {Promise<object>} Draft data
  */
-export const getDraftById = async (id) => {
+export const getDraft = async (id) => {
   const response = await axiosPrivate.get(`ai/drafts/${id}`);
   return response.data;
 };

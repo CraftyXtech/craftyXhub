@@ -164,7 +164,7 @@ export default function Profile() {
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 2 }}>
         <Typography variant="h5" fontWeight={600}>
           Profile Settings
         </Typography>
@@ -241,11 +241,11 @@ export default function Profile() {
           <Grid item xs={12} md={8}>
             <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
               <CardContent>
-                <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
                   Personal Information
                 </Typography>
 
-                <Stack spacing={3}>
+                <Stack spacing={2.5}>
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
                       <Controller
@@ -291,9 +291,9 @@ export default function Profile() {
                   />
                 </Stack>
 
-                <Divider sx={{ my: 3 }} />
+                <Divider sx={{ my: 2 }} />
 
-                <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
                   Social Links
                 </Typography>
 

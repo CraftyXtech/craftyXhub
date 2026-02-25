@@ -83,7 +83,7 @@ export default function DashboardLayout() {
         <Header onMenuClick={handleSidebarToggle} />
         
         {/* Toolbar spacer */}
-        <Toolbar sx={{ minHeight: { xs: 56, md: 64 } }} />
+        <Toolbar sx={{ minHeight: { xs: 48, md: 48 } }} />
 
         {/* Page Content */}
         <Box sx={{ py: 2 }}>

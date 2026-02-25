@@ -4,7 +4,7 @@ from .post import Post, Category, Tag
 from .comment import Comment
 from .report import Report
 from .comment_report import CommentReport
-from .ai_draft import AIDraft, AIGenerationLog, AIModel
+from .ai_draft import AIDraft, AIGenerationLog
 from .notification import Notification
 from .collection import ReadingList, ReadingListItem, ReadingHistory, Highlight
 
@@ -23,7 +23,6 @@ __all__ = [
     'CommentReport',
     'AIDraft',
     'AIGenerationLog',
-    'AIModel',
     'Notification',
     'ReadingList',
     'ReadingListItem',

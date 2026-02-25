@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 // MUI
@@ -45,10 +45,14 @@ import {
 export default function UserPostEditor() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const isEditing = Boolean(id);
+  const aiState = location.state; // AI Writer passes content here
 
   // Editor state
-  const [editorData, setEditorData] = useState(null);
+  const [editorData, setEditorData] = useState(
+    aiState?.aiContent ? { html: aiState.aiContent } : null
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -57,11 +61,11 @@ export default function UserPostEditor() {
 
   // Metadata state
   const [useAutoExcerpt, setUseAutoExcerpt] = useState(true);
-  const [manualExcerpt, setManualExcerpt] = useState('');
+  const [manualExcerpt, setManualExcerpt] = useState(aiState?.excerpt || '');
   const [categoryId, setCategoryId] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
-  const [metaTitle, setMetaTitle] = useState('');
-  const [metaDescription, setMetaDescription] = useState('');
+  const [metaTitle, setMetaTitle] = useState(aiState?.metaTitle || '');
+  const [metaDescription, setMetaDescription] = useState(aiState?.metaDescription || '');
   const [customReadingTime, setCustomReadingTime] = useState(null);
   const [featuredImage, setFeaturedImage] = useState(null);
 

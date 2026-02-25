@@ -3,10 +3,10 @@
  */
 
 // Layout dimensions
-export const DRAWER_WIDTH = 260;
+export const DRAWER_WIDTH = 200;
 export const DRAWER_WIDTH_COLLAPSED = 72;
-export const HEADER_HEIGHT = 64;
-export const HEADER_HEIGHT_MOBILE = 56;
+export const HEADER_HEIGHT = 48;
+export const HEADER_HEIGHT_MOBILE = 48;
 
 // Breakpoints
 export const MOBILE_BREAKPOINT = 'md';

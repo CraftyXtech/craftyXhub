@@ -12,30 +12,18 @@ from typing import Optional
 
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIModel
-from pydantic_ai.models.gemini import GeminiModel
 
 from core.config import settings
 from schemas.ai import BlogPost, BlogSection
 from .tools import ToolHandler
+from .llm_config import get_model, DEFAULT_MODEL
 
-
-# Models that support WebSearchTool (builtin)
-WEB_SEARCH_SUPPORTED_MODELS = {
-    "gemini": True,  # Google Gemini supports web search
-    # Note: OpenAI Responses API and Anthropic also support it,
-    # but require specific API configurations
-}
 
 
 class BlogAgentService:
     """
     Service for generating complete, structured blog posts using PydanticAI.
-    
-    Features:
-    - Structured output with validated BlogPost schema
-    - Optional web search for research (model-dependent)
-    - Multiple model support (GPT, Gemini, Grok, DeepSeek)
-    - Fallback text parsing for models without structured output
+    Models are provided by the centralized LLM config (llm_config.py).
     """
 
     def __init__(self):
@@ -46,62 +34,8 @@ class BlogAgentService:
         self.system_prompt = self.tool_config["system_prompt"]
 
     def _get_model_for_name(self, model_name: str):
-        """
-        Get the appropriate PydanticAI model instance for the given model name.
-        """
-        # Grok models
-        if model_name == "grok":
-            if not settings.GROK_API_KEY:
-                raise ValueError("Grok API key not configured")
-            return OpenAIModel(
-                "grok-2-1212",
-                api_key=settings.GROK_API_KEY,
-                base_url="https://api.x.ai/v1",
-            )
-
-        # Gemini models
-        if model_name == "gemini":
-            if not settings.GEMINI_API_KEY:
-                raise ValueError("Gemini API key not configured")
-            return GeminiModel(
-                "gemini-2.0-flash-exp",
-                api_key=settings.GEMINI_API_KEY,
-            )
-
-        # DeepSeek models
-        if model_name.startswith("deepseek"):
-            if settings.FREE_DEEPSEEK_TOKEN:
-                return OpenAIModel(
-                    "deepseek-chat",
-                    api_key=settings.FREE_DEEPSEEK_TOKEN,
-                    base_url="https://api.chatanywhere.tech/v1",
-                )
-            raise ValueError(
-                "DeepSeek is only available via free proxy. Configure FREE_DEEPSEEK_TOKEN."
-            )
-
-        # OpenAI GPT models
-        if model_name.startswith("gpt-"):
-            if settings.FREE_CHATGPT_TOKEN:
-                return OpenAIModel(
-                    model_name,
-                    api_key=settings.FREE_CHATGPT_TOKEN,
-                    base_url="https://api.chatanywhere.tech/v1",
-                )
-            elif settings.OPENAI_API_KEY:
-                base_url = None
-                if settings.OPENAI_API_KEY.startswith("sk-free-"):
-                    base_url = "https://api.chatanywhere.tech/v1"
-                return OpenAIModel(
-                    model_name,
-                    api_key=settings.OPENAI_API_KEY,
-                    base_url=base_url,
-                )
-            raise ValueError(f"No API key configured for {model_name}")
-
-        raise ValueError(
-            f"Unsupported model: {model_name}. Supported: gpt-*, gemini, grok, deepseek-*"
-        )
+        """Delegate to centralized LLM config (single source of truth)."""
+        return get_model(model_name)
 
     def _build_blog_prompt(
         self,
@@ -207,7 +141,7 @@ class BlogAgentService:
         word_count: str = "medium",
         tone: str = "professional",
         language: str = "en-US",
-        model: str = "gpt-5-mini",
+        model: str = "kimi-k2.5",
         creativity: float = 0.7,
         use_web_search: bool = True,
     ) -> tuple[BlogPost, float, bool]:
@@ -230,7 +164,6 @@ class BlogAgentService:
             Tuple of (BlogPost, generation_time, web_search_used)
         """
         start_time = time.time()
-        web_search_used = False
 
         # Build the prompt
         prompt = self._build_blog_prompt(
@@ -246,16 +179,6 @@ class BlogAgentService:
         # Get the model
         pydantic_model = self._get_model_for_name(model)
 
-        # Check if web search is supported and requested
-        builtin_tools = []
-        if use_web_search and model in WEB_SEARCH_SUPPORTED_MODELS:
-            try:
-                from pydantic_ai.builtin_tools import WebSearchTool
-                builtin_tools.append(WebSearchTool())
-                web_search_used = True
-            except ImportError:
-                pass  # WebSearchTool not available in this version
-
         # Try structured output first, fall back to text parsing
         try:
             # Create agent with structured output
@@ -263,7 +186,6 @@ class BlogAgentService:
                 pydantic_model,
                 result_type=BlogPost,
                 system_prompt=self.system_prompt,
-                builtin_tools=builtin_tools if builtin_tools else None,
             )
 
             result = await agent.run(
@@ -283,7 +205,6 @@ class BlogAgentService:
                     pydantic_model,
                     result_type=str,
                     system_prompt=self.system_prompt,
-                    builtin_tools=builtin_tools if builtin_tools else None,
                 )
 
                 result = await agent.run(
@@ -306,7 +227,7 @@ class BlogAgentService:
                 )
 
         generation_time = time.time() - start_time
-        return blog_post, generation_time, web_search_used
+        return blog_post, generation_time, False
 
     def _get_max_tokens(self, word_count: str) -> int:
         """Get max tokens based on target word count."""

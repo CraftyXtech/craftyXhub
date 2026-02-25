@@ -50,8 +50,6 @@ import Categories from '@/views/dashboard/Admin/Categories';
 import Tags from '@/views/dashboard/Admin/Tags';
 import Settings from '@/views/dashboard/Admin/Settings';
 
-// Dashboard Views - AI Writer
-import AiWriter from '@/views/dashboard/AiWriter';
 
 function App() {
   return (
@@ -95,17 +93,6 @@ function App() {
         <Route path="collection" element={<Collection />} />
         <Route path="collection/list/:uuid" element={<ListDetail />} />
 
-        {/* Editor+ routes */}
-
-
-        <Route
-          path="ai-writer"
-          element={
-            <RequireRole role="moderator">
-              <AiWriter />
-            </RequireRole>
-          }
-        />
         <Route
           path="moderation/comments"
           element={

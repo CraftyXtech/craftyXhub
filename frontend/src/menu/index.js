@@ -84,13 +84,6 @@ export const menuItems = [
     roles: ['user', 'moderator', 'admin']
   },
   {
-    id: 'ai-writer',
-    title: 'AI Writer',
-    icon: 'IconSparkles',
-    url: '/dashboard/ai-writer',
-    roles: ['moderator', 'admin'] // Authors don't have access
-  },
-  {
     id: 'moderation',
     title: 'Moderation',
     icon: 'IconShieldCheck',

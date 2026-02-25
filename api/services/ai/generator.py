@@ -1,9 +1,9 @@
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIModel
-from pydantic_ai.models.gemini import GeminiModel
 from pydantic import BaseModel, Field
 from core.config import settings
 from .tools import ToolHandler
+from .llm_config import get_model
 import time
 from typing import Dict, List, Any, Optional
 
@@ -23,8 +23,8 @@ class ContentVariant(BaseModel):
 class AIGeneratorService:
     def __init__(self):
         """
-        Initialize AI service with support for multiple providers.
-        Models are created on-demand based on the requested model name.
+        Initialize AI service. Models are provided by the centralized
+        LLM config (llm_config.py).
         """
         self.system_prompt = (
             "You are an expert content writer specializing in creating engaging, "
@@ -34,88 +34,16 @@ class AIGeneratorService:
 
     def _get_agent_for_model(self, model_name: str, system_prompt: Optional[str] = None) -> Agent:
         """
-        Create an agent for the specified model, intelligently routing to
-        the right provider (OpenAI, Gemini, Grok, or free proxy).
+        Create an agent for the specified model.
+        Delegates to the centralized LLM config (single source of truth).
         """
-        # Choose system prompt (tool-specific overrides global)
         system_prompt = system_prompt or self.system_prompt
+        pydantic_model = get_model(model_name)
 
-        # Grok models
-        if model_name == "grok":
-            if not settings.GROK_API_KEY:
-                raise ValueError("Grok API key not configured")
-            return Agent(
-                OpenAIModel(
-                    "grok-2-1212",
-                    api_key=settings.GROK_API_KEY,
-                    base_url="https://api.x.ai/v1",
-                ),
-                result_type=str,
-                system_prompt=system_prompt,
-            )
-
-        # Gemini models
-        if model_name == "gemini":
-            if not settings.GEMINI_API_KEY:
-                raise ValueError("Gemini API key not configured")
-            return Agent(
-                GeminiModel("gemini-2.0-flash-exp", api_key=settings.GEMINI_API_KEY),
-                result_type=str,
-                system_prompt=system_prompt,
-            )
-
-        # DeepSeek models - use free proxy if available, otherwise error
-        if model_name.startswith("deepseek"):
-            if settings.FREE_DEEPSEEK_TOKEN:
-                return Agent(
-                    OpenAIModel(
-                        "deepseek-chat",
-                        api_key=settings.FREE_DEEPSEEK_TOKEN,
-                        base_url="https://api.chatanywhere.tech/v1",
-                    ),
-                    result_type=str,
-                    system_prompt=system_prompt,
-                )
-            else:
-                raise ValueError(
-                    "DeepSeek is only available via free proxy. Configure FREE_DEEPSEEK_TOKEN."
-                )
-
-        # OpenAI GPT models (including GPT-5) - use free proxy if available, otherwise paid API
-        if model_name.startswith("gpt-"):
-            # Try free proxy first
-            if settings.FREE_CHATGPT_TOKEN:
-                return Agent(
-                    OpenAIModel(
-                        model_name,
-                        api_key=settings.FREE_CHATGPT_TOKEN,
-                        base_url="https://api.chatanywhere.tech/v1",
-                    ),
-                    result_type=str,
-                    system_prompt=system_prompt,
-                )
-            # Fall back to paid OpenAI API
-            elif settings.OPENAI_API_KEY:
-                base_url = None
-                # Check if it's a free token disguised as OPENAI_API_KEY
-                if settings.OPENAI_API_KEY.startswith("sk-free-"):
-                    base_url = "https://api.chatanywhere.tech/v1"
-
-                return Agent(
-                    OpenAIModel(
-                        model_name,
-                        api_key=settings.OPENAI_API_KEY,
-                        base_url=base_url,
-                    ),
-                    result_type=str,
-                    system_prompt=system_prompt,
-                )
-            else:
-                raise ValueError(f"No API key configured for {model_name}")
-
-        # Unknown model
-        raise ValueError(
-            f"Unsupported model: {model_name}. Supported: gpt-*, gemini, grok, deepseek-*"
+        return Agent(
+            pydantic_model,
+            result_type=str,
+            system_prompt=system_prompt,
         )
 
     async def generate(
@@ -173,12 +101,8 @@ class AIGeneratorService:
         except ValueError as e:
             raise ValueError(str(e))
         variants = []
-        # Enforce variants policy
-        variants_policy = (tool_cfg or {}).get("variants_policy", "single_piece")
-        if variants_policy == "list_tool":
-            count = 1
-        else:
-            count = max(1, min(int(variant_count or 1), 3))
+        # Respect requested variant count (aligned with API schema: 1..5)
+        count = max(1, min(int(variant_count or 1), 5))
 
         for _ in range(count):
             try:

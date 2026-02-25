@@ -222,12 +222,7 @@ export default function Header({ onMenuClick }) {
             variant="text"
             startIcon={<IconEdit size={18} />}
             onClick={() => {
-              const role = user?.role || 'user';
-              if (role === 'admin' || role === 'moderator') {
-                navigate('/dashboard/ai-writer');
-              } else {
-                navigate('/dashboard/posts/create');
-              }
+              navigate('/dashboard/posts/create');
             }}
             sx={{
               color: 'text.primary',

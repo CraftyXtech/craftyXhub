@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
 // MUI
 import Box from '@mui/material/Box';
@@ -18,6 +18,11 @@ import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
+import Drawer from '@mui/material/Drawer';
+import Divider from '@mui/material/Divider';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Tooltip from '@mui/material/Tooltip';
 
 // TinyMCE
 import { Editor } from '@tinymce/tinymce-react';
@@ -45,6 +50,8 @@ import {
   IconSend,
   IconPhoto,
   IconX,
+  IconSettings,
+  IconSparkles,
 } from '@tabler/icons-react';
 
 // Components
@@ -57,16 +64,23 @@ import { getTags } from '@/api/services/tagService';
 
 // Utils
 import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+
+const SETTINGS_PANEL_WIDTH = 200;
 
 /**
  * AdminPostEditor - TinyMCE editor with AI writing panel for admins/moderators
+ * Notion-inspired layout with toggleable right drawers
  */
 export default function AdminPostEditor() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const isEditing = Boolean(id);
   const editorRef = useRef(null);
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const aiState = location.state;
 
   // State
   const [loading, setLoading] = useState(false);
@@ -74,15 +88,20 @@ export default function AdminPostEditor() {
   const [error, setError] = useState(null);
   const [editorReady, setEditorReady] = useState(false);
 
+  // Drawer state
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+
   // Form state
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(aiState?.title || '');
   const [slug, setSlug] = useState('');
-  const [content, setContent] = useState('');
-  const [excerpt, setExcerpt] = useState('');
+  const [content, setContent] = useState(aiState?.aiContent || '');
+  const [excerpt, setExcerpt] = useState(aiState?.excerpt || '');
+  const [autoExcerpt, setAutoExcerpt] = useState(!aiState?.excerpt);
   const [categoryId, setCategoryId] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
-  const [metaTitle, setMetaTitle] = useState('');
-  const [metaDescription, setMetaDescription] = useState('');
+  const [metaTitle, setMetaTitle] = useState(aiState?.metaTitle || '');
+  const [metaDescription, setMetaDescription] = useState(aiState?.metaDescription || '');
   const [featuredImage, setFeaturedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
@@ -90,11 +109,9 @@ export default function AdminPostEditor() {
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
 
-  // Stats
   const [wordCount, setWordCount] = useState(0);
-  const [charCount, setCharCount] = useState(0);
 
-  // Auto-generate slug
+  // Auto-generate slug from title
   useEffect(() => {
     if (!isEditing && title) {
       const newSlug = title
@@ -106,12 +123,17 @@ export default function AdminPostEditor() {
     }
   }, [title, isEditing]);
 
-  // Update stats when content changes
+  // Update stats + auto-excerpt when content changes
   useEffect(() => {
     const text = content.replace(/<[^>]*>/g, '');
-    setCharCount(text.length);
     setWordCount(text.split(/\s+/).filter(w => w.length > 0).length);
-  }, [content]);
+
+    // Auto-fill excerpt from first ~160 chars of plain text
+    if (autoExcerpt && text.length > 0) {
+      const autoText = text.slice(0, 160).trim();
+      setExcerpt(autoText + (text.length > 160 ? '...' : ''));
+    }
+  }, [content, autoExcerpt]);
 
   // Load categories and tags
   useEffect(() => {
@@ -142,6 +164,7 @@ export default function AdminPostEditor() {
           setSlug(post.slug || '');
           setContent(post.content || '');
           setExcerpt(post.excerpt || '');
+          setAutoExcerpt(false); // Manual mode when editing
           setCategoryId(post.category?.id || post.category_id || '');
           setSelectedTags(post.tags?.map(t => t.id) || []);
           setMetaTitle(post.meta_title || '');
@@ -179,7 +202,18 @@ export default function AdminPostEditor() {
     setImagePreview(null);
   };
 
-  // Handle AI content insert
+  // Drawer toggles — only one open at a time
+  const toggleSettings = () => {
+    setSettingsOpen(!settingsOpen);
+    if (!settingsOpen) setAiDrawerOpen(false);
+  };
+
+  const toggleAiDrawer = () => {
+    setAiDrawerOpen(!aiDrawerOpen);
+    if (!aiDrawerOpen) setSettingsOpen(false);
+  };
+
+  // Handle AI content insert (append)
   const handleAiInsert = useCallback((html) => {
     if (editorRef.current) {
       const currentContent = editorRef.current.getContent();
@@ -188,6 +222,40 @@ export default function AdminPostEditor() {
       setContent(newContent);
     }
   }, []);
+
+  // Handle AI content replace (overwrite entire editor)
+  const handleAiReplace = useCallback((html) => {
+    if (editorRef.current) {
+      editorRef.current.setContent(html);
+      setContent(html);
+    }
+  }, []);
+
+  // Handle AI metadata auto-fill (title, slug, excerpt, SEO, tags)
+  const handleAiMetadataFill = useCallback((metadata) => {
+    if (!metadata) return;
+
+    if (metadata.title) setTitle(metadata.title);
+    if (metadata.slug) setSlug(metadata.slug);
+    if (metadata.excerpt) {
+      setExcerpt(metadata.excerpt);
+      setAutoExcerpt(false); // Switch to manual mode
+    }
+    if (metadata.metaTitle) setMetaTitle(metadata.metaTitle);
+    if (metadata.metaDescription) setMetaDescription(metadata.metaDescription);
+
+    // Auto-match AI-generated tag names against loaded tags
+    if (metadata.tags?.length > 0 && tags.length > 0) {
+      const matchedTagIds = tags
+        .filter(t => metadata.tags.some(
+          aiTag => t.name.toLowerCase() === aiTag.toLowerCase()
+        ))
+        .map(t => t.id);
+      if (matchedTagIds.length > 0) {
+        setSelectedTags(matchedTagIds);
+      }
+    }
+  }, [tags]);
 
   // Submit form
   const handleSubmit = async (shouldPublish = false) => {
@@ -250,7 +318,7 @@ export default function AdminPostEditor() {
 
   return (
     <Box>
-      {/* Header */}
+      {/* Header Bar */}
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
         <Stack direction="row" alignItems="center" spacing={2}>
           <IconButton onClick={() => navigate('/dashboard/posts')}>
@@ -260,14 +328,45 @@ export default function AdminPostEditor() {
             <Typography variant="h5" fontWeight={600}>
               {isEditing ? 'Edit Post' : 'Create New Post'}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Words: {wordCount} | Characters: {charCount}
-            </Typography>
           </Box>
         </Stack>
-        <Stack direction="row" spacing={1}>
+
+        <Stack direction="row" spacing={1} alignItems="center">
+          {/* Settings Toggle */}
+          {/* Settings toggle — mobile only */}
+          {isMobile && (
+            <Tooltip title="Post Settings">
+              <IconButton
+                onClick={toggleSettings}
+                sx={{
+                  bgcolor: settingsOpen ? 'action.selected' : 'transparent',
+                  '&:hover': { bgcolor: 'action.hover' }
+                }}
+              >
+                <IconSettings size={20} />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          {/* AI Toggle */}
+          <Tooltip title="AI Writer">
+            <IconButton
+              onClick={toggleAiDrawer}
+              sx={{
+                bgcolor: aiDrawerOpen ? 'action.selected' : 'transparent',
+                '&:hover': { bgcolor: 'action.hover' }
+              }}
+            >
+              <IconSparkles size={20} />
+            </IconButton>
+          </Tooltip>
+
+          <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+
+          {/* Save/Publish */}
           <Button
             variant="outlined"
+            size="small"
             startIcon={saving ? <CircularProgress size={16} /> : <IconDeviceFloppy size={18} />}
             onClick={() => handleSubmit(false)}
             disabled={saving}
@@ -276,6 +375,7 @@ export default function AdminPostEditor() {
           </Button>
           <Button
             variant="contained"
+            size="small"
             startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <IconSend size={18} />}
             onClick={() => handleSubmit(true)}
             disabled={saving}
@@ -292,10 +392,10 @@ export default function AdminPostEditor() {
         </Alert>
       )}
 
-      {/* Main Content */}
-      <Grid container spacing={3} sx={{ minHeight: 'calc(100vh - 150px)', width: '100%' }}>
-        {/* Editor Column */}
-        <Grid item xs={12} lg={8} sx={{ display: 'flex', flexDirection: 'column' }}>
+      {/* Main layout: editor + inline settings on desktop */}
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        {/* Editor column */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Stack spacing={3}>
             {/* Title */}
             <TextField
@@ -306,16 +406,7 @@ export default function AdminPostEditor() {
               required
             />
 
-            {/* Slug */}
-            <TextField
-              label="URL Slug"
-              fullWidth
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              helperText="e.g., my-awesome-post"
-            />
-
-            {/* TinyMCE Editor */}
+            {/* TinyMCE Editor — Full Width */}
             <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
               <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
                 <Editor
@@ -323,228 +414,311 @@ export default function AdminPostEditor() {
                   onInit={(evt, editor) => {
                     editorRef.current = editor;
                     setEditorReady(true);
+                    if (aiState?.aiContent && !isEditing) {
+                      editor.setContent(aiState.aiContent);
+                    }
                   }}
                   initialValue={content}
                   onEditorChange={(newContent) => setContent(newContent)}
                   init={{
                     height: 500,
                     menubar: false,
-                    plugins: 'link image lists',
+                    plugins: 'link lists image',
                     toolbar:
-                      'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | link image',
-                    content_style:
+                      'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | link insertimage',
+                    content_style: [
                       theme.palette.mode === 'dark'
                         ? 'body { font-family: "Open Sans", sans-serif; font-size: 14px; color: #fff; background-color: #1a1a1a; }'
                         : 'body { font-family: "Open Sans", sans-serif; font-size: 14px; color: #000; background-color: #fff; }',
+                      'img { cursor: pointer; max-width: 100%; }',
+                      'img:hover { outline: 2px solid #1976d2; }',
+                      'img.mce-selected { outline: 2px solid #1976d2; }',
+                    ].join('\n'),
                     branding: false,
                     directionality: 'ltr',
                     skin: false,
                     content_css: false,
+                    object_resizing: 'img',
+                    resize_img_proportional: true,
+                    image_advtab: false,
+                    setup: (editor) => {
+                      editor.ui.registry.addButton('insertimage', {
+                        icon: 'image',
+                        tooltip: 'Insert image from device',
+                        onAction: () => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.addEventListener('change', (e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.addEventListener('load', () => {
+                                editor.insertContent(`<img src="${reader.result}" alt="${file.name}" style="max-width:300px; height:auto;" />`);
+                              });
+                              reader.readAsDataURL(file);
+                            }
+                          });
+                          input.click();
+                        },
+                      });
+                    },
                   }}
                 />
               </CardContent>
             </Card>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
+              {wordCount} words
+            </Typography>
 
-            {/* Excerpt */}
-            <TextField
-              label="Excerpt"
-              multiline
-              rows={3}
-              fullWidth
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              helperText="Brief summary shown in post listings"
-            />
+            {/* Excerpt — with auto-generate toggle */}
+            <Box>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Excerpt
+                </Typography>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      size="small"
+                      checked={autoExcerpt}
+                      onChange={(e) => setAutoExcerpt(e.target.checked)}
+                    />
+                  }
+                  label={<Typography variant="caption">Auto-generate</Typography>}
+                  labelPlacement="start"
+                  sx={{ mr: 0 }}
+                />
+              </Stack>
+              <TextField
+                multiline
+                rows={2}
+                fullWidth
+                size="small"
+                value={excerpt}
+                onChange={(e) => {
+                  setExcerpt(e.target.value);
+                  setAutoExcerpt(false);
+                }}
+                placeholder="Brief summary shown in post listings"
+                disabled={autoExcerpt}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    bgcolor: autoExcerpt ? 'action.hover' : 'background.paper'
+                  }
+                }}
+              />
+            </Box>
 
-            {/* SEO */}
+            {/* SEO Settings — Side by side on desktop */}
             <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
               <CardContent>
-                <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
                   SEO Settings
                 </Typography>
-                <Stack spacing={2}>
-                  <TextField
-                    label="Meta Title"
-                    fullWidth
-                    size="small"
-                    value={metaTitle}
-                    onChange={(e) => setMetaTitle(e.target.value)}
-                  />
-                  <TextField
-                    label="Meta Description"
-                    multiline
-                    rows={2}
-                    fullWidth
-                    size="small"
-                    value={metaDescription}
-                    onChange={(e) => setMetaDescription(e.target.value)}
-                  />
-                </Stack>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Meta Title"
+                      fullWidth
+                      size="small"
+                      value={metaTitle}
+                      onChange={(e) => setMetaTitle(e.target.value)}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Meta Description"
+                      fullWidth
+                      size="small"
+                      value={metaDescription}
+                      onChange={(e) => setMetaDescription(e.target.value)}
+                    />
+                  </Grid>
+                </Grid>
               </CardContent>
             </Card>
-
-            {/* Sidebar stuff on small screens */}
-            <Box sx={{ display: { xs: 'block', lg: 'none' } }}>
-              <Grid container spacing={2}>
-                {/* Featured Image */}
-                <Grid item xs={12} sm={6}>
-                  <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
-                        Featured Image
-                      </Typography>
-                      {imagePreview ? (
-                        <Box sx={{ position: 'relative' }}>
-                          <Box component="img" src={imagePreview} sx={{ width: '100%', borderRadius: 1 }} />
-                          <IconButton
-                            size="small"
-                            onClick={handleImageRemove}
-                            sx={{ position: 'absolute', top: 8, right: 8, bgcolor: 'background.paper', boxShadow: 1 }}
-                          >
-                            <IconX size={16} />
-                          </IconButton>
-                        </Box>
-                      ) : (
-                        <Button variant="outlined" component="label" fullWidth startIcon={<IconPhoto size={18} />} sx={{ py: 3 }}>
-                          Upload Image
-                          <input type="file" hidden accept="image/*" onChange={handleImageChange} />
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Grid>
-
-                {/* Category & Tags */}
-                <Grid item xs={12} sm={6}>
-                  <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
-                        Categories & Tags
-                      </Typography>
-                      <Stack spacing={2}>
-                        <FormControl fullWidth size="small">
-                          <InputLabel>Category</InputLabel>
-                          <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} label="Category">
-                            <MenuItem value="">None</MenuItem>
-                            {categories.map((cat) => (
-                              <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                        <FormControl fullWidth size="small">
-                          <InputLabel>Tags</InputLabel>
-                          <Select
-                            multiple
-                            value={selectedTags}
-                            onChange={(e) => setSelectedTags(e.target.value)}
-                            label="Tags"
-                            renderValue={(selected) => (
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                {selected.map((id) => {
-                                  const tag = tags.find(t => t.id === id);
-                                  return <Chip key={id} label={tag?.name || id} size="small" />;
-                                })}
-                              </Box>
-                            )}
-                          >
-                            {tags.map((tag) => (
-                              <MenuItem key={tag.id} value={tag.id}>{tag.name}</MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
-            </Box>
           </Stack>
-        </Grid>
+        </Box>
 
-        {/* AI Panel Column (Large screens) */}
-        <Grid 
-          item 
-          xs={12} 
-          lg={4} 
-          sx={{ 
-            display: { xs: 'none', lg: 'block' },
-          }}
-        >
-          <Box sx={{ position: 'sticky', top: 80 }}>
-            <Stack spacing={3}>
+        {/* Settings panel — inline on desktop, hidden on mobile */}
+        {!isMobile && (
+          <Box
+            sx={{
+              width: SETTINGS_PANEL_WIDTH,
+              flexShrink: 0,
+              position: 'sticky',
+              top: 56,
+              alignSelf: 'flex-start',
+              maxHeight: 'calc(100vh - 72px)',
+              overflowY: 'auto',
+            }}
+          >
+            <Stack spacing={2.5}>
               {/* Featured Image */}
-              <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-                <CardContent>
-                  <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
-                    Featured Image
-                  </Typography>
-                  {imagePreview ? (
-                    <Box sx={{ position: 'relative' }}>
-                      <Box component="img" src={imagePreview} sx={{ width: '100%', borderRadius: 1 }} />
-                      <IconButton
-                        size="small"
-                        onClick={handleImageRemove}
-                        sx={{ position: 'absolute', top: 8, right: 8, bgcolor: 'background.paper', boxShadow: 1 }}
-                      >
-                        <IconX size={16} />
-                      </IconButton>
-                    </Box>
-                  ) : (
-                    <Button variant="outlined" component="label" fullWidth startIcon={<IconPhoto size={18} />} sx={{ py: 3 }}>
-                      Upload Image
-                      <input type="file" hidden accept="image/*" onChange={handleImageChange} />
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
+              <Box>
+                <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                  Image
+                </Typography>
+                {imagePreview ? (
+                  <Box sx={{ position: 'relative' }}>
+                    <Box component="img" src={imagePreview} sx={{ width: '100%', borderRadius: 1 }} />
+                    <IconButton
+                      size="small"
+                      onClick={handleImageRemove}
+                      sx={{ position: 'absolute', top: 4, right: 4, bgcolor: 'background.paper', boxShadow: 1 }}
+                    >
+                      <IconX size={14} />
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <Button variant="outlined" component="label" fullWidth startIcon={<IconPhoto size={16} />} sx={{ py: 2, fontSize: 12 }}>
+                    Upload
+                    <input type="file" hidden accept="image/*" onChange={handleImageChange} />
+                  </Button>
+                )}
+              </Box>
 
-              {/* Category & Tags */}
-              <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-                <CardContent>
-                  <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
-                    Categories & Tags
-                  </Typography>
-                  <Stack spacing={2}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Category</InputLabel>
-                      <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} label="Category">
-                        <MenuItem value="">None</MenuItem>
-                        {categories.map((cat) => (
-                          <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Tags</InputLabel>
-                      <Select
-                        multiple
-                        value={selectedTags}
-                        onChange={(e) => setSelectedTags(e.target.value)}
-                        label="Tags"
-                        renderValue={(selected) => (
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            {selected.map((id) => {
-                              const tag = tags.find(t => t.id === id);
-                              return <Chip key={id} label={tag?.name || id} size="small" />;
-                            })}
-                          </Box>
-                        )}
-                      >
-                        {tags.map((tag) => (
-                          <MenuItem key={tag.id} value={tag.id}>{tag.name}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Stack>
-                </CardContent>
-              </Card>
+              <Divider />
 
-              {/* AI Writer Panel */}
-              <AiWriterPanel onInsert={handleAiInsert} />
+              {/* Category */}
+              <Box>
+                <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                  Category
+                </Typography>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Category</InputLabel>
+                  <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} label="Category">
+                    <MenuItem value="">None</MenuItem>
+                    {categories.map((cat) => (
+                      <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+
+              {/* Tags */}
+              <Box>
+                <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                  Tags
+                </Typography>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Tags</InputLabel>
+                  <Select
+                    multiple
+                    value={selectedTags}
+                    onChange={(e) => setSelectedTags(e.target.value)}
+                    label="Tags"
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {selected.map((id) => {
+                          const tag = tags.find(t => t.id === id);
+                          return <Chip key={id} label={tag?.name || id} size="small" />;
+                        })}
+                      </Box>
+                    )}
+                  >
+                    {tags.map((tag) => (
+                      <MenuItem key={tag.id} value={tag.id}>{tag.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
             </Stack>
           </Box>
-        </Grid>
-      </Grid>
+        )}
+      </Box>
+
+      {/* Settings Drawer — mobile only */}
+      {isMobile && (
+        <Drawer
+          anchor="right"
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          variant="temporary"
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            '& .MuiDrawer-paper': {
+              width: 280,
+              px: 2,
+              py: 1.5,
+            }
+          }}
+        >
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+            <Typography variant="h6" fontWeight={600}>Post Settings</Typography>
+            <IconButton size="small" onClick={() => setSettingsOpen(false)}>
+              <IconX size={18} />
+            </IconButton>
+          </Stack>
+          <Divider sx={{ mb: 2 }} />
+          <Stack spacing={2.5}>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>Image</Typography>
+              {imagePreview ? (
+                <Box sx={{ position: 'relative' }}>
+                  <Box component="img" src={imagePreview} sx={{ width: '100%', borderRadius: 1 }} />
+                  <IconButton size="small" onClick={handleImageRemove}
+                    sx={{ position: 'absolute', top: 4, right: 4, bgcolor: 'background.paper', boxShadow: 1 }}>
+                    <IconX size={14} />
+                  </IconButton>
+                </Box>
+              ) : (
+                <Button variant="outlined" component="label" fullWidth startIcon={<IconPhoto size={16} />} sx={{ py: 2, fontSize: 12 }}>
+                  Upload
+                  <input type="file" hidden accept="image/*" onChange={handleImageChange} />
+                </Button>
+              )}
+            </Box>
+            <Divider />
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>Category</Typography>
+              <FormControl fullWidth size="small">
+                <InputLabel>Category</InputLabel>
+                <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} label="Category">
+                  <MenuItem value="">None</MenuItem>
+                  {categories.map((cat) => <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>Tags</Typography>
+              <FormControl fullWidth size="small">
+                <InputLabel>Tags</InputLabel>
+                <Select multiple value={selectedTags} onChange={(e) => setSelectedTags(e.target.value)} label="Tags"
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((id) => { const tag = tags.find(t => t.id === id); return <Chip key={id} label={tag?.name || id} size="small" />; })}
+                    </Box>
+                  )}>
+                  {tags.map((tag) => <MenuItem key={tag.id} value={tag.id}>{tag.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Box>
+          </Stack>
+        </Drawer>
+      )}
+
+      {/* ===== AI Writer Drawer (Right) ===== */}
+      <Drawer
+        anchor="right"
+        open={aiDrawerOpen}
+        onClose={() => setAiDrawerOpen(false)}
+        variant="temporary"
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: { xs: '100%', sm: 380 },
+            p: 0,
+          }
+        }}
+      >
+        <AiWriterPanel
+          onInsert={handleAiInsert}
+          onReplace={handleAiReplace}
+          onMetadataFill={handleAiMetadataFill}
+        />
+      </Drawer>
     </Box>
   );
 }

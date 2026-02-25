@@ -28,88 +28,15 @@ async def test_ai_models():
     Test endpoint to check which AI models are configured and available.
     No authentication required - for quick testing only.
     """
-    from core.config import settings
+    from services.ai.llm_config import get_models_for_test, AVAILABLE_MODELS
 
-    available_models = []
-
-    # OpenAI GPT models - available via paid API or free proxy
-    if settings.FREE_CHATGPT_TOKEN or settings.OPENAI_API_KEY:
-        source = "Free Proxy" if settings.FREE_CHATGPT_TOKEN else "Paid API"
-        available_models.extend(
-            [
-                {
-                    "model": "gpt-5-mini",
-                    "provider": f"OpenAI ({source})",
-                    "status": "configured",
-                    "daily_limit": (
-                        "200 requests" if settings.FREE_CHATGPT_TOKEN else "No limit"
-                    ),
-                },
-                {
-                    "model": "gpt-3.5-turbo",
-                    "provider": f"OpenAI ({source})",
-                    "status": "configured",
-                    "daily_limit": (
-                        "200 requests" if settings.FREE_CHATGPT_TOKEN else "No limit"
-                    ),
-                },
-                {
-                    "model": "gpt-4o-mini",
-                    "provider": f"OpenAI ({source})",
-                    "status": "configured",
-                    "daily_limit": (
-                        "200 requests" if settings.FREE_CHATGPT_TOKEN else "No limit"
-                    ),
-                },
-                {
-                    "model": "gpt-4o",
-                    "provider": f"OpenAI ({source})",
-                    "status": "configured",
-                    "daily_limit": (
-                        "5 requests" if settings.FREE_CHATGPT_TOKEN else "No limit"
-                    ),
-                },
-            ]
-        )
-
-    # DeepSeek - only via free proxy
-    if settings.FREE_DEEPSEEK_TOKEN:
-        available_models.append(
-            {
-                "model": "deepseek-v3",
-                "provider": "DeepSeek (Free Proxy)",
-                "status": "configured",
-                "daily_limit": "30 requests",
-            }
-        )
-
-    # Grok
-    if settings.GROK_API_KEY:
-        available_models.append(
-            {
-                "model": "grok",
-                "provider": "xAI",
-                "status": "configured",
-                "daily_limit": "No limit",
-            }
-        )
-
-    # Gemini
-    if settings.GEMINI_API_KEY:
-        available_models.append(
-            {
-                "model": "gemini",
-                "provider": "Google",
-                "status": "configured",
-                "daily_limit": "No limit",
-            }
-        )
+    available_models = get_models_for_test()
 
     return {
         "message": "AI Service is running",
         "available_models": available_models,
         "total_models": len(available_models),
-        "note": "Use the 'model' field value when making generation requests",
+        "note": "All models route through OpenRouter. Use the 'model' field value when making generation requests.",
     }
 
 
@@ -120,45 +47,27 @@ async def test_chat(
     """
     Simple chat endpoint - send any message and get a response!
     No authentication required - for quick testing only.
-
-    Examples:
-    - POST /test/chat?message=hi
-    - POST /test/chat?message=tell me a joke
-    - POST /test/chat?message=what can you do?
     """
     from pydantic_ai import Agent
-    from pydantic_ai.models.openai import OpenAIModel
-    from core.config import settings
+    from services.ai.llm_config import get_model, DEFAULT_MODEL
     import time
-
-    if not settings.FREE_CHATGPT_TOKEN:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Free ChatGPT API not configured. Add FREE_CHATGPT_TOKEN to .env",
-        )
 
     try:
         start_time = time.time()
 
-        # Create a simple chat agent using GPT-5 Mini
+        pydantic_model = get_model(DEFAULT_MODEL)
         agent = Agent(
-            OpenAIModel(
-                "gpt-5-mini",
-                api_key=settings.FREE_CHATGPT_TOKEN,
-                base_url="https://api.chatanywhere.tech/v1",
-            ),
+            pydantic_model,
             result_type=str,
             system_prompt="You are a friendly and helpful AI assistant. Keep responses concise and engaging.",
         )
 
-        # Get response
         result = await agent.run(
             message, model_settings={"temperature": 0.8, "max_tokens": 500}
         )
 
         response_time = time.time() - start_time
 
-        # Get token usage if available
         tokens_used = None
         if hasattr(result, "usage") and result.usage():
             usage = result.usage()
@@ -168,7 +77,7 @@ async def test_chat(
         return {
             "message": message,
             "response": result.data,
-            "model": "chatgpt-free (gpt-5-mini)",
+            "model": DEFAULT_MODEL,
             "response_time": round(response_time, 2),
             "tokens_used": tokens_used,
         }
@@ -318,6 +227,62 @@ async def delete_draft(
             status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found"
         )
     return None
+
+
+# ============================================================================
+# Blog Options Endpoint
+# ============================================================================
+
+
+@router.get("/blog/options")
+async def get_blog_options():
+    """
+    Return available blog generation options for the frontend dropdowns.
+    No authentication required - these are static configuration options.
+    """
+    from services.ai.llm_config import get_models_for_frontend
+
+    models = get_models_for_frontend()
+
+    return {
+        "blog_types": [
+            {"value": "how-to", "label": "How-To Guide"},
+            {"value": "listicle", "label": "Listicle"},
+            {"value": "tutorial", "label": "Tutorial"},
+            {"value": "opinion", "label": "Opinion/Editorial"},
+            {"value": "news", "label": "News Article"},
+            {"value": "review", "label": "Product Review"},
+            {"value": "comparison", "label": "Comparison"},
+            {"value": "case-study", "label": "Case Study"},
+        ],
+        "tones": [
+            {"value": "professional", "label": "Professional"},
+            {"value": "casual", "label": "Casual"},
+            {"value": "friendly", "label": "Friendly"},
+            {"value": "authoritative", "label": "Authoritative"},
+            {"value": "humorous", "label": "Humorous"},
+            {"value": "educational", "label": "Educational"},
+        ],
+        "audiences": [
+            {"value": "general", "label": "General Audience"},
+            {"value": "beginners", "label": "Beginners"},
+            {"value": "developers", "label": "Developers"},
+            {"value": "marketers", "label": "Marketers"},
+            {"value": "business-owners", "label": "Business Owners"},
+            {"value": "students", "label": "Students"},
+            {"value": "professionals", "label": "Professionals"},
+            {"value": "tech-enthusiasts", "label": "Tech Enthusiasts"},
+            {"value": "entrepreneurs", "label": "Entrepreneurs"},
+            {"value": "content-creators", "label": "Content Creators"},
+        ],
+        "lengths": [
+            {"value": "short", "label": "Short (~500 words)"},
+            {"value": "medium", "label": "Medium (~1000 words)"},
+            {"value": "long", "label": "Long (~1500 words)"},
+            {"value": "very-long", "label": "Very Long (~2500+ words)"},
+        ],
+        "models": models,
+    }
 
 
 # ============================================================================

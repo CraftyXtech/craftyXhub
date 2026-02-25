@@ -34,6 +34,7 @@ class Settings:
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     GROK_API_KEY: str = os.getenv("GROK_API_KEY", "")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
     
     FREE_CHATGPT_TOKEN: str = os.getenv("FREE_CHATGPT_TOKEN", "")
     FREE_DEEPSEEK_TOKEN: str = os.getenv("FREE_DEEPSEEK_TOKEN", "")
