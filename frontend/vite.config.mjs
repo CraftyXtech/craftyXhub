@@ -14,7 +14,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    chunkSizeWarningLimit: 1200,
+    chunkSizeWarningLimit: 1300,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -22,14 +22,14 @@ export default defineConfig({
             // Large self-contained editors
             if (id.includes('tinymce')) return 'tinymce';
             if (id.includes('@editorjs')) return 'editorjs';
-            // MUI is the biggest contributor to the index bundle
-            if (id.includes('@mui')) return 'mui';
-            // React core + router
+            // React core + router (safe to split — no circular deps)
             if (
               id.includes('react-dom') ||
               id.includes('react-router') ||
               id.includes('scheduler')
             ) return 'react-vendor';
+            // NOTE: Do NOT split @mui — its modules have circular
+            // dependencies that break when isolated from the main bundle.
           }
         },
       },
