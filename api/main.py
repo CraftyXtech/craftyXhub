@@ -83,7 +83,12 @@ def include_routers(app: FastAPI) -> None:
                 detail="Invalid folder category"
             )
         
-        directory = Path(f"uploads/{folder}")
+        # Backward compat: old DB records store "uploads/images/" but files
+        # physically live in "uploads/posts/"
+        folder_aliases = {"images": "posts"}
+        actual_folder = folder_aliases.get(folder, folder)
+        
+        directory = Path(f"uploads/{actual_folder}")
         file_path = directory / filename
         
         if not file_path.exists():

@@ -1358,7 +1358,7 @@ class PostService:
             async with aiofiles.open(file_path, 'wb') as f:
                 await f.write(content)
 
-            return f"uploads/images/{unique_filename}"
+            return f"uploads/posts/{unique_filename}"
         except HTTPException:
             raise
         except Exception as e:
