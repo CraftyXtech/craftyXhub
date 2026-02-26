@@ -102,7 +102,7 @@ class AuthService:
         else:
             if name:
                 user.full_name = name
-            user.last_login = datetime.now(timezone.utc)
+            user.last_login = datetime.now(timezone.utc).replace(tzinfo=None)
             await session.commit()
             await session.refresh(user)
 

@@ -17,6 +17,7 @@ import About from '@/views/public/About';
 import Login from '@/views/public/Auth/Login';
 import Register from '@/views/public/Auth/Register';
 import ForgotPassword from '@/views/public/Auth/ForgotPassword';
+import ResetPassword from '@/views/public/Auth/ResetPassword';
 
 // Dashboard Views - Core
 import DashboardOverview from '@/views/dashboard/Overview';
@@ -67,6 +68,7 @@ function App() {
       <Route path="/auth/login" element={<Login />} />
       <Route path="/auth/register" element={<Register />} />
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+      <Route path="/auth/reset-password" element={<ResetPassword />} />
 
       {/* Dashboard Routes (protected) */}
       <Route

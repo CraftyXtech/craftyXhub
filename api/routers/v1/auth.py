@@ -277,7 +277,7 @@ async def confirm_password_reset(
     result = await session.execute(
         select(PasswordResetToken)
         .where(PasswordResetToken.token == request_data.token)
-        .where(PasswordResetToken.used == False)
+        .where(PasswordResetToken.used.is_(False))
     )
     reset_token = result.scalar_one_or_none()
     
@@ -329,7 +329,7 @@ async def verify_email(
     result = await session.execute(
         select(EmailVerificationToken)
         .where(EmailVerificationToken.token == request_data.token)
-        .where(EmailVerificationToken.used == False)
+        .where(EmailVerificationToken.used.is_(False))
     )
     verification_token = result.scalar_one_or_none()
     
