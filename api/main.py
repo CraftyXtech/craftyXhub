@@ -77,7 +77,7 @@ def include_routers(app: FastAPI) -> None:
             ..., description="Folder category (e.g., 'posts', 'avatars')"
         ),
     ):
-        if folder not in ["posts", "avatars", "media"]:
+        if folder not in ["posts", "avatars", "media", "images"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid folder category"
