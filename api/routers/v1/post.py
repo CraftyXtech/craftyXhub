@@ -490,7 +490,8 @@ async def update_post(
         'is_published': is_published,
     }
 
-    if featured_image and featured_image.filename:
+    # Always include the resolved image path (from direct upload, eager upload, or existing)
+    if featured_image_path:
         form_data['featured_image'] = featured_image_path
 
     update_data = {k: v for k, v in form_data.items() if v is not None}
