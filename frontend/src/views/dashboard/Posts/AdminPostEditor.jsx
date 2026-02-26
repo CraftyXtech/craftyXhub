@@ -61,6 +61,7 @@ import AiWriterPanel from '@/components/ai-writer/AiWriterPanel';
 
 // API
 import { createPost, updatePost, getPost, getImageUrl } from '@/api/services/postService';
+import { uploadMedia } from '@/api/services/mediaService';
 import { getCategories } from '@/api/services/categoryService';
 import { getTags } from '@/api/services/tagService';
 
@@ -105,7 +106,10 @@ export default function AdminPostEditor() {
   const [metaTitle, setMetaTitle] = useState(aiState?.metaTitle || '');
   const [metaDescription, setMetaDescription] = useState(aiState?.metaDescription || '');
   const [featuredImage, setFeaturedImage] = useState(null);
+  const [featuredImagePath, setFeaturedImagePath] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageUploadProgress, setImageUploadProgress] = useState(0);
 
   // Data
   const [categories, setCategories] = useState([]);
@@ -188,18 +192,39 @@ export default function AdminPostEditor() {
     }
   }, [id, isEditing]);
 
-  // Handle image upload
-  const handleImageChange = (e) => {
+  // Handle image upload — eagerly uploads when user selects a file
+  const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setFeaturedImage(file);
-      setImagePreview(URL.createObjectURL(file));
+    if (!file) return;
+
+    // Show preview immediately
+    setImagePreview(URL.createObjectURL(file));
+    setFeaturedImage(file);
+    setImageUploading(true);
+    setImageUploadProgress(0);
+
+    try {
+      const result = await uploadMedia(file, null, (progress) => {
+        setImageUploadProgress(progress);
+      });
+      // Store the file_path returned by the media upload
+      setFeaturedImagePath(result.file_path || result.filename);
+      setImageUploading(false);
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      setError('Failed to upload image. Please try again.');
+      setFeaturedImage(null);
+      setImagePreview(null);
+      setFeaturedImagePath(null);
+      setImageUploading(false);
     }
   };
 
   const handleImageRemove = () => {
     setFeaturedImage(null);
+    setFeaturedImagePath(null);
     setImagePreview(null);
+    setImageUploadProgress(0);
   };
 
   // Drawer toggles — only one open at a time
@@ -295,7 +320,11 @@ export default function AdminPostEditor() {
       if (selectedTags.length) {
         formData.append('tag_ids', selectedTags.join(','));
       }
-      if (featuredImage) {
+      if (featuredImagePath) {
+        // Image was already uploaded eagerly — just send the path
+        formData.append('featured_image_path', featuredImagePath);
+      } else if (featuredImage) {
+        // Fallback: upload with the request (shouldn't happen normally)
         formData.append('featured_image', featuredImage);
       }
 
@@ -375,7 +404,7 @@ export default function AdminPostEditor() {
             size="small"
             startIcon={saving ? <CircularProgress size={16} /> : <IconDeviceFloppy size={18} />}
             onClick={() => handleSubmit(false)}
-            disabled={saving}
+            disabled={saving || imageUploading}
           >
             Save Draft
           </Button>
@@ -384,7 +413,7 @@ export default function AdminPostEditor() {
             size="small"
             startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <IconSend size={18} />}
             onClick={() => handleSubmit(true)}
-            disabled={saving}
+            disabled={saving || imageUploading}
           >
             {isEditing ? 'Update & Publish' : 'Publish'}
           </Button>
@@ -572,10 +601,17 @@ export default function AdminPostEditor() {
                 </Typography>
                 {imagePreview ? (
                   <Box sx={{ position: 'relative' }}>
-                    <Box component="img" src={imagePreview} sx={{ width: '100%', borderRadius: 1 }} />
+                    <Box component="img" src={imagePreview} sx={{ width: '100%', borderRadius: 1, opacity: imageUploading ? 0.5 : 1 }} />
+                    {imageUploading && (
+                      <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+                        <CircularProgress size={28} variant="determinate" value={imageUploadProgress} />
+                        <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>{imageUploadProgress}%</Typography>
+                      </Box>
+                    )}
                     <IconButton
                       size="small"
                       onClick={handleImageRemove}
+                      disabled={imageUploading}
                       sx={{ position: 'absolute', top: 4, right: 4, bgcolor: 'background.paper', boxShadow: 1 }}
                     >
                       <IconX size={14} />
@@ -676,8 +712,14 @@ export default function AdminPostEditor() {
               <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>Image</Typography>
               {imagePreview ? (
                 <Box sx={{ position: 'relative' }}>
-                  <Box component="img" src={imagePreview} sx={{ width: '100%', borderRadius: 1 }} />
-                  <IconButton size="small" onClick={handleImageRemove}
+                  <Box component="img" src={imagePreview} sx={{ width: '100%', borderRadius: 1, opacity: imageUploading ? 0.5 : 1 }} />
+                  {imageUploading && (
+                    <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+                      <CircularProgress size={28} variant="determinate" value={imageUploadProgress} />
+                      <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>{imageUploadProgress}%</Typography>
+                    </Box>
+                  )}
+                  <IconButton size="small" onClick={handleImageRemove} disabled={imageUploading}
                     sx={{ position: 'absolute', top: 4, right: 4, bgcolor: 'background.paper', boxShadow: 1 }}>
                     <IconX size={14} />
                   </IconButton>

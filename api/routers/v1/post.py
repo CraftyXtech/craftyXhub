@@ -322,10 +322,11 @@ async def create_post(
         reading_time: Optional[int] = Form(None),
         is_published: Optional[bool] = Form(False),
         featured_image: Optional[UploadFile] = File(None),
+        featured_image_path: Optional[str] = Form(None),
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
 ):
-    featured_image_path = None
+    # Use uploaded file if provided, otherwise fall back to pre-uploaded path
     if featured_image and featured_image.filename:
         featured_image_path = await PostService.save_uploaded_file(featured_image, UPLOAD_DIR)
 
@@ -413,6 +414,7 @@ async def update_post(
         reading_time: Optional[int] = Form(None),
         is_published: Optional[bool] = Form(None),
         featured_image: Optional[UploadFile] = File(None),
+        featured_image_path: Optional[str] = Form(None),
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
 ):
@@ -427,6 +429,9 @@ async def update_post(
 
     if featured_image and featured_image.filename:
         featured_image_path = await PostService.save_uploaded_file(featured_image, UPLOAD_DIR)
+    elif featured_image_path:
+        # Use the pre-uploaded image path from eager upload
+        pass
     else:
         featured_image_path = existing_post.featured_image
 
