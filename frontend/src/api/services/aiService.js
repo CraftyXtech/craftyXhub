@@ -125,7 +125,18 @@ export const generateBlog = async ({
   return response.data;
 };
 
-// ===== DRAFTS =====
+/**
+ * Preview web search results for a topic (before blog generation)
+ * @param {string} topic - Topic to search for
+ * @returns {Promise<object>} { text_results, news_results, sources }
+ */
+export const previewWebSearch = async (topic) => {
+  const response = await axiosPrivate.get('ai/search/preview', {
+    params: { topic },
+    timeout: 15000,
+  });
+  return response.data;
+};
 
 /**
  * Save an AI draft

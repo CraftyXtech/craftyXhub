@@ -93,6 +93,9 @@ class BlogPost(BaseModel):
     hero_image_prompt: Optional[str] = Field(
         default=None, description="AI image generation prompt for hero image"
     )
+    sources: Optional[List[dict]] = Field(
+        default=None, description="Web sources used during research [{title, url, snippet}]"
+    )
 
 
 class BlogGenerateRequest(BaseModel):
@@ -150,5 +153,8 @@ class BlogGenerateResponse(BaseModel):
     generation_time: float = Field(..., description="Time taken in seconds")
     web_search_used: bool = Field(
         default=False, description="Whether web search was used"
+    )
+    search_sources: Optional[List[dict]] = Field(
+        default=None, description="Sources found via web search"
     )
 

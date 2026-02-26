@@ -1,8 +1,11 @@
 import { Box, Typography, Card, CardContent, CardMedia, Chip, Stack, Avatar } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
+import { getImageUrl } from '@/api/utils/imageUrl';
 
 const MotionCard = motion.create(Card);
+
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=600&fit=crop';
 
 /**
  * PostCard - Classic blog card with image on top
@@ -22,7 +25,7 @@ export default function PostCard({ post, animationDelay = 0 }) {
   } = post;
 
   const postUrl = `/post/${slug || id}`;
-  const imageUrl = featured_image || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=600&fit=crop';
+  const imageUrl = getImageUrl(featured_image) || FALLBACK_IMAGE;
   const authorName = author?.full_name || author?.username || 'Anonymous';
   const categoryName = category?.name || category || 'General';
   const formattedDate = created_at ? new Date(created_at).toLocaleDateString('en-US', {

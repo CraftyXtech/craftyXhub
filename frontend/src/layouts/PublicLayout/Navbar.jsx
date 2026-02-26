@@ -292,7 +292,7 @@ export default function Navbar() {
                     <>
                       <Button
                         component={RouterLink}
-                        to="/dashboard/posts/new"
+                        to="/dashboard/posts/create"
                         variant="text"
                         size="small"
                         startIcon={
@@ -544,7 +544,7 @@ export default function Navbar() {
                   <Button
                     fullWidth
                     component={RouterLink}
-                    to="/dashboard/posts/new"
+                    to="/dashboard/posts/create"
                     variant="outlined"
                     startIcon={<IconPencil size={18} />}
                     sx={{ 

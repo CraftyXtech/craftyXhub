@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
 // MUI
 import Box from '@mui/material/Box';
+import ListSubheader from '@mui/material/ListSubheader';
 import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -590,9 +591,19 @@ export default function AdminPostEditor() {
                   <InputLabel>Category</InputLabel>
                   <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} label="Category">
                     <MenuItem value="">None</MenuItem>
-                    {categories.map((cat) => (
-                      <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
-                    ))}
+                    {categories.filter(c => !c.parent_id).map((cat) => [
+                      <ListSubheader key={`header-${cat.id}`} sx={{ lineHeight: '32px', fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', bgcolor: 'background.paper' }}>
+                        {cat.name}
+                      </ListSubheader>,
+                      <MenuItem key={cat.id} value={cat.id} sx={{ pl: 3, fontSize: '0.85rem' }}>
+                        All {cat.name}
+                      </MenuItem>,
+                      ...(cat.subcategories || []).map((sub) => (
+                        <MenuItem key={sub.id} value={sub.id} sx={{ pl: 4, fontSize: '0.85rem' }}>
+                          {sub.name}
+                        </MenuItem>
+                      ))
+                    ])}
                   </Select>
                 </FormControl>
               </Box>
@@ -677,7 +688,19 @@ export default function AdminPostEditor() {
                 <InputLabel>Category</InputLabel>
                 <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} label="Category">
                   <MenuItem value="">None</MenuItem>
-                  {categories.map((cat) => <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>)}
+                  {categories.filter(c => !c.parent_id).map((cat) => [
+                    <ListSubheader key={`header-${cat.id}`} sx={{ lineHeight: '32px', fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', bgcolor: 'background.paper' }}>
+                      {cat.name}
+                    </ListSubheader>,
+                    <MenuItem key={cat.id} value={cat.id} sx={{ pl: 3, fontSize: '0.85rem' }}>
+                      All {cat.name}
+                    </MenuItem>,
+                    ...(cat.subcategories || []).map((sub) => (
+                      <MenuItem key={sub.id} value={sub.id} sx={{ pl: 4, fontSize: '0.85rem' }}>
+                        {sub.name}
+                      </MenuItem>
+                    ))
+                  ])}
                 </Select>
               </FormControl>
             </Box>

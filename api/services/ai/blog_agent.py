@@ -6,6 +6,7 @@ with optional web search capabilities for research-backed content.
 """
 
 import json
+import logging
 import re
 import time
 from typing import Optional
@@ -17,7 +18,9 @@ from core.config import settings
 from schemas.ai import BlogPost, BlogSection
 from .tools import ToolHandler
 from .llm_config import get_model, DEFAULT_MODEL
+from .web_search import WebSearchService
 
+logger = logging.getLogger(__name__)
 
 
 class BlogAgentService:
@@ -122,6 +125,7 @@ class BlogAgentService:
             seo_title=data.get("seo_title", data.get("title", "")[:60]),
             seo_description=data.get("seo_description", data.get("summary", "")[:160]),
             hero_image_prompt=data.get("hero_image_prompt"),
+            sources=data.get("sources"),
         )
 
     def _generate_slug(self, title: str) -> str:
@@ -144,28 +148,34 @@ class BlogAgentService:
         model: str = "kimi-k2.5",
         creativity: float = 0.7,
         use_web_search: bool = True,
-    ) -> tuple[BlogPost, float, bool]:
+    ) -> tuple[BlogPost, float, bool, list[dict] | None]:
         """
-        Generate a complete blog post.
+        Generate a complete blog post, optionally researched via DuckDuckGo.
         
-        Args:
-            topic: The blog topic or title idea
-            blog_type: Type of blog (how-to, listicle, tutorial, etc.)
-            keywords: Target SEO keywords
-            audience: Target audience description
-            word_count: Target length (short, medium, long, very-long)
-            tone: Writing tone
-            language: Output language
-            model: AI model to use
-            creativity: Temperature/creativity level (0.0-1.0)
-            use_web_search: Whether to enable web search (if supported)
-            
         Returns:
-            Tuple of (BlogPost, generation_time, web_search_used)
+            Tuple of (BlogPost, generation_time, web_search_used, sources)
         """
         start_time = time.time()
+        web_search_used = False
+        sources = None
 
-        # Build the prompt
+        # ── Web Research Phase ──────────────────────────────────────
+        web_context = ""
+        if use_web_search:
+            try:
+                search_svc = WebSearchService(max_results=5)
+                search_results = search_svc.search_for_topic(topic, keywords)
+                web_context = search_svc.format_as_context(search_results)
+                sources = search_results.get("sources", [])
+                if sources:
+                    web_search_used = True
+                    logger.info(
+                        f"Web search found {len(sources)} sources for topic: {topic}"
+                    )
+            except Exception as e:
+                logger.warning(f"Web search failed, proceeding without: {e}")
+
+        # ── Prompt Construction ─────────────────────────────────────
         prompt = self._build_blog_prompt(
             topic=topic,
             blog_type=blog_type,
@@ -176,7 +186,11 @@ class BlogAgentService:
             language=language,
         )
 
-        # Get the model
+        # Append web research context if available
+        if web_context:
+            prompt += web_context
+
+        # ── Model & Agent ───────────────────────────────────────────
         pydantic_model = self._get_model_for_name(model)
 
         # Try structured output first, fall back to text parsing
@@ -226,8 +240,12 @@ class BlogAgentService:
                     f"Text parsing error: {text_error}"
                 )
 
+        # Attach sources to the blog post if web search was used
+        if web_search_used and sources:
+            blog_post.sources = sources
+
         generation_time = time.time() - start_time
-        return blog_post, generation_time, False
+        return blog_post, generation_time, web_search_used, sources
 
     def _get_max_tokens(self, word_count: str) -> int:
         """Get max tokens based on target word count."""
@@ -282,10 +300,3 @@ class BlogAgentService:
             md_parts.append("")  # Empty line between sections
 
         return "\n".join(md_parts)
-
-
-
-
-
-
-

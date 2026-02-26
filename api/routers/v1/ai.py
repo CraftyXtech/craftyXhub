@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.connection import get_db_session
 from services.user.auth import get_current_active_user
-from services.ai import AIGeneratorService, AIDraftService, BlogAgentService
+from services.ai import AIGeneratorService, AIDraftService, BlogAgentService, WebSearchService
 from services.post import PostService
 from schemas.ai import (
     GenerateRequest,
@@ -315,7 +315,7 @@ async def generate_blog(
         blog_agent = BlogAgentService()
 
         # Generate the blog post
-        blog_post, generation_time, web_search_used = await blog_agent.generate(
+        blog_post, generation_time, web_search_used, sources = await blog_agent.generate(
             topic=request.topic,
             blog_type=request.blog_type,
             keywords=request.keywords,
@@ -421,6 +421,7 @@ async def generate_blog(
             model_used=request.model,
             generation_time=round(generation_time, 2),
             web_search_used=web_search_used,
+            search_sources=sources if web_search_used else None,
         )
 
     except ValueError as e:
@@ -429,4 +430,29 @@ async def generate_blog(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Blog generation failed: {str(e)}",
+        )
+
+
+# ============================================================================
+# Web Search Preview Endpoint
+# ============================================================================
+
+
+@router.get("/search/preview")
+async def preview_web_search(
+    topic: str = Query(..., min_length=3, description="Topic to search for"),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Preview web search results for a topic before blog generation.
+    Returns text and news results from DuckDuckGo.
+    """
+    try:
+        search_svc = WebSearchService(max_results=5)
+        results = search_svc.search_for_topic(topic)
+        return results
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Search failed: {str(e)}",
         )

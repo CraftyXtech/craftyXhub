@@ -17,6 +17,8 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
+import Collapse from '@mui/material/Collapse';
+import Link from '@mui/material/Link';
 
 // Icons
 import {
@@ -25,6 +27,8 @@ import {
   IconReplace,
   IconCopy,
   IconRefresh,
+  IconWorldSearch,
+  IconExternalLink,
 } from '@tabler/icons-react';
 
 // API
@@ -85,6 +89,8 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
   const [error, setError] = useState(null);
   const [generatedContent, setGeneratedContent] = useState(null);
   const [generationTime, setGenerationTime] = useState(null);
+  const [searchSources, setSearchSources] = useState(null);
+  const [showSources, setShowSources] = useState(false);
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -104,7 +110,7 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
   const handleGenerate = useCallback(async () => {
     if (!topic.trim()) { setError('Enter a topic'); return; }
     try {
-      setGenerating(true); setError(null); setGeneratedContent(null);
+      setGenerating(true); setError(null); setGeneratedContent(null); setSearchSources(null);
       const result = await generateBlog({
         topic, blog_type: blogType,
         keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
@@ -113,6 +119,9 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
       });
       setGeneratedContent(result.blog_post);
       setGenerationTime(result.generation_time);
+      if (result.search_sources) {
+        setSearchSources(result.search_sources);
+      }
     } catch (err) {
       setError(err.response?.data?.detail || err.message || 'Generation failed');
     } finally { setGenerating(false); }
@@ -329,6 +338,56 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
                 </IconButton>
               </Stack>
             </Stack>
+
+            {/* Sources */}
+            {searchSources && searchSources.length > 0 && (
+              <Box sx={{ mt: 1 }}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={0.5}
+                  sx={{ cursor: 'pointer', mb: 0.5 }}
+                  onClick={() => setShowSources(!showSources)}
+                >
+                  <IconWorldSearch size={12} />
+                  <Typography
+                    variant="caption"
+                    color="primary"
+                    sx={{ fontSize: 11, fontWeight: 600 }}
+                  >
+                    {searchSources.length} sources used
+                  </Typography>
+                </Stack>
+                <Collapse in={showSources}>
+                  <Stack spacing={0.5}>
+                    {searchSources.slice(0, 5).map((src, i) => (
+                      <Link
+                        key={i}
+                        href={src.url}
+                        target="_blank"
+                        rel="noopener"
+                        underline="hover"
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 0.5,
+                          fontSize: 11,
+                          color: 'text.secondary',
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        <IconExternalLink size={10} style={{ marginTop: 2, flexShrink: 0 }} />
+                        <span>
+                          {src.title?.length > 60
+                            ? src.title.slice(0, 60) + '...'
+                            : src.title}
+                        </span>
+                      </Link>
+                    ))}
+                  </Stack>
+                </Collapse>
+              </Box>
+            )}
           </Box>
         )}
       </Box>

@@ -39,6 +39,7 @@ import { getImageUrl } from '@/api/utils/imageUrl';
 import { recordPostView } from '@/api/services/collectionService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 const MotionBox = motion.create(Box);
 
@@ -492,10 +493,36 @@ export default function BlogDetail() {
                   py: 0.25,
                   borderRadius: 0.5,
                   fontSize: '0.875rem'
-                }
+                },
+              '& img': {
+                  maxWidth: '100%',
+                  height: 'auto',
+                  borderRadius: 1,
+                  my: 2,
+                  display: 'block',
+                },
               }}
             >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
+                components={{
+                  img: ({ node, ...props }) => (
+                    <Box
+                      component="img"
+                      {...props}
+                      sx={{
+                        maxWidth: '100%',
+                        height: 'auto',
+                        borderRadius: 1,
+                        my: 2,
+                        display: 'block',
+                      }}
+                    />
+                  ),
+                }}
+                urlTransform={(url) => url}
+              >
                 {post.content}
               </ReactMarkdown>
             </Box>

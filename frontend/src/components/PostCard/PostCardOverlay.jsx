@@ -1,8 +1,11 @@
 import { Box, Typography, Chip } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
+import { getImageUrl } from '@/api/utils/imageUrl';
 
 const MotionBox = motion.create(Box);
+
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=600&fit=crop';
 
 /**
  * PostCardOverlay - Card with full image background and text overlay
@@ -23,7 +26,7 @@ export default function PostCardOverlay({
   } = post;
 
   const postUrl = `/post/${slug || id}`;
-  const imageUrl = featured_image || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=600&fit=crop';
+  const imageUrl = getImageUrl(featured_image) || FALLBACK_IMAGE;
   const categoryName = category?.name || category || 'General';
 
   return (

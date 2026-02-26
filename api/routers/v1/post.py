@@ -287,13 +287,16 @@ async def get_posts(
     }
 
 
-@router.get("/{post_slug}", response_model=PostResponse)
+@router.get("/{post_identifier}", response_model=PostResponse)
 async def get_post(
-        post_slug: str,
+        post_identifier: str,
         session: AsyncSession = Depends(get_db_session)
 ):
-    """Get a post by slug (public endpoint)"""
-    post = await PostService.get_post_by_slug(session, post_slug)
+    """Get a post by slug or UUID (public endpoint)"""
+    # Try UUID first (for edit page), then fall back to slug (for public view)
+    post = await PostService.get_post_by_uuid(session, post_identifier)
+    if not post:
+        post = await PostService.get_post_by_slug(session, post_identifier)
     
     if not post:
         raise HTTPException(

@@ -14,26 +14,16 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    chunkSizeWarningLimit: 1800,
+    chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Only split out truly self-contained, large packages
+          // that don't share dependencies with the rest of the app.
+          // Everything else is left to Vite's default splitter.
           if (id.includes('node_modules')) {
-            // EditorJS in its own chunk
+            if (id.includes('tinymce')) return 'tinymce';
             if (id.includes('@editorjs')) return 'editorjs';
-            // MUI components
-            if (id.includes('@mui/x-charts')) return 'charts';
-            if (id.includes('@mui')) return 'mui';
-            // Icons
-            if (id.includes('@tabler/icons-react')) return 'tabler-icons';
-            // Animation
-            if (id.includes('framer-motion')) return 'framer';
-            // Swiper
-            if (id.includes('swiper')) return 'swiper';
-            // Router
-            if (id.includes('react-router') || id.includes('@remix-run')) return 'router';
-            // Everything else (React, TinyMCE, etc) in vendor
-            return 'vendor';
           }
         },
       },

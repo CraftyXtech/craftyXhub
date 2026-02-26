@@ -30,7 +30,7 @@ UPLOAD_DIR = Path("uploads/posts")
 # UPLOAD_DIR = Path("/tmp/uploads/posts")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".avif", ".bmp", ".tiff", ".tif", ".ico", ".heic", ".heif"}
 
 class PostService:
 

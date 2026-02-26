@@ -1,0 +1,13 @@
+Collecting duckduckgo-search
+  Using cached duckduckgo_search-8.1.1-py3-none-any.whl.metadata (16 kB)
+Requirement already satisfied: click>=8.1.8 in ./venv/lib/python3.13/site-packages (from duckduckgo-search) (8.3.0)
+Collecting primp>=0.15.0 (from duckduckgo-search)
+  Downloading primp-1.1.1-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.7 kB)
+Collecting lxml>=5.3.0 (from duckduckgo-search)
+  Using cached lxml-6.0.2-cp313-cp313-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl.metadata (3.6 kB)
+Downloading duckduckgo_search-8.1.1-py3-none-any.whl (18 kB)
+Using cached lxml-6.0.2-cp313-cp313-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl (5.2 MB)
+Downloading primp-1.1.1-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (4.1 MB)
+   ━━━━━━━━━━━━━━ 4.1/4.1 MB 403.1 kB/s eta 0:00:00
+Installing collected packages: primp, lxml, duckduckgo-search
+Successfully installed duckduckgo-search-8.1.1 lxml-6.0.2 primp-1.1.1

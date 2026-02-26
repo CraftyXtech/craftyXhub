@@ -8,6 +8,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import FormControl from '@mui/material/FormControl';
+import ListSubheader from '@mui/material/ListSubheader';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -153,11 +154,19 @@ const PostSettingsSidebar = ({
                 <MenuItem value="">
                   <em>No category</em>
                 </MenuItem>
-                {categories.map((cat) => (
-                  <MenuItem key={cat.id} value={cat.id}>
+                {categories.filter(c => !c.parent_id).map((cat) => [
+                  <ListSubheader key={`header-${cat.id}`} sx={{ lineHeight: '32px', fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', bgcolor: 'background.paper' }}>
                     {cat.name}
-                  </MenuItem>
-                ))}
+                  </ListSubheader>,
+                  <MenuItem key={cat.id} value={cat.id} sx={{ pl: 3, fontSize: '0.85rem' }}>
+                    All {cat.name}
+                  </MenuItem>,
+                  ...(cat.subcategories || []).map((sub) => (
+                    <MenuItem key={sub.id} value={sub.id} sx={{ pl: 4, fontSize: '0.85rem' }}>
+                      {sub.name}
+                    </MenuItem>
+                  ))
+                ])}
               </Select>
             </FormControl>
             {categoriesLoading && (

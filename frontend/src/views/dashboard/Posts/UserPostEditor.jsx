@@ -11,6 +11,7 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
+import ListSubheader from '@mui/material/ListSubheader';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
@@ -418,9 +419,19 @@ export default function UserPostEditor() {
                 label="Category"
               >
                 <MenuItem value="">No category</MenuItem>
-                {categories.map((cat) => (
-                  <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
-                ))}
+                {categories.filter(c => !c.parent_id).map((cat) => [
+                  <ListSubheader key={`header-${cat.id}`} sx={{ lineHeight: '32px', fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', bgcolor: 'background.paper' }}>
+                    {cat.name}
+                  </ListSubheader>,
+                  <MenuItem key={cat.id} value={cat.id} sx={{ pl: 3, fontSize: '0.85rem' }}>
+                    All {cat.name}
+                  </MenuItem>,
+                  ...(cat.subcategories || []).map((sub) => (
+                    <MenuItem key={sub.id} value={sub.id} sx={{ pl: 4, fontSize: '0.85rem' }}>
+                      {sub.name}
+                    </MenuItem>
+                  ))
+                ])}
               </Select>
             </FormControl>
 
