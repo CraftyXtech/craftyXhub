@@ -38,6 +38,7 @@ import 'tinymce/icons/default';
 import 'tinymce/plugins/link';
 import 'tinymce/plugins/image';
 import 'tinymce/plugins/lists';
+import 'tinymce/plugins/directionality';
 
 // TinyMCE skins (UI and content)
 import 'tinymce/skins/ui/oxide/skin.min.css';
@@ -124,9 +125,11 @@ export default function AdminPostEditor() {
     }
   }, [title, isEditing]);
 
-  // Update stats + auto-excerpt when content changes
-  useEffect(() => {
-    const text = content.replace(/<[^>]*>/g, '');
+  // Helper: update word count + auto-excerpt from editor content
+  const updateStatsFromEditor = useCallback(() => {
+    if (!editorRef.current) return;
+    const html = editorRef.current.getContent();
+    const text = html.replace(/<[^>]*>/g, '');
     setWordCount(text.split(/\s+/).filter(w => w.length > 0).length);
 
     // Auto-fill excerpt from first ~160 chars of plain text
@@ -134,7 +137,7 @@ export default function AdminPostEditor() {
       const autoText = text.slice(0, 160).trim();
       setExcerpt(autoText + (text.length > 160 ? '...' : ''));
     }
-  }, [content, autoExcerpt]);
+  }, [autoExcerpt]);
 
   // Load categories and tags
   useEffect(() => {
@@ -163,7 +166,6 @@ export default function AdminPostEditor() {
           
           setTitle(post.title || '');
           setSlug(post.slug || '');
-          setContent(post.content || '');
           setExcerpt(post.excerpt || '');
           setAutoExcerpt(false); // Manual mode when editing
           setCategoryId(post.category?.id || post.category_id || '');
@@ -220,17 +222,17 @@ export default function AdminPostEditor() {
       const currentContent = editorRef.current.getContent();
       const newContent = currentContent + (currentContent ? '<div></div>' : '') + html;
       editorRef.current.setContent(newContent);
-      setContent(newContent);
+      updateStatsFromEditor();
     }
-  }, []);
+  }, [updateStatsFromEditor]);
 
   // Handle AI content replace (overwrite entire editor)
   const handleAiReplace = useCallback((html) => {
     if (editorRef.current) {
       editorRef.current.setContent(html);
-      setContent(html);
+      updateStatsFromEditor();
     }
-  }, []);
+  }, [updateStatsFromEditor]);
 
   // Handle AI metadata auto-fill (title, slug, excerpt, SEO, tags)
   const handleAiMetadataFill = useCallback((metadata) => {
@@ -269,7 +271,7 @@ export default function AdminPostEditor() {
         return;
       }
 
-      const currentContent = editorRef.current ? editorRef.current.getContent() : content;
+      const currentContent = editorRef.current ? editorRef.current.getContent() : '';
       if (!currentContent.trim()) {
         setError('Content is required');
         return;
@@ -419,12 +421,11 @@ export default function AdminPostEditor() {
                       editor.setContent(aiState.aiContent);
                     }
                   }}
-                  initialValue={content}
-                  onEditorChange={(newContent) => setContent(newContent)}
+                  initialValue={aiState?.aiContent || ''}
                   init={{
                     height: 500,
                     menubar: false,
-                    plugins: 'link lists image',
+                    plugins: 'link lists image directionality',
                     toolbar:
                       'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | link insertimage',
                     content_style: [
@@ -443,6 +444,11 @@ export default function AdminPostEditor() {
                     resize_img_proportional: true,
                     image_advtab: false,
                     setup: (editor) => {
+                      // Update word count + auto-excerpt on every keystroke
+                      editor.on('keyup change SetContent', () => {
+                        updateStatsFromEditor();
+                      });
+
                       editor.ui.registry.addButton('insertimage', {
                         icon: 'image',
                         tooltip: 'Insert image from device',
