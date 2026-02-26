@@ -21,6 +21,7 @@ import { motion } from 'framer-motion';
 import { getCategories } from '@/api/services/categoryService';
 import { getSuggestedUsers, followUser } from '@/api/services/userService';
 import { axiosPublic, TOKEN_KEY } from '@/api/axios';
+import { getImageUrl } from '@/api/services/postService';
 
 const MotionCard = motion.create(Card);
 
@@ -248,7 +249,7 @@ export default function Sidebar({
                   }}
                 >
                   <Avatar
-                    src={post.featured_image}
+                    src={getImageUrl(post.featured_image)}
                     variant="rounded"
                     sx={{ width: 60, height: 60, bgcolor: 'grey.200' }}
                   >

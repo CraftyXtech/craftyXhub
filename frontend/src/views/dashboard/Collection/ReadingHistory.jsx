@@ -21,6 +21,7 @@ import { IconHistory, IconTrash, IconClock } from '@tabler/icons-react';
 
 // Hooks
 import { useReadingHistory, useHistoryOperations } from '@/api/hooks/useCollection';
+import { getImageUrl } from '@/api/services/postService';
 
 /**
  * Reading History Tab
@@ -158,7 +159,7 @@ export default function ReadingHistory() {
                         <ListItemAvatar>
                           <Avatar
                             variant="rounded"
-                            src={entry.post.featured_image}
+                            src={getImageUrl(entry.post.featured_image)}
                             sx={{ width: 56, height: 56 }}
                           >
                             {entry.post.title?.[0]}
