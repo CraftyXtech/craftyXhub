@@ -222,6 +222,31 @@ export const reportPost = async (postUuid, reportData) => {
 // ===== POST CREATION & MANAGEMENT =====
 
 /**
+ * Upload a featured image for a post (eager upload).
+ * Saves to uploads/posts/ so it resolves correctly in getImageUrl.
+ * @param {File} file - Image file to upload
+ * @param {function} onProgress - Optional progress callback (0-100)
+ * @returns {Promise<object>} { file_path, filename }
+ */
+export const uploadPostImage = async (file, onProgress = null) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const config = {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: onProgress
+      ? (progressEvent) => {
+          const pct = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(pct);
+        }
+      : undefined,
+  };
+
+  const response = await axiosPrivate.post('/posts/upload-image', formData, config);
+  return response.data;
+};
+
+/**
  * Create a new post
  * @param {object} postData - Post data (supports FormData for file uploads)
  * @returns {Promise<object>} Created post

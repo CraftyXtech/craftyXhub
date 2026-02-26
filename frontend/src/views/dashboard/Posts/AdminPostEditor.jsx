@@ -60,8 +60,7 @@ import {
 import AiWriterPanel from '@/components/ai-writer/AiWriterPanel';
 
 // API
-import { createPost, updatePost, getPost, getImageUrl } from '@/api/services/postService';
-import { uploadMedia } from '@/api/services/mediaService';
+import { createPost, updatePost, getPost, getImageUrl, uploadPostImage } from '@/api/services/postService';
 import { getCategories } from '@/api/services/categoryService';
 import { getTags } from '@/api/services/tagService';
 
@@ -204,10 +203,10 @@ export default function AdminPostEditor() {
     setImageUploadProgress(0);
 
     try {
-      const result = await uploadMedia(file, null, (progress) => {
+      const result = await uploadPostImage(file, (progress) => {
         setImageUploadProgress(progress);
       });
-      // Store the file_path returned by the media upload
+      // Store the file_path returned by the upload
       setFeaturedImagePath(result.file_path || result.filename);
       setImageUploading(false);
     } catch (err) {

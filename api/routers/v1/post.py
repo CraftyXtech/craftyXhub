@@ -308,6 +308,23 @@ async def get_post(
     return await PostService.get_post_with_relationships(session, post.id)
 
 
+@router.post("/upload-image", status_code=status.HTTP_200_OK)
+async def upload_post_image(
+        file: UploadFile = File(...),
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    """Upload a featured image for a post (eager upload).
+    Returns the file path to use in create/update post."""
+    if not file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No file provided"
+        )
+    file_path = await PostService.save_uploaded_file(file, UPLOAD_DIR)
+    return {"file_path": file_path, "filename": os.path.basename(file_path)}
+
+
 @router.post("/", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
 async def create_post(
         title: str = Form(...),

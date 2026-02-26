@@ -18,12 +18,18 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Only split out truly self-contained, large packages
-          // that don't share dependencies with the rest of the app.
-          // Everything else is left to Vite's default splitter.
           if (id.includes('node_modules')) {
+            // Large self-contained editors
             if (id.includes('tinymce')) return 'tinymce';
             if (id.includes('@editorjs')) return 'editorjs';
+            // MUI is the biggest contributor to the index bundle
+            if (id.includes('@mui')) return 'mui';
+            // React core + router
+            if (
+              id.includes('react-dom') ||
+              id.includes('react-router') ||
+              id.includes('scheduler')
+            ) return 'react-vendor';
           }
         },
       },
