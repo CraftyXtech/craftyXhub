@@ -21,7 +21,7 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 )
 async def get_admin_dashboard(
     session: AsyncSession = Depends(get_db_session),
-    _: User = Depends(get_current_admin_or_moderator),
+    current_user: User = Depends(get_current_admin_or_moderator),
 ) -> AdminDashboardResponse:
     """
     Returns aggregated analytics for admins and moderators, including:
@@ -30,8 +30,9 @@ async def get_admin_dashboard(
     - Engagement metrics
     - Top performing posts
     - Recent activity and documents
+    - Current user's drafts
     """
-    return await DashboardService.get_admin_dashboard(session)
+    return await DashboardService.get_admin_dashboard(session, current_user)
 
 
 @router.get(

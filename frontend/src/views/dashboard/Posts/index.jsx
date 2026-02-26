@@ -28,6 +28,7 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
+import Alert from '@mui/material/Alert';
 
 // Icons
 import {
@@ -39,12 +40,16 @@ import {
   IconEye,
   IconSend,
   IconArrowBack,
-  IconRefresh
+  IconRefresh,
+  IconStar,
+  IconStarOff
 } from '@tabler/icons-react';
 
 // API
-import { getPosts, deletePost, publishPost, unpublishPost, getImageUrl } from '@/api/services/postService';
+import { getPosts, deletePost, publishPost, unpublishPost, featurePost, getImageUrl } from '@/api/services/postService';
 import { useAuth } from '@/api/AuthProvider';
+
+const isAdminOrMod = (user) => user?.role === 'admin' || user?.role === 'moderator';
 
 /**
  * Posts List Page
@@ -147,6 +152,13 @@ export default function Posts() {
 
   const handlePublishToggle = async () => {
     if (!selectedPost) return;
+
+    // Require category before publishing
+    if (!selectedPost.is_published && !selectedPost.category && !selectedPost.category_id) {
+      handleMenuClose();
+      setError('Please add a category before publishing. Edit the post to choose a category.');
+      return;
+    }
     
     try {
       setActionLoading(true);
@@ -159,6 +171,22 @@ export default function Posts() {
       fetchPosts();
     } catch (err) {
       console.error('Failed to toggle publish:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleFeatureToggle = async () => {
+    if (!selectedPost) return;
+    
+    try {
+      setActionLoading(true);
+      await featurePost(selectedPost.uuid, !selectedPost.is_featured);
+      handleMenuClose();
+      fetchPosts();
+    } catch (err) {
+      console.error('Failed to toggle feature:', err);
+      setError('Failed to update featured status');
     } finally {
       setActionLoading(false);
     }
@@ -231,6 +259,13 @@ export default function Posts() {
           </Stack>
         </CardContent>
       </Card>
+
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
       {/* Posts Table */}
       <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
@@ -316,6 +351,15 @@ export default function Posts() {
                         color={post.is_published ? 'success' : 'default'}
                         variant={post.is_published ? 'filled' : 'outlined'}
                       />
+                      {post.is_featured && (
+                        <Chip
+                          label="Featured"
+                          size="small"
+                          color="warning"
+                          variant="filled"
+                          icon={<IconStar size={14} />}
+                        />
+                      )}
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">{post.views_count || 0}</Typography>
@@ -374,6 +418,14 @@ export default function Posts() {
           </ListItemIcon>
           {selectedPost?.is_published ? 'Unpublish' : 'Publish'}
         </MenuItem>
+        {isAdminOrMod(user) && selectedPost?.is_published && (
+          <MenuItem onClick={handleFeatureToggle} disabled={actionLoading}>
+            <ListItemIcon>
+              {selectedPost?.is_featured ? <IconStarOff size={18} /> : <IconStar size={18} />}
+            </ListItemIcon>
+            {selectedPost?.is_featured ? 'Unfeature' : 'Feature'}
+          </MenuItem>
+        )}
         <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
           <ListItemIcon><IconTrash size={18} color="currentColor" /></ListItemIcon>
           Delete

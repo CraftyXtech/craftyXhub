@@ -158,7 +158,7 @@ export default function AdminPostEditor() {
 
   // Load post for editing
   useEffect(() => {
-    if (isEditing && id && editorReady) {
+    if (isEditing && id) {
       const loadPost = async () => {
         try {
           setLoading(true);
@@ -166,16 +166,13 @@ export default function AdminPostEditor() {
           
           setTitle(post.title || '');
           setSlug(post.slug || '');
+          setContent(post.content || ''); // Store in state so TinyMCE picks it up on re-mount
           setExcerpt(post.excerpt || '');
           setAutoExcerpt(false); // Manual mode when editing
           setCategoryId(post.category?.id || post.category_id || '');
           setSelectedTags(post.tags?.map(t => t.id) || []);
           setMetaTitle(post.meta_title || '');
           setMetaDescription(post.meta_description || '');
-          
-          if (editorRef.current) {
-            editorRef.current.setContent(post.content || '');
-          }
           
           if (post.featured_image) {
             setImagePreview(getImageUrl(post.featured_image));
@@ -189,7 +186,7 @@ export default function AdminPostEditor() {
       };
       loadPost();
     }
-  }, [id, isEditing, editorReady]);
+  }, [id, isEditing]);
 
   // Handle image upload
   const handleImageChange = (e) => {
@@ -274,6 +271,12 @@ export default function AdminPostEditor() {
       const currentContent = editorRef.current ? editorRef.current.getContent() : '';
       if (!currentContent.trim()) {
         setError('Content is required');
+        return;
+      }
+
+      if (shouldPublish && !categoryId) {
+        setError('Please choose a category before publishing');
+        setSettingsOpen(true);
         return;
       }
 
@@ -421,7 +424,7 @@ export default function AdminPostEditor() {
                       editor.setContent(aiState.aiContent);
                     }
                   }}
-                  initialValue={aiState?.aiContent || ''}
+                  initialValue={content}
                   init={{
                     height: 500,
                     menubar: false,
@@ -593,10 +596,9 @@ export default function AdminPostEditor() {
                 <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
                   Category
                 </Typography>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Category</InputLabel>
-                  <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} label="Category">
-                    <MenuItem value="">None</MenuItem>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel>Category *</InputLabel>
+                  <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} label="Category *">
                     {categories.filter(c => !c.parent_id).map((cat) => [
                       <ListSubheader key={`header-${cat.id}`} sx={{ lineHeight: '32px', fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', bgcolor: 'background.paper' }}>
                         {cat.name}
@@ -690,10 +692,9 @@ export default function AdminPostEditor() {
             <Divider />
             <Box>
               <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>Category</Typography>
-              <FormControl fullWidth size="small">
-                <InputLabel>Category</InputLabel>
-                <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} label="Category">
-                  <MenuItem value="">None</MenuItem>
+              <FormControl fullWidth size="small" required>
+                <InputLabel>Category *</InputLabel>
+                <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} label="Category *">
                   {categories.filter(c => !c.parent_id).map((cat) => [
                     <ListSubheader key={`header-${cat.id}`} sx={{ lineHeight: '32px', fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', bgcolor: 'background.paper' }}>
                       {cat.name}

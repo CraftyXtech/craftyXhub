@@ -29,7 +29,7 @@ class DashboardService:
     """
 
     @staticmethod
-    async def get_admin_dashboard(session: AsyncSession) -> AdminDashboardResponse:
+    async def get_admin_dashboard(session: AsyncSession, current_user: User = None) -> AdminDashboardResponse:
         """
         Build the admin/moderator dashboard response with system-wide metrics.
         """
@@ -169,12 +169,35 @@ class DashboardService:
                 total_bookmarks=int(total_bookmarks),
             )
 
+            # Current admin's drafts
+            drafts = []
+            if current_user:
+                drafts_posts = await PostService.get_draft_posts(
+                    session=session,
+                    user_id=current_user.id,
+                    skip=0,
+                    limit=5,
+                    include_deleted=False,
+                )
+                drafts = [
+                    DashboardDocumentSummary(
+                        uuid=post.uuid,
+                        title=post.title,
+                        status="draft",
+                        created_at=post.created_at,
+                        updated_at=post.updated_at,
+                        category=post.category.name if post.category else None,
+                    )
+                    for post in drafts_posts
+                ]
+
             return AdminDashboardResponse(
                 overview=overview,
                 posts_overview=posts_overview,
                 engagement_metrics=engagement_metrics,
                 top_posts=top_posts,
                 recent_activity=recent_activity,
+                drafts=drafts,
                 recent_documents=recent_documents,
             )
         except HTTPException:

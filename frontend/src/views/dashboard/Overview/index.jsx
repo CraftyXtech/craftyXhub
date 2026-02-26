@@ -95,10 +95,11 @@ export default function Overview() {
   }, []);
 
   // Extract stats from API response
-  const stats = data?.post_stats || {};
-  const engagement = data?.engagement || {};
+  const stats = data?.overview || {};
+  const engagement = data?.engagement_metrics || {};
   const topPosts = data?.top_posts || [];
-  const draftsCount = stats.drafts || data?.drafts?.length || 0;
+  const recentDocuments = data?.recent_documents || [];
+  const draftsCount = data?.drafts?.length || 0;
 
   // Compute display name with fallbacks
   const displayName = user?.username || user?.full_name || user?.email?.split('@')[0] || 'there';
@@ -166,7 +167,7 @@ export default function Overview() {
           <StatCard
             icon={IconFileText}
             title="Total Posts"
-            value={stats.total ?? stats.published ?? 0}
+            value={stats.total_posts ?? 0}
             loading={isLoading}
             color="primary"
           />
@@ -212,20 +213,85 @@ export default function Overview() {
                 Your recently published posts will appear here.
               </Typography>
               
-              {/* Placeholder for posts list */}
-              <Box sx={{ mt: 3, textAlign: 'center', py: 4 }}>
-                <IconFileText size={48} color="#9E9E9E" />
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                  No posts yet. Start writing!
-                </Typography>
-                <Button
-                  variant="text"
-                  href="/dashboard/posts/create"
-                  sx={{ mt: 1 }}
-                >
-                  Create your first post
-                </Button>
-              </Box>
+              {isLoading ? (
+                <Stack spacing={2} sx={{ mt: 3 }}>
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} height={60} variant="rectangular" sx={{ borderRadius: 1 }} />
+                  ))}
+                </Stack>
+              ) : recentDocuments.length === 0 ? (
+                <Box sx={{ mt: 3, textAlign: 'center', py: 4 }}>
+                  <IconFileText size={48} color="#9E9E9E" />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                    No posts yet. Start writing!
+                  </Typography>
+                  <Button
+                    variant="text"
+                    href="/dashboard/posts/create"
+                    sx={{ mt: 1 }}
+                  >
+                    Create your first post
+                  </Button>
+                </Box>
+              ) : (
+                <Stack spacing={2} sx={{ mt: 3 }}>
+                  {recentDocuments.map((doc) => (
+                    <Box
+                      key={doc.uuid}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        p: 1.5,
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        '&:hover': { bgcolor: 'action.hover' }
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          bgcolor: doc.status === 'published' ? 'success.lighter' : 'warning.lighter',
+                          color: doc.status === 'published' ? 'success.main' : 'warning.main'
+                        }}
+                      >
+                        <IconFileText size={20} />
+                      </Avatar>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" fontWeight={500} noWrap>
+                          {doc.title}
+                        </Typography>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 0.5,
+                              bgcolor: doc.status === 'published' ? 'success.lighter' : 'warning.lighter',
+                              color: doc.status === 'published' ? 'success.dark' : 'warning.dark',
+                              fontWeight: 600,
+                              textTransform: 'capitalize'
+                            }}
+                          >
+                            {doc.status}
+                          </Typography>
+                          {doc.category && (
+                            <Typography variant="caption" color="text.secondary">
+                              {doc.category}
+                            </Typography>
+                          )}
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(doc.created_at).toLocaleDateString()}
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
             </CardContent>
           </Card>
         </Grid>

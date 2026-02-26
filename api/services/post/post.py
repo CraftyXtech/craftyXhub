@@ -293,66 +293,90 @@ class PostService:
         Get personalized posts for user based on:
         1. Posts from authors they follow
         2. Posts in categories they've interacted with (read, liked, bookmarked)
+        3. FALLBACK: if not enough personalized results, backfill with
+           trending/recent posts the user hasn't already seen.
+        Excludes the user's own posts from the feed.
         """
         from models.base import user_follows
         from models.collection import ReadingHistory
-        
+
         try:
-            # Get IDs of authors user follows
+            personalized_posts: List[Post] = []
+
+            # --- Step 1: personalized query ---
             followed_authors_subq = (
                 select(user_follows.c.followed_id)
                 .where(user_follows.c.follower_id == user_id)
             )
-            
-            # Get category IDs from user's reading history
+
             read_categories_subq = (
                 select(Post.category_id)
                 .join(ReadingHistory, ReadingHistory.post_id == Post.id)
                 .where(ReadingHistory.user_id == user_id)
                 .distinct()
             )
-            
-            # Get category IDs from user's bookmarks
+
             bookmark_categories_subq = (
                 select(Post.category_id)
                 .join(post_bookmarks, post_bookmarks.c.post_id == Post.id)
                 .where(post_bookmarks.c.user_id == user_id)
                 .distinct()
             )
-            
-            # Get category IDs from user's liked posts
+
             liked_categories_subq = (
                 select(Post.category_id)
                 .join(post_likes, post_likes.c.post_id == Post.id)
                 .where(post_likes.c.user_id == user_id)
                 .distinct()
             )
-            
-            # Main query: posts from followed authors OR from interacted categories
+
             query = select(Post).where(
                 and_(
                     Post.is_published == True,
+                    Post.author_id != user_id,  # exclude own posts
                     or_(
-                        # Posts from followed authors
                         Post.author_id.in_(followed_authors_subq),
-                        # Posts in categories user has read
                         Post.category_id.in_(read_categories_subq),
-                        # Posts in categories user has bookmarked
                         Post.category_id.in_(bookmark_categories_subq),
-                        # Posts in categories user has liked
-                        Post.category_id.in_(liked_categories_subq)
-                    )
+                        Post.category_id.in_(liked_categories_subq),
+                    ),
                 )
             )
-            
+
             query = PostService._apply_post_relationships(query)
             query = PostService._add_soft_delete_filter(query, include_deleted)
             query = query.order_by(Post.created_at.desc())
             query = query.offset(skip).limit(limit)
-            
+
             result = await session.execute(query)
-            return result.scalars().all()
-            
+            personalized_posts = list(result.scalars().all())
+
+            # --- Step 2: backfill if not enough results ---
+            if len(personalized_posts) < limit:
+                seen_ids = {p.id for p in personalized_posts}
+                remaining = limit - len(personalized_posts)
+
+                # Backfill with trending posts (by view_count)
+                backfill_query = select(Post).where(
+                    and_(
+                        Post.is_published == True,
+                        Post.author_id != user_id,
+                        Post.id.notin_(seen_ids) if seen_ids else True,
+                    )
+                )
+                backfill_query = PostService._apply_post_relationships(backfill_query)
+                backfill_query = PostService._add_soft_delete_filter(backfill_query, include_deleted)
+                backfill_query = backfill_query.order_by(
+                    Post.view_count.desc().nullslast(),
+                    Post.created_at.desc(),
+                )
+                backfill_query = backfill_query.limit(remaining)
+
+                backfill_result = await session.execute(backfill_query)
+                personalized_posts.extend(backfill_result.scalars().all())
+
+            return personalized_posts
+
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -466,7 +490,7 @@ class PostService:
             if not db_post:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
-            if db_post.author_id != current_user.id or not current_user.is_moderator:
+            if db_post.author_id != current_user.id and not current_user.is_moderator():
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to feature this post")
 
             db_post.is_featured = feature

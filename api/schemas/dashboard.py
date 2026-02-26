@@ -92,6 +92,7 @@ class AdminDashboardResponse(BaseModel):
     engagement_metrics: EngagementMetrics
     top_posts: List[DashboardPostSummary]
     recent_activity: List[DashboardActivityItem]
+    drafts: List[DashboardDocumentSummary] = []
     recent_documents: List[DashboardDocumentSummary] = []
 
 

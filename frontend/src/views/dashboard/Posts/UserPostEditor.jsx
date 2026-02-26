@@ -231,6 +231,10 @@ export default function UserPostEditor() {
 
   // Publish post
   const handlePublish = useCallback(async () => {
+    if (!publishCategoryId) {
+      setError('Please choose a category before publishing');
+      return;
+    }
     if (!editorData?.blocks || isEditorEmpty(editorData)) {
       setError('Please write some content before publishing');
       return;
@@ -406,19 +410,18 @@ export default function UserPostEditor() {
         <DialogTitle>Ready to publish?</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Choose category, up to 5 tags, and a feature image.
+            Choose a category (required), up to 5 tags, and a feature image.
           </Typography>
 
           <Stack spacing={3}>
             {/* Category */}
-            <FormControl fullWidth size="small">
-              <InputLabel>Category</InputLabel>
+            <FormControl fullWidth size="small" required error={!publishCategoryId}>
+              <InputLabel>Category *</InputLabel>
               <Select
                 value={publishCategoryId}
                 onChange={(e) => setPublishCategoryId(e.target.value)}
-                label="Category"
+                label="Category *"
               >
-                <MenuItem value="">No category</MenuItem>
                 {categories.filter(c => !c.parent_id).map((cat) => [
                   <ListSubheader key={`header-${cat.id}`} sx={{ lineHeight: '32px', fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', bgcolor: 'background.paper' }}>
                     {cat.name}
@@ -524,7 +527,7 @@ export default function UserPostEditor() {
           <Button
             variant="contained"
             onClick={handlePublish}
-            disabled={isPublishing}
+            disabled={isPublishing || !publishCategoryId}
             startIcon={isPublishing && <CircularProgress size={16} color="inherit" />}
           >
             {isPublishing ? 'Publishing...' : 'Publish'}

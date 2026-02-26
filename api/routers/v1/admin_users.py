@@ -206,15 +206,16 @@ async def change_user_role(
             detail="You cannot modify your own role",
         )
 
-    # Only super-admins are allowed to change roles at all
-    if current_admin.role != DBUserRole.SUPER_ADMIN:
+    # Admins can change roles; only super-admins can promote to super_admin
+    target_new_role = DBUserRole(payload.role.value)
+
+    if current_admin.role == DBUserRole.ADMIN and target_new_role == DBUserRole.SUPER_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only super-admins can change user roles",
+            detail="Only super-admins can promote users to super-admin",
         )
 
     target_old_role = user.role
-    target_new_role = DBUserRole(payload.role.value)
 
     # Prevent demoting the last super-admin
     if target_old_role == DBUserRole.SUPER_ADMIN and target_new_role != DBUserRole.SUPER_ADMIN:
