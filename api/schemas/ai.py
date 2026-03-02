@@ -164,9 +164,13 @@ class BlogGenerateRequest(BaseModel):
     creativity: Optional[float] = Field(
         default=0.7, ge=0.0, le=1.0, description="Creativity/temperature"
     )
-    web_search_mode: Optional[Literal["off", "basic", "enhanced"]] = Field(
-        default="basic",
-        description="Web search mode: off, basic (DuckDuckGo), enhanced (OpenRouter :online)"
+    web_search: Optional[bool] = Field(
+        default=True,
+        description="Enable web search grounding (DuckDuckGo) when true"
+    )
+    web_search_mode: Optional[Literal["off", "basic"]] = Field(
+        default=None,
+        description="Deprecated mode field. Use web_search boolean instead."
     )
     # Save/publish options
     save_draft: Optional[bool] = Field(

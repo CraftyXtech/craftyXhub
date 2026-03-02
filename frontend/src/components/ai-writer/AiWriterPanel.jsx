@@ -13,6 +13,8 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Slider from '@mui/material/Slider';
 import Chip from '@mui/material/Chip';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
@@ -34,6 +36,9 @@ import {
 
 // API
 import { generateBlog, getBlogOptions } from '@/api/services/aiService';
+
+// Utils
+import { markdownToHtml } from '@/utils/markdownToHtml';
 
 const FALLBACK_OPTIONS = {
   blog_types: [
@@ -70,11 +75,6 @@ const FALLBACK_OPTIONS = {
   models: [
     { value: 'claude-sonnet-4.6', label: 'Sonnet 4.6' },
   ],
-  web_search_modes: [
-    { value: 'off', label: 'Off' },
-    { value: 'basic', label: 'Basic' },
-    { value: 'enhanced', label: 'Enhanced' },
-  ],
 };
 
 /**
@@ -91,7 +91,7 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
   const [length, setLength] = useState('medium');
   const [model, setModel] = useState('claude-sonnet-4.6');
   const [creativity, setCreativity] = useState(0.7);
-  const [webSearchMode, setWebSearchMode] = useState('basic');
+  const [webSearchEnabled, setWebSearchEnabled] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [generatedContent, setGeneratedContent] = useState(null);
@@ -122,7 +122,7 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
         topic, blog_type: blogType,
         keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
         audience: audience || null, word_count: length, tone, model, creativity,
-        use_web_search: webSearchMode !== 'off', web_search_mode: webSearchMode,
+        web_search: webSearchEnabled,
         save_draft: true, publish_post: false,
       });
       setGeneratedContent(result.blog_post);
@@ -133,19 +133,14 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
     } catch (err) {
       setError(err.response?.data?.detail || err.message || 'Generation failed');
     } finally { setGenerating(false); }
-  }, [topic, blogType, keywords, audience, tone, length, model, creativity, webSearchMode]);
+  }, [topic, blogType, keywords, audience, tone, length, model, creativity, webSearchEnabled]);
 
   const getContentHtml = useCallback(() => {
     if (!generatedContent) return '';
     let html = `<h1>${generatedContent.title}</h1>\n`;
     generatedContent.sections?.forEach(section => {
       html += `<h2>${section.heading}</h2>\n`;
-      const bodyHtml = section.body_markdown
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/^/, '<p>').replace(/$/, '</p>');
-      html += bodyHtml + '\n';
+      html += markdownToHtml(section.body_markdown) + '\n';
     });
     return html;
   }, [generatedContent]);
@@ -263,14 +258,25 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
               </Select>
             </FormControl>
 
-            {/* Web Search Mode */}
-            <FormControl fullWidth size="small">
-              <InputLabel>Web Search</InputLabel>
-              <Select value={webSearchMode} onChange={(e) => setWebSearchMode(e.target.value)} label="Web Search">
-                {options.web_search_modes?.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>) ?? 
-                  FALLBACK_OPTIONS.web_search_modes.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>)}
-              </Select>
-            </FormControl>
+            {/* Web Search Toggle */}
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 1.5, py: 0.75 }}>
+              <FormControlLabel
+                sx={{ m: 0, width: '100%', justifyContent: 'space-between' }}
+                control={
+                  <Switch
+                    checked={webSearchEnabled}
+                    onChange={(e) => setWebSearchEnabled(e.target.checked)}
+                    size="small"
+                  />
+                }
+                labelPlacement="start"
+                label={
+                  <Typography variant="body2" sx={{ fontSize: 13 }}>
+                    Web Search
+                  </Typography>
+                }
+              />
+            </Box>
 
             {/* Creativity */}
             <Box>

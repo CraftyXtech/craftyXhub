@@ -17,16 +17,16 @@ RunRecord = MODULE.RunRecord
 
 
 def test_parse_modes_deduplicates_and_preserves_order():
-    modes = MODULE.parse_modes("basic,enhanced,basic")
-    assert modes == ["basic", "enhanced"]
+    modes = MODULE.parse_modes("off,basic,off")
+    assert modes == ["off", "basic"]
 
 
 def test_mode_expectation_ok_rules():
     assert MODULE.mode_expectation_ok(
-        "basic", {"ddg_attempted": True, "online_used": False}
+        "basic", {"ddg_attempted": True}
     )
     assert MODULE.mode_expectation_ok(
-        "enhanced", {"ddg_attempted": False, "online_used": True}
+        "off", {"ddg_attempted": False}
     )
 
 
@@ -67,7 +67,7 @@ def test_summarize_mode_fails_when_success_rate_below_threshold():
         ok = i < 18  # 18/20 => 90%
         records.append(
             RunRecord(
-                mode="enhanced",
+                mode="off",
                 run_index=i + 1,
                 warmup=False,
                 ok=ok,
@@ -76,13 +76,13 @@ def test_summarize_mode_fails_when_success_rate_below_threshold():
                 phase_total_ms=20000.0,
                 ddg_attempted=False,
                 ddg_used=False,
-                online_used=ok,
+                online_used=False,
                 error=None if ok else "RuntimeError: failed",
             )
         )
 
     summary = MODULE.summarize_mode(
-        mode="enhanced",
+        mode="off",
         records=records,
         latency_slo_seconds=60.0,
         min_success_rate=0.95,

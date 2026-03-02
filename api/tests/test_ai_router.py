@@ -180,7 +180,7 @@ async def test_get_blog_options_excludes_full_web_search_mode(app):
     modes = resp.json().get("web_search_modes", [])
     mode_values = {mode["value"] for mode in modes}
     assert "full" not in mode_values
-    assert {"off", "basic", "enhanced"}.issubset(mode_values)
+    assert mode_values == {"off", "basic"}
 
 
 @pytest.mark.asyncio
@@ -198,6 +198,54 @@ async def test_generate_blog_rejects_full_web_search_mode(app):
         resp = await ac.post("/v1/ai/generate/blog", json=payload)
 
     assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+@pytest.mark.asyncio
+async def test_generate_blog_maps_web_search_toggle_to_mode(app, monkeypatch):
+    from schemas.ai import BlogPost, BlogSection
+
+    captured = {}
+
+    async def fake_blog_generate(self, **kwargs):
+        captured["web_search_mode"] = kwargs.get("web_search_mode")
+        post = BlogPost(
+            title="How to Build Reliable AI Writing Pipelines",
+            slug="how-to-build-reliable-ai-writing-pipelines",
+            summary=(
+                "This practical guide explains how to design resilient multi-step AI content workflows "
+                "with validation, retries, and quality checks for consistently publishable output."
+            ),
+            sections=[
+                BlogSection(heading="Introduction", body_markdown=" ".join(["word"] * 200)),
+                BlogSection(heading="Research", body_markdown=" ".join(["word"] * 220)),
+                BlogSection(heading="Implementation", body_markdown=" ".join(["word"] * 230)),
+                BlogSection(heading="Conclusion and Next Steps", body_markdown=" ".join(["word"] * 210)),
+            ],
+            tags=["ai-writing", "reliability", "content-ops"],
+            seo_title="Reliable AI Writing Pipelines",
+            seo_description=(
+                "Learn to build robust AI writing workflows with retries, structured validation, "
+                "and quality checks that keep production content pipelines dependable over time."
+            ),
+        )
+        return post, 0.2, False, None
+
+    monkeypatch.setattr(BlogAgentService, "generate", fake_blog_generate, raising=True)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        payload = {
+            "topic": "Build an AI article writer",
+            "blog_type": "how-to",
+            "word_count": "medium",
+            "web_search": False,
+            "save_draft": False,
+            "publish_post": False,
+        }
+        resp = await ac.post("/v1/ai/generate/blog", json=payload)
+
+    assert resp.status_code == status.HTTP_200_OK
+    assert captured["web_search_mode"] == "off"
 
 
 @pytest.mark.asyncio

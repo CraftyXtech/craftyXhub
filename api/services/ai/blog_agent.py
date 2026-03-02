@@ -16,7 +16,7 @@ from pydantic_ai import Agent
 
 from schemas.ai import BlogPost, BlogSection
 from .tools import ToolHandler
-from .llm_config import get_model, get_model_with_online, DEFAULT_MODEL
+from .llm_config import get_model, DEFAULT_MODEL
 from .quality_tools import (
     analyze_readability,
     extract_blog_plaintext,
@@ -179,20 +179,6 @@ class BlogAgentService:
             logger.warning(f"DuckDuckGo search failed, proceeding without: {e}")
 
         return web_context, sources, web_search_used
-
-    def _select_model_phase(self, model: str, web_search_mode: str):
-        """
-        Model selection phase: optionally enable OpenRouter online grounding.
-        """
-        use_online = web_search_mode == "enhanced"
-        if use_online:
-            try:
-                logger.info(f"Using OpenRouter :online model for: {model}")
-                return get_model_with_online(model), True
-            except Exception as e:
-                logger.warning(f":online model failed, falling back to standard: {e}")
-                return self._get_model_for_name(model), False
-        return self._get_model_for_name(model), False
 
     async def _draft_phase(
         self,
@@ -670,8 +656,7 @@ class BlogAgentService:
 
         web_search_mode:
             - "off"      — no web search
-            - "basic"    — DuckDuckGo context injection (free)
-            - "enhanced" — OpenRouter :online native grounding
+            - "basic"    — DuckDuckGo context injection
         
         Returns:
             Tuple of (BlogPost, generation_time, web_search_used, sources)
@@ -685,8 +670,8 @@ class BlogAgentService:
             "usage": {},
             "revision_applied": False,
             "web_grounding": {
+                "ddg_attempted": False,
                 "ddg_used": False,
-                "online_used": False,
             },
         }
 
@@ -700,6 +685,9 @@ class BlogAgentService:
         web_search_used = web_search_used or ddg_used
         self._last_phase_metrics["timings_ms"]["research"] = round(
             (time.perf_counter() - phase_start) * 1000, 2
+        )
+        self._last_phase_metrics["web_grounding"]["ddg_attempted"] = (
+            web_search_mode == "basic"
         )
         self._last_phase_metrics["web_grounding"]["ddg_used"] = ddg_used
 
@@ -731,15 +719,10 @@ class BlogAgentService:
 
         # ── Phase 3: Model Selection + Draft ────────────────────────
         phase_start = time.perf_counter()
-        pydantic_model, online_used = self._select_model_phase(
-            model=model,
-            web_search_mode=web_search_mode,
-        )
-        web_search_used = web_search_used or online_used
+        pydantic_model = self._get_model_for_name(model)
         self._last_phase_metrics["timings_ms"]["model_selection"] = round(
             (time.perf_counter() - phase_start) * 1000, 2
         )
-        self._last_phase_metrics["web_grounding"]["online_used"] = online_used
 
         phase_start = time.perf_counter()
         draft_post, draft_usage = await self._draft_phase(

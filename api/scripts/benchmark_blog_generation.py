@@ -32,7 +32,7 @@ from core.config import settings
 from services.ai.blog_agent import BlogAgentService
 
 
-VALID_MODES = {"basic", "enhanced"}
+VALID_MODES = {"off", "basic"}
 
 
 @dataclass
@@ -80,12 +80,11 @@ def percentile(values: Iterable[float], p: float) -> float | None:
 
 def mode_expectation_ok(mode: str, web_grounding: dict[str, Any]) -> bool:
     ddg_attempted = bool(web_grounding.get("ddg_attempted"))
-    online_used = bool(web_grounding.get("online_used"))
 
     if mode == "basic":
-        return ddg_attempted and not online_used
-    if mode == "enhanced":
-        return online_used
+        return ddg_attempted
+    if mode == "off":
+        return not ddg_attempted
     return False
 
 
@@ -311,7 +310,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Benchmark blog generation reliability and latency.")
     parser.add_argument("--runs-per-mode", type=int, default=20)
     parser.add_argument("--warmup-runs", type=int, default=1)
-    parser.add_argument("--modes", type=str, default="basic,enhanced")
+    parser.add_argument("--modes", type=str, default="off,basic")
     parser.add_argument("--model", type=str, default="claude-sonnet-4.6")
     parser.add_argument("--word-count", type=str, default="medium")
     parser.add_argument("--execution-mode", type=str, default="strict")

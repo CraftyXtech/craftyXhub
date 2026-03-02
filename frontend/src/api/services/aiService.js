@@ -76,7 +76,7 @@ export const getBlogOptions = async () => {
  * @param {string} options.language - Output language
  * @param {string} options.model - AI model to use
  * @param {number} options.creativity - Temperature/creativity level (0.0-1.0)
- * @param {string} options.web_search_mode - Web search mode: off, basic, enhanced
+ * @param {boolean} options.web_search - Enable web search grounding (on/off)
  * @param {string} options.execution_mode - strict (selected model only) or resilient (failover chain)
  * @param {boolean} options.save_draft - Save as AI draft
  * @param {boolean} options.publish_post - Publish directly to Posts
@@ -94,7 +94,7 @@ export const generateBlog = async ({
   language = 'en-US',
   model = 'gpt-5-mini',
   creativity = 0.7,
-  web_search_mode = 'basic',
+  web_search = true,
   execution_mode = 'strict',
   save_draft = true,
   publish_post = false,
@@ -113,7 +113,8 @@ export const generateBlog = async ({
     language,
     model,
     creativity,
-    web_search_mode,
+    web_search,
+    web_search_mode: web_search ? 'basic' : 'off',
     execution_mode,
     save_draft,
     publish_post,
