@@ -149,20 +149,15 @@ def create_application() -> FastAPI:
     # Optional AI observability setup and runtime capability checks.
     try:
         from services.ai.observability import configure_observability
-        from services.ai.pydantic_compat import get_pydantic_ai_capabilities
 
         configure_observability()
-        caps = get_pydantic_ai_capabilities()
         if settings.BLOG_AGENT_V2_REQUIRE_NATIVE:
-            missing: list[str] = []
-            if not caps.get("output_api", False):
-                missing.append("output_type/output_retries")
-            if not caps.get("fallback_model", False):
-                missing.append("FallbackModel")
-            if missing:
+            try:
+                from pydantic_ai.models.fallback import FallbackModel  # noqa: F401
+            except Exception:
                 raise RuntimeError(
-                    "BLOG_AGENT_V2_REQUIRE_NATIVE=true but missing pydantic-ai features: "
-                    + ", ".join(missing)
+                    "BLOG_AGENT_V2_REQUIRE_NATIVE=true but missing pydantic-ai "
+                    "feature: FallbackModel"
                 )
     except Exception as exc:
         logger.warning("AI startup checks: %s", exc)

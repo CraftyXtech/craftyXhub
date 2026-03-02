@@ -75,136 +75,6 @@ const FALLBACK_OPTIONS = {
     { value: 'basic', label: 'Basic' },
     { value: 'enhanced', label: 'Enhanced' },
   ],
-  execution_modes: [
-    { value: 'strict', label: 'Strict' },
-    { value: 'resilient', label: 'Resilient' },
-  ],
-};
-
-const escapeHtml = (text = '') => text
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&#39;');
-
-const normalizeInlineOrderedLists = (text = '') => {
-  if (!text || text.split('. ').length < 3) return text;
-
-  const paragraphs = text.trim().split(/\n\s*\n/);
-  const normalized = paragraphs.map((paragraph) => {
-    const markers = [...paragraph.matchAll(/(?<!\d)(\d{1,2})\.\s+/g)];
-    if (markers.length < 2) return paragraph;
-
-    const lineStartMarkers = paragraph.match(/^\s*\d+\.\s+/gm) || [];
-    if (lineStartMarkers.length >= 2) return paragraph;
-
-    const firstIndex = markers[0].index ?? 0;
-    const prefix = paragraph.slice(0, firstIndex).trimEnd();
-    if (firstIndex > 30 && !prefix.endsWith(':')) return paragraph;
-
-    const items = markers.map((marker, index) => {
-      const start = marker.index ?? 0;
-      const end = index + 1 < markers.length
-        ? (markers[index + 1].index ?? paragraph.length)
-        : paragraph.length;
-      return paragraph.slice(start, end).trim().replace(/[ \t]+/g, ' ');
-    });
-
-    const listBlock = items.join('\n');
-    return prefix ? `${prefix}\n\n${listBlock}` : listBlock;
-  });
-
-  return normalized.join('\n\n');
-};
-
-const applyInlineMarkdown = (text = '') => {
-  const escaped = escapeHtml(text);
-  return escaped
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>');
-};
-
-const markdownToHtml = (markdown = '') => {
-  const normalized = normalizeInlineOrderedLists(
-    markdown.replace(/\r\n?/g, '\n').trim()
-  );
-  if (!normalized) return '';
-
-  const lines = normalized.split('\n');
-  const htmlParts = [];
-  const paragraphLines = [];
-  let inOrderedList = false;
-  let inUnorderedList = false;
-
-  const flushParagraph = () => {
-    if (paragraphLines.length === 0) return;
-    htmlParts.push(
-      `<p>${paragraphLines.map(applyInlineMarkdown).join('<br/>')}</p>`
-    );
-    paragraphLines.length = 0;
-  };
-
-  const closeLists = () => {
-    if (inOrderedList) {
-      htmlParts.push('</ol>');
-      inOrderedList = false;
-    }
-    if (inUnorderedList) {
-      htmlParts.push('</ul>');
-      inUnorderedList = false;
-    }
-  };
-
-  lines.forEach((rawLine) => {
-    const line = rawLine.trim();
-
-    if (!line) {
-      flushParagraph();
-      closeLists();
-      return;
-    }
-
-    const orderedMatch = line.match(/^\d+\.\s+(.*)$/);
-    if (orderedMatch) {
-      flushParagraph();
-      if (inUnorderedList) {
-        htmlParts.push('</ul>');
-        inUnorderedList = false;
-      }
-      if (!inOrderedList) {
-        htmlParts.push('<ol>');
-        inOrderedList = true;
-      }
-      htmlParts.push(`<li>${applyInlineMarkdown(orderedMatch[1])}</li>`);
-      return;
-    }
-
-    const unorderedMatch = line.match(/^[-*]\s+(.*)$/);
-    if (unorderedMatch) {
-      flushParagraph();
-      if (inOrderedList) {
-        htmlParts.push('</ol>');
-        inOrderedList = false;
-      }
-      if (!inUnorderedList) {
-        htmlParts.push('<ul>');
-        inUnorderedList = true;
-      }
-      htmlParts.push(`<li>${applyInlineMarkdown(unorderedMatch[1])}</li>`);
-      return;
-    }
-
-    closeLists();
-    paragraphLines.push(line);
-  });
-
-  flushParagraph();
-  closeLists();
-
-  return htmlParts.join('\n');
 };
 
 /**
@@ -222,7 +92,6 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
   const [model, setModel] = useState('claude-sonnet-4.6');
   const [creativity, setCreativity] = useState(0.7);
   const [webSearchMode, setWebSearchMode] = useState('basic');
-  const [executionMode, setExecutionMode] = useState('strict');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [generatedContent, setGeneratedContent] = useState(null);
@@ -254,7 +123,6 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
         keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
         audience: audience || null, word_count: length, tone, model, creativity,
         use_web_search: webSearchMode !== 'off', web_search_mode: webSearchMode,
-        execution_mode: executionMode,
         save_draft: true, publish_post: false,
       });
       setGeneratedContent(result.blog_post);
@@ -265,14 +133,19 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
     } catch (err) {
       setError(err.response?.data?.detail || err.message || 'Generation failed');
     } finally { setGenerating(false); }
-  }, [topic, blogType, keywords, audience, tone, length, model, creativity, webSearchMode, executionMode]);
+  }, [topic, blogType, keywords, audience, tone, length, model, creativity, webSearchMode]);
 
   const getContentHtml = useCallback(() => {
     if (!generatedContent) return '';
-    let html = `<h1>${escapeHtml(generatedContent.title || '')}</h1>\n`;
+    let html = `<h1>${generatedContent.title}</h1>\n`;
     generatedContent.sections?.forEach(section => {
-      html += `<h2>${escapeHtml(section.heading || '')}</h2>\n`;
-      html += `${markdownToHtml(section.body_markdown || '')}\n`;
+      html += `<h2>${section.heading}</h2>\n`;
+      const bodyHtml = section.body_markdown
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/^/, '<p>').replace(/$/, '</p>');
+      html += bodyHtml + '\n';
     });
     return html;
   }, [generatedContent]);
@@ -396,15 +269,6 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
               <Select value={webSearchMode} onChange={(e) => setWebSearchMode(e.target.value)} label="Web Search">
                 {options.web_search_modes?.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>) ?? 
                   FALLBACK_OPTIONS.web_search_modes.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>)}
-              </Select>
-            </FormControl>
-
-            {/* Execution Mode */}
-            <FormControl fullWidth size="small">
-              <InputLabel>Execution</InputLabel>
-              <Select value={executionMode} onChange={(e) => setExecutionMode(e.target.value)} label="Execution">
-                {options.execution_modes?.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>) ??
-                  FALLBACK_OPTIONS.execution_modes.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>)}
               </Select>
             </FormControl>
 

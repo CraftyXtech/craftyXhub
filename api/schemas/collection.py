@@ -2,7 +2,7 @@
 Collection Schemas
 Pydantic schemas for My Collection feature
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 
@@ -54,8 +54,7 @@ class PostSummary(BaseModel):
     author_name: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReadingListItemResponse(BaseModel):
@@ -66,8 +65,7 @@ class ReadingListItemResponse(BaseModel):
     created_at: datetime
     post: PostSummary
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReadingListResponse(BaseModel):
@@ -81,8 +79,7 @@ class ReadingListResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReadingListDetailResponse(ReadingListResponse):
@@ -105,8 +102,7 @@ class ReadingHistoryEntry(BaseModel):
     read_progress: int
     post: PostSummary
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReadingHistoryResponse(BaseModel):
@@ -136,8 +132,7 @@ class HighlightResponse(BaseModel):
     created_at: datetime
     post: PostSummary
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class HighlightListResponse(BaseModel):

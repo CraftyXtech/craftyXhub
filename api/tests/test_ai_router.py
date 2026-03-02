@@ -148,10 +148,6 @@ async def test_generate_blog_ok_without_save_or_publish(app, monkeypatch):
         assert "passed" in data["quality_report"]
         assert "readability" in data["quality_report"]
         assert "phase_metrics" in data["quality_report"]
-        assert data["requested_model"] == "claude-sonnet-4.6"
-        assert data["effective_model"] == "claude-sonnet-4.6"
-        assert data["execution_path"] == "structured"
-        assert data["attempted_models"] == ["claude-sonnet-4.6"]
 
 
 @pytest.mark.asyncio
@@ -172,6 +168,36 @@ async def test_generate_blog_quality_error_returns_400(app, monkeypatch):
         }
         resp = await ac.post("/v1/ai/generate/blog", json=payload)
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.asyncio
+async def test_get_blog_options_excludes_full_web_search_mode(app):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        resp = await ac.get("/v1/ai/blog/options")
+
+    assert resp.status_code == status.HTTP_200_OK
+    modes = resp.json().get("web_search_modes", [])
+    mode_values = {mode["value"] for mode in modes}
+    assert "full" not in mode_values
+    assert {"off", "basic", "enhanced"}.issubset(mode_values)
+
+
+@pytest.mark.asyncio
+async def test_generate_blog_rejects_full_web_search_mode(app):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        payload = {
+            "topic": "Build an AI article writer",
+            "blog_type": "how-to",
+            "word_count": "medium",
+            "web_search_mode": "full",
+            "save_draft": False,
+            "publish_post": False,
+        }
+        resp = await ac.post("/v1/ai/generate/blog", json=payload)
+
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 @pytest.mark.asyncio
@@ -245,42 +271,3 @@ async def test_generate_blog_publish_persists_quality_metadata(app, monkeypatch)
     assert persisted["ai_generation"]["generator"] == "blog-agent"
     assert "quality_report" in persisted["ai_generation"]
     assert "phase_metrics" in persisted["ai_generation"]
-
-
-@pytest.mark.asyncio
-async def test_blog_options_includes_model_capabilities(app):
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        resp = await ac.get("/v1/ai/blog/options")
-
-    assert resp.status_code == status.HTTP_200_OK
-    data = resp.json()
-    assert "execution_modes" in data
-    assert isinstance(data["models"], list)
-    assert data["models"], "models should not be empty"
-    first_model = data["models"][0]
-    assert "supports_structured" in first_model
-    assert "supports_compat_json" in first_model
-    assert "default_path" in first_model
-    assert data["rollout"]["stage"] in {"internal", "production"}
-
-
-@pytest.mark.asyncio
-async def test_generate_blog_internal_rollout_blocks_non_internal_users(app, monkeypatch):
-    from core.config import settings
-
-    monkeypatch.setattr(settings, "BLOG_AGENT_V2_ROLLOUT", "internal")
-
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        payload = {
-            "topic": "Build an AI article writer",
-            "blog_type": "how-to",
-            "word_count": "medium",
-            "save_draft": False,
-            "publish_post": False,
-        }
-        resp = await ac.post("/v1/ai/generate/blog", json=payload)
-
-    assert resp.status_code == status.HTTP_403_FORBIDDEN
-    assert "internal users only" in resp.json()["detail"].lower()

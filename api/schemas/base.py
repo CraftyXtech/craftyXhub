@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -18,8 +18,4 @@ class TimestampMixin(BaseModel):
     updated_at: Optional[datetime] = None
 
 class BaseSchema(BaseModel):
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(from_attributes=True)

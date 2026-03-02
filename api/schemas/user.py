@@ -1,4 +1,12 @@
-from pydantic import BaseModel, EmailStr, validator, Field, computed_field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    ValidationInfo,
+    computed_field,
+    field_validator,
+)
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -21,16 +29,18 @@ class UserCreate(UserBase):
     confirm_password: str
     role: Optional[UserRole] = UserRole.USER
     
-    @validator('confirm_password')
-    def passwords_match(cls, v, values):
-        if 'password' in values and v != values['password']:
-            raise ValueError('Passwords do not match')
+    @field_validator("confirm_password")
+    @classmethod
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
+        if info.data.get("password") and v != info.data["password"]:
+            raise ValueError("Passwords do not match")
         return v
-    
-    @validator('password')
-    def password_strength(cls, v):
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
         if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
+            raise ValueError("Password must be at least 8 characters long")
         return v
 
 class UserLogin(BaseModel):
@@ -55,8 +65,7 @@ class UserResponse(BaseModel):
     def is_following(self) -> bool:
         return False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class Token(BaseModel):
     access_token: str
@@ -87,10 +96,11 @@ class PasswordResetConfirm(BaseModel):
     new_password: str = Field(..., min_length=8)
     confirm_password: str
     
-    @validator('confirm_password')
-    def passwords_match(cls, v, values):
-        if 'new_password' in values and v != values['new_password']:
-            raise ValueError('Passwords do not match')
+    @field_validator("confirm_password")
+    @classmethod
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
+        if info.data.get("new_password") and v != info.data["new_password"]:
+            raise ValueError("Passwords do not match")
         return v
 
 
@@ -204,8 +214,7 @@ class UserStatusUpdate(BaseModel):
 
 
 class AdminUserResponse(UserWithProfileResponse):
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdminUserListResponse(BaseModel):
@@ -236,8 +245,7 @@ class UserRoleChangeResponse(BaseModel):
     created_at: datetime
     changed_by: Optional[UserResponse] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserRoleChangeListResponse(BaseModel):

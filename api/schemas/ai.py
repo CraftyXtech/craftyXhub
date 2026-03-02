@@ -1,6 +1,6 @@
 import re
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing import Optional, List, Dict, Any, Literal
 from datetime import datetime
 
@@ -62,8 +62,7 @@ class DraftResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DraftListResponse(BaseModel):
@@ -100,13 +99,13 @@ class BlogSection(BaseModel):
 
 class BlogPost(BaseModel):
     """Structured blog post output from the Blog Agent."""
-    title: str = Field(..., min_length=5, max_length=200, description="Blog post title")
-    slug: str = Field(..., min_length=3, max_length=200, description="URL-friendly slug")
-    summary: str = Field(..., min_length=20, max_length=600, description="Brief summary/excerpt")
-    sections: List[BlogSection] = Field(..., min_length=2, max_length=15, description="List of content sections")
-    tags: List[str] = Field(default_factory=list, min_length=1, max_length=15, description="Relevant tags")
-    seo_title: str = Field(..., min_length=5, max_length=120, description="SEO meta title")
-    seo_description: str = Field(..., min_length=20, max_length=350, description="SEO meta description")
+    title: str = Field(..., min_length=10, max_length=150, description="Blog post title")
+    slug: str = Field(..., min_length=5, max_length=160, description="URL-friendly slug")
+    summary: str = Field(..., min_length=50, max_length=500, description="Brief summary/excerpt")
+    sections: List[BlogSection] = Field(..., min_length=3, max_length=10, description="List of content sections")
+    tags: List[str] = Field(default_factory=list, min_length=2, max_length=12, description="Relevant tags")
+    seo_title: str = Field(..., min_length=15, max_length=80, description="SEO meta title")
+    seo_description: str = Field(..., min_length=50, max_length=250, description="SEO meta description")
     hero_image_prompt: Optional[str] = Field(
         default=None, description="AI image generation prompt for hero image"
     )
@@ -118,26 +117,27 @@ class BlogPost(BaseModel):
     @classmethod
     def validate_slug(cls, value: str) -> str:
         slug = value.strip().lower()
-        # Allow underscores, consecutive hyphens, etc. — blog_agent normalizes later
-        slug = re.sub(r"[^a-z0-9\-_]", "-", slug)
-        slug = re.sub(r"-+", "-", slug).strip("-")
-        if not slug:
-            raise ValueError("slug cannot be empty")
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug):
+            raise ValueError("slug must use lowercase letters, numbers, and hyphens only")
         return slug
 
     @field_validator("tags")
     @classmethod
     def normalize_tags(cls, value: List[str]) -> List[str]:
-        normalized = list(dict.fromkeys(
-            tag.strip().lower() for tag in value if tag and tag.strip()
-        ))
-        if not normalized:
-            raise ValueError("at least 1 tag is required")
+        normalized = [tag.strip().lower() for tag in value if tag and tag.strip()]
+        if len(normalized) < 2:
+            raise ValueError("at least 2 tags are required")
+        if len(normalized) != len(set(normalized)):
+            raise ValueError("tags must be unique")
         return normalized
 
-    # NOTE: conclusion/CTA check is enforced as a soft quality issue in
-    # blog_agent.py._collect_quality_issues() — not as a hard validator here,
-    # because failing a model_validator exhausts pydantic-ai structured retries.
+    @model_validator(mode="after")
+    def ensure_conclusion_or_cta_section(self):
+        heading_text = " ".join(section.heading.lower() for section in self.sections)
+        quality_markers = ("conclusion", "final thoughts", "next steps", "call to action", "cta")
+        if not any(marker in heading_text for marker in quality_markers):
+            raise ValueError("include at least one conclusion or call-to-action section")
+        return self
 
 
 class BlogGenerateRequest(BaseModel):
@@ -168,10 +168,6 @@ class BlogGenerateRequest(BaseModel):
         default="basic",
         description="Web search mode: off, basic (DuckDuckGo), enhanced (OpenRouter :online)"
     )
-    execution_mode: Literal["strict", "resilient"] = Field(
-        default="strict",
-        description="Execution mode: strict (selected model only) or resilient (model chain failover)"
-    )
     # Save/publish options
     save_draft: Optional[bool] = Field(
         default=True, description="Save as AI draft"
@@ -197,15 +193,6 @@ class BlogGenerateResponse(BaseModel):
         default=None, description="Post UUID if published"
     )
     model_used: str = Field(..., description="AI model used")
-    requested_model: str = Field(..., description="Requested model from client")
-    effective_model: str = Field(..., description="Final model that produced the output")
-    execution_path: Literal["structured", "compat_json"] = Field(
-        ..., description="Execution path used for generation"
-    )
-    attempted_models: List[str] = Field(
-        default_factory=list,
-        description="Ordered list of attempted model ids",
-    )
     generation_time: float = Field(..., description="Time taken in seconds")
     web_search_used: bool = Field(
         default=False, description="Whether web search was used"
