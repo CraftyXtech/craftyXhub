@@ -12,7 +12,7 @@ async def test_all_16_tools_builds_prompts(monkeypatch):
 
     class FakeResult:
         def __init__(self, text="<p>ok</p>"):
-            self.data = text
+            self.output = text
 
         def usage(self):
             class U:

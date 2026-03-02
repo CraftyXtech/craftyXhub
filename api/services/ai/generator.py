@@ -1,5 +1,5 @@
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.settings import ModelSettings
 from pydantic import BaseModel, Field
 from core.config import settings
 from .tools import ToolHandler
@@ -41,8 +41,8 @@ class AIGeneratorService:
         pydantic_model = get_model(model_name)
 
         return Agent(
-            pydantic_model,
-            result_type=str,
+            model=pydantic_model,
+            output_type=str,
             system_prompt=system_prompt,
         )
 
@@ -108,13 +108,13 @@ class AIGeneratorService:
             try:
                 result = await agent.run(
                     built_prompt,
-                    model_settings={
-                        "temperature": creativity,
-                        "max_tokens": ToolHandler.get_max_tokens(length),
-                    },
+                    model_settings=ModelSettings(
+                        temperature=creativity,
+                        max_tokens=ToolHandler.get_max_tokens(length),
+                    ),
                 )
 
-                content = result.data
+                content = result.output
                 word_count = len(content.split())
                 char_count = len(content)
                 reading_time = max(1, -(-word_count // 200))  # ceil division
@@ -184,20 +184,20 @@ class AIGeneratorService:
 
         # Create a new agent with structured output
         structured_agent = Agent(
-            base_agent.model,
-            result_type=ContentVariant,
+            model=base_agent.model,
+            output_type=ContentVariant,
             system_prompt=system_prompt_override or self.system_prompt,
         )
 
         result = await structured_agent.run(
             prompt,
-            model_settings={
-                "temperature": creativity,
-                "max_tokens": ToolHandler.get_max_tokens(length),
-            },
+            model_settings=ModelSettings(
+                temperature=creativity,
+                max_tokens=ToolHandler.get_max_tokens(length),
+            ),
         )
 
-        return result.data
+        return result.output
 
     async def generate_stream(
         self,
@@ -231,10 +231,10 @@ class AIGeneratorService:
 
         async with agent.run_stream(
             prompt,
-            model_settings={
-                "temperature": creativity,
-                "max_tokens": ToolHandler.get_max_tokens(length),
-            },
+            model_settings=ModelSettings(
+                temperature=creativity,
+                max_tokens=ToolHandler.get_max_tokens(length),
+            ),
         ) as response:
             async for message in response.stream_text():
                 yield message

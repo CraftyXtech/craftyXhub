@@ -29,7 +29,8 @@ pytest-asyncio==0.23.8
 slowapi==0.1.9
 fastapi-sso==0.18.0
 griffe<1.0
-pydantic-ai==0.0.14
+pydantic-ai-slim[openai]>=0.6.0,<0.7.0
+logfire>=3.14.0
 openai==1.58.1
 google-generativeai==0.8.3
 ddgs>=9.0.0

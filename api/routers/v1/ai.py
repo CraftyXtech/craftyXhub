@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.connection import get_db_session
+from core.config import settings
+from pydantic_ai import Agent
+from pydantic_ai.settings import ModelSettings
 from services.user.auth import get_current_active_user
 from services.ai import AIGeneratorService, AIDraftService, BlogAgentService, WebSearchService
 from services.post import PostService
@@ -18,6 +21,7 @@ from schemas.ai import (
 from schemas.post import PostCreate, TagCreate
 from models import User
 from typing import List
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/ai", tags=["AI Content Generation"])
 
@@ -48,7 +52,6 @@ async def test_chat(
     Simple chat endpoint - send any message and get a response!
     No authentication required - for quick testing only.
     """
-    from pydantic_ai import Agent
     from services.ai.llm_config import get_model, DEFAULT_MODEL
     import time
 
@@ -57,13 +60,14 @@ async def test_chat(
 
         pydantic_model = get_model(DEFAULT_MODEL)
         agent = Agent(
-            pydantic_model,
-            result_type=str,
+            model=pydantic_model,
+            output_type=str,
             system_prompt="You are a friendly and helpful AI assistant. Keep responses concise and engaging.",
         )
 
         result = await agent.run(
-            message, model_settings={"temperature": 0.8, "max_tokens": 500}
+            message,
+            model_settings=ModelSettings(temperature=0.8, max_tokens=500),
         )
 
         response_time = time.time() - start_time
@@ -76,7 +80,7 @@ async def test_chat(
 
         return {
             "message": message,
-            "response": result.data,
+            "response": result.output,
             "model": DEFAULT_MODEL,
             "response_time": round(response_time, 2),
             "tokens_used": tokens_used,
@@ -110,6 +114,8 @@ async def generate_content(
             variant_count=request.variant_count,
         )
         return result
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -276,12 +282,24 @@ async def get_blog_options():
             {"value": "content-creators", "label": "Content Creators"},
         ],
         "lengths": [
-            {"value": "short", "label": "Short (~500 words)"},
-            {"value": "medium", "label": "Medium (~1000 words)"},
-            {"value": "long", "label": "Long (~1500 words)"},
-            {"value": "very-long", "label": "Very Long (~2500+ words)"},
+            {"value": "short", "label": "Short (~300 words)"},
+            {"value": "medium", "label": "Medium (~500 words)"},
+            {"value": "long", "label": "Long (~1000 words)"},
+            {"value": "very-long", "label": "Very Long (~1500+ words)"},
         ],
         "models": models,
+        "execution_modes": [
+            {"value": "strict", "label": "Strict (selected model only)"},
+            {"value": "resilient", "label": "Resilient (model chain failover)"},
+        ],
+        "web_search_modes": [
+            {"value": "off", "label": "Off"},
+            {"value": "basic", "label": "Basic"},
+            {"value": "enhanced", "label": "Enhanced"},
+        ],
+        "rollout": {
+            "stage": settings.BLOG_AGENT_V2_ROLLOUT,
+        },
     }
 
 
@@ -308,9 +326,18 @@ async def generate_blog(
     Options:
     - save_draft: Save the generated content as an AI draft
     - publish_post: Create a post directly in the Posts system
-    - use_web_search: Enable web search for research (model-dependent)
+    - web_search_mode: Control research grounding (off/basic/enhanced)
     """
     try:
+        if settings.BLOG_AGENT_V2_ROLLOUT == "internal":
+            role_check = getattr(current_user, "is_moderator", None)
+            is_internal_user = bool(role_check()) if callable(role_check) else False
+            if not is_internal_user:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Blog Agent V2 is currently enabled for internal users only.",
+                )
+
         # Initialize the blog agent service
         blog_agent = BlogAgentService()
 
@@ -325,7 +352,21 @@ async def generate_blog(
             language=request.language or "en-US",
             model=request.model,
             creativity=request.creativity or 0.7,
-            use_web_search=request.use_web_search if request.use_web_search is not None else True,
+            web_search_mode=request.web_search_mode or "basic",
+            execution_mode=request.execution_mode,
+        )
+        phase_metrics = blog_agent.get_last_phase_metrics() or {}
+        model_runtime = phase_metrics.get("model_runtime", {}) or {}
+        runtime_model_used = model_runtime.get("model_used") or request.model
+        effective_model = model_runtime.get("effective_model") or runtime_model_used
+        execution_path = model_runtime.get("execution_path") or "structured"
+        attempted_models = model_runtime.get("attempted_models") or [runtime_model_used]
+
+        quality_report = blog_agent.build_quality_report(
+            blog_post=blog_post,
+            word_count=request.word_count or "medium",
+            keywords=request.keywords,
+            phase_metrics=phase_metrics,
         )
 
         draft_id = None
@@ -341,7 +382,7 @@ async def generate_blog(
                     name=blog_post.title,
                     content=draft_content,
                     tool_id="blog-agent",
-                    model_used=request.model,
+                    model_used=runtime_model_used,
                     favorite=False,
                     draft_metadata={
                         "blog_type": request.blog_type,
@@ -349,7 +390,10 @@ async def generate_blog(
                         "seo_description": blog_post.seo_description,
                         "tags": blog_post.tags,
                         "slug": blog_post.slug,
+                        "requested_model": request.model,
                         "web_search_used": web_search_used,
+                        "phase_metrics": phase_metrics,
+                        "quality_report": quality_report,
                     },
                 )
                 saved_draft = await AIDraftService.create_draft(
@@ -392,10 +436,25 @@ async def generate_blog(
                         pass
 
                 # Create the post
+                post_content_blocks = {
+                    "ai_generation": {
+                        "generator": "blog-agent",
+                        "model": runtime_model_used,
+                        "requested_model": request.model,
+                        "web_search_mode": request.web_search_mode or "basic",
+                        "web_search_used": web_search_used,
+                        "search_sources_count": len(sources or []),
+                        "generated_at": datetime.now(timezone.utc).isoformat(),
+                        "phase_metrics": phase_metrics,
+                        "quality_report": quality_report,
+                    }
+                }
+
                 post_data = PostCreate(
                     title=blog_post.title,
                     slug=blog_post.slug,
                     content=html_content,
+                    content_blocks=post_content_blocks,
                     excerpt=blog_post.summary,
                     meta_title=blog_post.seo_title,
                     meta_description=blog_post.seo_description,
@@ -418,12 +477,19 @@ async def generate_blog(
             blog_post=blog_post,
             draft_id=draft_id,
             post_id=post_id,
-            model_used=request.model,
+            model_used=runtime_model_used,
+            requested_model=request.model,
+            effective_model=effective_model,
+            execution_path=execution_path,
+            attempted_models=attempted_models,
             generation_time=round(generation_time, 2),
             web_search_used=web_search_used,
             search_sources=sources if web_search_used else None,
+            quality_report=quality_report,
         )
 
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:

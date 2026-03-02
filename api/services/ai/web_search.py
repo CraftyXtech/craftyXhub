@@ -9,9 +9,40 @@ import time
 import logging
 from typing import Optional
 
+import primp
 from ddgs import DDGS
+from ddgs.exceptions import DDGSException, RatelimitException, TimeoutException
+from ddgs.http_client import HttpClient as _DdgsHttpClient
 
 logger = logging.getLogger(__name__)
+
+# ── primp compatibility shim ─────────────────────────────────────────────────
+# ddgs ≥9.9 added "safari_18" and "safari_18.2" to its _impersonates list, but
+# the installed primp build may not recognise those strings yet, causing a noisy
+# "Impersonate '...' does not exist, using 'random'" message on every request.
+# Probe each candidate at module load time and remove any that primp rejects.
+def _probe_impersonate(browser: str) -> bool:
+    """Return True if primp silently accepts *browser* (no warning emitted)."""
+    import io, contextlib, sys
+    buf = io.StringIO()
+    with contextlib.redirect_stderr(buf):
+        try:
+            primp.Client(impersonate=browser)
+        except Exception:
+            return False
+    return "does not exist" not in buf.getvalue()
+
+_supported = tuple(b for b in _DdgsHttpClient._impersonates if _probe_impersonate(b))
+if len(_supported) < len(_DdgsHttpClient._impersonates):
+    _removed = set(_DdgsHttpClient._impersonates) - set(_supported)
+    logger.debug(
+        "ddgs/primp version mismatch — removed unsupported impersonate strings: %s",
+        ", ".join(sorted(_removed)),
+    )
+    # Patch the class-level tuple in place so all DDGS() instances benefit
+    _DdgsHttpClient._impersonates = _supported  # type: ignore[assignment]
+# ── end shim ─────────────────────────────────────────────────────────────────
+
 
 
 class WebSearchService:
@@ -38,6 +69,17 @@ class WebSearchService:
 
     # ── Public API ──────────────────────────────────────────────────
 
+    @staticmethod
+    def _is_no_results_error(exc: Exception) -> bool:
+        return "No results found" in str(exc)
+
+    @staticmethod
+    def _clip_snippet(text: str, limit: int = 280) -> str:
+        snippet = (text or "").strip()
+        if len(snippet) <= limit:
+            return snippet
+        return snippet[: limit - 1].rstrip() + "…"
+
     def search_text(self, query: str, max_results: int | None = None) -> list[dict]:
         """
         Search DuckDuckGo for web results.
@@ -61,6 +103,18 @@ class WebSearchService:
             self._search_count += 1
             self._set_cached(cache_key, results)
             return results
+        except (RatelimitException, TimeoutException) as e:
+            logger.warning("DuckDuckGo text search transient issue: %s", e)
+            return []
+        except DDGSException as e:
+            if self._is_no_results_error(e):
+                logger.info(
+                    "DuckDuckGo text search returned no results for query: %s",
+                    query,
+                )
+            else:
+                logger.warning("DuckDuckGo text search failed: %s", e)
+            return []
         except Exception as e:
             logger.error(f"DuckDuckGo text search failed: {e}")
             return []
@@ -97,6 +151,18 @@ class WebSearchService:
             self._search_count += 1
             self._set_cached(cache_key, results)
             return results
+        except (RatelimitException, TimeoutException) as e:
+            logger.warning("DuckDuckGo news search transient issue: %s", e)
+            return []
+        except DDGSException as e:
+            if self._is_no_results_error(e):
+                logger.info(
+                    "DuckDuckGo news search returned no results for query: %s",
+                    query,
+                )
+            else:
+                logger.warning("DuckDuckGo news search failed: %s", e)
+            return []
         except Exception as e:
             logger.error(f"DuckDuckGo news search failed: {e}")
             return []
@@ -188,7 +254,7 @@ class WebSearchService:
             for i, r in enumerate(text_results[:7], 1):
                 title = r.get("title", "Untitled")
                 url = r.get("href", "")
-                body = r.get("body", "")
+                body = self._clip_snippet(r.get("body", ""))
                 parts.append(f"[{i}] {title}")
                 parts.append(f"    URL: {url}")
                 parts.append(f"    {body}\n")
@@ -198,7 +264,7 @@ class WebSearchService:
             for i, r in enumerate(news_results[:5], 1):
                 title = r.get("title", "Untitled")
                 url = r.get("url", "")
-                body = r.get("body", "")
+                body = self._clip_snippet(r.get("body", ""))
                 date = r.get("date", "")
                 source = r.get("source", "")
                 parts.append(f"[News {i}] {title}")

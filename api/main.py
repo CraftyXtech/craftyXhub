@@ -8,9 +8,11 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select, or_
 from models import Post, User, Category
 from pathlib import Path
+import logging
 
 # Initialize cached settings
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 def include_routers(app: FastAPI) -> None:
@@ -143,6 +145,28 @@ def create_application() -> FastAPI:
         CORSMiddleware,
         **cors_kwargs
     )
+
+    # Optional AI observability setup and runtime capability checks.
+    try:
+        from services.ai.observability import configure_observability
+        from services.ai.pydantic_compat import get_pydantic_ai_capabilities
+
+        configure_observability()
+        caps = get_pydantic_ai_capabilities()
+        if settings.BLOG_AGENT_V2_REQUIRE_NATIVE:
+            missing: list[str] = []
+            if not caps.get("output_api", False):
+                missing.append("output_type/output_retries")
+            if not caps.get("fallback_model", False):
+                missing.append("FallbackModel")
+            if missing:
+                raise RuntimeError(
+                    "BLOG_AGENT_V2_REQUIRE_NATIVE=true but missing pydantic-ai features: "
+                    + ", ".join(missing)
+                )
+    except Exception as exc:
+        logger.warning("AI startup checks: %s", exc)
+
     include_routers(app)
     return app
 

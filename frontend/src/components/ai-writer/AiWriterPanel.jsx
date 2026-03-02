@@ -19,6 +19,7 @@ import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Collapse from '@mui/material/Collapse';
 import Link from '@mui/material/Link';
+import Tooltip from '@mui/material/Tooltip';
 
 // Icons
 import {
@@ -61,14 +62,149 @@ const FALLBACK_OPTIONS = {
     { value: 'professionals', label: 'Professionals' },
   ],
   lengths: [
-    { value: 'short', label: 'Short' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'long', label: 'Long' },
-    { value: 'very-long', label: 'Very Long' },
+    { value: 'short', label: 'Short (~300 words)' },
+    { value: 'medium', label: 'Medium (~500 words)' },
+    { value: 'long', label: 'Long (~1000 words)' },
+    { value: 'very-long', label: 'Very Long (~1500+ words)' },
   ],
   models: [
-    { value: 'kimi-k2.5', label: 'Kimi K2.5' },
+    { value: 'claude-sonnet-4.6', label: 'Sonnet 4.6' },
   ],
+  web_search_modes: [
+    { value: 'off', label: 'Off' },
+    { value: 'basic', label: 'Basic' },
+    { value: 'enhanced', label: 'Enhanced' },
+  ],
+  execution_modes: [
+    { value: 'strict', label: 'Strict' },
+    { value: 'resilient', label: 'Resilient' },
+  ],
+};
+
+const escapeHtml = (text = '') => text
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const normalizeInlineOrderedLists = (text = '') => {
+  if (!text || text.split('. ').length < 3) return text;
+
+  const paragraphs = text.trim().split(/\n\s*\n/);
+  const normalized = paragraphs.map((paragraph) => {
+    const markers = [...paragraph.matchAll(/(?<!\d)(\d{1,2})\.\s+/g)];
+    if (markers.length < 2) return paragraph;
+
+    const lineStartMarkers = paragraph.match(/^\s*\d+\.\s+/gm) || [];
+    if (lineStartMarkers.length >= 2) return paragraph;
+
+    const firstIndex = markers[0].index ?? 0;
+    const prefix = paragraph.slice(0, firstIndex).trimEnd();
+    if (firstIndex > 30 && !prefix.endsWith(':')) return paragraph;
+
+    const items = markers.map((marker, index) => {
+      const start = marker.index ?? 0;
+      const end = index + 1 < markers.length
+        ? (markers[index + 1].index ?? paragraph.length)
+        : paragraph.length;
+      return paragraph.slice(start, end).trim().replace(/[ \t]+/g, ' ');
+    });
+
+    const listBlock = items.join('\n');
+    return prefix ? `${prefix}\n\n${listBlock}` : listBlock;
+  });
+
+  return normalized.join('\n\n');
+};
+
+const applyInlineMarkdown = (text = '') => {
+  const escaped = escapeHtml(text);
+  return escaped
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>');
+};
+
+const markdownToHtml = (markdown = '') => {
+  const normalized = normalizeInlineOrderedLists(
+    markdown.replace(/\r\n?/g, '\n').trim()
+  );
+  if (!normalized) return '';
+
+  const lines = normalized.split('\n');
+  const htmlParts = [];
+  const paragraphLines = [];
+  let inOrderedList = false;
+  let inUnorderedList = false;
+
+  const flushParagraph = () => {
+    if (paragraphLines.length === 0) return;
+    htmlParts.push(
+      `<p>${paragraphLines.map(applyInlineMarkdown).join('<br/>')}</p>`
+    );
+    paragraphLines.length = 0;
+  };
+
+  const closeLists = () => {
+    if (inOrderedList) {
+      htmlParts.push('</ol>');
+      inOrderedList = false;
+    }
+    if (inUnorderedList) {
+      htmlParts.push('</ul>');
+      inUnorderedList = false;
+    }
+  };
+
+  lines.forEach((rawLine) => {
+    const line = rawLine.trim();
+
+    if (!line) {
+      flushParagraph();
+      closeLists();
+      return;
+    }
+
+    const orderedMatch = line.match(/^\d+\.\s+(.*)$/);
+    if (orderedMatch) {
+      flushParagraph();
+      if (inUnorderedList) {
+        htmlParts.push('</ul>');
+        inUnorderedList = false;
+      }
+      if (!inOrderedList) {
+        htmlParts.push('<ol>');
+        inOrderedList = true;
+      }
+      htmlParts.push(`<li>${applyInlineMarkdown(orderedMatch[1])}</li>`);
+      return;
+    }
+
+    const unorderedMatch = line.match(/^[-*]\s+(.*)$/);
+    if (unorderedMatch) {
+      flushParagraph();
+      if (inOrderedList) {
+        htmlParts.push('</ol>');
+        inOrderedList = false;
+      }
+      if (!inUnorderedList) {
+        htmlParts.push('<ul>');
+        inUnorderedList = true;
+      }
+      htmlParts.push(`<li>${applyInlineMarkdown(unorderedMatch[1])}</li>`);
+      return;
+    }
+
+    closeLists();
+    paragraphLines.push(line);
+  });
+
+  flushParagraph();
+  closeLists();
+
+  return htmlParts.join('\n');
 };
 
 /**
@@ -83,8 +219,10 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
   const [audience, setAudience] = useState('general');
   const [tone, setTone] = useState('professional');
   const [length, setLength] = useState('medium');
-  const [model, setModel] = useState('kimi-k2.5');
+  const [model, setModel] = useState('claude-sonnet-4.6');
   const [creativity, setCreativity] = useState(0.7);
+  const [webSearchMode, setWebSearchMode] = useState('basic');
+  const [executionMode, setExecutionMode] = useState('strict');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [generatedContent, setGeneratedContent] = useState(null);
@@ -115,7 +253,9 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
         topic, blog_type: blogType,
         keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
         audience: audience || null, word_count: length, tone, model, creativity,
-        use_web_search: true, save_draft: true, publish_post: false,
+        use_web_search: webSearchMode !== 'off', web_search_mode: webSearchMode,
+        execution_mode: executionMode,
+        save_draft: true, publish_post: false,
       });
       setGeneratedContent(result.blog_post);
       setGenerationTime(result.generation_time);
@@ -125,19 +265,14 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
     } catch (err) {
       setError(err.response?.data?.detail || err.message || 'Generation failed');
     } finally { setGenerating(false); }
-  }, [topic, blogType, keywords, audience, tone, length, model, creativity]);
+  }, [topic, blogType, keywords, audience, tone, length, model, creativity, webSearchMode, executionMode]);
 
   const getContentHtml = useCallback(() => {
     if (!generatedContent) return '';
-    let html = `<h1>${generatedContent.title}</h1>\n`;
+    let html = `<h1>${escapeHtml(generatedContent.title || '')}</h1>\n`;
     generatedContent.sections?.forEach(section => {
-      html += `<h2>${section.heading}</h2>\n`;
-      const bodyHtml = section.body_markdown
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/^/, '<p>').replace(/$/, '</p>');
-      html += bodyHtml + '\n';
+      html += `<h2>${escapeHtml(section.heading || '')}</h2>\n`;
+      html += `${markdownToHtml(section.body_markdown || '')}\n`;
     });
     return html;
   }, [generatedContent]);
@@ -252,6 +387,24 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
               <InputLabel>Model</InputLabel>
               <Select value={model} onChange={(e) => setModel(e.target.value)} label="Model">
                 {options.models.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+
+            {/* Web Search Mode */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Web Search</InputLabel>
+              <Select value={webSearchMode} onChange={(e) => setWebSearchMode(e.target.value)} label="Web Search">
+                {options.web_search_modes?.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>) ?? 
+                  FALLBACK_OPTIONS.web_search_modes.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+
+            {/* Execution Mode */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Execution</InputLabel>
+              <Select value={executionMode} onChange={(e) => setExecutionMode(e.target.value)} label="Execution">
+                {options.execution_modes?.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>) ??
+                  FALLBACK_OPTIONS.execution_modes.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>)}
               </Select>
             </FormControl>
 

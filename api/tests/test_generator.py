@@ -11,7 +11,7 @@ class FakeUsage:
 
 class FakeRunResult:
     def __init__(self, text="<p>Generated content</p>", tokens=123):
-        self.data = text
+        self.output = text
         self._tokens = tokens
 
     def usage(self):

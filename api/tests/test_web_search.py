@@ -5,6 +5,7 @@ Tests for WebSearchService — DuckDuckGo integration.
 import time
 from unittest.mock import patch, MagicMock
 import pytest
+from ddgs.exceptions import DDGSException
 from services.ai.web_search import WebSearchService
 
 
@@ -79,6 +80,20 @@ class TestWebSearchServiceNewsSearch:
         mock_instance.news.assert_called_once_with(
             "AI news", max_results=3, timelimit="w"
         )
+
+    @patch("services.ai.web_search.DDGS")
+    def test_search_news_no_results_logs_info_not_error(self, mock_ddgs, caplog):
+        mock_instance = MagicMock()
+        mock_instance.news.side_effect = DDGSException("No results found.")
+        mock_ddgs.return_value = mock_instance
+
+        svc = WebSearchService(max_results=3)
+        with caplog.at_level("INFO"):
+            results = svc.search_news("very obscure topic", timelimit="w")
+
+        assert results == []
+        assert "returned no results" in caplog.text
+        assert "DuckDuckGo news search failed" not in caplog.text
 
 
 class TestWebSearchServiceTopicSearch:
@@ -198,3 +213,23 @@ class TestWebSearchServiceFormatContext:
         context = svc.format_as_context({"text_results": [], "news_results": []})
 
         assert context == ""
+
+    def test_format_as_context_clips_long_snippets(self):
+        svc = WebSearchService()
+        long_text = "x" * 500
+        search_results = {
+            "text_results": [
+                {
+                    "title": "Long snippet source",
+                    "href": "https://example.com/long",
+                    "body": long_text,
+                }
+            ],
+            "news_results": [],
+        }
+
+        context = svc.format_as_context(search_results)
+
+        assert "Long snippet source" in context
+        assert long_text not in context
+        assert "…" in context

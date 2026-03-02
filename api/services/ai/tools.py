@@ -431,8 +431,8 @@ Target Length: {word_count}
 IMPORTANT: You MUST return a valid JSON object with this exact structure:
 {{
     "title": "Compelling blog post title (50-70 chars)",
-    "slug": "url-friendly-slug-here",
-    "summary": "Brief excerpt/summary for previews (150-200 chars)",
+    "slug": "url-friendly-slug-using-only-lowercase-and-hyphens",
+    "summary": "Brief excerpt/summary of 50-300 characters",
     "sections": [
         {{
             "heading": "Section Heading",
@@ -440,8 +440,8 @@ IMPORTANT: You MUST return a valid JSON object with this exact structure:
         }}
     ],
     "tags": ["tag1", "tag2", "tag3"],
-    "seo_title": "SEO-optimized title (50-60 chars)",
-    "seo_description": "Meta description for search results (150-160 chars)",
+    "seo_title": "SEO-optimized title (50-80 chars)",
+    "seo_description": "Meta description for search results (80-200 chars)",
     "hero_image_prompt": "Detailed prompt for AI image generation"
 }}
 
