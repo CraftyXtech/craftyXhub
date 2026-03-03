@@ -1,5 +1,6 @@
 import json
 import pytest
+from uuid import uuid4
 
 
 @pytest.mark.asyncio
@@ -113,3 +114,33 @@ async def test_delete_permissions(client_author, client_admin):
 
     del_by_admin = await client_admin.delete(f"/v1/posts/{post2['uuid']}")
     assert del_by_admin.status_code == 204, del_by_admin.text
+
+
+@pytest.mark.asyncio
+async def test_record_post_view_counts_once_per_client_window(client_author):
+    create = await client_author.post("/v1/posts/", data={
+        "title": "View Count Test",
+        "content": "<p>Count me</p>",
+        "is_published": "true",
+    })
+    assert create.status_code == 201, create.text
+    post = create.json()
+
+    view1 = await client_author.post(f"/v1/posts/{post['uuid']}/view")
+    assert view1.status_code == 200, view1.text
+    assert view1.json()["counted"] is True
+
+    view2 = await client_author.post(f"/v1/posts/{post['uuid']}/view")
+    assert view2.status_code == 200, view2.text
+    assert view2.json()["counted"] is False
+
+    fetch = await client_author.get(f"/v1/posts/{post['uuid']}")
+    assert fetch.status_code == 200, fetch.text
+    assert fetch.json()["view_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_record_post_view_invalid_uuid_returns_not_counted(client_author):
+    resp = await client_author.post(f"/v1/posts/{uuid4()}/view")
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["counted"] is False

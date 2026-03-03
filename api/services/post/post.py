@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from datetime import datetime, timedelta
+import hashlib
+import time
 from models import Post, Category, Tag, User, Report, Comment
 from models.base import post_likes, post_bookmarks
 from schemas.post import (
@@ -22,7 +24,6 @@ import uuid
 import aiofiles
 import os
 import logging
-import time
 
 logger = logging.getLogger(__name__)
 
@@ -937,16 +938,127 @@ class PostService:
                 detail=f"Failed to restore post: {str(e)}"
             )
 
+    # In-memory dedupe cache fallback: (post_uuid, client_fingerprint) -> timestamp
+    _view_cache: dict = {}
+    VIEW_DEDUP_SECONDS = 1800  # 30 minutes
+    VIEW_DEDUP_REDIS_PREFIX = "post_view_dedup"
+    _view_redis_client = None
+    _view_redis_checked = False
+
+    @staticmethod
+    def _get_view_redis_client():
+        """
+        Best-effort Redis client for cross-process view deduplication.
+        Falls back to in-memory cache when Redis is unavailable.
+        """
+        if PostService._view_redis_checked:
+            return PostService._view_redis_client
+
+        PostService._view_redis_checked = True
+        redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_CACHE_URL")
+        if not redis_url:
+            return None
+
+        try:
+            import redis  # type: ignore
+
+            client = redis.Redis.from_url(
+                redis_url,
+                decode_responses=True,
+                socket_connect_timeout=0.2,
+                socket_timeout=0.2,
+            )
+            client.ping()
+            PostService._view_redis_client = client
+            logger.info("View deduplication using Redis backend")
+        except Exception as exc:
+            PostService._view_redis_client = None
+            logger.warning(
+                "View dedupe Redis unavailable; falling back to in-memory cache: %s",
+                exc,
+            )
+        return PostService._view_redis_client
+
+    @staticmethod
+    def _build_view_dedupe_key(post_uuid: str, client_fingerprint: str) -> str:
+        digest = hashlib.sha256(client_fingerprint.encode("utf-8")).hexdigest()[:24]
+        return f"{PostService.VIEW_DEDUP_REDIS_PREFIX}:{post_uuid}:{digest}"
+
+    @staticmethod
+    async def record_view(
+            session: AsyncSession,
+            post_uuid: str,
+            client_fingerprint: str
+    ) -> bool:
+        """Record a view with deduplication. Returns True if the view is counted."""
+        cache_key = (post_uuid, client_fingerprint)
+        now = time.time()
+
+        redis_client = PostService._get_view_redis_client()
+        redis_key: str | None = None
+        if redis_client is not None:
+            redis_key = PostService._build_view_dedupe_key(post_uuid, client_fingerprint)
+            try:
+                created = redis_client.set(
+                    redis_key,
+                    "1",
+                    ex=PostService.VIEW_DEDUP_SECONDS,
+                    nx=True,
+                )
+                if not created:
+                    return False
+            except Exception as exc:
+                logger.warning(
+                    "Redis view dedupe check failed; falling back to in-memory cache: %s",
+                    exc,
+                )
+                redis_client = None
+                redis_key = None
+
+        if redis_client is None:
+            last_view = PostService._view_cache.get(cache_key)
+            if last_view and (now - last_view) < PostService.VIEW_DEDUP_SECONDS:
+                return False
+
+        counted = await PostService.increment_view_count(session, post_uuid)
+        if not counted:
+            if redis_client is not None and redis_key is not None:
+                try:
+                    redis_client.delete(redis_key)
+                except Exception:
+                    pass
+            return False
+
+        if redis_client is None:
+            PostService._view_cache[cache_key] = now
+
+        # Periodic cleanup of stale entries
+        if len(PostService._view_cache) > 10000:
+            cutoff = now - PostService.VIEW_DEDUP_SECONDS
+            PostService._view_cache = {
+                k: v for k, v in PostService._view_cache.items() if v > cutoff
+            }
+        return True
+
     @staticmethod
     async def increment_view_count(
             session: AsyncSession,
             post_uuid: str
-    ) -> None:
+    ) -> bool:
         try:
-            db_post = await PostService.get_post_by_uuid(session, post_uuid, include_deleted=False)
-            if db_post:
-                db_post.view_count += 1
-                await session.commit()
+            query = select(Post).where(
+                Post.uuid == post_uuid,
+                Post.deleted_at.is_(None),
+                Post.is_flagged.is_(False),
+            )
+            result = await session.execute(query)
+            db_post = result.scalar_one_or_none()
+            if not db_post:
+                return False
+
+            db_post.view_count = (db_post.view_count or 0) + 1
+            await session.commit()
+            return True
         except Exception:
             await session.rollback()
             raise

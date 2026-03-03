@@ -1,6 +1,6 @@
 import os
 import json
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import func
@@ -33,6 +33,27 @@ from fastapi import Form, File, UploadFile
 from models.base import post_bookmarks
 
 router = APIRouter(prefix="/posts", tags=["posts"])
+
+
+def _resolve_client_fingerprint(request: Request) -> str:
+    """
+    Build a proxy-aware client fingerprint for view deduplication.
+
+    IP precedence:
+      1) CF-Connecting-IP
+      2) X-Forwarded-For (first hop)
+      3) X-Real-IP
+      4) request.client.host
+    """
+    ip = (
+        request.headers.get("cf-connecting-ip")
+        or (request.headers.get("x-forwarded-for", "").split(",")[0].strip() or None)
+        or request.headers.get("x-real-ip")
+        or (request.client.host if request.client else None)
+        or "unknown"
+    )
+    user_agent = (request.headers.get("user-agent") or "").strip().lower()[:200]
+    return f"{ip}|{user_agent}"
 
 
 @router.get("/trending/", response_model=PostListResponse)
@@ -304,8 +325,19 @@ async def get_post(
             detail="Post not found"
         )
 
-    await PostService.increment_view_count(session, post.uuid)
     return await PostService.get_post_with_relationships(session, post.id)
+
+
+@router.post("/{post_uuid}/view")
+async def record_post_view(
+        post_uuid: str,
+        request: Request,
+        session: AsyncSession = Depends(get_db_session)
+):
+    """Record a view for analytics. Deduplicates by client fingerprint for 30 minutes."""
+    client_fingerprint = _resolve_client_fingerprint(request)
+    counted = await PostService.record_view(session, post_uuid, client_fingerprint)
+    return {"counted": counted}
 
 
 @router.post("/upload-image", status_code=status.HTTP_200_OK)

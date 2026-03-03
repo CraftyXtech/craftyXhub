@@ -91,3 +91,9 @@ def test_summarize_mode_fails_when_success_rate_below_threshold():
     assert summary["pass"] is False
     assert summary["success_rate"] == 0.9
     assert any("success_rate" in reason for reason in summary["failure_reasons"])
+
+
+def test_parser_accepts_execution_mode_for_backward_compatibility():
+    parser = MODULE.build_parser()
+    args = parser.parse_args(["--execution-mode", "strict"])
+    assert args.execution_mode == "strict"

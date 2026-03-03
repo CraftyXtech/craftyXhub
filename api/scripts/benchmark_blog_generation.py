@@ -160,6 +160,7 @@ async def execute_run(
     per_run_timeout_seconds: float,
 ) -> RunRecord:
     service = BlogAgentService()
+    _ = execution_mode  # Backward-compatible CLI arg; reserved for future routing paths.
     started = time.perf_counter()
 
     try:
@@ -175,7 +176,6 @@ async def execute_run(
                 model=model,
                 creativity=0.6,
                 web_search_mode=mode,
-                execution_mode=execution_mode,
             ),
             timeout=per_run_timeout_seconds,
         )
@@ -313,7 +313,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--modes", type=str, default="off,basic")
     parser.add_argument("--model", type=str, default="glm-5")
     parser.add_argument("--word-count", type=str, default="medium")
-    parser.add_argument("--execution-mode", type=str, default="strict")
+    parser.add_argument(
+        "--execution-mode",
+        type=str,
+        default="strict",
+        help="Backward-compatible no-op. Kept to avoid breaking existing run commands.",
+    )
     parser.add_argument("--latency-slo-seconds", type=float, default=60.0)
     parser.add_argument("--per-run-timeout-seconds", type=float, default=75.0)
     parser.add_argument("--min-success-rate", type=float, default=0.95)
