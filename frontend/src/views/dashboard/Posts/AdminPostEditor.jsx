@@ -39,6 +39,8 @@ import 'tinymce/plugins/link';
 import 'tinymce/plugins/image';
 import 'tinymce/plugins/lists';
 import 'tinymce/plugins/directionality';
+import 'tinymce/plugins/quickbars';
+import 'tinymce/plugins/table';
 
 // TinyMCE skins (UI and content)
 import 'tinymce/skins/ui/oxide/skin.min.css';
@@ -456,9 +458,14 @@ export default function AdminPostEditor() {
                   init={{
                     height: 500,
                     menubar: false,
-                    plugins: 'link lists image directionality',
+                    plugins: 'link lists image directionality quickbars table',
                     toolbar:
                       'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | link insertimage',
+                    // Quickbars — floating toolbar on text selection (Word-style)
+                    quickbars_selection_toolbar: 'bold italic underline | blocks | forecolor backcolor | link blockquote | alignleft aligncenter alignright',
+                    quickbars_insert_toolbar: 'insertimage hr table',
+                    // Context menu — right-click actions
+                    contextmenu: 'cut copy paste selectall | link image table',
                     content_style: [
                       theme.palette.mode === 'dark'
                         ? 'body { font-family: "Open Sans", sans-serif; font-size: 14px; color: #fff; background-color: #1a1a1a; }'
@@ -473,7 +480,7 @@ export default function AdminPostEditor() {
                     content_css: false,
                     object_resizing: 'img',
                     resize_img_proportional: true,
-                    image_advtab: false,
+                    image_advtab: true,
                     setup: (editor) => {
                       // Update word count + auto-excerpt on every keystroke
                       editor.on('keyup change SetContent', () => {
@@ -492,7 +499,7 @@ export default function AdminPostEditor() {
                             if (file) {
                               const reader = new FileReader();
                               reader.addEventListener('load', () => {
-                                editor.insertContent(`<img src="${reader.result}" alt="${file.name}" style="max-width:300px; height:auto;" />`);
+                                editor.insertContent(`<img src="${reader.result}" alt="${file.name}" style="max-width:100%; height:auto;" />`);
                               });
                               reader.readAsDataURL(file);
                             }

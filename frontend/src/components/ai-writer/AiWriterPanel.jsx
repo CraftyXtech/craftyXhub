@@ -73,7 +73,7 @@ const FALLBACK_OPTIONS = {
     { value: 'very-long', label: 'Very Long (~1500+ words)' },
   ],
   models: [
-    { value: 'claude-sonnet-4.6', label: 'Sonnet 4.6' },
+    { value: 'glm-5', label: 'GLM-5' },
   ],
 };
 
@@ -89,7 +89,7 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
   const [audience, setAudience] = useState('general');
   const [tone, setTone] = useState('professional');
   const [length, setLength] = useState('medium');
-  const [model, setModel] = useState('claude-sonnet-4.6');
+  const [model, setModel] = useState('glm-5');
   const [creativity, setCreativity] = useState(0.7);
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
   const [generating, setGenerating] = useState(false);

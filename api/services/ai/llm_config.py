@@ -32,18 +32,10 @@ AVAILABLE_MODELS = {
         "supports_compat_json": True,
         "blog_enabled": True,
     },
-    "deepseek-v3.2": {
-        "id": "deepseek/deepseek-chat-v3-0324",
-        "label": "DeepSeek V3.2",
-        "provider": "DeepSeek",
-        "supports_structured": True,
-        "supports_compat_json": True,
-        "blog_enabled": True,
-    },
-    "qwen3-235b": {
-        "id": "qwen/qwen3-235b-a22b",
-        "label": "Qwen3 235B",
-        "provider": "Alibaba Cloud",
+    "glm-5": {
+        "id": "z-ai/glm-5",
+        "label": "GLM-5",
+        "provider": "Z.AI",
         "supports_structured": False,
         "supports_compat_json": True,
         "blog_enabled": True,
@@ -58,12 +50,11 @@ AVAILABLE_MODELS = {
     },
 }
 
-DEFAULT_MODEL = "claude-sonnet-4.6"
+DEFAULT_MODEL = "glm-5"
 BLOG_FALLBACK_ORDER = [
+    "glm-5",
     "claude-sonnet-4.6",
     "gpt-5.2",
-    "deepseek-v3.2",
-    "qwen3-235b",
     "kimi-k2.5",
 ]
 

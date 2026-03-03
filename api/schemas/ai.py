@@ -7,7 +7,7 @@ from datetime import datetime
 
 class GenerateRequest(BaseModel):
     tool_id: str = Field(..., description="ID from AI_TOOLS")
-    model: str = Field(default="claude-sonnet-4.6", description="AI model name (e.g., claude-sonnet-4.6, gpt-5.2)")
+    model: str = Field(default="glm-5", description="AI model name (e.g., glm-5, claude-sonnet-4.6, gpt-5.2)")
     params: Dict[str, Any] = Field(..., description="Tool-specific fields")
     prompt: Optional[str] = Field(default=None, description="Freeform prompt to use when tool params are incomplete or for generic generation")
     keywords: Optional[List[str] | str] = Field(default=None, description="Primary keywords to guide generation; list or comma-separated string")
@@ -158,8 +158,8 @@ class BlogGenerateRequest(BaseModel):
     tone: Optional[str] = Field(default="professional", description="Writing tone")
     language: Optional[str] = Field(default="en-US", description="Output language")
     model: str = Field(
-        default="claude-sonnet-4.6",
-        description="AI model (claude-sonnet-4.6, gpt-5.2, deepseek-v3.2)"
+        default="glm-5",
+        description="AI model (claude-sonnet-4.6, gpt-5.2, glm-5, kimi-k2.5)"
     )
     creativity: Optional[float] = Field(
         default=0.7, ge=0.0, le=1.0, description="Creativity/temperature"

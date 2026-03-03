@@ -23,7 +23,7 @@ import { axiosPrivate } from '../axios';
  */
 export const generate = async ({
   tool_id,
-  model = 'gpt-5-mini',
+  model = 'glm-5',
   params = {},
   prompt,
   keywords,
@@ -92,7 +92,7 @@ export const generateBlog = async ({
   word_count = 'medium',
   tone = 'professional',
   language = 'en-US',
-  model = 'gpt-5-mini',
+  model = 'glm-5',
   creativity = 0.7,
   web_search = true,
   execution_mode = 'strict',

@@ -460,14 +460,27 @@ export default function BlogDetail() {
                   '& li': { mb: 1 }
                 },
                 '& blockquote': {
-                  borderLeft: 4,
+                  borderLeft: '4px solid',
                   borderColor: 'primary.main',
                   pl: 3,
                   py: 2,
+                  px: 3,
                   my: 3,
-                  bgcolor: 'grey.50',
+                  mx: 0,
+                  bgcolor: 'action.hover',
+                  borderRadius: '0 8px 8px 0',
                   fontStyle: 'italic',
-                  '& p': { mb: 0 }
+                  color: 'text.secondary',
+                  '& p': { mb: 0 },
+                  '& p:first-of-type::before': {
+                    content: '"\\201C"',
+                    fontSize: '2rem',
+                    lineHeight: 0,
+                    verticalAlign: '-0.4em',
+                    mr: 0.5,
+                    color: 'primary.main',
+                    fontWeight: 700,
+                  },
                 },
                 '& pre': {
                   bgcolor: '#1a1a1a',
@@ -501,6 +514,18 @@ export default function BlogDetail() {
                   my: 2,
                   display: 'block',
                 },
+                '& a': {
+                  color: 'primary.main',
+                  textDecoration: 'underline',
+                  textDecorationColor: 'rgba(25, 118, 210, 0.4)',
+                  textUnderlineOffset: '2px',
+                  fontWeight: 500,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    textDecorationColor: 'primary.main',
+                    color: 'primary.dark',
+                  },
+                },
               }}
             >
               <ReactMarkdown
@@ -519,6 +544,16 @@ export default function BlogDetail() {
                         display: 'block',
                       }}
                     />
+                  ),
+                  a: ({ node, href, children, ...props }) => (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      {...props}
+                    >
+                      {children}
+                    </a>
                   ),
                 }}
                 urlTransform={(url) => url}
