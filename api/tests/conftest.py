@@ -3,7 +3,7 @@ import sys
 import pathlib
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
@@ -121,7 +121,10 @@ async def client_author(test_session: AsyncSession, author_user: User):
     app = create_application()
     app.dependency_overrides[get_db_session] = make_db_override(test_session)
     app.dependency_overrides[get_current_active_user] = _make_auth_override(author_user)
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
         yield ac
 
 
@@ -130,7 +133,10 @@ async def client_admin(test_session: AsyncSession, admin_user: User):
     app = create_application()
     app.dependency_overrides[get_db_session] = make_db_override(test_session)
     app.dependency_overrides[get_current_active_user] = _make_auth_override(admin_user)
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
         yield ac
 
 
@@ -141,5 +147,19 @@ async def client_super_admin(test_session: AsyncSession, super_admin_user: User)
     app.dependency_overrides[get_current_active_user] = _make_auth_override(
         super_admin_user
     )
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        yield ac
+
+
+@pytest_asyncio.fixture
+async def client_public(test_session: AsyncSession):
+    app = create_application()
+    app.dependency_overrides[get_db_session] = make_db_override(test_session)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
         yield ac

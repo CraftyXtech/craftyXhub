@@ -1,5 +1,6 @@
 import os
 import secrets
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Depends, HTTPException, status
@@ -8,9 +9,11 @@ from fastapi.responses import RedirectResponse
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import update
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from models import User
+from models.user import PasswordResetToken
 from schemas.user import TokenData
 from database.connection import get_db_session
 from core.config import settings
@@ -27,6 +30,28 @@ class AuthService:
     @staticmethod
     def get_password_hash(password: str) -> str:
         return pwd_context.hash(password)
+
+    @staticmethod
+    def generate_password_reset_token() -> str:
+        return secrets.token_urlsafe(32)
+
+    @staticmethod
+    def hash_opaque_token(token: str) -> str:
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    async def invalidate_password_reset_tokens(
+        session: AsyncSession,
+        user_id: int,
+    ) -> None:
+        await session.execute(
+            update(PasswordResetToken)
+            .where(
+                PasswordResetToken.user_id == user_id,
+                PasswordResetToken.used.is_(False),
+            )
+            .values(used=True)
+        )
 
     @staticmethod
     async def get_user_by_email(session: AsyncSession, email: str) -> Optional[User]:

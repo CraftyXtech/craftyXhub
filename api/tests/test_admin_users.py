@@ -1,7 +1,12 @@
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.user import User, UserRole
+from models import Notification, Post
+from models.ai_draft import AIDraft
+from models.user import Media, MediaType, Profile, User, UserRole, UserRoleChange
+from schemas.notification import NotificationType
+from services.user.auth import AuthService
 
 
 @pytest.mark.asyncio
@@ -214,3 +219,198 @@ async def test_admin_user_stats_endpoint(client_admin, test_session: AsyncSessio
     ]:
         assert key in data
 
+
+@pytest.mark.asyncio
+async def test_admin_cannot_deactivate_admin_account(
+    client_admin, test_session: AsyncSession
+):
+    target_admin = User(
+        email="target-admin-status@example.com",
+        username="targetadminstatus",
+        full_name="Target Admin Status",
+        password="hashed",
+        role=UserRole.ADMIN,
+        is_active=True,
+    )
+    test_session.add(target_admin)
+    await test_session.commit()
+    await test_session.refresh(target_admin)
+
+    response = await client_admin.patch(
+        f"/v1/admin/users/{target_admin.uuid}/status", json={"is_active": False}
+    )
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_admin_can_reset_regular_user_password(
+    client_admin, test_session: AsyncSession
+):
+    target = User(
+        email="password-user@example.com",
+        username="passworduser",
+        full_name="Password User",
+        password=AuthService.get_password_hash("oldpassword123"),
+        role=UserRole.USER,
+        is_active=True,
+    )
+    test_session.add(target)
+    await test_session.commit()
+    await test_session.refresh(target)
+
+    response = await client_admin.put(
+        f"/v1/admin/users/{target.uuid}/password",
+        json={"new_password": "newpassword123", "confirm_password": "newpassword123"},
+    )
+    assert response.status_code == 200
+    await test_session.refresh(target)
+    assert AuthService.verify_password("newpassword123", target.password)
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_reset_admin_password(
+    client_admin, test_session: AsyncSession
+):
+    target = User(
+        email="password-admin@example.com",
+        username="passwordadmin",
+        full_name="Password Admin",
+        password=AuthService.get_password_hash("oldpassword123"),
+        role=UserRole.ADMIN,
+        is_active=True,
+    )
+    test_session.add(target)
+    await test_session.commit()
+    await test_session.refresh(target)
+
+    response = await client_admin.put(
+        f"/v1/admin/users/{target.uuid}/password",
+        json={"new_password": "newpassword123", "confirm_password": "newpassword123"},
+    )
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_super_admin_can_reset_admin_password(
+    client_super_admin, test_session: AsyncSession
+):
+    target = User(
+        email="password-admin-super@example.com",
+        username="passwordadminsuper",
+        full_name="Password Admin Super",
+        password=AuthService.get_password_hash("oldpassword123"),
+        role=UserRole.ADMIN,
+        is_active=True,
+    )
+    test_session.add(target)
+    await test_session.commit()
+    await test_session.refresh(target)
+
+    response = await client_super_admin.put(
+        f"/v1/admin/users/{target.uuid}/password",
+        json={"new_password": "newpassword123", "confirm_password": "newpassword123"},
+    )
+    assert response.status_code == 200
+    await test_session.refresh(target)
+    assert AuthService.verify_password("newpassword123", target.password)
+
+
+@pytest.mark.asyncio
+async def test_admin_can_permanently_delete_regular_user_and_owned_content(
+    client_admin,
+    test_session: AsyncSession,
+    admin_user: User,
+    tmp_path,
+):
+    avatar_path = tmp_path / "avatar.png"
+    avatar_path.write_text("avatar")
+    media_path = tmp_path / "media.txt"
+    media_path.write_text("media")
+    featured_path = tmp_path / "featured.jpg"
+    featured_path.write_text("featured")
+
+    target = User(
+        email="purge-user@example.com",
+        username="purgeuser",
+        full_name="Purge User",
+        password=AuthService.get_password_hash("oldpassword123"),
+        role=UserRole.USER,
+        is_active=True,
+    )
+    test_session.add(target)
+    await test_session.commit()
+    await test_session.refresh(target)
+
+    profile = Profile(user_id=target.id, avatar=str(avatar_path))
+    post = Post(
+        title="Purge Post",
+        slug="purge-post",
+        content="content",
+        author_id=target.id,
+        featured_image=str(featured_path),
+    )
+    draft = AIDraft(user_id=target.id, name="Draft", content="draft content")
+    media = Media(
+        user_id=target.id,
+        file_path=str(media_path),
+        file_name="media.txt",
+        file_type=MediaType.DOCUMENT,
+        file_size=5,
+        mime_type="text/plain",
+    )
+    notification = Notification(
+        recipient_id=target.id,
+        sender_id=admin_user.id,
+        notification_type=NotificationType.WELCOME,
+        title="Welcome",
+        message="hello",
+    )
+    role_change = UserRoleChange(
+        user_id=target.id,
+        changed_by_id=admin_user.id,
+        old_role="user",
+        new_role="moderator",
+    )
+    test_session.add_all([profile, post, draft, media, notification, role_change])
+    await test_session.commit()
+    await test_session.refresh(post)
+
+    response = await client_admin.delete(f"/v1/admin/users/{target.uuid}/permanent")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["deleted_user_uuid"] == target.uuid
+    assert body["deleted_counts"]["users"] == 1
+    assert body["deleted_counts"]["posts"] == 1
+    assert body["deleted_counts"]["ai_drafts"] == 1
+    assert body["deleted_counts"]["profiles"] == 1
+    assert body["deleted_counts"]["media"] == 1
+    assert body["deleted_counts"]["user_role_changes"] == 1
+    assert body["failed_file_cleanup"] == []
+    assert not avatar_path.exists()
+    assert not media_path.exists()
+    assert not featured_path.exists()
+
+    deleted_user = await test_session.get(User, target.id)
+    assert deleted_user is None
+    posts = (await test_session.execute(select(Post).where(Post.author_id == target.id))).scalars().all()
+    assert posts == []
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_permanently_delete_admin_account(
+    client_admin, test_session: AsyncSession
+):
+    target = User(
+        email="purge-admin@example.com",
+        username="purgeadmin",
+        full_name="Purge Admin",
+        password=AuthService.get_password_hash("oldpassword123"),
+        role=UserRole.ADMIN,
+        is_active=True,
+    )
+    test_session.add(target)
+    await test_session.commit()
+    await test_session.refresh(target)
+
+    response = await client_admin.delete(f"/v1/admin/users/{target.uuid}/permanent")
+    assert response.status_code == 403

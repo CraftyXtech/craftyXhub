@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, timedelta
+import logging
 from typing import Optional
-import secrets
 from core.config import settings
 from database.connection import get_db_session
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -18,6 +18,7 @@ from sqlalchemy import select, or_
 
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -202,12 +203,6 @@ async def reset_password(
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
 ):
-    if request.new_password != request.confirm_new_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="New passwords do not match"
-        )
-
     if not AuthService.verify_password(request.current_password, current_user.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -216,6 +211,7 @@ async def reset_password(
 
     current_user.password = AuthService.get_password_hash(request.new_password)
     current_user.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    await AuthService.invalidate_password_reset_tokens(session, current_user.id)
     await session.commit()
 
     return {"message": "Password updated successfully"}
@@ -236,31 +232,35 @@ async def request_password_reset(
     For now, returns success regardless of whether email exists (security best practice).
     """
     user = await AuthService.get_user_by_email(session, request_data.email)
-    
-    if user:
-        # Generate a secure token
-        token = secrets.token_urlsafe(32)
-        
-        # Create password reset token (expires in 1 hour)
+    debug_reset_token = None
+    debug_reset_url = None
+
+    if user and user.is_active:
+        token = AuthService.generate_password_reset_token()
+        await AuthService.invalidate_password_reset_tokens(session, user.id)
         reset_token = PasswordResetToken(
             user_id=user.id,
-            token=token,
-            expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=1)
+            token=AuthService.hash_opaque_token(token),
+            expires_at=(
+                datetime.now(timezone.utc).replace(tzinfo=None)
+                + timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+            ),
         )
         session.add(reset_token)
         await session.commit()
-        
-        # TODO: Send email with reset link
-        # In production, you would send an email like:
-        # reset_url = f"{settings.FRONTEND_URL}/auth/reset-password?token={token}"
-        # await send_password_reset_email(user.email, reset_url)
-        
-        print(f"[DEV] Password reset token for {user.email}: {token}")
-    
+
+        reset_url = f"{settings.FRONTEND_URL.rstrip('/')}/auth/reset-password?token={token}"
+        logger.info("Issued password reset token for user_id=%s", user.id)
+        if settings.AUTH_DEBUG_EXPOSE_RESET_TOKEN:
+            debug_reset_token = token
+            debug_reset_url = reset_url
+
     # Always return success to prevent email enumeration attacks
     return PasswordResetResponse(
         message="If an account with that email exists, a password reset link has been sent.",
-        success=True
+        success=True,
+        debug_reset_token=debug_reset_token,
+        debug_reset_url=debug_reset_url,
     )
 
 
@@ -274,9 +274,15 @@ async def confirm_password_reset(
     Validates the token and updates the user's password.
     """
     # Find the token
+    hashed_token = AuthService.hash_opaque_token(request_data.token)
     result = await session.execute(
         select(PasswordResetToken)
-        .where(PasswordResetToken.token == request_data.token)
+        .where(
+            or_(
+                PasswordResetToken.token == hashed_token,
+                PasswordResetToken.token == request_data.token,
+            )
+        )
         .where(PasswordResetToken.used.is_(False))
     )
     reset_token = result.scalar_one_or_none()
@@ -289,6 +295,8 @@ async def confirm_password_reset(
     
     # Check if token is expired
     if reset_token.expires_at < datetime.now(timezone.utc).replace(tzinfo=None):
+        reset_token.used = True
+        await session.commit()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Reset token has expired"
@@ -296,19 +304,17 @@ async def confirm_password_reset(
     
     # Get the user
     user = await AuthService.get_user_by_id(session, reset_token.user_id)
-    if not user:
+    if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User not found"
+            detail="Invalid or expired reset token"
         )
     
     # Update password
     user.password = AuthService.get_password_hash(request_data.new_password)
     user.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     
-    # Mark token as used
-    reset_token.used = True
-    
+    await AuthService.invalidate_password_reset_tokens(session, user.id)
     await session.commit()
     
     return PasswordResetResponse(

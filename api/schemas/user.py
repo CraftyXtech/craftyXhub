@@ -13,6 +13,12 @@ from enum import Enum
 from uuid import UUID
 from .base import TimestampMixin, BaseSchema
 
+
+def _validate_password_strength(value: str) -> str:
+    if len(value) < 8:
+        raise ValueError("Password must be at least 8 characters long")
+    return value
+
 class UserRole(str, Enum):
     SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
@@ -39,9 +45,7 @@ class UserCreate(UserBase):
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters long")
-        return v
+        return _validate_password_strength(v)
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -84,6 +88,18 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
     confirm_new_password: str
 
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        return _validate_password_strength(v)
+
+    @field_validator("confirm_new_password")
+    @classmethod
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
+        if info.data.get("new_password") and v != info.data["new_password"]:
+            raise ValueError("Passwords do not match")
+        return v
+
 
 class PasswordResetRequestEmail(BaseModel):
     """Request password reset via email (public endpoint)"""
@@ -95,7 +111,29 @@ class PasswordResetConfirm(BaseModel):
     token: str
     new_password: str = Field(..., min_length=8)
     confirm_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        return _validate_password_strength(v)
     
+    @field_validator("confirm_password")
+    @classmethod
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
+        if info.data.get("new_password") and v != info.data["new_password"]:
+            raise ValueError("Passwords do not match")
+        return v
+
+
+class AdminPasswordResetRequest(BaseModel):
+    new_password: str
+    confirm_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        return _validate_password_strength(v)
+
     @field_validator("confirm_password")
     @classmethod
     def passwords_match(cls, v: str, info: ValidationInfo) -> str:
@@ -113,6 +151,8 @@ class PasswordResetResponse(BaseModel):
     """Response for password reset operations"""
     message: str
     success: bool = True
+    debug_reset_token: Optional[str] = None
+    debug_reset_url: Optional[str] = None
     
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
@@ -256,3 +296,10 @@ class UserRoleChangeListResponse(BaseModel):
     pages: int
     has_next: bool
     has_prev: bool
+
+
+class AdminUserDeletionResponse(BaseModel):
+    message: str
+    deleted_user_uuid: str
+    deleted_counts: dict[str, int]
+    failed_file_cleanup: List[str] = Field(default_factory=list)

@@ -25,8 +25,14 @@ class Settings:
 
     # Token expiry: 1440 minutes = 24 hours (adjust for production as needed)
     ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES = int(
+        os.getenv("PASSWORD_RESET_TOKEN_EXPIRE_MINUTES", "60")
+    )
     SECRET_KEY = os.getenv("SECRET_KEY")
     ALGORITHM = os.getenv("ALGORITHM", "HS256")
+    AUTH_DEBUG_EXPOSE_RESET_TOKEN: bool = (
+        os.getenv("AUTH_DEBUG_EXPOSE_RESET_TOKEN", "false").lower() == "true"
+    )
 
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
     API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")

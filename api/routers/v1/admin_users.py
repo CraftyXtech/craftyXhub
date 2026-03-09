@@ -1,5 +1,5 @@
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -11,10 +11,13 @@ from database.connection import get_db_session
 from models import User
 from models.user import UserRole as DBUserRole, UserRoleChange
 from schemas.user import (
+    AdminPasswordResetRequest,
+    AdminUserDeletionResponse,
     AdminUserListResponse,
     AdminUserResponse,
     AdminUserStatsResponse,
     AdminUserUpdate,
+    PasswordResetResponse,
     UserRole as SchemaUserRole,
     UserRoleUpdate,
     UserStatusUpdate,
@@ -25,6 +28,7 @@ from services.user.auth import (
     get_current_admin_or_moderator,
     get_current_admin_only,
 )
+from services.user.admin_user_management import AdminUserManagementService
 from services.user.role_change import RoleChangeService
 
 
@@ -114,7 +118,9 @@ async def get_user_statistics(
     moderator_count = role_counts.get(SchemaUserRole.MODERATOR.value, 0)
     user_count = role_counts.get(SchemaUserRole.USER.value, 0)
 
-    recent_threshold = datetime.utcnow() - timedelta(days=30)
+    recent_threshold = (
+        datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=30)
+    )
     recent_registrations = await session.scalar(
         select(func.count())
         .select_from(User)
@@ -199,35 +205,15 @@ async def change_user_role(
     current_admin: User = Depends(get_current_admin_only),
 ) -> AdminUserResponse:
     user = await _get_user_or_404(session, user_uuid)
-
-    if user.id == current_admin.id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You cannot modify your own role",
-        )
-
-    # Admins can change roles; only super-admins can promote to super_admin
     target_new_role = DBUserRole(payload.role.value)
-
-    if current_admin.role == DBUserRole.ADMIN and target_new_role == DBUserRole.SUPER_ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only super-admins can promote users to super-admin",
-        )
+    await AdminUserManagementService.ensure_role_change_allowed(
+        session,
+        actor=current_admin,
+        target=user,
+        new_role=target_new_role,
+    )
 
     target_old_role = user.role
-
-    # Prevent demoting the last super-admin
-    if target_old_role == DBUserRole.SUPER_ADMIN and target_new_role != DBUserRole.SUPER_ADMIN:
-        # Count how many super-admins exist
-        total_super_admins = await session.scalar(
-            select(func.count()).select_from(User).where(User.role == DBUserRole.SUPER_ADMIN)
-        )
-        if total_super_admins is not None and total_super_admins <= 1:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot demote the last super-admin",
-            )
 
     old_role_value = getattr(target_old_role, "value", str(target_old_role))
     new_role_value = getattr(target_new_role, "value", str(target_new_role))
@@ -257,9 +243,15 @@ async def toggle_user_status(
     user_uuid: str,
     payload: UserStatusUpdate,
     session: AsyncSession = Depends(get_db_session),
-    _: User = Depends(get_current_admin_or_moderator),
+    current_admin: User = Depends(get_current_admin_only),
 ) -> AdminUserResponse:
     user = await _get_user_or_404(session, user_uuid)
+    await AdminUserManagementService.ensure_can_manage_target(
+        session,
+        actor=current_admin,
+        target=user,
+        action="change the status of",
+    )
     user.is_active = payload.is_active
 
     await session.commit()
@@ -274,9 +266,15 @@ async def toggle_user_status(
 async def deactivate_user(
     user_uuid: str,
     session: AsyncSession = Depends(get_db_session),
-    _: User = Depends(get_current_admin_or_moderator),
+    current_admin: User = Depends(get_current_admin_only),
 ) -> dict:
     user = await _get_user_or_404(session, user_uuid)
+    await AdminUserManagementService.ensure_can_manage_target(
+        session,
+        actor=current_admin,
+        target=user,
+        action="deactivate",
+    )
 
     if not user.is_active:
         return {"message": "User is already inactive"}
@@ -285,6 +283,67 @@ async def deactivate_user(
     await session.commit()
 
     return {"message": "User deactivated successfully"}
+
+
+@router.put(
+    "/{user_uuid}/password",
+    response_model=PasswordResetResponse,
+    summary="Reset a user's password",
+)
+async def reset_user_password(
+    user_uuid: str,
+    payload: AdminPasswordResetRequest,
+    session: AsyncSession = Depends(get_db_session),
+    current_admin: User = Depends(get_current_admin_only),
+) -> PasswordResetResponse:
+    user = await _get_user_or_404(session, user_uuid)
+    await AdminUserManagementService.ensure_can_manage_target(
+        session,
+        actor=current_admin,
+        target=user,
+        action="reset the password for",
+    )
+
+    user.password = AuthService.get_password_hash(payload.new_password)
+    user.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    await AuthService.invalidate_password_reset_tokens(session, user.id)
+    await session.commit()
+
+    return PasswordResetResponse(
+        message="User password reset successfully.",
+        success=True,
+    )
+
+
+@router.delete(
+    "/{user_uuid}/permanent",
+    response_model=AdminUserDeletionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Permanently delete a user account and owned content",
+)
+async def permanently_delete_user(
+    user_uuid: str,
+    session: AsyncSession = Depends(get_db_session),
+    current_admin: User = Depends(get_current_admin_only),
+) -> AdminUserDeletionResponse:
+    user = await _get_user_or_404(session, user_uuid)
+    await AdminUserManagementService.ensure_can_manage_target(
+        session,
+        actor=current_admin,
+        target=user,
+        action="permanently delete",
+    )
+
+    result = await AdminUserManagementService.permanently_delete_user(
+        session,
+        user=user,
+    )
+    return AdminUserDeletionResponse(
+        message="User permanently deleted successfully.",
+        deleted_user_uuid=result["deleted_user"]["uuid"],
+        deleted_counts=result["deleted_counts"],
+        failed_file_cleanup=result["failed_file_cleanup"],
+    )
 
 
 @router.get(
@@ -386,4 +445,3 @@ def _resolve_sort_clause(sort: Optional[str]):
         "-full_name": User.full_name.desc(),
     }
     return mapping.get(sort or "-created_at", User.created_at.desc())
-
