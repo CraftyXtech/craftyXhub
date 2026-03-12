@@ -59,6 +59,21 @@ export const getPost = async (postUuid) => {
 };
 
 /**
+ * Record a public view for analytics (IP-deduplicated, works for anonymous visitors)
+ * @param {string} postUuid - Post UUID
+ * @returns {Promise<object>} { counted: boolean }
+ */
+export const recordPublicView = async (postUuid) => {
+  try {
+    const response = await axiosPublic.post(`/posts/${postUuid}/view`);
+    return response.data;
+  } catch {
+    // Silently fail — analytics should never block the user
+    return { counted: false };
+  }
+};
+
+/**
  * Get a single post by slug
  * First tries to get by UUID (in case slug is a uuid), 
  * then fallback to querying posts list and finding match

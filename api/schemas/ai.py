@@ -1,13 +1,13 @@
 import re
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional, List, Dict, Any, Literal
 from datetime import datetime
 
 
 class GenerateRequest(BaseModel):
     tool_id: str = Field(..., description="ID from AI_TOOLS")
-    model: str = Field(default="glm-5", description="AI model name (e.g., glm-5, claude-sonnet-4.6, gpt-5.2)")
+    model: str = Field(default="claude-sonnet-4.6", description="AI model name (e.g., claude-sonnet-4.6, gpt-5.2)")
     params: Dict[str, Any] = Field(..., description="Tool-specific fields")
     prompt: Optional[str] = Field(default=None, description="Freeform prompt to use when tool params are incomplete or for generic generation")
     keywords: Optional[List[str] | str] = Field(default=None, description="Primary keywords to guide generation; list or comma-separated string")
@@ -62,7 +62,8 @@ class DraftResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 
 class DraftListResponse(BaseModel):
@@ -158,19 +159,15 @@ class BlogGenerateRequest(BaseModel):
     tone: Optional[str] = Field(default="professional", description="Writing tone")
     language: Optional[str] = Field(default="en-US", description="Output language")
     model: str = Field(
-        default="glm-5",
-        description="AI model (claude-sonnet-4.6, gpt-5.2, glm-5, kimi-k2.5)"
+        default="claude-sonnet-4.6",
+        description="AI model (claude-sonnet-4.6, gpt-5.2, deepseek-v3.2)"
     )
     creativity: Optional[float] = Field(
         default=0.7, ge=0.0, le=1.0, description="Creativity/temperature"
     )
-    web_search: Optional[bool] = Field(
-        default=True,
-        description="Enable web search grounding (DuckDuckGo) when true"
-    )
-    web_search_mode: Optional[Literal["off", "basic"]] = Field(
-        default=None,
-        description="Deprecated mode field. Use web_search boolean instead."
+    web_search_mode: Optional[Literal["off", "basic", "enhanced", "full"]] = Field(
+        default="basic",
+        description="Web search mode: off, basic (DuckDuckGo), enhanced (OpenRouter :online), full (both)"
     )
     # Save/publish options
     save_draft: Optional[bool] = Field(
@@ -208,3 +205,4 @@ class BlogGenerateResponse(BaseModel):
         default=None,
         description="Deterministic quality analysis report (readability, SEO, style)",
     )
+

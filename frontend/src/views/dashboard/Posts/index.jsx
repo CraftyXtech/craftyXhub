@@ -362,7 +362,7 @@ export default function Posts() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">{post.views_count || 0}</Typography>
+                      <Typography variant="body2">{post.view_count || 0}</Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">

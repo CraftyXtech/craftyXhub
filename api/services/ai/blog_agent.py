@@ -12,11 +12,13 @@ import re
 import time
 from typing import Any, Optional
 
-from pydantic_ai import Agent
+from pydantic_ai import Agent, RunContext
+from pydantic_ai.models.openai import OpenAIModel
 
+from core.config import settings
 from schemas.ai import BlogPost, BlogSection
 from .tools import ToolHandler
-from .llm_config import get_model, DEFAULT_MODEL
+from .llm_config import get_model, get_model_with_online, DEFAULT_MODEL
 from .quality_tools import (
     analyze_readability,
     extract_blog_plaintext,
@@ -157,7 +159,7 @@ class BlogAgentService:
         """
         Research phase: gather external context using DuckDuckGo when enabled.
         """
-        use_ddg = web_search_mode == "basic"
+        use_ddg = web_search_mode in ("basic", "full")
         web_context = ""
         web_search_used = False
         sources: list[dict] | None = None
@@ -179,6 +181,20 @@ class BlogAgentService:
             logger.warning(f"DuckDuckGo search failed, proceeding without: {e}")
 
         return web_context, sources, web_search_used
+
+    def _select_model_phase(self, model: str, web_search_mode: str):
+        """
+        Model selection phase: optionally enable OpenRouter online grounding.
+        """
+        use_online = web_search_mode in ("enhanced", "full")
+        if use_online:
+            try:
+                logger.info(f"Using OpenRouter :online model for: {model}")
+                return get_model_with_online(model), True
+            except Exception as e:
+                logger.warning(f":online model failed, falling back to standard: {e}")
+                return self._get_model_for_name(model), False
+        return self._get_model_for_name(model), False
 
     async def _draft_phase(
         self,
@@ -432,23 +448,6 @@ class BlogAgentService:
 
         return payload or None
 
-    @staticmethod
-    def _extract_result_output(run_result: Any) -> Any:
-        return run_result.output
-
-    def _create_agent(
-        self,
-        pydantic_model,
-        output_schema: Any,
-        retries: int,
-    ) -> Agent:
-        return Agent(
-            pydantic_model,
-            system_prompt=self.system_prompt,
-            retries=retries,
-            output_type=output_schema,
-        )
-
     async def _run_generation_once(
         self,
         pydantic_model,
@@ -460,9 +459,10 @@ class BlogAgentService:
         # Some OpenRouter-routed models return 404 for tool_choice; we catch
         # that gracefully and fall back to plain-text + JSON-parse.
         try:
-            agent = self._create_agent(
-                pydantic_model=pydantic_model,
-                output_schema=BlogPost,
+            agent = Agent(
+                pydantic_model,
+                result_type=BlogPost,
+                system_prompt=self.system_prompt,
                 retries=self._structured_retries,
             )
 
@@ -473,8 +473,7 @@ class BlogAgentService:
                     "max_tokens": self._get_max_tokens(word_count),
                 },
             )
-            blog_post = self._extract_result_output(result)
-            return blog_post, self._extract_usage_payload(result)
+            return result.data, self._extract_usage_payload(result)
         except Exception as structured_error:
             # Log the structured-output failure (often a tool_choice 404 from
             # OpenRouter) and proceed to text-based fallback.
@@ -503,9 +502,10 @@ class BlogAgentService:
                 if attempt > 1:
                     await asyncio.sleep(attempt * 2)
 
-                agent = self._create_agent(
-                    pydantic_model=pydantic_model,
-                    output_schema=str,
+                agent = Agent(
+                    pydantic_model,
+                    result_type=str,
+                    system_prompt=self.system_prompt,
                     retries=1,
                 )
 
@@ -517,8 +517,7 @@ class BlogAgentService:
                     },
                 )
 
-                result_output = self._extract_result_output(result)
-                raw = result_output if isinstance(result_output, str) else ""
+                raw = result.data if isinstance(result.data, str) else ""
                 if not raw.strip():
                     raise ValueError("Received empty model response")
 
@@ -656,7 +655,9 @@ class BlogAgentService:
 
         web_search_mode:
             - "off"      — no web search
-            - "basic"    — DuckDuckGo context injection
+            - "basic"    — DuckDuckGo context injection (free)
+            - "enhanced" — OpenRouter :online native grounding
+            - "full"     — both DuckDuckGo + :online
         
         Returns:
             Tuple of (BlogPost, generation_time, web_search_used, sources)
@@ -670,8 +671,8 @@ class BlogAgentService:
             "usage": {},
             "revision_applied": False,
             "web_grounding": {
-                "ddg_attempted": False,
                 "ddg_used": False,
+                "online_used": False,
             },
         }
 
@@ -685,9 +686,6 @@ class BlogAgentService:
         web_search_used = web_search_used or ddg_used
         self._last_phase_metrics["timings_ms"]["research"] = round(
             (time.perf_counter() - phase_start) * 1000, 2
-        )
-        self._last_phase_metrics["web_grounding"]["ddg_attempted"] = (
-            web_search_mode == "basic"
         )
         self._last_phase_metrics["web_grounding"]["ddg_used"] = ddg_used
 
@@ -719,10 +717,15 @@ class BlogAgentService:
 
         # ── Phase 3: Model Selection + Draft ────────────────────────
         phase_start = time.perf_counter()
-        pydantic_model = self._get_model_for_name(model)
+        pydantic_model, online_used = self._select_model_phase(
+            model=model,
+            web_search_mode=web_search_mode,
+        )
+        web_search_used = web_search_used or online_used
         self._last_phase_metrics["timings_ms"]["model_selection"] = round(
             (time.perf_counter() - phase_start) * 1000, 2
         )
+        self._last_phase_metrics["web_grounding"]["online_used"] = online_used
 
         phase_start = time.perf_counter()
         draft_post, draft_usage = await self._draft_phase(

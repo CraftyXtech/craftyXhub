@@ -59,14 +59,13 @@ async def test_chat(
         pydantic_model = get_model(DEFAULT_MODEL)
         agent = Agent(
             pydantic_model,
+            result_type=str,
             system_prompt="You are a friendly and helpful AI assistant. Keep responses concise and engaging.",
-            output_type=str,
         )
 
         result = await agent.run(
             message, model_settings={"temperature": 0.8, "max_tokens": 500}
         )
-        response_text = result.output
 
         response_time = time.time() - start_time
 
@@ -78,7 +77,7 @@ async def test_chat(
 
         return {
             "message": message,
-            "response": response_text,
+            "response": result.data,
             "model": DEFAULT_MODEL,
             "response_time": round(response_time, 2),
             "tokens_used": tokens_used,
@@ -286,7 +285,9 @@ async def get_blog_options():
         "models": models,
         "web_search_modes": [
             {"value": "off", "label": "Off"},
-            {"value": "basic", "label": "On"},
+            {"value": "basic", "label": "Basic"},
+            {"value": "enhanced", "label": "Enhanced"},
+            {"value": "full", "label": "Full"},
         ],
     }
 
@@ -314,16 +315,11 @@ async def generate_blog(
     Options:
     - save_draft: Save the generated content as an AI draft
     - publish_post: Create a post directly in the Posts system
-    - web_search: Toggle research grounding on/off (DuckDuckGo)
+    - web_search_mode: Control research grounding (off/basic/enhanced/full)
     """
     try:
         # Initialize the blog agent service
         blog_agent = BlogAgentService()
-        web_search_mode = (
-            request.web_search_mode
-            if request.web_search_mode is not None
-            else ("basic" if request.web_search is not False else "off")
-        )
 
         # Generate the blog post
         blog_post, generation_time, web_search_used, sources = await blog_agent.generate(
@@ -336,7 +332,7 @@ async def generate_blog(
             language=request.language or "en-US",
             model=request.model,
             creativity=request.creativity or 0.7,
-            web_search_mode=web_search_mode,
+            web_search_mode=request.web_search_mode or "basic",
         )
 
         quality_report = blog_agent.build_quality_report(
@@ -416,7 +412,7 @@ async def generate_blog(
                     "ai_generation": {
                         "generator": "blog-agent",
                         "model": request.model,
-                        "web_search_mode": web_search_mode,
+                        "web_search_mode": request.web_search_mode or "basic",
                         "web_search_used": web_search_used,
                         "search_sources_count": len(sources or []),
                         "generated_at": datetime.now(timezone.utc).isoformat(),

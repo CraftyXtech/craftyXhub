@@ -33,7 +33,7 @@ import {
 import CommentSection from '@/components/CommentSection';
 import Sidebar from '@/components/Blog/Sidebar';
 import SaveToListMenu from '@/components/SaveToListMenu';
-import { getPostBySlug, getRelatedPosts, togglePostLike, bookmarkPost } from '@/api/services/postService';
+import { getPostBySlug, getRelatedPosts, togglePostLike, bookmarkPost, recordPublicView } from '@/api/services/postService';
 import { getCategoryBySlug } from '@/api/services/categoryService';
 import { getImageUrl } from '@/api/utils/imageUrl';
 import { recordPostView } from '@/api/services/collectionService';
@@ -238,14 +238,21 @@ export default function BlogDetail() {
     fetchPost();
   }, [slug]);
 
-  // Track reading history when post loads
+  // Record public view count (works for ALL visitors, IP-deduplicated on backend)
+  useEffect(() => {
+    if (post?.uuid) {
+      recordPublicView(post.uuid);
+    }
+  }, [post?.uuid]);
+
+  // Track reading history for authenticated users
   useEffect(() => {
     if (post?.uuid && isAuthenticated) {
       recordPostView(post.uuid).catch(err => {
         console.error('Failed to record view:', err);
       });
     }
-  }, [slug]);
+  }, [post?.uuid, isAuthenticated]);
 
   const handleLike = async () => {
     if (!isAuthenticated) {

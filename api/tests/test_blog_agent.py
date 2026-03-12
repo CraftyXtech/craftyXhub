@@ -6,7 +6,7 @@ from services.ai.blog_agent import BlogAgentService
 
 class _FakeResult:
     def __init__(self, data):
-        self.output = data
+        self.data = data
 
 
 class _FakeAgent:
@@ -26,11 +26,11 @@ class _FakeAgent:
 class _FallbackRetryAgent:
     text_attempt_count = 0
 
-    def __init__(self, *args, output_type=None, **kwargs):
-        self.output_type = output_type
+    def __init__(self, *args, result_type=None, **kwargs):
+        self.result_type = result_type
 
     async def run(self, prompt, model_settings=None):
-        if self.output_type is BlogPost:
+        if self.result_type is BlogPost:
             raise Exception("Exceeded maximum retries (1) for result validation")
 
         _FallbackRetryAgent.text_attempt_count += 1
@@ -175,24 +175,22 @@ def test_build_outline_guidance_contains_keywords_and_sections():
     assert "Official docs" in guidance
 
 
-def test_research_phase_skips_search_when_off(monkeypatch):
+def test_select_model_phase_falls_back_when_online_unavailable(monkeypatch):
     service = BlogAgentService()
 
-    class _FailSearchService:
-        def __init__(self, *args, **kwargs):
-            raise AssertionError("WebSearchService should not be initialized when off")
+    def _fail_online(_model_name):
+        raise ValueError("online unavailable")
 
-    monkeypatch.setattr("services.ai.blog_agent.WebSearchService", _FailSearchService)
+    monkeypatch.setattr("services.ai.blog_agent.get_model_with_online", _fail_online)
+    monkeypatch.setattr(BlogAgentService, "_get_model_for_name", lambda self, model_name: object())
 
-    web_context, sources, web_search_used = service._research_phase(
-        topic="Build a reliable AI blog writer",
-        keywords=["pydantic ai", "blog writer"],
-        web_search_mode="off",
+    model_obj, used_online = service._select_model_phase(
+        model="claude-sonnet-4.6",
+        web_search_mode="enhanced",
     )
 
-    assert web_context == ""
-    assert sources is None
-    assert web_search_used is False
+    assert model_obj is not None
+    assert used_online is False
 
 
 def test_collect_quality_issues_flags_ai_tropes():

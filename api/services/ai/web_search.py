@@ -31,38 +31,15 @@ def _probe_impersonate(browser: str) -> bool:
             return False
     return "does not exist" not in buf.getvalue()
 
-def _patch_ddgs_impersonates() -> None:
-    """
-    Best-effort shim for ddgs/primp mismatches.
-
-    Newer ddgs versions may not expose ``HttpClient._impersonates``. In that
-    case we skip patching instead of failing at import time.
-    """
-    candidates = getattr(_DdgsHttpClient, "_impersonates", None)
-    if not candidates:
-        logger.debug(
-            "ddgs HttpClient exposes no _impersonates; skipping primp shim"
-        )
-        return
-
-    supported = tuple(browser for browser in candidates if _probe_impersonate(browser))
-    if not supported:
-        logger.debug(
-            "ddgs/primp shim found no supported impersonate candidates; leaving defaults unchanged"
-        )
-        return
-
-    if len(supported) < len(candidates):
-        removed = set(candidates) - set(supported)
-        logger.debug(
-            "ddgs/primp version mismatch — removed unsupported impersonate strings: %s",
-            ", ".join(sorted(removed)),
-        )
-        # Patch the class-level tuple in place so all DDGS() instances benefit.
-        _DdgsHttpClient._impersonates = supported  # type: ignore[attr-defined,assignment]
-
-
-_patch_ddgs_impersonates()
+_supported = tuple(b for b in _DdgsHttpClient._impersonates if _probe_impersonate(b))
+if len(_supported) < len(_DdgsHttpClient._impersonates):
+    _removed = set(_DdgsHttpClient._impersonates) - set(_supported)
+    logger.debug(
+        "ddgs/primp version mismatch — removed unsupported impersonate strings: %s",
+        ", ".join(sorted(_removed)),
+    )
+    # Patch the class-level tuple in place so all DDGS() instances benefit
+    _DdgsHttpClient._impersonates = _supported  # type: ignore[assignment]
 # ── end shim ─────────────────────────────────────────────────────────────────
 
 

@@ -14,7 +14,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    chunkSizeWarningLimit: 1300,
+    chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -28,6 +28,12 @@ export default defineConfig({
               id.includes('react-router') ||
               id.includes('scheduler')
             ) return 'react-vendor';
+            // UI libraries safely extracted
+            if (
+              id.includes('framer-motion') ||
+              id.includes('swiper') ||
+              id.includes('@tabler/icons-react')
+            ) return 'ui-vendor';
             // NOTE: Do NOT split @mui — its modules have circular
             // dependencies that break when isolated from the main bundle.
           }
