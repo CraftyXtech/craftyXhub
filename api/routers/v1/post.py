@@ -591,6 +591,18 @@ async def get_categories(
     )
     categories = result.scalars().all()
 
+    counts_result = await session.execute(
+        select(Post.category_id, func.count(Post.id).label("post_count"))
+        .where(Post.deleted_at.is_(None), Post.category_id.is_not(None))
+        .group_by(Post.category_id)
+    )
+    post_counts = {category_id: post_count for category_id, post_count in counts_result.all()}
+
+    for category in categories:
+        category.post_count = post_counts.get(category.id, 0)
+        for subcategory in category.subcategories:
+            subcategory.post_count = post_counts.get(subcategory.id, 0)
+
     return {"categories": categories}
 
 
