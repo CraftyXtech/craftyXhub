@@ -9,7 +9,7 @@ from typing import Optional, List
 from pydantic import ValidationError
 
 from services.post.post import PostService, UPLOAD_DIR
-from services.user.auth import get_current_active_user
+from services.user.auth import get_current_active_user, get_current_admin_only
 from database.connection import get_db_session
 from schemas.post import (
     PostCreate,
@@ -597,7 +597,7 @@ async def get_categories(
 @router.post("/categories/", response_model=CategoryCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
         category_data: CategoryCreate,
-        current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_admin_only),
         session: AsyncSession = Depends(get_db_session)
 ):
     return await PostService.create_category(session, category_data)
@@ -607,7 +607,7 @@ async def create_category(
 async def update_category(
         category_id: int,
         category_data: CategoryUpdate,
-        current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_admin_only),
         session: AsyncSession = Depends(get_db_session)
 ):
     return await PostService.update_category(session, category_id, category_data)
@@ -616,7 +616,7 @@ async def update_category(
 @router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(
         category_id: int,
-        current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_admin_only),
         session: AsyncSession = Depends(get_db_session)
 ):
     await PostService.delete_category(session, category_id)

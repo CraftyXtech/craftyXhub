@@ -9,38 +9,9 @@ import time
 import logging
 from typing import Optional
 
-import primp
 from ddgs import DDGS
-from ddgs.http_client import HttpClient as _DdgsHttpClient
 
 logger = logging.getLogger(__name__)
-
-# ── primp compatibility shim ─────────────────────────────────────────────────
-# ddgs ≥9.9 added "safari_18" and "safari_18.2" to its _impersonates list, but
-# the installed primp build may not recognise those strings yet, causing a noisy
-# "Impersonate '...' does not exist, using 'random'" message on every request.
-# Probe each candidate at module load time and remove any that primp rejects.
-def _probe_impersonate(browser: str) -> bool:
-    """Return True if primp silently accepts *browser* (no warning emitted)."""
-    import io, contextlib, sys
-    buf = io.StringIO()
-    with contextlib.redirect_stderr(buf):
-        try:
-            primp.Client(impersonate=browser)
-        except Exception:
-            return False
-    return "does not exist" not in buf.getvalue()
-
-_supported = tuple(b for b in _DdgsHttpClient._impersonates if _probe_impersonate(b))
-if len(_supported) < len(_DdgsHttpClient._impersonates):
-    _removed = set(_DdgsHttpClient._impersonates) - set(_supported)
-    logger.debug(
-        "ddgs/primp version mismatch — removed unsupported impersonate strings: %s",
-        ", ".join(sorted(_removed)),
-    )
-    # Patch the class-level tuple in place so all DDGS() instances benefit
-    _DdgsHttpClient._impersonates = _supported  # type: ignore[assignment]
-# ── end shim ─────────────────────────────────────────────────────────────────
 
 
 
