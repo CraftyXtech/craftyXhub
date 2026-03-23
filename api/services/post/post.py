@@ -1364,7 +1364,8 @@ class PostService:
 
             db_tag = Tag(
                 name=tag_data.name,
-                slug=generated_slug
+                slug=generated_slug,
+                category_id=tag_data.category_id
             )
 
             session.add(db_tag)

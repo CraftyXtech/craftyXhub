@@ -49,6 +49,7 @@ class CategoryListResponse(BaseModel):
 class TagBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=50)
     slug: Optional[str] = Field(None, min_length=1, max_length=50)
+    category_id: Optional[int] = Field(None, description="Category ID for grouping tags")
 
 
 class TagCreate(TagBase):
@@ -58,15 +59,27 @@ class TagCreate(TagBase):
 class TagUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=50)
     slug: Optional[str] = Field(None, min_length=1, max_length=50)
+    category_id: Optional[int] = Field(None, description="Category ID for grouping tags")
 
 
 class TagResponse(TagBase, BaseSchema):
     id: int
     created_at: datetime
     post_count: Optional[int] = 0
+    category_id: Optional[int] = None
 
 class TagListResponse(BaseModel):
     tags: List[TagResponse]
+
+class TagGroupedResponse(BaseModel):
+    """Tags grouped by category"""
+    category_id: Optional[int]
+    category_name: str
+    tags: List[TagResponse]
+
+class TagGroupedListResponse(BaseModel):
+    """List of tag groups by category"""
+    groups: List[TagGroupedResponse]
 
 class PostBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)

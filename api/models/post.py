@@ -21,7 +21,9 @@ class Tag(BaseTable):
 
     name = Column(String(50), unique=True, nullable=False)
     slug = Column(String(50), unique=True, nullable=False)
+    category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
     posts = relationship("Post", secondary=post_tags, back_populates="tags")
+    category = relationship("Category", foreign_keys=[category_id])
 
 
 class Post(BaseTable):

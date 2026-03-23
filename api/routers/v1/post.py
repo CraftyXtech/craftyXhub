@@ -637,11 +637,53 @@ async def delete_category(
 # Tags endpoints
 @router.get("/tags/", response_model=TagListResponse)
 async def get_tags(
+        category_id: Optional[int] = None,
         session: AsyncSession = Depends(get_db_session)
 ):
-    result = await session.execute(select(Tag))
+    """Get all tags, optionally filtered by category"""
+    query = select(Tag)
+    if category_id is not None:
+        query = query.where(Tag.category_id == category_id)
+    result = await session.execute(query)
     tags = result.scalars().all()
     return {"tags": tags}
+
+
+@router.get("/tags/grouped/")
+async def get_tags_grouped(
+        session: AsyncSession = Depends(get_db_session)
+):
+    """Get tags grouped by category for easier selection when writing articles"""
+    # Get all parent categories
+    categories_result = await session.execute(
+        select(Category).where(Category.parent_id == None)
+    )
+    parent_categories = categories_result.scalars().all()
+    
+    groups = []
+    
+    for parent in parent_categories:
+        # Get subcategory IDs for this parent
+        subcats_result = await session.execute(
+            select(Category.id).where(Category.parent_id == parent.id)
+        )
+        subcat_ids = [row[0] for row in subcats_result.all()]
+        all_category_ids = [parent.id] + subcat_ids
+        
+        # Get tags for this category and its subcategories
+        tags_result = await session.execute(
+            select(Tag).where(Tag.category_id.in_(all_category_ids))
+        )
+        tags = tags_result.scalars().all()
+        
+        if tags:
+            groups.append({
+                "category_id": parent.id,
+                "category_name": parent.name,
+                "tags": [{"id": t.id, "name": t.name, "slug": t.slug, "category_id": t.category_id, "created_at": t.created_at, "post_count": 0} for t in tags]
+            })
+    
+    return {"groups": groups}
 
 
 @router.post("/tags/", response_model=TagResponse, status_code=status.HTTP_201_CREATED)
@@ -676,6 +718,8 @@ async def update_tag(
         tag.name = tag_data.name
     if tag_data.slug:
         tag.slug = tag_data.slug
+    if tag_data.category_id is not None:
+        tag.category_id = tag_data.category_id
     
     await session.commit()
     await session.refresh(tag)
