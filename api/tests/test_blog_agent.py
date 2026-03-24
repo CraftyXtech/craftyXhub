@@ -70,6 +70,11 @@ class _FallbackRetryAgent:
                 "Learn to build robust AI writing workflows with retries, structured validation, "
                 "and quality checks that keep production content pipelines dependable over time."
             ),
+            "hero_image_prompt": (
+                "Editorial illustration of a content team reviewing AI drafts on large screens. "
+                "Use a 1200x630 landscape composition for social sharing, no logos, no watermarks, "
+                "no text overlay, strong focal subject."
+            ),
         }
         return _FakeResult(str(payload).replace("'", '"'))
 
@@ -94,11 +99,16 @@ def _build_blog(word_per_section: int) -> BlogPost:
             BlogSection(heading="Conclusion and Next Steps", body_markdown=_mk_words(word_per_section)),
         ],
         tags=["ai-writing", "pydantic-ai", "content-strategy"],
-        seo_title="Build Better AI Blog Writers with Pydantic AI",
+        seo_title="Pydantic AI Workflow for Better Blog Writing Teams",
         seo_description=(
             "Learn how to build a production-ready AI blog writer with "
             "Pydantic AI using structured outputs and deterministic quality "
             "checks for better publishing outcomes."
+        ),
+        hero_image_prompt=(
+            "Editorial desk scene with a writer reviewing an AI draft. "
+            "Use a 1200x630 landscape composition for social sharing, no logos, "
+            "no watermarks, no text overlay, strong focal subject."
         ),
     )
 
@@ -277,6 +287,26 @@ def test_collect_quality_issues_flags_missing_primary_keyword_in_seo():
     assert any("seo_description" in issue for issue in issues)
 
 
+def test_collect_quality_issues_flags_social_metadata_even_without_keywords():
+    service = BlogAgentService()
+    blog_post = _build_blog(250)
+    blog_post.seo_title = "Short title"
+    blog_post.seo_description = "Too short."
+    blog_post.hero_image_prompt = "Editorial AI writing scene."
+
+    issues = service._collect_quality_issues(
+        blog_post=blog_post,
+        word_count="medium",
+        keywords=None,
+    )
+
+    assert any("seo_title should be between" in issue for issue in issues)
+    assert any("seo_description should be between" in issue for issue in issues)
+    assert any("hero_image_prompt should specify a 1200x630" in issue for issue in issues)
+    assert any("avoid logos" in issue.lower() for issue in issues)
+    assert any("avoid watermarks" in issue.lower() for issue in issues)
+
+
 def test_validate_and_create_blog_post_normalizes_dash_aside_punctuation():
     service = BlogAgentService()
 
@@ -318,6 +348,50 @@ def test_validate_and_create_blog_post_normalizes_dash_aside_punctuation():
     assert "—" not in blog_post.seo_description
     assert all("—" not in section.body_markdown for section in blog_post.sections)
     assert "[CDC](https://www.cdc.gov/tobacco/about/how-to-quit.html)" in blog_post.sections[1].body_markdown
+
+
+def test_validate_and_create_blog_post_normalizes_social_metadata_and_hero_prompt():
+    service = BlogAgentService()
+
+    blog_post = service._validate_and_create_blog_post(
+        {
+            "title": "Prompt Engineering Tricks to Stop AI Hallucinations in Production Systems",
+            "slug": "prompt-engineering-tricks-stop-ai-hallucinations",
+            "summary": (
+                "A practical breakdown of the prompt design habits, guardrails, and evaluation loops "
+                "that reduce hallucinations before they reach production users."
+            ),
+            "sections": [
+                {
+                    "heading": "Introduction",
+                    "body_markdown": _mk_words(120),
+                },
+                {
+                    "heading": "What actually reduces hallucinations",
+                    "body_markdown": _mk_words(120),
+                },
+                {
+                    "heading": "Conclusion and Next Steps",
+                    "body_markdown": _mk_words(120),
+                },
+            ],
+            "tags": ["prompt-engineering", "ai-reliability"],
+            "seo_title": "Prompt Engineering Tricks to Stop AI Hallucinations in Production Systems | CraftyXHub",
+            "seo_description": (
+                "Prompt engineering tactics that reduce hallucinations across model evaluation, "
+                "retrieval, and production guardrails without slowing your team down."
+            ),
+            "hero_image_prompt": "Editorial illustration of an AI system under review.",
+        }
+    )
+
+    assert len(blog_post.seo_title) <= 65
+    assert "CraftyXHub" not in blog_post.seo_title
+    assert len(blog_post.seo_description) <= 155
+    assert "1200x630" in blog_post.hero_image_prompt
+    assert "no logos" in blog_post.hero_image_prompt.lower()
+    assert "no watermarks" in blog_post.hero_image_prompt.lower()
+    assert "no text overlay" in blog_post.hero_image_prompt.lower()
 
 
 def test_build_quality_report_returns_expected_shape():

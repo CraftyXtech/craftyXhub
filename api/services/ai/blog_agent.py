@@ -559,6 +559,70 @@ class BlogAgentService:
             return value
         return re.sub(r"(?<=\S)\s+(?:—|–|--)\s+(?=\S)", ", ", value).strip()
 
+    @staticmethod
+    def _normalize_whitespace(value: str) -> str:
+        return re.sub(r"\s+", " ", value).strip()
+
+    def _normalize_seo_title(self, seo_title: str, fallback_title: str) -> str:
+        normalized = self._normalize_whitespace(
+            self._normalize_dash_punctuation(seo_title or fallback_title)
+        )
+        normalized = re.sub(
+            r"\s*[\|\-–—:]\s*craftyxhub\s*$",
+            "",
+            normalized,
+            flags=re.IGNORECASE,
+        ).strip()
+        fallback = self._normalize_whitespace(self._normalize_dash_punctuation(fallback_title))
+        if len(normalized) < 45 and len(fallback) > len(normalized):
+            normalized = fallback
+        return self._clamp_str(normalized or fallback_title, 30, 65)
+
+    def _normalize_seo_description(self, seo_description: str, fallback_summary: str) -> str:
+        normalized = self._normalize_whitespace(
+            self._normalize_dash_punctuation(seo_description or fallback_summary)
+        )
+        fallback = self._normalize_whitespace(self._normalize_dash_punctuation(fallback_summary))
+        if len(normalized) < 110 and len(fallback) > len(normalized):
+            normalized = fallback
+        return self._clamp_str(normalized or fallback_summary, 90, 155)
+
+    def _normalize_hero_image_prompt(
+        self,
+        hero_image_prompt: Optional[str],
+        title: str,
+        summary: str,
+    ) -> str:
+        prompt = self._normalize_whitespace(
+            self._normalize_dash_punctuation(hero_image_prompt or "")
+        )
+
+        if not prompt:
+            prompt = (
+                f"Create a clean editorial hero image for '{title}'. "
+                f"Visually represent this idea: {summary.rstrip('.')}."
+            )
+
+        requirements: list[str] = []
+        lowered = prompt.lower()
+        if not any(token in lowered for token in ("1200x630", "1.91:1", "1.91 to 1", "social card")):
+            requirements.append("Use a 1200x630 landscape composition for social sharing")
+        if not any(token in lowered for token in ("no logos", "without logos", "avoid logos")):
+            requirements.append("no logos")
+        if not any(token in lowered for token in ("no watermarks", "without watermarks", "avoid watermarks")):
+            requirements.append("no watermarks")
+        if not any(token in lowered for token in ("no text overlay", "no text", "without text overlay")):
+            requirements.append("no text overlay")
+        if "strong focal subject" not in lowered:
+            requirements.append("strong focal subject")
+        if "editorial" not in lowered:
+            requirements.append("editorial style")
+
+        if requirements:
+            prompt = f"{prompt.rstrip('. ')}. {', '.join(requirements)}."
+
+        return prompt
+
     def _validate_and_create_blog_post(self, data: dict) -> BlogPost:
         """
         Normalise and clamp parsed LLM data, then create a validated BlogPost.
@@ -587,8 +651,8 @@ class BlogAgentService:
         # Clamp strings to schema bounds so near-misses don't fail validation
         title = self._clamp_str(self._normalize_dash_punctuation(title), 10, 150)
         summary = self._clamp_str(self._normalize_dash_punctuation(summary), 50, 500)
-        seo_title = self._clamp_str(self._normalize_dash_punctuation(seo_title), 15, 80)
-        seo_description = self._clamp_str(self._normalize_dash_punctuation(seo_description), 50, 250)
+        seo_title = self._normalize_seo_title(seo_title, title)
+        seo_description = self._normalize_seo_description(seo_description, summary)
 
         # Normalise slug
         raw_slug = (data.get("slug") or "").strip()
@@ -625,6 +689,12 @@ class BlogAgentService:
             fallback = [w.lower() for w in re.split(r"\W+", title) if len(w) > 3][:3]
             tags = list(dict.fromkeys(tags + fallback))[:8]
 
+        hero_image_prompt = self._normalize_hero_image_prompt(
+            data.get("hero_image_prompt"),
+            title=title,
+            summary=summary,
+        )
+
         return BlogPost(
             title=title,
             slug=slug,
@@ -633,7 +703,7 @@ class BlogAgentService:
             tags=tags,
             seo_title=seo_title,
             seo_description=seo_description,
-            hero_image_prompt=data.get("hero_image_prompt"),
+            hero_image_prompt=hero_image_prompt,
             sources=data.get("sources"),
         )
 

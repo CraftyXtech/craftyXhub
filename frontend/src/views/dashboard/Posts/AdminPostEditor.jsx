@@ -69,6 +69,10 @@ import { generateExcerpt as generateAiExcerpt } from '@/api/services/aiService';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { getPublishExcerptError, normalizeExcerpt } from '@/utils/editorUtils';
+import {
+  FEATURED_IMAGE_GUIDANCE,
+  validateFeaturedImageFile,
+} from '@/utils/featuredImageValidation';
 
 const SETTINGS_PANEL_WIDTH = 200;
 
@@ -191,6 +195,14 @@ export default function AdminPostEditor() {
   const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const validation = await validateFeaturedImageFile(file);
+    if (!validation.ok) {
+      setError(validation.message);
+      return;
+    }
+
+    setError(null);
 
     // Show preview immediately
     setImagePreview(URL.createObjectURL(file));
@@ -590,6 +602,9 @@ export default function AdminPostEditor() {
                       size="small"
                       value={metaTitle}
                       onChange={(e) => setMetaTitle(e.target.value)}
+                      placeholder="Short, sharp social title"
+                      helperText={`${metaTitle.length}/65 characters. Aim for 45-65 and skip the site name.`}
+                      inputProps={{ maxLength: 65 }}
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
@@ -597,8 +612,13 @@ export default function AdminPostEditor() {
                       label="Meta Description"
                       fullWidth
                       size="small"
+                      multiline
+                      rows={2}
                       value={metaDescription}
                       onChange={(e) => setMetaDescription(e.target.value)}
+                      placeholder="Why the article matters, in one tight teaser"
+                      helperText={`${metaDescription.length}/155 characters. Keep it specific and social-ready.`}
+                      inputProps={{ maxLength: 155 }}
                     />
                   </Grid>
                 </Grid>
@@ -650,6 +670,9 @@ export default function AdminPostEditor() {
                     <input type="file" hidden accept="image/*" onChange={handleImageChange} />
                   </Button>
                 )}
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                  {FEATURED_IMAGE_GUIDANCE}
+                </Typography>
               </Box>
 
               <Divider />
@@ -757,6 +780,9 @@ export default function AdminPostEditor() {
                   <input type="file" hidden accept="image/*" onChange={handleImageChange} />
                 </Button>
               )}
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                {FEATURED_IMAGE_GUIDANCE}
+              </Typography>
             </Box>
             <Divider />
             <Box>

@@ -248,8 +248,9 @@ const PostSettingsSidebar = ({
                 fullWidth
                 value={metaTitle}
                 onChange={(e) => onMetaChange?.({ metaTitle: e.target.value })}
-                placeholder="SEO title (optional)"
-                helperText={`${metaTitle.length}/60 characters`}
+                placeholder="Short, sharp social title"
+                helperText={`${metaTitle.length}/65 characters. Aim for 45-65 and skip the site name.`}
+                inputProps={{ maxLength: 65 }}
               />
               <TextField
                 label="Meta Description"
@@ -259,8 +260,9 @@ const PostSettingsSidebar = ({
                 rows={2}
                 value={metaDescription}
                 onChange={(e) => onMetaChange?.({ metaDescription: e.target.value })}
-                placeholder="SEO description (optional)"
-                helperText={`${metaDescription.length}/160 characters`}
+                placeholder="Why the article matters, in one tight teaser"
+                helperText={`${metaDescription.length}/155 characters. Keep it specific and social-ready.`}
+                inputProps={{ maxLength: 155 }}
               />
             </Stack>
           </Box>

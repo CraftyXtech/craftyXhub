@@ -28,7 +28,10 @@ class SharePageContext:
 class SharePageService:
     SITE_NAME = "CraftyXHub"
     DEFAULT_DESCRIPTION = "Read this article on CraftyXHub."
-    DESCRIPTION_MAX_LENGTH = 220
+    TITLE_MAX_LENGTH = 68
+    DESCRIPTION_MAX_LENGTH = 155
+    IMAGE_WIDTH = 1200
+    IMAGE_HEIGHT = 630
 
     @classmethod
     def build_post_context(cls, request: Request, post: Post) -> SharePageContext:
@@ -99,12 +102,16 @@ class SharePageService:
     <meta property="og:description" content="{description}" />
     <meta property="og:url" content="{share_url}" />
     <meta property="og:image" content="{image_url}" />
+    <meta property="og:image:secure_url" content="{image_url}" />
+    <meta property="og:image:width" content="{cls.IMAGE_WIDTH}" />
+    <meta property="og:image:height" content="{cls.IMAGE_HEIGHT}" />
     <meta property="og:image:alt" content="{image_alt}" />{published_meta}{author_meta}
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="{title}" />
     <meta name="twitter:description" content="{description}" />
     <meta name="twitter:image" content="{image_url}" />
+    <meta name="twitter:image:alt" content="{image_alt}" />
 
     <style>
       :root {{
@@ -194,7 +201,11 @@ class SharePageService:
 
     @classmethod
     def _resolve_title(cls, post: Post) -> str:
-        return (post.meta_title or post.title or cls.SITE_NAME).strip()
+        raw_title = cls._normalize_text(post.meta_title or post.title or cls.SITE_NAME)
+        title = cls._strip_site_name(raw_title)
+        if not title:
+            title = raw_title or cls.SITE_NAME
+        return cls._truncate(title, cls.TITLE_MAX_LENGTH)
 
     @classmethod
     def _resolve_description(cls, post: Post) -> str:
@@ -203,6 +214,23 @@ class SharePageService:
             if normalized:
                 return cls._truncate(normalized, cls.DESCRIPTION_MAX_LENGTH)
         return cls.DEFAULT_DESCRIPTION
+
+    @classmethod
+    def _strip_site_name(cls, value: str) -> str:
+        if not value:
+            return ""
+
+        site_name = re.escape((getattr(settings, "SITE_NAME", cls.SITE_NAME) or cls.SITE_NAME).strip())
+        patterns = (
+            rf"^\s*{site_name}\s*[\|\-–—:]\s*",
+            rf"\s*[\|\-–—:]\s*{site_name}\s*$",
+        )
+
+        cleaned = value
+        for pattern in patterns:
+            cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
+
+        return cleaned.strip()
 
     @classmethod
     def _resolve_image_url(cls, request: Request, image_path: str | None) -> str:

@@ -123,10 +123,21 @@ class BlogPost(BaseModel):
     summary: str = Field(..., min_length=50, max_length=500, description="Brief summary/excerpt")
     sections: List[BlogSection] = Field(..., min_length=3, max_length=10, description="List of content sections")
     tags: List[str] = Field(default_factory=list, min_length=2, max_length=12, description="Relevant tags")
-    seo_title: str = Field(..., min_length=15, max_length=80, description="SEO meta title")
-    seo_description: str = Field(..., min_length=50, max_length=250, description="SEO meta description")
+    seo_title: str = Field(
+        ...,
+        min_length=15,
+        max_length=80,
+        description="Social-ready meta title, ideally 45-65 characters without a site-name suffix",
+    )
+    seo_description: str = Field(
+        ...,
+        min_length=50,
+        max_length=250,
+        description="Tight meta description for social and search previews, ideally 110-155 characters",
+    )
     hero_image_prompt: Optional[str] = Field(
-        default=None, description="AI image generation prompt for hero image"
+        default=None,
+        description="Hero image prompt for a clean 1200x630 social card image without logos, watermarks, or text overlays",
     )
     sources: Optional[List[dict]] = Field(
         default=None, description="Web sources used during research [{title, url, snippet}]"

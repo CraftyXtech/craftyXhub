@@ -42,6 +42,10 @@ import {
   getPublishExcerptError,
   normalizeExcerpt,
 } from '@/utils/editorUtils';
+import {
+  FEATURED_IMAGE_GUIDANCE,
+  validateFeaturedImageFile,
+} from '@/utils/featuredImageValidation';
 
 /**
  * UserPostEditor - Medium-style distraction-free writing experience
@@ -72,7 +76,6 @@ export default function UserPostEditor() {
   const [metaTitle, setMetaTitle] = useState(aiState?.metaTitle || '');
   const [metaDescription, setMetaDescription] = useState(aiState?.metaDescription || '');
   const [customReadingTime, setCustomReadingTime] = useState(null);
-  const [featuredImage, setFeaturedImage] = useState(null);
 
   // Auto-save state
   const [saveStatus, setSaveStatus] = useState('idle');
@@ -262,6 +265,24 @@ export default function UserPostEditor() {
     setPublishFeaturedFile(null);
     setPublishDialogOpen(true);
   }, [categoryId, selectedTags]);
+
+  const handleFeaturedImageChange = useCallback(async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const validation = await validateFeaturedImageFile(file);
+    if (!validation.ok) {
+      setError(validation.message);
+      return;
+    }
+
+    setError(null);
+    setPublishFeaturedFile(file);
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => setPublishFeaturedPreview(loadEvent.target.result);
+    reader.readAsDataURL(file);
+  }, []);
 
   // Publish post
   const handlePublish = useCallback(async () => {
@@ -579,30 +600,20 @@ export default function UserPostEditor() {
                   />
                 ) : (
                   <Typography variant="caption" color="text.secondary">
-                    Optional. JPG/PNG/GIF/WEBP up to 5MB.
+                    {FEATURED_IMAGE_GUIDANCE}
                   </Typography>
                 )}
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    if (!file.type.startsWith('image/')) {
-                      setError('Please select an image file');
-                      return;
-                    }
-                    if (file.size > 5 * 1024 * 1024) {
-                      setError('Image must be under 5MB');
-                      return;
-                    }
-                    setPublishFeaturedFile(file);
-                    const reader = new FileReader();
-                    reader.onload = (ev) => setPublishFeaturedPreview(ev.target.result);
-                    reader.readAsDataURL(file);
-                  }}
+                  onChange={handleFeaturedImageChange}
                   style={{ marginTop: 12, width: '100%' }}
                 />
+                {publishFeaturedPreview && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    {FEATURED_IMAGE_GUIDANCE}
+                  </Typography>
+                )}
               </Box>
             </Box>
           </Stack>

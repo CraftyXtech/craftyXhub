@@ -31,7 +31,7 @@ async def test_share_page_renders_social_meta_and_redirects(
                 "This is the excerpt that should appear in the share card and it "
                 "summarizes the full article clearly for readers coming from social."
             ),
-            "meta_title": "Custom Share Title",
+            "meta_title": "Custom Share Title | CraftyXHub",
             "meta_description": "Custom share description for social cards.",
             "featured_image_path": "uploads/posts/share-card.jpg",
             "is_published": "true",
@@ -52,6 +52,10 @@ async def test_share_page_renders_social_meta_and_redirects(
     assert f'<meta property="og:url" content="https://craftyxhub.com/share/posts/{post["slug"]}"' in html
     assert '<meta name="twitter:card" content="summary_large_image"' in html
     assert "https://api.craftyxhub.com/v1/uploads/images/share-card.jpg?folder=posts" in html
+    assert '<meta property="og:image:secure_url" content="https://api.craftyxhub.com/v1/uploads/images/share-card.jpg?folder=posts"' in html
+    assert '<meta property="og:image:width" content="1200"' in html
+    assert '<meta property="og:image:height" content="630"' in html
+    assert '<meta name="twitter:image:alt" content="Shareable Post"' in html
     assert f"https://craftyxhub.com/post/{post['slug']}" in html
     assert 'window.location.replace("https://craftyxhub.com/post/' in html
     assert response.headers["x-robots-tag"] == "noindex,follow"

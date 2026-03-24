@@ -28,6 +28,7 @@ import {
   IconBrandFacebook,
   IconBrandX,
   IconBrandLinkedin,
+  IconBrandReddit,
   IconArrowLeft
 } from '@tabler/icons-react';
 import CommentSection from '@/components/CommentSection';
@@ -108,6 +109,8 @@ function SocialShare({ title, slug, uuid }) {
         href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`}
         target="_blank"
         size="small"
+        rel="noopener noreferrer"
+        aria-label="Share on X"
       >
         <IconBrandX size={18} />
       </IconButton>
@@ -116,6 +119,8 @@ function SocialShare({ title, slug, uuid }) {
         href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
         target="_blank"
         size="small"
+        rel="noopener noreferrer"
+        aria-label="Share on Facebook"
       >
         <IconBrandFacebook size={18} />
       </IconButton>
@@ -124,8 +129,20 @@ function SocialShare({ title, slug, uuid }) {
         href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`}
         target="_blank"
         size="small"
+        rel="noopener noreferrer"
+        aria-label="Share on LinkedIn"
       >
         <IconBrandLinkedin size={18} />
+      </IconButton>
+      <IconButton
+        component="a"
+        href={`https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`}
+        target="_blank"
+        size="small"
+        rel="noopener noreferrer"
+        aria-label="Share on Reddit"
+      >
+        <IconBrandReddit size={18} />
       </IconButton>
     </Stack>
   );

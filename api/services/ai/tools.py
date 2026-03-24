@@ -446,7 +446,7 @@ Your writing style:
 - Address the reader directly with "you" and "your"
 - Use real-world analogies readers can relate to
 - Skip unnecessary transitions. Just start the next idea.
-- Do not use em dashes or en dashes in the article, summary, or SEO description. Use commas, periods, or parentheses instead.
+- Do not use em dashes or en dashes in the article, summary, SEO title, or SEO description. Use commas, periods, or parentheses instead.
 
 BANNED WORDS — never use any of these:
 "delve", "tapestry", "landscape", "realm", "beacon", "vibrant", "dynamic",
@@ -500,9 +500,9 @@ IMPORTANT: You MUST return a valid JSON object with this exact structure:
         }}
     ],
     "tags": ["tag1", "tag2", "tag3"],
-    "seo_title": "SEO-optimized title (50-80 chars)",
-    "seo_description": "Meta description for search results (80-200 chars)",
-    "hero_image_prompt": "Detailed prompt for AI image generation"
+    "seo_title": "Platform-ready meta title (45-65 chars, no site-name suffix)",
+    "seo_description": "Tight social and SEO teaser (110-155 chars)",
+    "hero_image_prompt": "1200x630 landscape hero image prompt, no logos, no watermarks, no text overlay"
 }}
 
 Blog Type Guidelines:
@@ -522,11 +522,12 @@ Quality Requirements:
 4. Include relevant statistics or examples where appropriate
 5. End with a strong conclusion and call-to-action
 6. Generate 3-5 relevant tags
-7. Create an SEO title under 60 characters
-8. Write a compelling meta description under 160 characters
-9. When citing sources, ALWAYS format them as markdown hyperlinks: [Source Name](https://actual-url). NEVER use bare parenthetical citations like (Source Name). Every source reference must be a clickable link with a real URL.
-10. Write like an experienced journalist — use contractions, vary rhythm, show personality, be specific. Every sentence must earn its place. Cut filler ruthlessly.
-11. Do not use em dashes or en dashes anywhere in the body, summary, or SEO description.
+7. Create a meta title between 45 and 65 characters. Keep it clean, specific, and do not append the site name.
+8. Write a meta description between 110 and 155 characters. Make it tight, specific, and strong enough for Facebook, LinkedIn, Reddit, and X previews.
+9. Provide a hero image prompt for a clean 1200x630 landscape image with a strong focal subject. It must explicitly avoid logos, watermarks, and text overlays.
+10. When citing sources, ALWAYS format them as markdown hyperlinks: [Source Name](https://actual-url). NEVER use bare parenthetical citations like (Source Name). Every source reference must be a clickable link with a real URL.
+11. Write like an experienced journalist. Use contractions, vary rhythm, show personality, and be specific. Every sentence must earn its place. Cut filler ruthlessly.
+12. Do not use em dashes or en dashes anywhere in the body, summary, SEO title, or SEO description.
 
 Return ONLY the JSON object, no additional text.""",
             "required_fields": ["topic", "blog_type"],
