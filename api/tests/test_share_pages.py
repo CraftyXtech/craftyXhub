@@ -48,6 +48,33 @@ async def test_share_page_renders_social_meta_and_redirects(
 
 
 @pytest.mark.asyncio
+async def test_short_share_alias_renders_same_metadata(
+    client_author,
+    client_public,
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "FRONTEND_URL", "https://craftyxhub.com")
+
+    create = await client_author.post(
+        "/v1/posts/",
+        data={
+            "title": "Short Alias Post",
+            "content": "<p>Body for the short alias route.</p>",
+            "meta_description": "Short alias description.",
+            "is_published": "true",
+        },
+    )
+    assert create.status_code == 201, create.text
+    post = create.json()
+
+    response = await client_public.get(f"/s/{post['uuid']}")
+    assert response.status_code == 200, response.text
+    html = response.text
+    assert '<meta property="og:description" content="Short alias description."' in html
+    assert f'https://craftyxhub.com/post/{post["slug"]}' in html
+
+
+@pytest.mark.asyncio
 async def test_share_page_supports_head_requests(
     client_author,
     client_public,
@@ -70,6 +97,10 @@ async def test_share_page_supports_head_requests(
     assert response.status_code == 200, response.text
     assert response.headers["x-robots-tag"] == "noindex,follow"
     assert response.headers["content-type"].startswith("text/html")
+
+    short_response = await client_public.head(f"/s/{post['uuid']}")
+    assert short_response.status_code == 200, short_response.text
+    assert short_response.headers["x-robots-tag"] == "noindex,follow"
 
 
 @pytest.mark.asyncio

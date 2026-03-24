@@ -89,7 +89,10 @@ function AuthorBox({ author }) {
  */
 function SocialShare({ title, slug, uuid }) {
   const shareBaseUrl = import.meta.env.VITE_SHARE_BASE_URL || getApiBaseUrl();
-  const shareUrl = `${shareBaseUrl.replace(/\/$/, '')}/share/posts/${encodeURIComponent(slug || uuid)}`;
+  const shareUrlPrefix =
+    import.meta.env.VITE_SHARE_URL_PREFIX ||
+    `${shareBaseUrl.replace(/\/$/, '')}/s`;
+  const shareUrl = `${shareUrlPrefix.replace(/\/$/, '')}/${encodeURIComponent(uuid || slug)}`;
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(title);
   

@@ -109,6 +109,12 @@ def include_routers(app: FastAPI) -> None:
         include_in_schema=False,
         response_class=HTMLResponse,
     )
+    @app.api_route(
+        "/s/{post_identifier}",
+        methods=["GET", "HEAD"],
+        include_in_schema=False,
+        response_class=HTMLResponse,
+    )
     async def share_post(
         post_identifier: str,
         request: Request,
