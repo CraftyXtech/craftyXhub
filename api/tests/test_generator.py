@@ -2,6 +2,7 @@ import pytest
 import types
 
 from services.ai.generator import AIGeneratorService
+from services.ai.tools import ToolHandler
 
 
 class FakeUsage:
@@ -76,3 +77,23 @@ async def test_generate_missing_template_params_raises():
             model="openai",
             params={"keywords": "ai"},  # missing 'category'
         )
+
+
+def test_build_prompt_supports_excerpt_tool_language_field():
+    prompt = ToolHandler.build_prompt(
+        tool_id="post-excerpt",
+        params={
+            "title": "Prompt Engineering Tricks to Stop AI Hallucinations",
+            "content": (
+                "This article explains how to reduce hallucinations by tightening prompts, "
+                "grounding claims, and reviewing outputs before publication."
+            ),
+        },
+        tone="professional",
+        length="short",
+        language="en-US",
+    )
+
+    assert "Prompt Engineering Tricks to Stop AI Hallucinations" in prompt
+    assert "Language: en-US" in prompt
+    assert "Return plain text only." in prompt

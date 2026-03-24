@@ -557,7 +557,12 @@ Return ONLY the JSON object, no additional text.""",
 
         # If we have a valid tool and params likely satisfy, render it
         if tool:
-            filled_params = {"tone": tone, **params}
+            filled_params = {
+                "tone": tone,
+                "language": language,
+                "length": length,
+                **params,
+            }
             for field in tool.get("optional_fields", []):
                 if field not in filled_params:
                     filled_params[field] = "Not specified"
@@ -566,21 +571,30 @@ Return ONLY the JSON object, no additional text.""",
                 result = base + f"\n\nLength: {length_map.get(length, '100-300 words')}"
                 if language != "en-US":
                     result += f"\n\nWrite in {language}."
-                result += (
-                    "\n\nOutput Format - Use Markdown:\n"
-                    "- Use proper Markdown syntax for formatting\n"
-                    "- Headers: Use # for H1, ## for H2, ### for H3\n"
-                    "- Bold: Use **text** for bold text\n"
-                    "- Italic: Use *text* for italic text\n"
-                    "- Lists: Use `1.` for numbered lists, `-` for bullet points\n"
-                    "- Paragraphs: Use blank lines between paragraphs\n"
-                    "\n"
-                    "Guidelines:\n"
-                    "- Do not fabricate statistics or sources; if uncertain, state uncertainty.\n"
-                    "- Respect platform/content policies; avoid unsafe content.\n"
-                    "- Do NOT include word-count or character-count annotations in the output.\n"
-                    "- Only include character counts when explicitly requested (e.g., headlines/ads)."
-                )
+                if tool.get("variants_policy") != "single_piece" or tool_id != "post-excerpt":
+                    result += (
+                        "\n\nOutput Format - Use Markdown:\n"
+                        "- Use proper Markdown syntax for formatting\n"
+                        "- Headers: Use # for H1, ## for H2, ### for H3\n"
+                        "- Bold: Use **text** for bold text\n"
+                        "- Italic: Use *text* for italic text\n"
+                        "- Lists: Use `1.` for numbered lists, `-` for bullet points\n"
+                        "- Paragraphs: Use blank lines between paragraphs\n"
+                        "\n"
+                        "Guidelines:\n"
+                        "- Do not fabricate statistics or sources; if uncertain, state uncertainty.\n"
+                        "- Respect platform/content policies; avoid unsafe content.\n"
+                        "- Do NOT include word-count or character-count annotations in the output.\n"
+                        "- Only include character counts when explicitly requested (e.g., headlines/ads)."
+                    )
+                else:
+                    result += (
+                        "\n\nGuidelines:\n"
+                        "- Return plain text only.\n"
+                        "- Do not fabricate statistics or sources; if uncertain, state uncertainty.\n"
+                        "- Respect platform/content policies; avoid unsafe content.\n"
+                        "- Do NOT include word-count or character-count annotations in the output."
+                    )
                 return result
             except KeyError:
                 pass
