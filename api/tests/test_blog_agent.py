@@ -277,6 +277,49 @@ def test_collect_quality_issues_flags_missing_primary_keyword_in_seo():
     assert any("seo_description" in issue for issue in issues)
 
 
+def test_validate_and_create_blog_post_normalizes_dash_aside_punctuation():
+    service = BlogAgentService()
+
+    blog_post = service._validate_and_create_blog_post(
+        {
+            "title": "Quit Smoking Facts — What Your Body Does First",
+            "slug": "quit-smoking-facts",
+            "summary": (
+                "Your body starts recovering faster than most people expect — and the first "
+                "changes are measurable within hours."
+            ),
+            "sections": [
+                {
+                    "heading": "Introduction",
+                    "body_markdown": "This is a grounded guide — not a scare tactic.",
+                },
+                {
+                    "heading": "What changes first",
+                    "body_markdown": (
+                        "These changes are confirmed by the [CDC](https://www.cdc.gov/tobacco/about/how-to-quit.html) "
+                        "— not marketing copy."
+                    ),
+                },
+                {
+                    "heading": "Conclusion and Next Steps",
+                    "body_markdown": "Use support early — it improves your odds.",
+                },
+            ],
+            "tags": ["quit-smoking", "health"],
+            "seo_title": "Quit Smoking Facts — What Changes First",
+            "seo_description": (
+                "The first recovery milestones happen fast — and knowing them gives people a "
+                "better reason to stick with the process."
+            ),
+        }
+    )
+
+    assert "—" not in blog_post.summary
+    assert "—" not in blog_post.seo_description
+    assert all("—" not in section.body_markdown for section in blog_post.sections)
+    assert "[CDC](https://www.cdc.gov/tobacco/about/how-to-quit.html)" in blog_post.sections[1].body_markdown
+
+
 def test_build_quality_report_returns_expected_shape():
     service = BlogAgentService()
     blog_post = _build_blog(250)

@@ -340,6 +340,11 @@ class BlogAgentService:
                 "Remove AI-sounding clichés/tropes: " + ", ".join(trope_hits[:5])
             )
 
+        if re.search(r"(?<=\S)\s+(?:—|–|--)\s+(?=\S)", blog_text):
+            issues.append(
+                "Avoid em dashes or dash-aside punctuation. Use commas, full stops, or parentheses instead."
+            )
+
         issues.extend(seo_quality_issues(blog_post, keywords))
 
         return issues
@@ -548,6 +553,12 @@ class BlogAgentService:
             value += pad_suffix
         return value
 
+    @staticmethod
+    def _normalize_dash_punctuation(value: str) -> str:
+        if not value:
+            return value
+        return re.sub(r"(?<=\S)\s+(?:—|–|--)\s+(?=\S)", ", ", value).strip()
+
     def _validate_and_create_blog_post(self, data: dict) -> BlogPost:
         """
         Normalise and clamp parsed LLM data, then create a validated BlogPost.
@@ -574,10 +585,10 @@ class BlogAgentService:
             seo_description = summary
 
         # Clamp strings to schema bounds so near-misses don't fail validation
-        title = self._clamp_str(title, 10, 150)
-        summary = self._clamp_str(summary, 50, 500)
-        seo_title = self._clamp_str(seo_title, 15, 80)
-        seo_description = self._clamp_str(seo_description, 50, 250)
+        title = self._clamp_str(self._normalize_dash_punctuation(title), 10, 150)
+        summary = self._clamp_str(self._normalize_dash_punctuation(summary), 50, 500)
+        seo_title = self._clamp_str(self._normalize_dash_punctuation(seo_title), 15, 80)
+        seo_description = self._clamp_str(self._normalize_dash_punctuation(seo_description), 50, 250)
 
         # Normalise slug
         raw_slug = (data.get("slug") or "").strip()
@@ -588,11 +599,18 @@ class BlogAgentService:
         for section_data in data.get("sections", []):
             if isinstance(section_data, dict):
                 heading = (section_data.get("heading") or "").strip()
-                body = (section_data.get("body_markdown") or "").strip()
+                body = self._normalize_dash_punctuation(
+                    (section_data.get("body_markdown") or "").strip()
+                )
                 if heading and body:
                     sections.append(BlogSection(heading=heading, body_markdown=body))
             elif isinstance(section_data, BlogSection):
-                sections.append(section_data)
+                sections.append(
+                    BlogSection(
+                        heading=section_data.heading,
+                        body_markdown=self._normalize_dash_punctuation(section_data.body_markdown),
+                    )
+                )
 
         if not sections:
             raise ValueError("Generated JSON has no valid sections")

@@ -65,6 +65,7 @@ export default function UserPostEditor() {
 
   // Metadata state
   const [manualExcerpt, setManualExcerpt] = useState(aiState?.excerpt || '');
+  const [excerptError, setExcerptError] = useState('');
   const [isGeneratingExcerpt, setIsGeneratingExcerpt] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
@@ -239,6 +240,7 @@ export default function UserPostEditor() {
     try {
       setIsGeneratingExcerpt(true);
       setError(null);
+      setExcerptError('');
       const result = await generateAiExcerpt({
         title: extractedTitle || 'Untitled',
         content: plainText,
@@ -280,7 +282,7 @@ export default function UserPostEditor() {
 
     const excerptError = getPublishExcerptError(manualExcerpt);
     if (excerptError) {
-      setError(excerptError);
+      setExcerptError(excerptError);
       setSettingsOpen(true);
       return;
     }
@@ -335,6 +337,7 @@ export default function UserPostEditor() {
 
   const handleExcerptChange = useCallback((value) => {
     setManualExcerpt(value);
+    setExcerptError('');
     setIsDirty(true);
   }, []);
 
@@ -459,6 +462,7 @@ export default function UserPostEditor() {
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         excerpt={manualExcerpt}
+        excerptError={excerptError}
         onExcerptChange={handleExcerptChange}
         onGenerateExcerpt={handleGenerateExcerpt}
         isGeneratingExcerpt={isGeneratingExcerpt}

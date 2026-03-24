@@ -30,6 +30,7 @@ const DRAWER_WIDTH = 360;
  * @param {boolean} props.isOpen - Whether drawer is open
  * @param {function} props.onClose - Close handler
  * @param {string} props.excerpt - Publish-ready excerpt
+ * @param {string} props.excerptError - Inline validation message for excerpt
  * @param {function} props.onExcerptChange - Manual excerpt change
  * @param {function} props.onGenerateExcerpt - Generate excerpt with AI
  * @param {boolean} props.isGeneratingExcerpt - Excerpt generation loading state
@@ -50,6 +51,7 @@ const PostSettingsSidebar = ({
   isOpen,
   onClose,
   excerpt = '',
+  excerptError = '',
   onExcerptChange,
   onGenerateExcerpt,
   isGeneratingExcerpt = false,
@@ -103,14 +105,9 @@ const PostSettingsSidebar = ({
           {/* Excerpt */}
           <Box>
             <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} sx={{ mb: 1 }}>
-              <Box>
-                <Typography variant="subtitle2" fontWeight={600}>
-                  Excerpt
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Required to publish. Summarize the whole article, not just the introduction.
-                </Typography>
-              </Box>
+              <Typography variant="subtitle2" fontWeight={600}>
+                Excerpt
+              </Typography>
               <Button
                 size="small"
                 variant="outlined"
@@ -129,7 +126,8 @@ const PostSettingsSidebar = ({
               placeholder="Write or generate a publication-ready excerpt..."
               value={excerpt}
               onChange={(e) => onExcerptChange?.(e.target.value)}
-              helperText={excerpt ? `${excerpt.length}/500 characters` : 'Aim for 1-2 sentences that capture the full piece.'}
+              error={Boolean(excerptError)}
+              helperText={excerptError || (excerpt ? `${excerpt.length}/500 characters` : ' ')}
               InputProps={{
                 sx: { fontSize: '0.875rem' }
               }}
@@ -283,6 +281,7 @@ PostSettingsSidebar.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   excerpt: PropTypes.string,
+  excerptError: PropTypes.string,
   onExcerptChange: PropTypes.func,
   onGenerateExcerpt: PropTypes.func,
   isGeneratingExcerpt: PropTypes.bool,

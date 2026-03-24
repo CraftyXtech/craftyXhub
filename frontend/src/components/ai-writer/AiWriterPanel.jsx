@@ -35,6 +35,7 @@ import {
 
 // API
 import { generateBlog, getBlogOptions } from '@/api/services/aiService';
+import { renderBlogPostToHtml } from '@/utils/blogMarkdown';
 
 const FALLBACK_OPTIONS = {
   blog_types: [
@@ -137,17 +138,7 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
 
   const getContentHtml = useCallback(() => {
     if (!generatedContent) return '';
-    let html = `<h1>${generatedContent.title}</h1>\n`;
-    generatedContent.sections?.forEach(section => {
-      html += `<h2>${section.heading}</h2>\n`;
-      const bodyHtml = section.body_markdown
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/^/, '<p>').replace(/$/, '</p>');
-      html += bodyHtml + '\n';
-    });
-    return html;
+    return renderBlogPostToHtml(generatedContent);
   }, [generatedContent]);
 
   const getMetadata = useCallback(() => {

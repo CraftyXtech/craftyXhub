@@ -101,6 +101,7 @@ export default function AdminPostEditor() {
   const [slug, setSlug] = useState('');
   const [content, setContent] = useState(aiState?.aiContent || '');
   const [excerpt, setExcerpt] = useState(aiState?.excerpt || '');
+  const [excerptError, setExcerptError] = useState('');
   const [isGeneratingExcerpt, setIsGeneratingExcerpt] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
@@ -258,6 +259,7 @@ export default function AdminPostEditor() {
     if (metadata.slug) setSlug(metadata.slug);
     if (metadata.excerpt) {
       setExcerpt(metadata.excerpt);
+      setExcerptError('');
     }
     if (metadata.metaTitle) setMetaTitle(metadata.metaTitle);
     if (metadata.metaDescription) setMetaDescription(metadata.metaDescription);
@@ -287,6 +289,7 @@ export default function AdminPostEditor() {
     try {
       setIsGeneratingExcerpt(true);
       setError(null);
+      setExcerptError('');
       const result = await generateAiExcerpt({
         title: title || 'Untitled',
         content: currentContent,
@@ -324,9 +327,9 @@ export default function AdminPostEditor() {
       }
 
       if (shouldPublish) {
-        const excerptError = getPublishExcerptError(excerpt);
-        if (excerptError) {
-          setError(excerptError);
+        const publishExcerptError = getPublishExcerptError(excerpt);
+        if (publishExcerptError) {
+          setExcerptError(publishExcerptError);
           return;
         }
       }
@@ -544,14 +547,9 @@ export default function AdminPostEditor() {
             {/* Excerpt */}
             <Box>
               <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2} sx={{ mb: 1 }}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Excerpt
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Required to publish. Summarize the whole article, not just the opening.
-                  </Typography>
-                </Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Excerpt
+                </Typography>
                 <Button
                   size="small"
                   variant="outlined"
@@ -570,9 +568,11 @@ export default function AdminPostEditor() {
                 value={excerpt}
                 onChange={(e) => {
                   setExcerpt(e.target.value);
+                  setExcerptError('');
                 }}
                 placeholder="Brief summary shown in post listings and used as a publish-ready summary"
-                helperText={excerpt ? `${excerpt.length}/500 characters` : 'Aim for 1-2 sentences that capture the full article.'}
+                error={Boolean(excerptError)}
+                helperText={excerptError || (excerpt ? `${excerpt.length}/500 characters` : ' ')}
               />
             </Box>
 
