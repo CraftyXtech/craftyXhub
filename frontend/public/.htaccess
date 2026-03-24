@@ -2,6 +2,8 @@
   RewriteEngine On
   RewriteBase /
   RewriteRule ^index\.html$ - [L]
+  RewriteRule ^s/(.*)$ /share-proxy.php?share_path=/s/$1 [L,QSA]
+  RewriteRule ^share/posts/(.*)$ /share-proxy.php?share_path=/share/posts/$1 [L,QSA]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]

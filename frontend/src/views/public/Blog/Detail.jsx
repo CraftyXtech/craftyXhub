@@ -88,7 +88,9 @@ function AuthorBox({ author }) {
  * Social Share Component
  */
 function SocialShare({ title, slug, uuid }) {
-  const shareBaseUrl = import.meta.env.VITE_SHARE_BASE_URL || getApiBaseUrl();
+  const shareBaseUrl =
+    import.meta.env.VITE_SHARE_BASE_URL ||
+    (typeof window !== 'undefined' ? window.location.origin : getApiBaseUrl());
   const shareUrlPrefix =
     import.meta.env.VITE_SHARE_URL_PREFIX ||
     `${shareBaseUrl.replace(/\/$/, '')}/s`;

@@ -35,7 +35,7 @@ class SharePageService:
         title = cls._resolve_title(post)
         description = cls._resolve_description(post)
         canonical_url = cls._build_frontend_post_url(post.slug)
-        share_url = str(request.url)
+        share_url = cls._build_share_url(request)
         image_url = cls._resolve_image_url(request, post.featured_image)
         image_alt = post.title or title or cls.SITE_NAME
         author_name = (
@@ -214,8 +214,7 @@ class SharePageService:
             pure_path = PurePosixPath(trimmed)
             filename = pure_path.name
             folder = pure_path.parent.name or "posts"
-            base_url = str(request.url_for("get_image", filename=filename))
-            return f"{base_url}?folder={quote(folder, safe='')}"
+            return cls._build_api_image_url(filename, folder)
 
         default_image_url = getattr(settings, "DEFAULT_SHARE_IMAGE_URL", "") or ""
         if default_image_url:
@@ -226,6 +225,25 @@ class SharePageService:
     @staticmethod
     def _build_frontend_post_url(slug: str) -> str:
         return f"{settings.FRONTEND_URL.rstrip('/')}/post/{quote(slug, safe='')}"
+
+    @staticmethod
+    def _build_share_url(request: Request) -> str:
+        request_path = request.url.path or "/"
+        query_string = request.url.query
+        share_url = f"{settings.FRONTEND_URL.rstrip('/')}{request_path}"
+        if query_string:
+            share_url += f"?{query_string}"
+        return share_url
+
+    @staticmethod
+    def _build_api_image_url(filename: str, folder: str) -> str:
+        api_base = settings.API_BASE_URL.rstrip("/")
+        if not api_base.endswith("/v1"):
+            api_base = f"{api_base}/v1"
+        return (
+            f"{api_base}/uploads/images/{quote(filename, safe='')}"
+            f"?folder={quote(folder, safe='')}"
+        )
 
     @staticmethod
     def _extract_plain_text(content: str | None) -> str:

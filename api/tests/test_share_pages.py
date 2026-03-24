@@ -20,6 +20,7 @@ async def test_share_page_renders_social_meta_and_redirects(
         "DEFAULT_SHARE_IMAGE_URL",
         "https://craftyxhub.com/default-share.png",
     )
+    monkeypatch.setattr(settings, "API_BASE_URL", "https://api.craftyxhub.com/v1")
 
     create = await client_author.post(
         "/v1/posts/",
@@ -48,8 +49,9 @@ async def test_share_page_renders_social_meta_and_redirects(
         '<meta property="og:description" content="Custom share description for social cards."'
         in html
     )
+    assert f'<meta property="og:url" content="https://craftyxhub.com/share/posts/{post["slug"]}"' in html
     assert '<meta name="twitter:card" content="summary_large_image"' in html
-    assert "http://test/v1/uploads/images/share-card.jpg?folder=posts" in html
+    assert "https://api.craftyxhub.com/v1/uploads/images/share-card.jpg?folder=posts" in html
     assert f"https://craftyxhub.com/post/{post['slug']}" in html
     assert 'window.location.replace("https://craftyxhub.com/post/' in html
     assert response.headers["x-robots-tag"] == "noindex,follow"
@@ -62,6 +64,7 @@ async def test_short_share_alias_renders_same_metadata(
     monkeypatch,
 ):
     monkeypatch.setattr(settings, "FRONTEND_URL", "https://craftyxhub.com")
+    monkeypatch.setattr(settings, "API_BASE_URL", "https://api.craftyxhub.com/v1")
 
     create = await client_author.post(
         "/v1/posts/",
@@ -80,6 +83,7 @@ async def test_short_share_alias_renders_same_metadata(
     assert response.status_code == 200, response.text
     html = response.text
     assert '<meta property="og:description" content="Short alias description."' in html
+    assert f'<meta property="og:url" content="https://craftyxhub.com/s/{post["uuid"]}"' in html
     assert f'https://craftyxhub.com/post/{post["slug"]}' in html
 
 
