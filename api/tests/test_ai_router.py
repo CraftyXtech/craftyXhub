@@ -85,6 +85,41 @@ async def test_generate_bad_request_from_service(app, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_generate_excerpt_ok(app, monkeypatch):
+    async def fake_generate(self, **kwargs):
+        assert kwargs["tool_id"] == "post-excerpt"
+        return {
+            "variants": [
+                {
+                    "content": 'Excerpt: A sharp summary that captures the full article and gives readers a strong reason to continue reading.',
+                    "metadata": {"words": 18, "model": "claude-sonnet-4.6"},
+                }
+            ],
+            "tool_id": "post-excerpt",
+            "model_used": kwargs.get("model", "claude-sonnet-4.6"),
+            "generation_time": 0.08,
+        }
+
+    monkeypatch.setattr(AIGeneratorService, "generate", fake_generate, raising=True)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        payload = {
+            "title": "Why editorial summaries matter",
+            "content": (
+                "A long-form article about why publish-quality excerpts need to "
+                "summarize the full piece instead of copying the opening paragraph."
+            ),
+        }
+        resp = await ac.post("/v1/ai/generate/excerpt", json=payload)
+
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["excerpt"].startswith("A sharp summary")
+    assert data["model_used"] == "claude-sonnet-4.6"
+
+
+@pytest.mark.asyncio
 async def test_generate_blog_ok_without_save_or_publish(app, monkeypatch):
     from schemas.ai import BlogPost, BlogSection
 

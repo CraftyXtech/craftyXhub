@@ -285,6 +285,29 @@ Include: Executive Summary, Key Points (5-7), Critical Insights (2-3), Action It
             "output_mode": "text",
             "variants_policy": "list_tool",
         },
+        "post-excerpt": {
+            "system_prompt": """You are a senior magazine editor. You write concise, publication-ready article excerpts that summarize the full piece clearly and make readers want to continue. You do not copy the opening paragraph. You capture the main argument, scope, and why it matters in 1-2 sentences.""",
+            "prompt": """Write a polished excerpt for this article.
+
+Title: {title}
+Article Content: {content}
+Tone: {tone}
+Language: {language}
+
+Requirements:
+- Summarize the whole article, not just the introduction
+- Write plain text only, no markdown, labels, bullets, or quotes
+- Keep it to 1-2 sentences
+- Aim for 90-220 characters when possible
+- Make it publication-ready and specific
+- Do not begin with generic phrases like "This article discusses"
+
+Return ONLY the excerpt text.""",
+            "required_fields": ["title", "content"],
+            "optional_fields": [],
+            "output_mode": "text",
+            "variants_policy": "single_piece",
+        },
         "fact-checklist": {
             "system_prompt": """You are a research analyst specializing in fact-checking and source verification. You identify claims that need substantiation, assess credibility, and recommend appropriate disclaimers and citations.""",
             "prompt": """Review this content for fact-checking needs:

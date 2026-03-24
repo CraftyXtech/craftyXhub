@@ -248,23 +248,28 @@ export const calculateReadingTime = (wordCount, wordsPerMinute = 200) => {
 };
 
 /**
- * Generate excerpt from EditorJS content
- * @param {object} editorData - EditorJS data
- * @param {number} maxLength - Maximum excerpt length (default: 150)
- * @returns {string} Excerpt
+ * Publish excerpt rules mirrored from the backend
  */
-export const generateExcerpt = (editorData, maxLength = 150) => {
-  if (!editorData?.blocks) return '';
+export const EXCERPT_MIN_CHARACTERS = 70;
+export const EXCERPT_MIN_WORDS = 10;
 
-  // Skip headers, get first paragraph content
-  for (const block of editorData.blocks) {
-    if (block.type === 'paragraph' && block.data.text) {
-      const text = stripHtml(block.data.text);
-      if (text.length > maxLength) {
-        return text.slice(0, maxLength).trim() + '...';
-      }
-      return text;
-    }
+export const normalizeExcerpt = (excerpt = '') => excerpt.replace(/\s+/g, ' ').trim();
+
+export const getExcerptWordCount = (excerpt = '') => {
+  const normalized = normalizeExcerpt(excerpt);
+  if (!normalized) return 0;
+  return normalized.split(/\s+/).filter(Boolean).length;
+};
+
+export const getPublishExcerptError = (excerpt = '') => {
+  const normalized = normalizeExcerpt(excerpt);
+  if (!normalized) {
+    return 'Generate or write an excerpt before publishing.';
+  }
+
+  const wordCount = getExcerptWordCount(normalized);
+  if (normalized.length < EXCERPT_MIN_CHARACTERS || wordCount < EXCERPT_MIN_WORDS) {
+    return `Excerpt must use at least ${EXCERPT_MIN_WORDS} words and ${EXCERPT_MIN_CHARACTERS} characters.`;
   }
 
   return '';

@@ -9,7 +9,7 @@ import {
   Divider,
   Stack
 } from '@mui/material';
-import { IconBrandTwitter, IconBrandFacebook, IconBrandInstagram, IconBrandLinkedin } from '@tabler/icons-react';
+import { IconBrandX, IconBrandFacebook, IconBrandInstagram, IconBrandLinkedin } from '@tabler/icons-react';
 import Logo from '@/components/Logo';
 
 const footerLinks = {
@@ -28,7 +28,7 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { icon: IconBrandTwitter, href: '#', label: 'Twitter' },
+  { icon: IconBrandX, href: '#', label: 'X' },
   { icon: IconBrandFacebook, href: '#', label: 'Facebook' },
   { icon: IconBrandInstagram, href: '#', label: 'Instagram' },
   { icon: IconBrandLinkedin, href: '#', label: 'LinkedIn' }

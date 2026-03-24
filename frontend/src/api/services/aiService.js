@@ -55,6 +55,38 @@ export const generate = async ({
 };
 
 /**
+ * Generate a publish-ready excerpt for a full article.
+ * @param {object} options
+ * @param {string} options.title - Article title
+ * @param {string} options.content - Article content (HTML or plain text)
+ * @param {string} options.model - AI model to use
+ * @param {string} options.tone - Writing tone
+ * @param {string} options.language - Output language
+ * @param {number} options.creativity - Creativity level 0-1
+ * @returns {Promise<object>} { excerpt, model_used, generation_time }
+ */
+export const generateExcerpt = async ({
+  title,
+  content,
+  model = 'claude-sonnet-4.6',
+  tone = 'professional',
+  language = 'en-US',
+  creativity = 0.4,
+}) => {
+  const response = await axiosPrivate.post('ai/generate/excerpt', {
+    title,
+    content,
+    model,
+    tone,
+    language,
+    creativity,
+  }, {
+    timeout: 300000,
+  });
+  return response.data;
+};
+
+/**
  * Get blog generation options (blog types, tones, audiences, etc.)
  * @returns {Promise<object>} { blog_types, tones, audiences, lengths, models }
  */

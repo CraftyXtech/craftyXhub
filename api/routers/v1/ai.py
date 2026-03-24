@@ -1,3 +1,5 @@
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.connection import get_db_session
@@ -7,6 +9,8 @@ from services.post import PostService
 from schemas.ai import (
     GenerateRequest,
     GenerateResponse,
+    ExcerptGenerateRequest,
+    ExcerptGenerateResponse,
     DraftSaveRequest,
     DraftUpdateRequest,
     DraftResponse,
@@ -21,6 +25,19 @@ from typing import List
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/ai", tags=["AI Content Generation"])
+
+
+def _clean_generated_excerpt(raw_excerpt: str) -> str:
+    excerpt = (raw_excerpt or "").strip()
+    excerpt = re.sub(r"^```(?:text)?|```$", "", excerpt, flags=re.IGNORECASE | re.MULTILINE)
+    excerpt = re.sub(r"^(excerpt|summary)\s*:\s*", "", excerpt, flags=re.IGNORECASE)
+    excerpt = re.sub(r"^\s*[-*•]\s*", "", excerpt)
+    excerpt = excerpt.replace("**", "").replace("__", "")
+    excerpt = excerpt.strip().strip('"').strip("'").strip()
+    excerpt = PostService.normalize_excerpt(excerpt) or ""
+    if len(excerpt) > 500:
+        excerpt = excerpt[:497].rstrip(" ,;:") + "..."
+    return excerpt
 
 
 @router.get("/test")
@@ -116,6 +133,60 @@ async def generate_content(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@router.post("/generate/excerpt", response_model=ExcerptGenerateResponse)
+async def generate_excerpt(
+    request: ExcerptGenerateRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db_session),
+):
+    del current_user, db
+
+    generator = AIGeneratorService()
+    cleaned_content = PostService.extract_plain_text_content(request.content, None)
+    if len(cleaned_content) < 50:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Article content must be at least 50 characters to generate an excerpt.",
+        )
+
+    try:
+        result = await generator.generate(
+            tool_id="post-excerpt",
+            model=request.model,
+            params={
+                "title": request.title or "Untitled article",
+                "content": cleaned_content,
+            },
+            tone=request.tone or "professional",
+            language=request.language or "en-US",
+            length="short",
+            creativity=request.creativity or 0.4,
+            variant_count=1,
+        )
+        raw_excerpt = result["variants"][0]["content"] if result.get("variants") else ""
+        excerpt = _clean_generated_excerpt(raw_excerpt)
+        if not excerpt:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="AI did not return a usable excerpt.",
+            )
+
+        return ExcerptGenerateResponse(
+            excerpt=excerpt,
+            model_used=result["model_used"],
+            generation_time=result["generation_time"],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Excerpt generation failed: {str(e)}",
         )
 
 

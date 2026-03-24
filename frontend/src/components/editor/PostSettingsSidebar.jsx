@@ -7,20 +7,19 @@ import Drawer from '@mui/material/Drawer';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
 import FormControl from '@mui/material/FormControl';
 import ListSubheader from '@mui/material/ListSubheader';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Chip from '@mui/material/Chip';
-import Switch from '@mui/material/Switch';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
 import Divider from '@mui/material/Divider';
 import CircularProgress from '@mui/material/CircularProgress';
 
 // Icons
-import { IconX, IconClock } from '@tabler/icons-react';
+import { IconX, IconClock, IconSparkles } from '@tabler/icons-react';
 
 const DRAWER_WIDTH = 360;
 
@@ -30,11 +29,10 @@ const DRAWER_WIDTH = 360;
  * @param {object} props
  * @param {boolean} props.isOpen - Whether drawer is open
  * @param {function} props.onClose - Close handler
- * @param {string} props.excerpt - Manual excerpt
- * @param {string} props.autoExcerpt - Auto-generated excerpt
- * @param {boolean} props.useAutoExcerpt - Use auto-generated excerpt
- * @param {function} props.onExcerptModeChange - Toggle auto excerpt
+ * @param {string} props.excerpt - Publish-ready excerpt
  * @param {function} props.onExcerptChange - Manual excerpt change
+ * @param {function} props.onGenerateExcerpt - Generate excerpt with AI
+ * @param {boolean} props.isGeneratingExcerpt - Excerpt generation loading state
  * @param {array} props.categories - Available categories
  * @param {string|number} props.categoryId - Selected category ID
  * @param {function} props.onCategoryChange - Category change handler
@@ -52,10 +50,9 @@ const PostSettingsSidebar = ({
   isOpen,
   onClose,
   excerpt = '',
-  autoExcerpt = '',
-  useAutoExcerpt = true,
-  onExcerptModeChange,
   onExcerptChange,
+  onGenerateExcerpt,
+  isGeneratingExcerpt = false,
   categories = [],
   categoryId,
   onCategoryChange,
@@ -105,31 +102,34 @@ const PostSettingsSidebar = ({
         <Stack spacing={3}>
           {/* Excerpt */}
           <Box>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-              <Typography variant="subtitle2" fontWeight={600}>
-                Excerpt
-              </Typography>
-              <FormControlLabel
-                control={
-                  <Switch
-                    size="small"
-                    checked={useAutoExcerpt}
-                    onChange={(e) => onExcerptModeChange?.(e.target.checked)}
-                  />
-                }
-                label={<Typography variant="caption">Auto</Typography>}
-                labelPlacement="start"
-              />
+            <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} sx={{ mb: 1 }}>
+              <Box>
+                <Typography variant="subtitle2" fontWeight={600}>
+                  Excerpt
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Required to publish. Summarize the whole article, not just the introduction.
+                </Typography>
+              </Box>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={onGenerateExcerpt}
+                disabled={isGeneratingExcerpt}
+                startIcon={isGeneratingExcerpt ? <CircularProgress size={14} /> : <IconSparkles size={14} />}
+              >
+                {excerpt ? 'Regenerate' : 'Generate'}
+              </Button>
             </Stack>
             <TextField
               multiline
               rows={3}
               fullWidth
               size="small"
-              placeholder={useAutoExcerpt ? 'Auto-generated from content' : 'Write a custom excerpt...'}
-              value={useAutoExcerpt ? autoExcerpt : excerpt}
+              placeholder="Write or generate a publication-ready excerpt..."
+              value={excerpt}
               onChange={(e) => onExcerptChange?.(e.target.value)}
-              disabled={useAutoExcerpt}
+              helperText={excerpt ? `${excerpt.length}/500 characters` : 'Aim for 1-2 sentences that capture the full piece.'}
               InputProps={{
                 sx: { fontSize: '0.875rem' }
               }}
@@ -283,10 +283,9 @@ PostSettingsSidebar.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   excerpt: PropTypes.string,
-  autoExcerpt: PropTypes.string,
-  useAutoExcerpt: PropTypes.bool,
-  onExcerptModeChange: PropTypes.func,
   onExcerptChange: PropTypes.func,
+  onGenerateExcerpt: PropTypes.func,
+  isGeneratingExcerpt: PropTypes.bool,
   categories: PropTypes.array,
   categoryId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onCategoryChange: PropTypes.func,

@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import {
-  IconBrandTwitter,
+  IconBrandX,
   IconBrandLinkedin,
   IconWorld,
   IconArticle,
@@ -225,12 +225,12 @@ export default function Author() {
                       {profile.twitter && (
                         <IconButton
                           component="a"
-                          href={`https://twitter.com/${profile.twitter}`}
+                          href={`https://x.com/${profile.twitter}`}
                           target="_blank"
                           size="small"
-                          sx={{ color: '#1DA1F2' }}
+                          sx={{ color: 'text.primary' }}
                         >
-                          <IconBrandTwitter size={20} />
+                          <IconBrandX size={20} />
                         </IconButton>
                       )}
                       {profile.linkedin && (

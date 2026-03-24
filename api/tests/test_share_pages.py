@@ -2,6 +2,11 @@ import pytest
 
 from core.config import settings
 
+VALID_EXCERPT = (
+    "A concise article summary that captures the full story, the main argument, "
+    "and the reason a reader should continue on CraftyXHub."
+)
+
 
 @pytest.mark.asyncio
 async def test_share_page_renders_social_meta_and_redirects(
@@ -21,7 +26,10 @@ async def test_share_page_renders_social_meta_and_redirects(
         data={
             "title": "Shareable Post",
             "content": "<p>Body for a shareable post.</p>",
-            "excerpt": "This is the excerpt that should appear in the share card.",
+            "excerpt": (
+                "This is the excerpt that should appear in the share card and it "
+                "summarizes the full article clearly for readers coming from social."
+            ),
             "meta_title": "Custom Share Title",
             "meta_description": "Custom share description for social cards.",
             "featured_image_path": "uploads/posts/share-card.jpg",
@@ -60,6 +68,7 @@ async def test_short_share_alias_renders_same_metadata(
         data={
             "title": "Short Alias Post",
             "content": "<p>Body for the short alias route.</p>",
+            "excerpt": VALID_EXCERPT,
             "meta_description": "Short alias description.",
             "is_published": "true",
         },
@@ -87,6 +96,7 @@ async def test_share_page_supports_head_requests(
         data={
             "title": "Head Request Post",
             "content": "<p>Body for head request coverage.</p>",
+            "excerpt": VALID_EXCERPT,
             "is_published": "true",
         },
     )
@@ -121,7 +131,10 @@ async def test_share_page_uses_excerpt_and_default_image_when_seo_fields_missing
         data={
             "title": "Fallback Share Title",
             "content": "<p>This is the long-form content that backs the fallback share page.</p>",
-            "excerpt": "Fallback excerpt for social previews.",
+            "excerpt": (
+                "Fallback excerpt for social previews that still captures the full "
+                "article and gives readers a useful reason to click through."
+            ),
             "is_published": "true",
         },
     )
@@ -134,7 +147,7 @@ async def test_share_page_uses_excerpt_and_default_image_when_seo_fields_missing
     html = response.text
     assert '<meta property="og:title" content="Fallback Share Title"' in html
     assert (
-        '<meta property="og:description" content="Fallback excerpt for social previews."'
+        '<meta property="og:description" content="Fallback excerpt for social previews that still captures the full article and gives readers a useful reason to click through."'
         in html
     )
     assert "https://craftyxhub.com/default-share.png" in html

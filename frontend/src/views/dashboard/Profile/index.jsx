@@ -304,7 +304,7 @@ export default function Profile() {
                         name="twitter"
                         control={control}
                         render={({ field }) => (
-                          <TextField {...field} label="Twitter" fullWidth placeholder="@username" />
+                          <TextField {...field} label="X" fullWidth placeholder="@username" />
                         )}
                       />
                     </Grid>

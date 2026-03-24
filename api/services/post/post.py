@@ -4,8 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from datetime import datetime, timedelta
+from html import unescape
 import hashlib
 import time
+import re
 from models import Post, Category, Tag, User, Report, Comment
 from models.base import post_likes, post_bookmarks
 from schemas.post import (
@@ -34,6 +36,171 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".avif", ".bmp", ".tiff", ".tif", ".ico", ".heic", ".heif"}
 
 class PostService:
+    EXCERPT_MIN_CHARACTERS = 70
+    EXCERPT_MIN_WORDS = 10
+
+    @staticmethod
+    def normalize_text(value: Optional[str]) -> str:
+        if not value:
+            return ""
+        value = unescape(value)
+        value = re.sub(r"<[^>]+>", " ", value)
+        value = re.sub(r"\s+", " ", value)
+        return value.strip()
+
+    @staticmethod
+    def normalize_excerpt(excerpt: Optional[str]) -> Optional[str]:
+        normalized = PostService.normalize_text(excerpt)
+        return normalized or None
+
+    @staticmethod
+    def _flatten_block_items(items) -> str:
+        flattened: list[str] = []
+        for item in items or []:
+            if isinstance(item, str):
+                cleaned = PostService.normalize_text(item)
+                if cleaned:
+                    flattened.append(cleaned)
+                continue
+
+            if isinstance(item, dict):
+                cleaned = PostService.normalize_text(item.get("content") or item.get("text"))
+                if cleaned:
+                    flattened.append(cleaned)
+                children = item.get("items")
+                if isinstance(children, list):
+                    child_text = PostService._flatten_block_items(children)
+                    if child_text:
+                        flattened.append(child_text)
+
+        return " ".join(flattened).strip()
+
+    @staticmethod
+    def _extract_block_text(block: dict) -> str:
+        if not isinstance(block, dict):
+            return ""
+
+        block_type = block.get("type")
+        data = block.get("data")
+        if not isinstance(data, dict):
+            return ""
+
+        if block_type in {"paragraph", "header", "quote"}:
+            return PostService.normalize_text(data.get("text") or data.get("caption"))
+
+        if block_type == "list":
+            return PostService._flatten_block_items(data.get("items") or [])
+
+        if block_type == "code":
+            return PostService.normalize_text(data.get("code"))
+
+        if block_type == "image":
+            return PostService.normalize_text(data.get("caption"))
+
+        values = [PostService.normalize_text(value) for value in data.values() if isinstance(value, str)]
+        return " ".join(value for value in values if value).strip()
+
+    @staticmethod
+    def extract_plain_text_content(
+        content: Optional[str],
+        content_blocks: Optional[dict],
+    ) -> str:
+        if isinstance(content_blocks, dict):
+            blocks = content_blocks.get("blocks")
+            if isinstance(blocks, list):
+                parts = [PostService._extract_block_text(block) for block in blocks]
+                plain_text = " ".join(part for part in parts if part).strip()
+                if plain_text:
+                    return plain_text
+
+        return PostService.normalize_text(content)
+
+    @staticmethod
+    def extract_first_paragraph(
+        content: Optional[str],
+        content_blocks: Optional[dict],
+    ) -> str:
+        if isinstance(content_blocks, dict):
+            blocks = content_blocks.get("blocks")
+            if isinstance(blocks, list):
+                for block in blocks:
+                    if isinstance(block, dict) and block.get("type") == "paragraph":
+                        first_paragraph = PostService._extract_block_text(block)
+                        if first_paragraph:
+                            return first_paragraph
+
+        if content:
+            matches = re.findall(r"<p[^>]*>(.*?)</p>", content, flags=re.IGNORECASE | re.DOTALL)
+            for match in matches:
+                paragraph = PostService.normalize_text(match)
+                if paragraph:
+                    return paragraph
+
+        return ""
+
+    @staticmethod
+    def build_legacy_excerpt_candidates(
+        content: Optional[str],
+        content_blocks: Optional[dict],
+    ) -> set[str]:
+        candidates: set[str] = set()
+        sources = [
+            PostService.extract_first_paragraph(content, content_blocks),
+            PostService.extract_plain_text_content(content, content_blocks),
+        ]
+
+        for source in sources:
+            normalized_source = PostService.normalize_text(source)
+            if not normalized_source:
+                continue
+
+            for max_length in (150, 160):
+                snippet = normalized_source[:max_length].strip()
+                if snippet:
+                    candidates.add(snippet)
+                    if len(normalized_source) > max_length:
+                        candidates.add(f"{snippet}...")
+
+        return {candidate for candidate in candidates if candidate}
+
+    @staticmethod
+    def validate_excerpt_for_publish(
+        excerpt: Optional[str],
+        content: Optional[str],
+        content_blocks: Optional[dict],
+    ) -> str:
+        normalized_excerpt = PostService.normalize_excerpt(excerpt)
+        if not normalized_excerpt:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Excerpt is required before publishing.",
+            )
+
+        word_count = len(normalized_excerpt.split())
+        if (
+            len(normalized_excerpt) < PostService.EXCERPT_MIN_CHARACTERS
+            or word_count < PostService.EXCERPT_MIN_WORDS
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "Excerpt must be a publish-ready summary of the whole article. "
+                    f"Use at least {PostService.EXCERPT_MIN_WORDS} words and "
+                    f"{PostService.EXCERPT_MIN_CHARACTERS} characters."
+                ),
+            )
+
+        legacy_candidates = PostService.build_legacy_excerpt_candidates(content, content_blocks)
+        if normalized_excerpt in legacy_candidates:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "Excerpt must summarize the whole article. "
+                    "Opening-paragraph snippets are not allowed for published posts."
+                ),
+            )
+
+        return normalized_excerpt
 
     @staticmethod
     def _apply_post_relationships(query):
@@ -429,6 +596,11 @@ class PostService:
             if not current_user.is_moderator or db_post.author_id != current_user.id:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to publish this post")
 
+            db_post.excerpt = PostService.validate_excerpt_for_publish(
+                db_post.excerpt,
+                db_post.content,
+                db_post.content_blocks,
+            )
             db_post.is_published = True
             db_post.published_at = datetime.utcnow()
             await session.commit()
@@ -756,8 +928,18 @@ class PostService:
                     detail="Post with this slug already exists"
                 )
 
+            normalized_excerpt = PostService.normalize_excerpt(post_data.excerpt)
+            if post_data.is_published:
+                normalized_excerpt = PostService.validate_excerpt_for_publish(
+                    normalized_excerpt,
+                    post_data.content,
+                    post_data.content_blocks,
+                )
+
+            post_payload = post_data.model_dump(exclude={"tag_ids"})
+            post_payload["excerpt"] = normalized_excerpt
             db_post = Post(
-                **post_data.model_dump(exclude={"tag_ids"}),
+                **post_payload,
                 author_id=author_id
             )
 
@@ -804,10 +986,27 @@ class PostService:
                 )
 
             update_data = post_data.model_dump(exclude_unset=True, exclude={"tag_ids"})
+            if "excerpt" in update_data:
+                update_data["excerpt"] = PostService.normalize_excerpt(update_data["excerpt"])
 
             if post_data.tag_ids is not None:
                 tags = await PostService.get_tags_by_ids(session, post_data.tag_ids)
                 db_post.tags = tags
+
+            should_publish = update_data.get("is_published")
+            if should_publish is None:
+                should_publish = db_post.is_published
+
+            candidate_excerpt = update_data.get("excerpt", db_post.excerpt)
+            candidate_content = update_data.get("content", db_post.content)
+            candidate_blocks = update_data.get("content_blocks", db_post.content_blocks)
+            if should_publish:
+                validated_excerpt = PostService.validate_excerpt_for_publish(
+                    candidate_excerpt,
+                    candidate_content,
+                    candidate_blocks,
+                )
+                update_data["excerpt"] = validated_excerpt
 
             for field, value in update_data.items():
                 setattr(db_post, field, value)

@@ -551,7 +551,7 @@ async def update_post(
 
     try:
         updated_post = await PostService.update_post(session, post_uuid, post_data, current_user.id)
-        PostService.cleanup_old_image(old_image_path, featured_image_path, UPLOAD_DIR)
+        await PostService.cleanup_old_image(old_image_path, featured_image_path, UPLOAD_DIR)
 
         return updated_post
     except Exception as e:

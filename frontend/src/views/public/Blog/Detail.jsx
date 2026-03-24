@@ -26,7 +26,7 @@ import {
   IconHeart,
   IconBookmark,
   IconBrandFacebook,
-  IconBrandTwitter,
+  IconBrandX,
   IconBrandLinkedin,
   IconArrowLeft
 } from '@tabler/icons-react';
@@ -107,7 +107,7 @@ function SocialShare({ title, slug, uuid }) {
         target="_blank"
         size="small"
       >
-        <IconBrandTwitter size={18} />
+        <IconBrandX size={18} />
       </IconButton>
       <IconButton
         component="a"

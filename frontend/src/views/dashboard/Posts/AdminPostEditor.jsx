@@ -21,8 +21,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
-import Switch from '@mui/material/Switch';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import Tooltip from '@mui/material/Tooltip';
 
 // TinyMCE
@@ -65,10 +63,12 @@ import AiWriterPanel from '@/components/ai-writer/AiWriterPanel';
 import { createPost, updatePost, getPost, getImageUrl, uploadPostImage } from '@/api/services/postService';
 import { getCategories } from '@/api/services/categoryService';
 import { getTags } from '@/api/services/tagService';
+import { generateExcerpt as generateAiExcerpt } from '@/api/services/aiService';
 
 // Utils
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import { getPublishExcerptError, normalizeExcerpt } from '@/utils/editorUtils';
 
 const SETTINGS_PANEL_WIDTH = 200;
 
@@ -101,7 +101,7 @@ export default function AdminPostEditor() {
   const [slug, setSlug] = useState('');
   const [content, setContent] = useState(aiState?.aiContent || '');
   const [excerpt, setExcerpt] = useState(aiState?.excerpt || '');
-  const [autoExcerpt, setAutoExcerpt] = useState(!aiState?.excerpt);
+  const [isGeneratingExcerpt, setIsGeneratingExcerpt] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
   const [metaTitle, setMetaTitle] = useState(aiState?.metaTitle || '');
@@ -130,19 +130,13 @@ export default function AdminPostEditor() {
     }
   }, [title, isEditing]);
 
-  // Helper: update word count + auto-excerpt from editor content
+  // Helper: update word count from editor content
   const updateStatsFromEditor = useCallback(() => {
     if (!editorRef.current) return;
     const html = editorRef.current.getContent();
     const text = html.replace(/<[^>]*>/g, '');
     setWordCount(text.split(/\s+/).filter(w => w.length > 0).length);
-
-    // Auto-fill excerpt from first ~160 chars of plain text
-    if (autoExcerpt && text.length > 0) {
-      const autoText = text.slice(0, 160).trim();
-      setExcerpt(autoText + (text.length > 160 ? '...' : ''));
-    }
-  }, [autoExcerpt]);
+  }, []);
 
   // Load categories and tags
   useEffect(() => {
@@ -173,7 +167,6 @@ export default function AdminPostEditor() {
           setSlug(post.slug || '');
           setContent(post.content || ''); // Store in state so TinyMCE picks it up on re-mount
           setExcerpt(post.excerpt || '');
-          setAutoExcerpt(false); // Manual mode when editing
           setCategoryId(post.category?.id || post.category_id || '');
           setSelectedTags(post.tags?.map(t => t.id) || []);
           setMetaTitle(post.meta_title || '');
@@ -265,7 +258,6 @@ export default function AdminPostEditor() {
     if (metadata.slug) setSlug(metadata.slug);
     if (metadata.excerpt) {
       setExcerpt(metadata.excerpt);
-      setAutoExcerpt(false); // Switch to manual mode
     }
     if (metadata.metaTitle) setMetaTitle(metadata.metaTitle);
     if (metadata.metaDescription) setMetaDescription(metadata.metaDescription);
@@ -282,6 +274,31 @@ export default function AdminPostEditor() {
       }
     }
   }, [tags]);
+
+  const handleGenerateExcerpt = useCallback(async () => {
+    const currentContent = editorRef.current ? editorRef.current.getContent() : content;
+    const plainText = currentContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+    if (plainText.length < 120) {
+      setError('Add more article content before generating the excerpt.');
+      return;
+    }
+
+    try {
+      setIsGeneratingExcerpt(true);
+      setError(null);
+      const result = await generateAiExcerpt({
+        title: title || 'Untitled',
+        content: currentContent,
+      });
+      setExcerpt(result.excerpt || '');
+    } catch (err) {
+      console.error('Failed to generate excerpt:', err);
+      setError(err.response?.data?.detail || 'Failed to generate excerpt');
+    } finally {
+      setIsGeneratingExcerpt(false);
+    }
+  }, [content, title]);
 
   // Submit form
   const handleSubmit = async (shouldPublish = false) => {
@@ -306,11 +323,19 @@ export default function AdminPostEditor() {
         return;
       }
 
+      if (shouldPublish) {
+        const excerptError = getPublishExcerptError(excerpt);
+        if (excerptError) {
+          setError(excerptError);
+          return;
+        }
+      }
+
       const formData = new FormData();
       formData.append('title', title);
       formData.append('slug', slug);
       formData.append('content', currentContent);
-      formData.append('excerpt', excerpt || '');
+      formData.append('excerpt', normalizeExcerpt(excerpt));
       formData.append('meta_title', metaTitle || '');
       formData.append('meta_description', metaDescription || '');
       formData.append('is_published', shouldPublish ? 'true' : 'false');
@@ -516,24 +541,26 @@ export default function AdminPostEditor() {
               {wordCount} words
             </Typography>
 
-            {/* Excerpt — with auto-generate toggle */}
+            {/* Excerpt */}
             <Box>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Excerpt
-                </Typography>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      size="small"
-                      checked={autoExcerpt}
-                      onChange={(e) => setAutoExcerpt(e.target.checked)}
-                    />
-                  }
-                  label={<Typography variant="caption">Auto-generate</Typography>}
-                  labelPlacement="start"
-                  sx={{ mr: 0 }}
-                />
+              <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2} sx={{ mb: 1 }}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Excerpt
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Required to publish. Summarize the whole article, not just the opening.
+                  </Typography>
+                </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={handleGenerateExcerpt}
+                  disabled={isGeneratingExcerpt}
+                  startIcon={isGeneratingExcerpt ? <CircularProgress size={14} /> : <IconSparkles size={14} />}
+                >
+                  {excerpt ? 'Regenerate' : 'Generate'}
+                </Button>
               </Stack>
               <TextField
                 multiline
@@ -543,15 +570,9 @@ export default function AdminPostEditor() {
                 value={excerpt}
                 onChange={(e) => {
                   setExcerpt(e.target.value);
-                  setAutoExcerpt(false);
                 }}
-                placeholder="Brief summary shown in post listings"
-                disabled={autoExcerpt}
-                sx={{
-                  '& .MuiInputBase-root': {
-                    bgcolor: autoExcerpt ? 'action.hover' : 'background.paper'
-                  }
-                }}
+                placeholder="Brief summary shown in post listings and used as a publish-ready summary"
+                helperText={excerpt ? `${excerpt.length}/500 characters` : 'Aim for 1-2 sentences that capture the full article.'}
               />
             </Box>
 

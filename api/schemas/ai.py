@@ -49,6 +49,24 @@ class GenerateResponse(BaseModel):
     generation_time: float
 
 
+class ExcerptGenerateRequest(BaseModel):
+    title: Optional[str] = Field(default=None, max_length=200)
+    content: str = Field(..., min_length=50, description="Full article content or plain text")
+    model: str = Field(
+        default="claude-sonnet-4.6",
+        description="AI model name (e.g., claude-sonnet-4.6, gpt-5.2)",
+    )
+    tone: Optional[str] = Field(default="professional", description="Writing tone")
+    language: Optional[str] = Field(default="en-US", description="Output language")
+    creativity: Optional[float] = Field(default=0.4, ge=0.0, le=1.0)
+
+
+class ExcerptGenerateResponse(BaseModel):
+    excerpt: str = Field(..., min_length=1, max_length=500)
+    model_used: str
+    generation_time: float
+
+
 class DraftResponse(BaseModel):
     id: int
     uuid: str
@@ -205,4 +223,3 @@ class BlogGenerateResponse(BaseModel):
         default=None,
         description="Deterministic quality analysis report (readability, SEO, style)",
     )
-
