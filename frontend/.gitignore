@@ -27,6 +27,6 @@ yarn-error.log*
 
 # Old template folders (to be deleted after migration)
 litho/
-admin/
+/admin/
 uikit/
 vite/

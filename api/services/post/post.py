@@ -1229,6 +1229,35 @@ class PostService:
             if category_data.description is not None:
                 db_category.description = category_data.description
 
+            # Handle parent_id changes (for moving categories or creating subcategories)
+            if category_data.parent_id is not None:
+                if category_data.parent_id == category_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Category cannot be its own parent"
+                    )
+                if category_data.parent_id > 0:
+                    # Verify parent exists
+                    parent_result = await session.execute(
+                        select(Category).where(Category.id == category_data.parent_id)
+                    )
+                    parent_category = parent_result.scalar_one_or_none()
+                    if not parent_category:
+                        raise HTTPException(
+                            status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Parent category not found"
+                        )
+                    # Check that parent is not a subcategory of this category (prevent circular reference)
+                    if parent_category.parent_id == category_id:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Cannot create circular category reference"
+                        )
+                    db_category.parent_id = category_data.parent_id
+                else:
+                    # parent_id = 0 means make it a top-level category
+                    db_category.parent_id = None
+
             await session.commit()
             await session.refresh(db_category)
             return db_category
