@@ -7,10 +7,21 @@ import { axiosPublic, axiosPrivate } from '../axios';
 
 /**
  * Get all tags
+ * @param {number} categoryId - Optional category ID to filter by
  * @returns {Promise<object>} { tags }
  */
-export const getTags = async () => {
-  const response = await axiosPublic.get('/posts/tags/');
+export const getTags = async (categoryId = null) => {
+  const params = categoryId ? { category_id: categoryId } : {};
+  const response = await axiosPublic.get('/posts/tags/', { params });
+  return response.data;
+};
+
+/**
+ * Get tags grouped by category
+ * @returns {Promise<object>} { groups: [{ category_id, category_name, tags }] }
+ */
+export const getTagsGrouped = async () => {
+  const response = await axiosPublic.get('/posts/tags/grouped/');
   return response.data;
 };
 
@@ -38,7 +49,7 @@ export const getTagBySlug = async (slug) => {
 
 /**
  * Create a new tag (admin only)
- * @param {object} tagData - { name, slug?, description? }
+ * @param {object} tagData - { name, slug?, category_id? }
  * @returns {Promise<object>} Created tag
  */
 export const createTag = async (tagData) => {
