@@ -48,6 +48,31 @@ async def test_share_page_renders_social_meta_and_redirects(
 
 
 @pytest.mark.asyncio
+async def test_share_page_supports_head_requests(
+    client_author,
+    client_public,
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "FRONTEND_URL", "https://craftyxhub.com")
+
+    create = await client_author.post(
+        "/v1/posts/",
+        data={
+            "title": "Head Request Post",
+            "content": "<p>Body for head request coverage.</p>",
+            "is_published": "true",
+        },
+    )
+    assert create.status_code == 201, create.text
+    post = create.json()
+
+    response = await client_public.head(f"/share/posts/{post['slug']}")
+    assert response.status_code == 200, response.text
+    assert response.headers["x-robots-tag"] == "noindex,follow"
+    assert response.headers["content-type"].startswith("text/html")
+
+
+@pytest.mark.asyncio
 async def test_share_page_uses_excerpt_and_default_image_when_seo_fields_missing(
     client_author,
     client_public,

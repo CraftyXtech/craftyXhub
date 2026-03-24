@@ -103,8 +103,9 @@ def include_routers(app: FastAPI) -> None:
         
         return FileResponse(file_path)
 
-    @app.get(
+    @app.api_route(
         "/share/posts/{post_identifier}",
+        methods=["GET", "HEAD"],
         include_in_schema=False,
         response_class=HTMLResponse,
     )
