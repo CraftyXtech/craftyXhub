@@ -72,9 +72,7 @@ const FALLBACK_OPTIONS = {
   ],
   web_search_modes: [
     { value: 'off', label: 'Off' },
-    { value: 'basic', label: 'Basic' },
-    { value: 'enhanced', label: 'Enhanced' },
-    { value: 'full', label: 'Full' },
+    { value: 'basic', label: 'On (DuckDuckGo)' },
   ],
 };
 
@@ -123,7 +121,7 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
         topic, blog_type: blogType,
         keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
         audience: audience || null, word_count: length, tone, model, creativity,
-        use_web_search: webSearchMode !== 'off', web_search_mode: webSearchMode,
+        web_search_mode: webSearchMode,
         save_draft: true, publish_post: false,
       });
       setGeneratedContent(result.blog_post);

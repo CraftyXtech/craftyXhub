@@ -49,7 +49,7 @@ class TestWebSearchServiceTextSearch:
         assert len(results) == 2
         assert results[0]["title"] == "AI Trends 2026 - TechCrunch"
         assert "href" in results[0]
-        mock_instance.text.assert_called_once_with("AI trends 2026", max_results=5)
+        mock_instance.text.assert_called_once_with(query="AI trends 2026", max_results=5)
 
     @patch("services.ai.web_search.DDGS")
     def test_search_text_returns_empty_on_failure(self, mock_ddgs):
@@ -78,7 +78,7 @@ class TestWebSearchServiceNewsSearch:
         assert len(results) == 1
         assert results[0]["source"] == "TechNews"
         mock_instance.news.assert_called_once_with(
-            "AI news", max_results=3, timelimit="w"
+            query="AI news", max_results=3, timelimit="w"
         )
 
     @patch("services.ai.web_search.DDGS")

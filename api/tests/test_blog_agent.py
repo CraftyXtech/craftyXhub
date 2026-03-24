@@ -7,6 +7,7 @@ from services.ai.blog_agent import BlogAgentService
 class _FakeResult:
     def __init__(self, data):
         self.data = data
+        self.output = data
 
 
 class _FakeAgent:
@@ -26,11 +27,12 @@ class _FakeAgent:
 class _FallbackRetryAgent:
     text_attempt_count = 0
 
-    def __init__(self, *args, result_type=None, **kwargs):
-        self.result_type = result_type
+    def __init__(self, *args, output_type=None, **kwargs):
+        assert "result_type" not in kwargs
+        self.output_type = output_type
 
     async def run(self, prompt, model_settings=None):
-        if self.result_type is BlogPost:
+        if self.output_type is BlogPost:
             raise Exception("Exceeded maximum retries (1) for result validation")
 
         _FallbackRetryAgent.text_attempt_count += 1
@@ -175,22 +177,82 @@ def test_build_outline_guidance_contains_keywords_and_sections():
     assert "Official docs" in guidance
 
 
-def test_select_model_phase_falls_back_when_online_unavailable(monkeypatch):
+def test_select_model_phase_keeps_standard_model_for_basic(monkeypatch):
     service = BlogAgentService()
-
-    def _fail_online(_model_name):
-        raise ValueError("online unavailable")
-
-    monkeypatch.setattr("services.ai.blog_agent.get_model_with_online", _fail_online)
-    monkeypatch.setattr(BlogAgentService, "_get_model_for_name", lambda self, model_name: object())
+    sentinel_model = object()
+    monkeypatch.setattr(BlogAgentService, "_get_model_for_name", lambda self, model_name: sentinel_model)
 
     model_obj, used_online = service._select_model_phase(
         model="claude-sonnet-4.6",
-        web_search_mode="enhanced",
+        web_search_mode="basic",
     )
 
-    assert model_obj is not None
+    assert model_obj is sentinel_model
     assert used_online is False
+
+
+def test_research_phase_skips_ddg_when_off(monkeypatch):
+    service = BlogAgentService()
+    state = {"called": False}
+
+    class _SearchShouldNotRun:
+        def __init__(self, *args, **kwargs):
+            state["called"] = True
+
+    monkeypatch.setattr("services.ai.blog_agent.WebSearchService", _SearchShouldNotRun)
+
+    context, sources, used = service._research_phase(
+        topic="AI search mode cleanup",
+        keywords=["duckduckgo"],
+        web_search_mode="off",
+    )
+
+    assert state["called"] is False
+    assert context == ""
+    assert sources is None
+    assert used is False
+
+
+def test_research_phase_uses_ddg_when_basic(monkeypatch):
+    service = BlogAgentService()
+    state = {"called": False}
+
+    class _FakeSearchService:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def search_for_topic(self, topic, keywords):
+            state["called"] = True
+            assert topic == "AI search mode cleanup"
+            assert keywords == ["duckduckgo"]
+            return {
+                "text_results": [],
+                "news_results": [],
+                "sources": [
+                    {
+                        "title": "DDG source",
+                        "url": "https://example.com/ddg",
+                        "snippet": "DuckDuckGo search result",
+                    }
+                ],
+            }
+
+        def format_as_context(self, search_results):
+            assert search_results["sources"]
+            return "formatted ddg context"
+
+    monkeypatch.setattr("services.ai.blog_agent.WebSearchService", _FakeSearchService)
+
+    context, sources, used = service._research_phase(
+        topic="AI search mode cleanup",
+        keywords=["duckduckgo"],
+        web_search_mode="basic",
+    )
+
+    assert state["called"] is True
+    assert context == "formatted ddg context"
+    assert sources and sources[0]["title"] == "DDG source"
+    assert used is True
 
 
 def test_collect_quality_issues_flags_ai_tropes():

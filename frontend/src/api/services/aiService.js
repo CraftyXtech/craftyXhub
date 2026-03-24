@@ -1,4 +1,5 @@
 import { axiosPrivate } from '../axios';
+import { buildBlogGenerationPayload } from './blogGenerationPayload';
 
 /**
  * AI Service
@@ -108,7 +109,8 @@ export const getBlogOptions = async () => {
  * @param {string} options.language - Output language
  * @param {string} options.model - AI model to use
  * @param {number} options.creativity - Temperature/creativity level (0.0-1.0)
- * @param {boolean} options.web_search - Enable web search grounding (on/off)
+ * @param {boolean} options.web_search - Legacy boolean fallback for DDG on/off
+ * @param {string} options.web_search_mode - Explicit DDG web-search mode ('off' | 'basic')
  * @param {string} options.execution_mode - strict (selected model only) or resilient (failover chain)
  * @param {boolean} options.save_draft - Save as AI draft
  * @param {boolean} options.publish_post - Publish directly to Posts
@@ -127,18 +129,17 @@ export const generateBlog = async ({
   model = 'glm-5',
   creativity = 0.7,
   web_search = true,
+  web_search_mode,
   execution_mode = 'strict',
   save_draft = true,
   publish_post = false,
   category_id = null,
   is_published = false,
 }) => {
-  const payload = {
+  const payload = buildBlogGenerationPayload({
     topic,
     blog_type,
-    keywords: Array.isArray(keywords) 
-      ? keywords 
-      : keywords.split(',').map(k => k.trim()).filter(k => k),
+    keywords,
     audience,
     word_count,
     tone,
@@ -146,13 +147,13 @@ export const generateBlog = async ({
     model,
     creativity,
     web_search,
-    web_search_mode: web_search ? 'basic' : 'off',
+    web_search_mode,
     execution_mode,
     save_draft,
     publish_post,
     category_id,
     is_published,
-  };
+  });
   
   // AI generation can take 30-120+ seconds; override the default 10s timeout
   const response = await axiosPrivate.post('ai/generate/blog', payload, {

@@ -18,7 +18,7 @@ from pydantic_ai.models.openai import OpenAIModel
 from core.config import settings
 from schemas.ai import BlogPost, BlogSection
 from .tools import ToolHandler
-from .llm_config import get_model, get_model_with_online, DEFAULT_MODEL
+from .llm_config import get_model, DEFAULT_MODEL
 from .quality_tools import (
     analyze_readability,
     extract_blog_plaintext,
@@ -159,7 +159,7 @@ class BlogAgentService:
         """
         Research phase: gather external context using DuckDuckGo when enabled.
         """
-        use_ddg = web_search_mode in ("basic", "full")
+        use_ddg = web_search_mode == "basic"
         web_context = ""
         web_search_used = False
         sources: list[dict] | None = None
@@ -184,16 +184,8 @@ class BlogAgentService:
 
     def _select_model_phase(self, model: str, web_search_mode: str):
         """
-        Model selection phase: optionally enable OpenRouter online grounding.
+        Model selection phase: DDG-only search does not alter the base model.
         """
-        use_online = web_search_mode in ("enhanced", "full")
-        if use_online:
-            try:
-                logger.info(f"Using OpenRouter :online model for: {model}")
-                return get_model_with_online(model), True
-            except Exception as e:
-                logger.warning(f":online model failed, falling back to standard: {e}")
-                return self._get_model_for_name(model), False
         return self._get_model_for_name(model), False
 
     async def _draft_phase(
@@ -448,6 +440,12 @@ class BlogAgentService:
 
         return payload or None
 
+    @staticmethod
+    def _run_result_output(run_result: Any) -> Any:
+        if hasattr(run_result, "output"):
+            return run_result.output
+        return getattr(run_result, "data", None)
+
     async def _run_generation_once(
         self,
         pydantic_model,
@@ -461,7 +459,7 @@ class BlogAgentService:
         try:
             agent = Agent(
                 pydantic_model,
-                result_type=BlogPost,
+                output_type=BlogPost,
                 system_prompt=self.system_prompt,
                 retries=self._structured_retries,
             )
@@ -473,7 +471,7 @@ class BlogAgentService:
                     "max_tokens": self._get_max_tokens(word_count),
                 },
             )
-            return result.data, self._extract_usage_payload(result)
+            return self._run_result_output(result), self._extract_usage_payload(result)
         except Exception as structured_error:
             # Log the structured-output failure (often a tool_choice 404 from
             # OpenRouter) and proceed to text-based fallback.
@@ -504,7 +502,7 @@ class BlogAgentService:
 
                 agent = Agent(
                     pydantic_model,
-                    result_type=str,
+                    output_type=str,
                     system_prompt=self.system_prompt,
                     retries=1,
                 )
@@ -517,7 +515,8 @@ class BlogAgentService:
                     },
                 )
 
-                raw = result.data if isinstance(result.data, str) else ""
+                raw_output = self._run_result_output(result)
+                raw = raw_output if isinstance(raw_output, str) else ""
                 if not raw.strip():
                     raise ValueError("Received empty model response")
 
@@ -655,9 +654,7 @@ class BlogAgentService:
 
         web_search_mode:
             - "off"      — no web search
-            - "basic"    — DuckDuckGo context injection (free)
-            - "enhanced" — OpenRouter :online native grounding
-            - "full"     — both DuckDuckGo + :online
+            - "basic"    — DuckDuckGo context injection
         
         Returns:
             Tuple of (BlogPost, generation_time, web_search_used, sources)

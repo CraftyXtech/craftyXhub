@@ -76,7 +76,7 @@ async def test_chat(
         pydantic_model = get_model(DEFAULT_MODEL)
         agent = Agent(
             pydantic_model,
-            result_type=str,
+            output_type=str,
             system_prompt="You are a friendly and helpful AI assistant. Keep responses concise and engaging.",
         )
 
@@ -94,7 +94,7 @@ async def test_chat(
 
         return {
             "message": message,
-            "response": result.data,
+            "response": result.output,
             "model": DEFAULT_MODEL,
             "response_time": round(response_time, 2),
             "tokens_used": tokens_used,
@@ -356,9 +356,7 @@ async def get_blog_options():
         "models": models,
         "web_search_modes": [
             {"value": "off", "label": "Off"},
-            {"value": "basic", "label": "Basic"},
-            {"value": "enhanced", "label": "Enhanced"},
-            {"value": "full", "label": "Full"},
+            {"value": "basic", "label": "On (DuckDuckGo)"},
         ],
     }
 
@@ -386,7 +384,7 @@ async def generate_blog(
     Options:
     - save_draft: Save the generated content as an AI draft
     - publish_post: Create a post directly in the Posts system
-    - web_search_mode: Control research grounding (off/basic/enhanced/full)
+    - web_search_mode: Control DuckDuckGo grounding (off/basic)
     """
     try:
         # Initialize the blog agent service

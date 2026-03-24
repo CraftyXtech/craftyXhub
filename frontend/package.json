@@ -8,6 +8,7 @@
     "start": "vite preview",
     "build": "vite build",
     "preview": "vite preview",
+    "test:node": "node --test tests/*.test.mjs",
     "lint": "eslint \"src/**/*.{js,jsx}\"",
     "lint:fix": "eslint --fix \"src/**/*.{js,jsx}\"",
     "prettier": "prettier --write \"src/**/*.{js,jsx}\""
