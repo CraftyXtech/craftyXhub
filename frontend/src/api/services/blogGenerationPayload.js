@@ -1,25 +1,5 @@
-export const BLOG_WEB_SEARCH_MODES = Object.freeze({
-  OFF: 'off',
-  BASIC: 'basic',
-});
-
-export const resolveBlogWebSearchMode = ({
-  web_search_mode,
-  web_search,
-} = {}) => {
-  if (typeof web_search_mode === 'string') {
-    const normalizedMode = web_search_mode.toLowerCase();
-    if (normalizedMode === BLOG_WEB_SEARCH_MODES.OFF || normalizedMode === BLOG_WEB_SEARCH_MODES.BASIC) {
-      return normalizedMode;
-    }
-  }
-
-  if (web_search === false) {
-    return BLOG_WEB_SEARCH_MODES.OFF;
-  }
-
-  return BLOG_WEB_SEARCH_MODES.BASIC;
-};
+export const resolveUseWebSearch = (use_web_search = true) =>
+  typeof use_web_search === 'boolean' ? use_web_search : true;
 
 export const buildBlogGenerationPayload = ({
   topic,
@@ -31,9 +11,7 @@ export const buildBlogGenerationPayload = ({
   language = 'en-US',
   model = 'glm-5',
   creativity = 0.7,
-  web_search = true,
-  web_search_mode,
-  execution_mode = 'strict',
+  use_web_search = true,
   save_draft = true,
   publish_post = false,
   category_id = null,
@@ -53,8 +31,7 @@ export const buildBlogGenerationPayload = ({
   language,
   model,
   creativity,
-  web_search_mode: resolveBlogWebSearchMode({ web_search_mode, web_search }),
-  execution_mode,
+  use_web_search: resolveUseWebSearch(use_web_search),
   save_draft,
   publish_post,
   category_id,

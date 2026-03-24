@@ -51,12 +51,6 @@ AVAILABLE_MODELS = {
 }
 
 DEFAULT_MODEL = "glm-5"
-BLOG_FALLBACK_ORDER = [
-    "glm-5",
-    "claude-sonnet-4.6",
-    "gpt-5.2",
-    "kimi-k2.5",
-]
 
 
 def _ensure_api_key():
@@ -81,18 +75,9 @@ def get_model_entry(model_name: str) -> dict:
     return entry
 
 
-def get_model_id(model_name: str, use_online: bool = False) -> str:
+def get_model_id(model_name: str) -> str:
     entry = get_model_entry(model_name)
-    model_id = entry["id"]
-    return f"{model_id}:online" if use_online else model_id
-
-
-def resolve_model_name_from_id(model_id: str) -> str | None:
-    model_id = model_id[:-7] if model_id.endswith(":online") else model_id
-    for key, entry in AVAILABLE_MODELS.items():
-        if entry["id"] == model_id:
-            return key
-    return None
+    return entry["id"]
 
 
 def get_blog_model_capabilities(model_name: str) -> dict[str, bool]:
@@ -104,62 +89,6 @@ def get_blog_model_capabilities(model_name: str) -> dict[str, bool]:
     }
 
 
-def build_blog_model_chain(
-    selected_model: str,
-    execution_mode: str = "strict",
-    *,
-    path: str = "structured",
-    use_online: bool = False,
-) -> list[str]:
-    """
-    Build deterministic model id chain for blog generation.
-
-    path:
-        - "structured": requires supports_structured
-        - "compat_json": requires supports_compat_json
-    """
-    if execution_mode not in ("strict", "resilient"):
-        raise ValueError("execution_mode must be one of: strict, resilient")
-    if path not in ("structured", "compat_json"):
-        raise ValueError("path must be one of: structured, compat_json")
-
-    required_capability = (
-        "supports_structured" if path == "structured" else "supports_compat_json"
-    )
-
-    selected_entry = get_model_entry(selected_model)
-    if not selected_entry.get("blog_enabled", False):
-        raise ValueError(f"Model '{selected_model}' is not enabled for blog generation")
-    if not selected_entry.get(required_capability, False):
-        return []
-
-    selected_id = get_model_id(selected_model, use_online=use_online)
-    if execution_mode == "strict":
-        return [selected_id]
-
-    ordered_model_names = [selected_model] + [
-        name for name in BLOG_FALLBACK_ORDER if name != selected_model
-    ]
-    chain: list[str] = []
-    seen: set[str] = set()
-
-    for model_name in ordered_model_names:
-        entry = AVAILABLE_MODELS.get(model_name)
-        if not entry:
-            continue
-        if not entry.get("blog_enabled", False):
-            continue
-        if not entry.get(required_capability, False):
-            continue
-        model_id = get_model_id(model_name, use_online=use_online)
-        if model_id in seen:
-            continue
-        seen.add(model_id)
-        chain.append(model_id)
-
-    return chain
-
-
 def get_model(model_name: str) -> OpenAIModel:
     """
     Return a PydanticAI-compatible model instance for the given name.
@@ -167,17 +96,6 @@ def get_model(model_name: str) -> OpenAIModel:
     """
     return OpenAIModel(
         get_model_id(model_name),
-        provider=_get_openrouter_provider(),
-    )
-
-
-def get_model_with_online(model_name: str) -> OpenAIModel:
-    """
-    Return a model instance with OpenRouter's :online suffix for native
-    web search grounding. The model will browse the web during generation.
-    """
-    return OpenAIModel(
-        get_model_id(model_name, use_online=True),
         provider=_get_openrouter_provider(),
     )
 

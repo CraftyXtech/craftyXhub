@@ -1,8 +1,6 @@
 """
-Blog Agent Service - PydanticAI-powered blog post generation with web search.
-
-This service generates complete, structured blog posts using PydanticAI agents
-with optional web search capabilities for research-backed content.
+Blog Agent Service - PydanticAI-powered blog post generation with optional
+DuckDuckGo research.
 """
 
 import asyncio
@@ -12,10 +10,8 @@ import re
 import time
 from typing import Any, Optional
 
-from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai import Agent
 
-from core.config import settings
 from schemas.ai import BlogPost, BlogSection
 from .tools import ToolHandler
 from .llm_config import get_model, DEFAULT_MODEL
@@ -154,19 +150,20 @@ class BlogAgentService:
         self,
         topic: str,
         keywords: Optional[list[str]],
-        web_search_mode: str,
-    ) -> tuple[str, list[dict] | None, bool]:
+        use_web_search: bool,
+    ) -> tuple[str, list[dict] | None, bool, bool]:
         """
         Research phase: gather external context using DuckDuckGo when enabled.
         """
-        use_ddg = web_search_mode == "basic"
         web_context = ""
         web_search_used = False
+        ddg_attempted = False
         sources: list[dict] | None = None
 
-        if not use_ddg:
-            return web_context, sources, web_search_used
+        if not use_web_search:
+            return web_context, sources, web_search_used, ddg_attempted
 
+        ddg_attempted = True
         try:
             search_svc = WebSearchService(max_results=5)
             search_results = search_svc.search_for_topic(topic, keywords)
@@ -180,13 +177,7 @@ class BlogAgentService:
         except Exception as e:
             logger.warning(f"DuckDuckGo search failed, proceeding without: {e}")
 
-        return web_context, sources, web_search_used
-
-    def _select_model_phase(self, model: str, web_search_mode: str):
-        """
-        Model selection phase: DDG-only search does not alter the base model.
-        """
-        return self._get_model_for_name(model), False
+        return web_context, sources, web_search_used, ddg_attempted
 
     async def _draft_phase(
         self,
@@ -647,14 +638,14 @@ class BlogAgentService:
         language: str = "en-US",
         model: str = DEFAULT_MODEL,
         creativity: float = 0.7,
-        web_search_mode: str = "basic",
+        use_web_search: bool = True,
     ) -> tuple[BlogPost, float, bool, list[dict] | None]:
         """
         Generate a complete blog post with configurable web search.
 
-        web_search_mode:
-            - "off"      — no web search
-            - "basic"    — DuckDuckGo context injection
+        use_web_search:
+            - False — no web search
+            - True  — use DuckDuckGo context injection
         
         Returns:
             Tuple of (BlogPost, generation_time, web_search_used, sources)
@@ -668,22 +659,24 @@ class BlogAgentService:
             "usage": {},
             "revision_applied": False,
             "web_grounding": {
+                "requested": bool(use_web_search),
+                "ddg_attempted": False,
                 "ddg_used": False,
-                "online_used": False,
             },
         }
 
         # ── Phase 1: Research ───────────────────────────────────────
         phase_start = time.perf_counter()
-        web_context, sources, ddg_used = self._research_phase(
+        web_context, sources, ddg_used, ddg_attempted = self._research_phase(
             topic=topic,
             keywords=keywords,
-            web_search_mode=web_search_mode,
+            use_web_search=use_web_search,
         )
         web_search_used = web_search_used or ddg_used
         self._last_phase_metrics["timings_ms"]["research"] = round(
             (time.perf_counter() - phase_start) * 1000, 2
         )
+        self._last_phase_metrics["web_grounding"]["ddg_attempted"] = ddg_attempted
         self._last_phase_metrics["web_grounding"]["ddg_used"] = ddg_used
 
         # ── Phase 2: Outline Guidance ───────────────────────────────
@@ -714,15 +707,10 @@ class BlogAgentService:
 
         # ── Phase 3: Model Selection + Draft ────────────────────────
         phase_start = time.perf_counter()
-        pydantic_model, online_used = self._select_model_phase(
-            model=model,
-            web_search_mode=web_search_mode,
-        )
-        web_search_used = web_search_used or online_used
+        pydantic_model = self._get_model_for_name(model)
         self._last_phase_metrics["timings_ms"]["model_selection"] = round(
             (time.perf_counter() - phase_start) * 1000, 2
         )
-        self._last_phase_metrics["web_grounding"]["online_used"] = online_used
 
         phase_start = time.perf_counter()
         draft_post, draft_usage = await self._draft_phase(

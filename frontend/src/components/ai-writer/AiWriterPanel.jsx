@@ -8,6 +8,7 @@ import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -19,7 +20,7 @@ import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Collapse from '@mui/material/Collapse';
 import Link from '@mui/material/Link';
-import Tooltip from '@mui/material/Tooltip';
+import Switch from '@mui/material/Switch';
 
 // Icons
 import {
@@ -70,10 +71,7 @@ const FALLBACK_OPTIONS = {
   models: [
     { value: 'claude-sonnet-4.6', label: 'Sonnet 4.6' },
   ],
-  web_search_modes: [
-    { value: 'off', label: 'Off' },
-    { value: 'basic', label: 'On (DuckDuckGo)' },
-  ],
+  use_web_search_default: true,
 };
 
 /**
@@ -90,7 +88,7 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
   const [length, setLength] = useState('medium');
   const [model, setModel] = useState('claude-sonnet-4.6');
   const [creativity, setCreativity] = useState(0.7);
-  const [webSearchMode, setWebSearchMode] = useState('basic');
+  const [useWebSearch, setUseWebSearch] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [generatedContent, setGeneratedContent] = useState(null);
@@ -107,6 +105,9 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
           if (res.models?.length > 0 && !res.models.find(m => m.value === model)) {
             setModel(res.models[0].value);
           }
+          if (typeof res.use_web_search_default === 'boolean') {
+            setUseWebSearch(res.use_web_search_default);
+          }
         }
       } catch { /* fall back silently */ }
     };
@@ -121,7 +122,7 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
         topic, blog_type: blogType,
         keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
         audience: audience || null, word_count: length, tone, model, creativity,
-        web_search_mode: webSearchMode,
+        use_web_search: useWebSearch,
         save_draft: true, publish_post: false,
       });
       setGeneratedContent(result.blog_post);
@@ -132,7 +133,7 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
     } catch (err) {
       setError(err.response?.data?.detail || err.message || 'Generation failed');
     } finally { setGenerating(false); }
-  }, [topic, blogType, keywords, audience, tone, length, model, creativity, webSearchMode]);
+  }, [topic, blogType, keywords, audience, tone, length, model, creativity, useWebSearch]);
 
   const getContentHtml = useCallback(() => {
     if (!generatedContent) return '';
@@ -262,14 +263,17 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
               </Select>
             </FormControl>
 
-            {/* Web Search Mode */}
-            <FormControl fullWidth size="small">
-              <InputLabel>Web Search</InputLabel>
-              <Select value={webSearchMode} onChange={(e) => setWebSearchMode(e.target.value)} label="Web Search">
-                {options.web_search_modes?.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>) ?? 
-                  FALLBACK_OPTIONS.web_search_modes.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>)}
-              </Select>
-            </FormControl>
+            <FormControlLabel
+              control={(
+                <Switch
+                  checked={useWebSearch}
+                  onChange={(event) => setUseWebSearch(event.target.checked)}
+                  size="small"
+                />
+              )}
+              label={<Typography sx={{ fontSize: 13, fontWeight: 500 }}>Web Search</Typography>}
+              sx={{ m: 0, justifyContent: 'space-between' }}
+            />
 
             {/* Creativity */}
             <Box>

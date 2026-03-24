@@ -186,17 +186,14 @@ async def test_generate_blog_ok_without_save_or_publish(app, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_get_blog_options_exposes_ddg_only_modes(app):
+async def test_get_blog_options_exposes_web_search_default(app):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         resp = await ac.get("/v1/ai/blog/options")
 
     assert resp.status_code == status.HTTP_200_OK
     data = resp.json()
-    assert data["web_search_modes"] == [
-        {"value": "off", "label": "Off"},
-        {"value": "basic", "label": "On (DuckDuckGo)"},
-    ]
+    assert data["use_web_search_default"] is True
 
 
 @pytest.mark.asyncio

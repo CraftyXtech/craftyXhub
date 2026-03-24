@@ -146,7 +146,7 @@ async def _run_one(
                 language=args.language,
                 model=model,
                 creativity=args.creativity,
-                web_search_mode=args.web_search_mode,
+                use_web_search=args.use_web_search,
             ),
             timeout=args.per_run_timeout_seconds,
         )
@@ -284,7 +284,7 @@ def _render_markdown(report: dict[str, Any]) -> str:
         f"- models: {', '.join(report['config']['models'])}",
         f"- cases: {report['config']['cases_count']}",
         f"- runs_per_case: {report['config']['runs_per_case']}",
-        f"- web_search_mode: {report['config']['web_search_mode']}",
+        f"- use_web_search: {report['config']['use_web_search']}",
         f"- word_count: {report['config']['word_count']}",
         "",
         "## Ranking",
@@ -358,7 +358,7 @@ async def run_eval(args: argparse.Namespace) -> dict[str, Any]:
             "tone": args.tone,
             "language": args.language,
             "creativity": args.creativity,
-            "web_search_mode": args.web_search_mode,
+            "use_web_search": args.use_web_search,
             "latency_ceiling_s": args.latency_ceiling_s,
             "token_ceiling": args.token_ceiling,
         },
@@ -397,7 +397,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--tone", type=str, default="conversational")
     parser.add_argument("--language", type=str, default="en-US")
     parser.add_argument("--creativity", type=float, default=0.7)
-    parser.add_argument("--web-search-mode", type=str, choices=["off", "basic"], default="basic")
+    parser.add_argument(
+        "--use-web-search",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Enable DuckDuckGo research during generation.",
+    )
     parser.add_argument("--per-run-timeout-seconds", type=float, default=120.0)
     parser.add_argument("--latency-ceiling-s", type=float, default=120.0)
     parser.add_argument("--token-ceiling", type=int, default=12000)

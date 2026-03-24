@@ -354,10 +354,7 @@ async def get_blog_options():
             {"value": "very-long", "label": "Very Long (~1500+ words)"},
         ],
         "models": models,
-        "web_search_modes": [
-            {"value": "off", "label": "Off"},
-            {"value": "basic", "label": "On (DuckDuckGo)"},
-        ],
+        "use_web_search_default": True,
     }
 
 
@@ -384,11 +381,12 @@ async def generate_blog(
     Options:
     - save_draft: Save the generated content as an AI draft
     - publish_post: Create a post directly in the Posts system
-    - web_search_mode: Control DuckDuckGo grounding (off/basic)
+    - use_web_search: Enable or disable DuckDuckGo grounding
     """
     try:
         # Initialize the blog agent service
         blog_agent = BlogAgentService()
+        use_web_search = request.use_web_search
 
         # Generate the blog post
         blog_post, generation_time, web_search_used, sources = await blog_agent.generate(
@@ -401,7 +399,7 @@ async def generate_blog(
             language=request.language or "en-US",
             model=request.model,
             creativity=request.creativity or 0.7,
-            web_search_mode=request.web_search_mode or "basic",
+            use_web_search=use_web_search,
         )
 
         quality_report = blog_agent.build_quality_report(
@@ -432,6 +430,7 @@ async def generate_blog(
                         "seo_description": blog_post.seo_description,
                         "tags": blog_post.tags,
                         "slug": blog_post.slug,
+                        "use_web_search": use_web_search,
                         "web_search_used": web_search_used,
                         "phase_metrics": blog_agent.get_last_phase_metrics(),
                         "quality_report": quality_report,
@@ -481,7 +480,7 @@ async def generate_blog(
                     "ai_generation": {
                         "generator": "blog-agent",
                         "model": request.model,
-                        "web_search_mode": request.web_search_mode or "basic",
+                        "use_web_search": use_web_search,
                         "web_search_used": web_search_used,
                         "search_sources_count": len(sources or []),
                         "generated_at": datetime.now(timezone.utc).isoformat(),

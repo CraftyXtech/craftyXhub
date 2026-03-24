@@ -183,9 +183,9 @@ class BlogGenerateRequest(BaseModel):
     creativity: Optional[float] = Field(
         default=0.7, ge=0.0, le=1.0, description="Creativity/temperature"
     )
-    web_search_mode: Optional[Literal["off", "basic"]] = Field(
-        default="basic",
-        description="Web search mode: off or basic (DuckDuckGo)"
+    use_web_search: bool = Field(
+        default=True,
+        description="Enable DuckDuckGo web research while generating the article",
     )
     # Save/publish options
     save_draft: Optional[bool] = Field(
@@ -200,7 +200,6 @@ class BlogGenerateRequest(BaseModel):
     is_published: Optional[bool] = Field(
         default=False, description="Set published status when creating post"
     )
-
 
 class BlogGenerateResponse(BaseModel):
     """Response from blog generation."""

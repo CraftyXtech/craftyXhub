@@ -2,11 +2,11 @@
 """
 Live benchmark harness for blog generation reliability and latency.
 
-This script runs real BlogAgentService generations for selected grounding modes
+This script runs real BlogAgentService generations for web-search on/off states
 and validates:
   - success rate
   - p95 latency
-  - expected tool-grounding behavior per mode
+  - expected DuckDuckGo behavior per state
 
 Run from /api:
   source venv/bin/activate && PYTHONPATH=. python scripts/benchmark_blog_generation.py
@@ -32,12 +32,12 @@ from core.config import settings
 from services.ai.blog_agent import BlogAgentService
 
 
-VALID_MODES = {"off", "basic"}
+VALID_SEARCH_STATES = {"off", "on"}
 
 
 @dataclass
 class RunRecord:
-    mode: str
+    search_state: str
     run_index: int
     warmup: bool
     ok: bool
@@ -46,18 +46,18 @@ class RunRecord:
     phase_total_ms: float | None
     ddg_attempted: bool | None
     ddg_used: bool | None
-    online_used: bool | None
     error: str | None
 
 
-def parse_modes(modes_csv: str) -> list[str]:
-    parsed = [m.strip() for m in modes_csv.split(",") if m.strip()]
+def parse_search_states(states_csv: str) -> list[str]:
+    parsed = [state.strip() for state in states_csv.split(",") if state.strip()]
     if not parsed:
-        raise ValueError("No modes provided")
-    invalid = [m for m in parsed if m not in VALID_MODES]
+        raise ValueError("No search states provided")
+    invalid = [state for state in parsed if state not in VALID_SEARCH_STATES]
     if invalid:
         raise ValueError(
-            f"Invalid mode(s): {', '.join(invalid)}. Valid modes: {', '.join(sorted(VALID_MODES))}"
+            "Invalid search state(s): "
+            f"{', '.join(invalid)}. Valid states: {', '.join(sorted(VALID_SEARCH_STATES))}"
         )
     # Preserve input order while deduplicating.
     return list(dict.fromkeys(parsed))
@@ -78,18 +78,18 @@ def percentile(values: Iterable[float], p: float) -> float | None:
     return items[low] + (items[high] - items[low]) * frac
 
 
-def mode_expectation_ok(mode: str, web_grounding: dict[str, Any]) -> bool:
+def search_state_expectation_ok(search_state: str, web_grounding: dict[str, Any]) -> bool:
     ddg_attempted = bool(web_grounding.get("ddg_attempted"))
 
-    if mode == "basic":
+    if search_state == "on":
         return ddg_attempted
-    if mode == "off":
+    if search_state == "off":
         return not ddg_attempted
     return False
 
 
-def summarize_mode(
-    mode: str,
+def summarize_search_state(
+    search_state: str,
     records: list[RunRecord],
     latency_slo_seconds: float,
     min_success_rate: float,
@@ -98,7 +98,7 @@ def summarize_mode(
     total = len(measured)
     if total == 0:
         return {
-            "mode": mode,
+            "search_state": search_state,
             "runs": 0,
             "validated_successes": 0,
             "success_rate": 0.0,
@@ -137,7 +137,7 @@ def summarize_mode(
         )
 
     return {
-        "mode": mode,
+        "search_state": search_state,
         "runs": total,
         "validated_successes": len(validated_successes),
         "success_rate": round(success_rate, 4),
@@ -151,17 +151,16 @@ def summarize_mode(
 
 
 async def execute_run(
-    mode: str,
+    search_state: str,
     run_index: int,
     warmup: bool,
     model: str,
     word_count: str,
-    execution_mode: str,
     per_run_timeout_seconds: float,
 ) -> RunRecord:
     service = BlogAgentService()
-    _ = execution_mode  # Backward-compatible CLI arg; reserved for future routing paths.
     started = time.perf_counter()
+    use_web_search = search_state == "on"
 
     try:
         _, generation_time, _, _ = await asyncio.wait_for(
@@ -175,15 +174,15 @@ async def execute_run(
                 language="en-US",
                 model=model,
                 creativity=0.6,
-                web_search_mode=mode,
+                use_web_search=use_web_search,
             ),
             timeout=per_run_timeout_seconds,
         )
         phase_metrics = service.get_last_phase_metrics()
         web_grounding = phase_metrics.get("web_grounding", {})
-        expectation_ok = mode_expectation_ok(mode, web_grounding)
+        expectation_ok = search_state_expectation_ok(search_state, web_grounding)
         return RunRecord(
-            mode=mode,
+            search_state=search_state,
             run_index=run_index,
             warmup=warmup,
             ok=True,
@@ -192,7 +191,6 @@ async def execute_run(
             phase_total_ms=(phase_metrics.get("timings_ms") or {}).get("total"),
             ddg_attempted=web_grounding.get("ddg_attempted"),
             ddg_used=web_grounding.get("ddg_used"),
-            online_used=web_grounding.get("online_used"),
             error=None if expectation_ok else "tool_expectation_failed",
         )
     except Exception as exc:
@@ -200,7 +198,7 @@ async def execute_run(
         web_grounding = phase_metrics.get("web_grounding", {})
         elapsed_s = round(time.perf_counter() - started, 3)
         return RunRecord(
-            mode=mode,
+            search_state=search_state,
             run_index=run_index,
             warmup=warmup,
             ok=False,
@@ -209,31 +207,29 @@ async def execute_run(
             phase_total_ms=(phase_metrics.get("timings_ms") or {}).get("total"),
             ddg_attempted=web_grounding.get("ddg_attempted"),
             ddg_used=web_grounding.get("ddg_used"),
-            online_used=web_grounding.get("online_used"),
             error=f"{exc.__class__.__name__}: {exc}",
         )
 
 
 async def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
-    modes = parse_modes(args.modes)
+    search_states = parse_search_states(args.search_states)
     all_records: list[RunRecord] = []
-    mode_summaries: dict[str, Any] = {}
+    state_summaries: dict[str, Any] = {}
 
-    for mode in modes:
-        print(f"\n=== Mode: {mode} ===")
-        mode_records: list[RunRecord] = []
+    for search_state in search_states:
+        print(f"\n=== Web Search: {search_state} ===")
+        state_records: list[RunRecord] = []
 
         for idx in range(1, args.warmup_runs + 1):
             rec = await execute_run(
-                mode=mode,
+                search_state=search_state,
                 run_index=idx,
                 warmup=True,
                 model=args.model,
                 word_count=args.word_count,
-                execution_mode=args.execution_mode,
                 per_run_timeout_seconds=args.per_run_timeout_seconds,
             )
-            mode_records.append(rec)
+            state_records.append(rec)
             print(
                 f"[warmup {idx}/{args.warmup_runs}] "
                 f"{'OK' if rec.ok else 'FAIL'} {rec.generation_time_s}s"
@@ -241,32 +237,31 @@ async def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
 
         for idx in range(1, args.runs_per_mode + 1):
             rec = await execute_run(
-                mode=mode,
+                search_state=search_state,
                 run_index=idx,
                 warmup=False,
                 model=args.model,
                 word_count=args.word_count,
-                execution_mode=args.execution_mode,
                 per_run_timeout_seconds=args.per_run_timeout_seconds,
             )
-            mode_records.append(rec)
+            state_records.append(rec)
             status = "OK" if (rec.ok and rec.expectation_ok) else "FAIL"
             print(
                 f"[run {idx}/{args.runs_per_mode}] {status} "
                 f"{rec.generation_time_s}s "
-                f"ddg_attempted={rec.ddg_attempted} online_used={rec.online_used}"
+                f"ddg_attempted={rec.ddg_attempted} ddg_used={rec.ddg_used}"
             )
             if rec.error:
                 print(f"  error: {rec.error}")
 
-        summary = summarize_mode(
-            mode=mode,
-            records=mode_records,
+        summary = summarize_search_state(
+            search_state=search_state,
+            records=state_records,
             latency_slo_seconds=args.latency_slo_seconds,
             min_success_rate=args.min_success_rate,
         )
-        mode_summaries[mode] = summary
-        all_records.extend(mode_records)
+        state_summaries[search_state] = summary
+        all_records.extend(state_records)
 
         print(
             "Summary:",
@@ -279,21 +274,20 @@ async def run_benchmark(args: argparse.Namespace) -> dict[str, Any]:
             for reason in summary["failure_reasons"]:
                 print(f"  - {reason}")
 
-    overall_pass = all(s["pass"] for s in mode_summaries.values())
+    overall_pass = all(s["pass"] for s in state_summaries.values())
     report = {
         "config": {
             "runs_per_mode": args.runs_per_mode,
             "warmup_runs": args.warmup_runs,
-            "modes": modes,
+            "search_states": search_states,
             "model": args.model,
             "word_count": args.word_count,
-            "execution_mode": args.execution_mode,
             "latency_slo_seconds": args.latency_slo_seconds,
             "per_run_timeout_seconds": args.per_run_timeout_seconds,
             "min_success_rate": args.min_success_rate,
         },
         "overall_pass": overall_pass,
-        "mode_summaries": mode_summaries,
+        "state_summaries": state_summaries,
         "records": [asdict(r) for r in all_records],
         "generated_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
@@ -310,15 +304,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Benchmark blog generation reliability and latency.")
     parser.add_argument("--runs-per-mode", type=int, default=20)
     parser.add_argument("--warmup-runs", type=int, default=1)
-    parser.add_argument("--modes", type=str, default="off,basic")
+    parser.add_argument("--search-states", type=str, default="off,on")
     parser.add_argument("--model", type=str, default="glm-5")
     parser.add_argument("--word-count", type=str, default="medium")
-    parser.add_argument(
-        "--execution-mode",
-        type=str,
-        default="strict",
-        help="Backward-compatible no-op. Kept to avoid breaking existing run commands.",
-    )
     parser.add_argument("--latency-slo-seconds", type=float, default=60.0)
     parser.add_argument("--per-run-timeout-seconds", type=float, default=75.0)
     parser.add_argument("--min-success-rate", type=float, default=0.95)

@@ -121,7 +121,7 @@ async def test_generate_retries_on_quality_issues(monkeypatch):
         blog_type="how-to",
         keywords=["pydantic ai", "ai blog writer"],
         word_count="medium",
-        web_search_mode="off",
+        use_web_search=False,
     )
 
     assert isinstance(blog_post, BlogPost)
@@ -156,7 +156,7 @@ async def test_generate_returns_best_effort_when_quality_persists(monkeypatch):
         blog_type="how-to",
         keywords=["pydantic ai", "ai blog writer"],
         word_count="medium",
-        web_search_mode="off",
+        use_web_search=False,
     )
     assert blog_post is not None
     assert blog_post.title
@@ -177,21 +177,7 @@ def test_build_outline_guidance_contains_keywords_and_sections():
     assert "Official docs" in guidance
 
 
-def test_select_model_phase_keeps_standard_model_for_basic(monkeypatch):
-    service = BlogAgentService()
-    sentinel_model = object()
-    monkeypatch.setattr(BlogAgentService, "_get_model_for_name", lambda self, model_name: sentinel_model)
-
-    model_obj, used_online = service._select_model_phase(
-        model="claude-sonnet-4.6",
-        web_search_mode="basic",
-    )
-
-    assert model_obj is sentinel_model
-    assert used_online is False
-
-
-def test_research_phase_skips_ddg_when_off(monkeypatch):
+def test_research_phase_skips_ddg_when_disabled(monkeypatch):
     service = BlogAgentService()
     state = {"called": False}
 
@@ -201,19 +187,20 @@ def test_research_phase_skips_ddg_when_off(monkeypatch):
 
     monkeypatch.setattr("services.ai.blog_agent.WebSearchService", _SearchShouldNotRun)
 
-    context, sources, used = service._research_phase(
+    context, sources, used, attempted = service._research_phase(
         topic="AI search mode cleanup",
         keywords=["duckduckgo"],
-        web_search_mode="off",
+        use_web_search=False,
     )
 
     assert state["called"] is False
     assert context == ""
     assert sources is None
     assert used is False
+    assert attempted is False
 
 
-def test_research_phase_uses_ddg_when_basic(monkeypatch):
+def test_research_phase_uses_ddg_when_enabled(monkeypatch):
     service = BlogAgentService()
     state = {"called": False}
 
@@ -243,16 +230,17 @@ def test_research_phase_uses_ddg_when_basic(monkeypatch):
 
     monkeypatch.setattr("services.ai.blog_agent.WebSearchService", _FakeSearchService)
 
-    context, sources, used = service._research_phase(
+    context, sources, used, attempted = service._research_phase(
         topic="AI search mode cleanup",
         keywords=["duckduckgo"],
-        web_search_mode="basic",
+        use_web_search=True,
     )
 
     assert state["called"] is True
     assert context == "formatted ddg context"
     assert sources and sources[0]["title"] == "DDG source"
     assert used is True
+    assert attempted is True
 
 
 def test_collect_quality_issues_flags_ai_tropes():
