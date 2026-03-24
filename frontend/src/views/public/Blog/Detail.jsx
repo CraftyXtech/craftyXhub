@@ -37,6 +37,7 @@ import { getPostBySlug, getRelatedPosts, togglePostLike, bookmarkPost, recordPub
 import { getCategoryBySlug } from '@/api/services/categoryService';
 import { getImageUrl } from '@/api/utils/imageUrl';
 import { recordPostView } from '@/api/services/collectionService';
+import { getApiBaseUrl } from '@/api/axios';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -86,9 +87,10 @@ function AuthorBox({ author }) {
 /**
  * Social Share Component
  */
-function SocialShare({ title }) {
-  const currentUrl = window.location.href;
-  const encodedUrl = encodeURIComponent(currentUrl);
+function SocialShare({ title, slug, uuid }) {
+  const shareBaseUrl = import.meta.env.VITE_SHARE_BASE_URL || getApiBaseUrl();
+  const shareUrl = `${shareBaseUrl.replace(/\/$/, '')}/share/posts/${encodeURIComponent(slug || uuid)}`;
+  const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(title);
   
   return (
@@ -636,7 +638,7 @@ export default function BlogDetail() {
 
             {/* Social Share */}
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-              <SocialShare title={post.title} />
+              <SocialShare title={post.title} slug={post.slug} uuid={post.uuid} />
             </Box>
           </Grid>
 

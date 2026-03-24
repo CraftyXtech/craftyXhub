@@ -1,14 +1,16 @@
-from fastapi import FastAPI, Depends, Query, HTTPException, status
+from fastapi import FastAPI, Depends, Query, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from core.settings import get_settings
 from fastapi.responses import RedirectResponse
 from routers.v1 import router as v1_router
 from database.connection import db_health_check, get_db_session
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy import select, or_
 from models import Post, User, Category
 from pathlib import Path
 import logging
+from services.post.post import PostService
+from services.share import SharePageService
 
 # Initialize cached settings
 settings = get_settings()
@@ -100,6 +102,41 @@ def include_routers(app: FastAPI) -> None:
             )
         
         return FileResponse(file_path)
+
+    @app.get(
+        "/share/posts/{post_identifier}",
+        include_in_schema=False,
+        response_class=HTMLResponse,
+    )
+    async def share_post(
+        post_identifier: str,
+        request: Request,
+        db=Depends(get_db_session),
+    ):
+        """
+        Render a share bridge page with crawler-visible metadata, then hand
+        humans off to the canonical frontend article URL.
+        """
+        post = await PostService.get_post_by_uuid(db, post_identifier)
+        if not post:
+            post = await PostService.get_post_by_slug(db, post_identifier)
+
+        if not post or not post.is_published:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Post not found"
+            )
+
+        html = SharePageService.render_post_html(
+            SharePageService.build_post_context(request, post)
+        )
+        return HTMLResponse(
+            content=html,
+            headers={
+                "Cache-Control": "public, max-age=300",
+                "X-Robots-Tag": "noindex,follow",
+            },
+        )
 
     app.include_router(v1_router)
 

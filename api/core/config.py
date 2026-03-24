@@ -36,6 +36,11 @@ class Settings:
 
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
     API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
+    SITE_NAME = os.getenv("SITE_NAME", "CraftyXHub")
+    DEFAULT_SHARE_IMAGE_URL = os.getenv(
+        "DEFAULT_SHARE_IMAGE_URL",
+        f"{FRONTEND_URL.rstrip('/')}/logo.png",
+    )
 
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     GROK_API_KEY: str = os.getenv("GROK_API_KEY", "")
