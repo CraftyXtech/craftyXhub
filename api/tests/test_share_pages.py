@@ -1,3 +1,6 @@
+from pathlib import Path
+from uuid import uuid4
+
 import pytest
 
 from core.config import settings
@@ -119,6 +122,22 @@ async def test_share_page_supports_head_requests(
     short_response = await client_public.head(f"/s/{post['uuid']}")
     assert short_response.status_code == 200, short_response.text
     assert short_response.headers["x-robots-tag"] == "noindex,follow"
+
+
+@pytest.mark.asyncio
+async def test_uploaded_image_route_supports_head_requests(client_public):
+    uploads_dir = Path("uploads/posts")
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"{uuid4()}.jpg"
+    file_path = uploads_dir / filename
+    file_path.write_bytes(b"fake image bytes")
+
+    try:
+        response = await client_public.head(f"/v1/uploads/images/{filename}?folder=posts")
+        assert response.status_code == 200, response.text
+        assert response.headers["content-type"].startswith("image/jpeg")
+    finally:
+        file_path.unlink(missing_ok=True)
 
 
 @pytest.mark.asyncio

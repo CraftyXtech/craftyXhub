@@ -70,8 +70,9 @@ def include_routers(app: FastAPI) -> None:
             "categories": categories_result.scalars().all(),
         }
 
-    @app.get(
+    @app.api_route(
         "/v1/uploads/images/{filename}",
+        methods=["GET", "HEAD"],
         tags=["Get Images"],
         summary="Get Image",
     )
