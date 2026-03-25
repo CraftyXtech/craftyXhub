@@ -14,7 +14,7 @@ from pydantic_ai import Agent
 
 from schemas.ai import BlogPost, BlogSection
 from .tools import ToolHandler
-from .llm_config import get_model, DEFAULT_MODEL
+from .llm_config import get_model, get_blog_model_capabilities, DEFAULT_MODEL
 from .quality_tools import (
     analyze_readability,
     extract_blog_plaintext,
@@ -48,6 +48,9 @@ class BlogAgentService:
     def _get_model_for_name(self, model_name: str):
         """Delegate to centralized LLM config (single source of truth)."""
         return get_model(model_name)
+
+    def _get_model_capabilities(self, model_name: str) -> dict[str, bool]:
+        return get_blog_model_capabilities(model_name)
 
     def _build_blog_prompt(
         self,
@@ -108,27 +111,27 @@ class BlogAgentService:
 
         if blog_type in ("how-to", "tutorial"):
             sections = [
-                "Introduction",
+                "Why This Matters",
                 "Foundations and Key Concepts",
                 "Step-by-Step Implementation",
                 "Common Mistakes and Fixes",
-                "Conclusion and Next Steps",
+                "What to Do Next",
             ]
         elif blog_type in ("comparison", "review"):
             sections = [
-                "Introduction",
+                "What Actually Matters",
                 "Evaluation Criteria",
                 "Side-by-Side Analysis",
                 "Recommendations",
-                "Conclusion and Call to Action",
+                "Final Verdict",
             ]
         else:
             sections = [
-                "Introduction",
+                "The Setup",
                 "Core Insights",
                 "Practical Applications",
                 "Strategic Recommendations",
-                "Conclusion and Next Steps",
+                "The Bottom Line",
             ]
 
         lines = [
@@ -136,7 +139,8 @@ class BlogAgentService:
             f"- Topic focus: {topic}",
             f"- Blog type: {blog_type}",
             f"- Primary keywords: {keywords_text}",
-            "- Use these section headings (or close equivalents):",
+            "- Prefer specific, editorial headings over generic labels like 'Introduction' or 'Conclusion'.",
+            "- Use headings in this spirit (adapt them to the topic):",
         ]
         lines.extend([f"  - {section}" for section in sections])
 
@@ -182,6 +186,7 @@ class BlogAgentService:
     async def _draft_phase(
         self,
         pydantic_model,
+        model_capabilities: dict[str, bool],
         prompt: str,
         creativity: float,
         word_count: str,
@@ -191,6 +196,7 @@ class BlogAgentService:
         """
         return await self._run_generation_once(
             pydantic_model=pydantic_model,
+            model_capabilities=model_capabilities,
             prompt=prompt,
             creativity=creativity,
             word_count=word_count,
@@ -199,6 +205,7 @@ class BlogAgentService:
     async def _editorial_phase(
         self,
         pydantic_model,
+        model_capabilities: dict[str, bool],
         base_prompt: str,
         blog_post: BlogPost,
         creativity: float,
@@ -235,6 +242,7 @@ class BlogAgentService:
         )
         revised_blog_post, editorial_usage = await self._run_generation_once(
             pydantic_model=pydantic_model,
+            model_capabilities=model_capabilities,
             prompt=revision_prompt,
             creativity=max(0.2, min(creativity, 0.8)),
             word_count=word_count,
@@ -323,9 +331,6 @@ class BlogAgentService:
                 )
 
         heading_text = " ".join(section.heading.lower() for section in blog_post.sections)
-        if not any(marker in heading_text for marker in ("conclusion", "final thoughts", "next steps", "call to action", "cta")):
-            issues.append("Include a clear conclusion or call-to-action section heading.")
-
         blog_text = extract_blog_plaintext(blog_post)
 
         readability = analyze_readability(blog_text)
@@ -445,36 +450,51 @@ class BlogAgentService:
     async def _run_generation_once(
         self,
         pydantic_model,
+        model_capabilities: dict[str, bool],
         prompt: str,
         creativity: float,
         word_count: str,
     ) -> tuple[BlogPost, dict[str, Any] | None]:
         # ── Attempt 1: structured output (tool_choice / function-calling) ──
-        # Some OpenRouter-routed models return 404 for tool_choice; we catch
-        # that gracefully and fall back to plain-text + JSON-parse.
-        try:
-            agent = Agent(
-                pydantic_model,
-                output_type=BlogPost,
-                system_prompt=self.system_prompt,
-                retries=self._structured_retries,
-            )
+        # Some OpenRouter-routed models do not support structured output at all.
+        supports_structured = bool(model_capabilities.get("supports_structured", False))
+        if supports_structured:
+            try:
+                agent = Agent(
+                    pydantic_model,
+                    output_type=BlogPost,
+                    system_prompt=self.system_prompt,
+                    retries=self._structured_retries,
+                )
 
-            result = await agent.run(
-                prompt,
-                model_settings={
-                    "temperature": creativity,
-                    "max_tokens": self._get_max_tokens(word_count),
-                },
-            )
-            return self._run_result_output(result), self._extract_usage_payload(result)
-        except Exception as structured_error:
-            # Log the structured-output failure (often a tool_choice 404 from
-            # OpenRouter) and proceed to text-based fallback.
-            logger.warning(
-                "Structured output failed, falling back to text parsing: %s",
-                structured_error,
-            )
+                result = await agent.run(
+                    prompt,
+                    model_settings={
+                        "temperature": creativity,
+                        "max_tokens": self._get_max_tokens(word_count),
+                    },
+                )
+                structured_output = self._run_result_output(result)
+                if isinstance(structured_output, BlogPost):
+                    normalized_output = self._validate_and_create_blog_post(
+                        structured_output.model_dump()
+                    )
+                elif isinstance(structured_output, dict):
+                    normalized_output = self._validate_and_create_blog_post(structured_output)
+                else:
+                    raise ValueError(
+                        f"Structured output returned unsupported payload type: {type(structured_output).__name__}"
+                    )
+                return normalized_output, self._extract_usage_payload(result)
+            except Exception as structured_error:
+                # Log the structured-output failure (often a tool_choice 404 from
+                # OpenRouter) and proceed to text-based fallback.
+                logger.warning(
+                    "Structured output failed, falling back to text parsing: %s",
+                    structured_error,
+                )
+        else:
+            logger.info("Skipping structured output for model without support")
 
         # ── Attempt 2: plain-text generation + JSON extraction ──
         # Build an explicit, terse JSON-only prompt for the text fallback so
@@ -485,7 +505,7 @@ class BlogAgentService:
             "Reply with ONLY a raw JSON object. No markdown fences, no explanatory"
             " text, no trailing commentary. Start your reply with `{` and end with `}`.\n"
             "Required top-level keys: title, slug, summary, sections, tags, "
-            "seo_title, seo_description."
+            "seo_title, seo_description, hero_image_prompt."
         )
 
         last_text_error: Exception | None = None
@@ -796,6 +816,7 @@ class BlogAgentService:
         # ── Phase 3: Model Selection + Draft ────────────────────────
         phase_start = time.perf_counter()
         pydantic_model = self._get_model_for_name(model)
+        model_capabilities = self._get_model_capabilities(model)
         self._last_phase_metrics["timings_ms"]["model_selection"] = round(
             (time.perf_counter() - phase_start) * 1000, 2
         )
@@ -803,6 +824,7 @@ class BlogAgentService:
         phase_start = time.perf_counter()
         draft_post, draft_usage = await self._draft_phase(
             pydantic_model=pydantic_model,
+            model_capabilities=model_capabilities,
             prompt=prompt,
             creativity=creativity,
             word_count=word_count,
@@ -817,6 +839,7 @@ class BlogAgentService:
         phase_start = time.perf_counter()
         blog_post, editorial_usage, revision_applied = await self._editorial_phase(
             pydantic_model=pydantic_model,
+            model_capabilities=model_capabilities,
             base_prompt=prompt,
             blog_post=draft_post,
             creativity=creativity,

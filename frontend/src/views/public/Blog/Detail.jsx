@@ -34,6 +34,8 @@ import {
 import CommentSection from '@/components/CommentSection';
 import Sidebar from '@/components/Blog/Sidebar';
 import SaveToListMenu from '@/components/SaveToListMenu';
+import ArticleCarousel from '@/components/ArticleCarousel';
+import PostCard from '@/components/PostCard';
 import { getPostBySlug, getRelatedPosts, togglePostLike, bookmarkPost, recordPublicView } from '@/api/services/postService';
 import { getCategoryBySlug } from '@/api/services/categoryService';
 import { getImageUrl } from '@/api/utils/imageUrl';
@@ -152,7 +154,9 @@ function SocialShare({ title, slug, uuid }) {
  * Related Posts Component
  */
 function RelatedPosts({ posts }) {
-  if (!posts || posts.length === 0) return null;
+  const validPosts = (posts || []).filter((relatedPost) => relatedPost?.slug || relatedPost?.uuid);
+
+  if (validPosts.length === 0) return null;
   
   return (
     <Box sx={{ bgcolor: 'grey.50', py: 6 }}>
@@ -160,42 +164,14 @@ function RelatedPosts({ posts }) {
         <Typography variant="h5" sx={{ fontWeight: 600, mb: 4 }}>
           Related Articles
         </Typography>
-        <Grid container spacing={3}>
-          {posts.map((post) => (
-            <Grid size={{ xs: 12, md: 4 }} key={post.id || post.uuid}>
-              <Card
-                component={RouterLink}
-                to={`/post/${post.slug}`}
-                sx={{
-                  textDecoration: 'none',
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  '&:hover': { boxShadow: 4 }
-                }}
-              >
-                <Box
-                  component="img"
-                  src={getImageUrl(post.featured_image) || 'https://via.placeholder.com/400x200'}
-                  alt={post.title}
-                  sx={{
-                    width: '100%',
-                    height: 180,
-                    objectFit: 'cover'
-                  }}
-                />
-                <CardContent>
-                  <Typography variant="body2" color="primary.main" sx={{ mb: 1 }}>
-                    {post.category?.name}
-                  </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    {post.title}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <ArticleCarousel
+          items={validPosts}
+          renderItem={(relatedPost) => <PostCard post={relatedPost} />}
+          itemsPerView={{ xs: 1, sm: 2, md: 3, lg: 3 }}
+          gap={3}
+          showArrows={validPosts.length > 3}
+          arrowPosition="outside"
+        />
       </Container>
     </Box>
   );
@@ -221,6 +197,10 @@ export default function BlogDetail() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [slug]);
+
   // Fetch post data
   useEffect(() => {
     const fetchPost = async () => {
@@ -237,17 +217,21 @@ export default function BlogDetail() {
         
         // Fetch related posts and category data IN PARALLEL
         const [relatedResult, categoryResult] = await Promise.all([
-          // Related posts (use slug, not uuid)
+          // Related posts (use slug, not uuid) - fetch more for carousel
           postData.slug 
-            ? getRelatedPosts(postData.slug, { limit: 3 }).catch(() => ({ posts: [] }))
+            ? getRelatedPosts(postData.slug, { limit: 12 }).catch(() => ({ posts: [] }))
             : Promise.resolve({ posts: [] }),
           // Category data for sidebar
           postData.category?.slug
             ? getCategoryBySlug(postData.category.slug).catch(() => null)
             : Promise.resolve(null)
         ]);
-        
-        setRelatedPosts(relatedResult.posts || []);
+
+        setRelatedPosts(
+          (relatedResult.posts || []).filter(
+            (relatedPost) => relatedPost?.slug !== postData.slug && (relatedPost?.slug || relatedPost?.uuid)
+          )
+        );
         setCategoryData(categoryResult);
         
       } catch (err) {
@@ -485,10 +469,61 @@ export default function BlogDetail() {
                   mb: 2,
                   lineHeight: 1.8
                 },
-                '& ul, & ol': {
+                // Enhanced ordered list styling (industry standard)
+                '& ol': {
+                  listStyle: 'none',
+                  counterReset: 'list-counter',
+                  pl: 0,
+                  mb: 3,
+                },
+                '& ol > li': {
+                  counterIncrement: 'list-counter',
+                  position: 'relative',
+                  pl: 4,
+                  mb: 2.5,
+                  '&::before': {
+                    content: 'counter(list-counter) "."',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    fontWeight: 700,
+                    color: 'text.primary',
+                  },
+                },
+                // Bold headings within list items get block display
+                '& ol > li > strong:first-child, & ol > li > p:first-child > strong:first-child': {
+                  display: 'block',
+                  mb: 0.5,
+                  fontWeight: 600,
+                },
+                // Description text following the bold heading - proper indentation
+                '& ol > li > p': {
+                  mb: 1,
+                  pl: 0, // Already indented by parent li padding
+                },
+                // Unordered lists
+                '& ul': {
+                  listStyle: 'none',
+                  pl: 0,
+                  mb: 3,
+                },
+                '& ul > li': {
+                  position: 'relative',
                   pl: 3,
-                  mb: 2,
-                  '& li': { mb: 1 }
+                  mb: 1.5,
+                  '&::before': {
+                    content: '"•"',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    fontWeight: 'bold',
+                    color: 'primary.main',
+                  },
+                },
+                // Nested lists
+                '& ol ol, & ol ul, & ul ol, & ul ul': {
+                  mt: 1.5,
+                  mb: 1.5,
                 },
                 '& blockquote': {
                   borderLeft: '4px solid',

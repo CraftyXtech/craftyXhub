@@ -14,6 +14,7 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1499750310107-5fef28a6
 export default function PostCard({ post, animationDelay = 0 }) {
   const {
     id,
+    uuid,
     slug,
     title,
     excerpt,
@@ -21,13 +22,15 @@ export default function PostCard({ post, animationDelay = 0 }) {
     category,
     author,
     created_at,
-    read_time
+    read_time,
+    reading_time
   } = post;
 
-  const postUrl = `/post/${slug || id}`;
+  const postUrl = `/post/${slug || uuid || id}`;
   const imageUrl = getImageUrl(featured_image) || FALLBACK_IMAGE;
   const authorName = author?.full_name || author?.username || 'Anonymous';
   const categoryName = category?.name || category || 'General';
+  const displayReadingTime = reading_time || read_time;
   const formattedDate = created_at ? new Date(created_at).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -119,7 +122,7 @@ export default function PostCard({ post, animationDelay = 0 }) {
         {/* Meta & Read More */}
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Typography variant="caption" color="text.secondary">
-            {formattedDate} {read_time && `· ${read_time}`}
+            {formattedDate} {displayReadingTime && `· ${displayReadingTime} min read`}
           </Typography>
           <Typography
             variant="caption"

@@ -520,14 +520,15 @@ Quality Requirements:
 2. Each section should have 150-300 words
 3. Use markdown formatting in body_markdown (bold, lists, etc.)
 4. Include relevant statistics or examples where appropriate
-5. End with a strong conclusion and call-to-action
+5. End with a strong final section, takeaway, verdict, recommendation, or next-step that fits the article. Do not force a literal "Conclusion" heading unless it feels natural.
 6. Generate 3-5 relevant tags
 7. Create a meta title between 45 and 65 characters. Keep it clean, specific, and do not append the site name.
 8. Write a meta description between 110 and 155 characters. Make it tight, specific, and strong enough for Facebook, LinkedIn, Reddit, and X previews.
 9. Provide a hero image prompt for a clean 1200x630 landscape image with a strong focal subject. It must explicitly avoid logos, watermarks, and text overlays.
 10. When citing sources, ALWAYS format them as markdown hyperlinks: [Source Name](https://actual-url). NEVER use bare parenthetical citations like (Source Name). Every source reference must be a clickable link with a real URL.
-11. Write like an experienced journalist. Use contractions, vary rhythm, show personality, and be specific. Every sentence must earn its place. Cut filler ruthlessly.
-12. Do not use em dashes or en dashes anywhere in the body, summary, SEO title, or SEO description.
+11. Prefer specific section headings. Avoid generic labels like "Introduction" and "Conclusion" unless the piece genuinely needs them.
+12. Write like an experienced journalist. Use contractions, vary rhythm, show personality, and be specific. Every sentence must earn its place. Cut filler ruthlessly.
+13. Do not use em dashes or en dashes anywhere in the body, summary, SEO title, or SEO description.
 
 Return ONLY the JSON object, no additional text.""",
             "required_fields": ["topic", "blog_type"],

@@ -183,8 +183,38 @@ def test_build_outline_guidance_contains_keywords_and_sections():
 
     assert "STRUCTURE GUIDANCE" in guidance
     assert "pydantic ai, blog writer" in guidance
+    assert "Why This Matters" in guidance
     assert "Step-by-Step Implementation" in guidance
+    assert "What to Do Next" in guidance
     assert "Official docs" in guidance
+
+
+def test_validate_blog_post_allows_natural_closing_headings():
+    blog_post = BlogPost(
+        title="How to Build Better Habits Without Turning Life Into a Spreadsheet",
+        slug="how-to-build-better-habits-without-turning-life-into-a-spreadsheet",
+        summary=(
+            "A grounded look at building habits that actually stick, without relying on performative "
+            "productivity language or unrealistic routines."
+        ),
+        sections=[
+            BlogSection(heading="The Setup", body_markdown=_mk_words(120)),
+            BlogSection(heading="What Actually Sticks", body_markdown=_mk_words(120)),
+            BlogSection(heading="The Bottom Line", body_markdown=_mk_words(120)),
+        ],
+        tags=["habits", "self-improvement"],
+        seo_title="Better Habits Without Fake Productivity Theater",
+        seo_description=(
+            "Build habits that fit real life with practical systems that feel sustainable, flexible, "
+            "and far less performative."
+        ),
+        hero_image_prompt=(
+            "Editorial photo of a calm desk with a notebook and coffee mug. Use a 1200x630 landscape "
+            "composition for social sharing, no logos, no watermarks, no text overlay, strong focal subject."
+        ),
+    )
+
+    assert blog_post.sections[-1].heading == "The Bottom Line"
 
 
 def test_research_phase_skips_ddg_when_disabled(monkeypatch):

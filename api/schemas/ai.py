@@ -1,6 +1,6 @@
 import re
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any, Literal
 from datetime import datetime
 
@@ -160,15 +160,6 @@ class BlogPost(BaseModel):
         if len(normalized) != len(set(normalized)):
             raise ValueError("tags must be unique")
         return normalized
-
-    @model_validator(mode="after")
-    def ensure_conclusion_or_cta_section(self):
-        heading_text = " ".join(section.heading.lower() for section in self.sections)
-        quality_markers = ("conclusion", "final thoughts", "next steps", "call to action", "cta")
-        if not any(marker in heading_text for marker in quality_markers):
-            raise ValueError("include at least one conclusion or call-to-action section")
-        return self
-
 
 class BlogGenerateRequest(BaseModel):
     """Request to generate a complete blog post."""

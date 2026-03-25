@@ -145,10 +145,10 @@ async def get_popular_posts(
 @router.get("/{post_slug}/related", response_model=PostListResponse)
 async def get_related_posts(
         post_slug: str,
-        limit: int = Query(5, ge=1, le=10),
+        limit: int = Query(12, ge=1, le=20),
         session: AsyncSession = Depends(get_db_session)
 ):
-    """Get related posts by slug (public endpoint)"""
+    """Get related posts by slug (public endpoint) - supports carousel display"""
     post = await PostService.get_post_by_slug(session, post_slug)
     if not post:
         raise HTTPException(

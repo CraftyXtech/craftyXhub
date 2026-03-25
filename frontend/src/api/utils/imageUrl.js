@@ -8,16 +8,22 @@ import { getApiBaseUrl } from '../axios';
 /**
  * Get full image URL from path
  * @param {string} imagePath - Image path or URL
- * @param {string} folder - Image folder (default: 'posts')
+ * @param {string} folder - Image folder override (default: auto-detect from path, fallback 'posts')
  * @returns {string|null} Full image URL
  */
-export const getImageUrl = (imagePath, folder = 'posts') => {
+export const getImageUrl = (imagePath, folder = null) => {
   if (!imagePath) return null;
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
 
   const filename = imagePath.split('/').pop();
+
+  if (!folder) {
+    const parts = imagePath.split('/').filter(Boolean);
+    folder = parts.length >= 2 ? parts[parts.length - 2] : 'posts';
+  }
+
   const apiBase = getApiBaseUrl();
   return `${apiBase}/v1/uploads/images/${filename}?folder=${folder}`;
 };

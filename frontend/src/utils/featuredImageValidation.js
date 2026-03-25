@@ -5,7 +5,7 @@ const TARGET_RATIO = 1200 / 630;
 const RATIO_TOLERANCE = 0.12;
 
 export const FEATURED_IMAGE_GUIDANCE =
-  'Use a clean 1200x630 landscape image. Avoid logos, watermarks, and text overlays.';
+  'Add a featured image.';
 
 function readImageDimensions(file) {
   return new Promise((resolve, reject) => {

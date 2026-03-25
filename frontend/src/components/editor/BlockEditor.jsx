@@ -288,6 +288,36 @@ const BlockEditor = ({
           '& .image-tool__image-picture': {
             borderRadius: 1,
           },
+          // Enhanced list styling for AI-generated content
+          '& .cdx-list': {
+            paddingLeft: 0,
+          },
+          '& .cdx-list__item': {
+            padding: '0.5em 0 0.5em 0.25em',
+            lineHeight: 1.7,
+          },
+          // Proper indentation for list item content with bold headings
+          '& .cdx-list__item strong:first-child': {
+            display: 'block',
+            marginBottom: '0.25em',
+            fontWeight: 600,
+          },
+          // Ordered list specific styling
+          '& .cdx-list--ordered': {
+            counterReset: 'item',
+            listStyle: 'none',
+          },
+          '& .cdx-list--ordered .cdx-list__item': {
+            counterIncrement: 'item',
+            position: 'relative',
+            paddingLeft: '2em',
+          },
+          '& .cdx-list--ordered .cdx-list__item::before': {
+            content: 'counter(item) "."',
+            position: 'absolute',
+            left: 0,
+            fontWeight: 700,
+          },
         }}
       />
       {helperText && (

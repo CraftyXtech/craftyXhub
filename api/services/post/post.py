@@ -38,6 +38,34 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".avif",
 class PostService:
     EXCERPT_MIN_CHARACTERS = 70
     EXCERPT_MIN_WORDS = 10
+    RELATED_KEYWORD_STOP_WORDS = {
+        "about",
+        "after",
+        "also",
+        "and",
+        "article",
+        "best",
+        "build",
+        "building",
+        "complete",
+        "design",
+        "for",
+        "from",
+        "guide",
+        "how",
+        "into",
+        "its",
+        "more",
+        "over",
+        "that",
+        "the",
+        "their",
+        "this",
+        "tips",
+        "using",
+        "with",
+        "your",
+    }
 
     @staticmethod
     def normalize_text(value: Optional[str]) -> str:
@@ -52,6 +80,22 @@ class PostService:
     def normalize_excerpt(excerpt: Optional[str]) -> Optional[str]:
         normalized = PostService.normalize_text(excerpt)
         return normalized or None
+
+    @staticmethod
+    def extract_related_keywords(*values: Optional[str]) -> set[str]:
+        keywords: set[str] = set()
+
+        for value in values:
+            normalized = PostService.normalize_text(value).lower()
+            if not normalized:
+                continue
+
+            for token in re.findall(r"[a-z0-9]+", normalized):
+                if len(token) < 3 or token in PostService.RELATED_KEYWORD_STOP_WORDS:
+                    continue
+                keywords.add(token)
+
+        return keywords
 
     @staticmethod
     def _flatten_block_items(items) -> str:
@@ -555,7 +599,7 @@ class PostService:
     async def get_related_posts(
             session: AsyncSession,
             post_uuid: str,
-            limit: int = 5,
+            limit: int = 12,
             include_deleted: bool = False
     ) -> List[Post]:
         try:
@@ -566,14 +610,56 @@ class PostService:
             query = select(Post).where(and_(
                 Post.is_published == True,
                 Post.id != db_post.id,
-                or_(Post.category_id == db_post.category_id,
-                    Post.tags.any(Tag.id.in_([tag.id for tag in db_post.tags])))
             ))
-            query = PostService._apply_post_relationships(query)
+            query = PostService._apply_lightweight_relationships(query)
             query = PostService._add_soft_delete_filter(query, include_deleted)
-            query = query.order_by(Post.created_at.desc()).limit(limit)
+            query = query.order_by(Post.published_at.desc().nullslast(), Post.created_at.desc())
             result = await session.execute(query)
-            return result.scalars().all()
+            candidates = result.scalars().all()
+
+            current_tag_ids = {tag.id for tag in db_post.tags}
+            current_keywords = PostService.extract_related_keywords(
+                db_post.title,
+                db_post.excerpt,
+                PostService.extract_first_paragraph(db_post.content, db_post.content_blocks),
+            )
+
+            scored_candidates: list[tuple[int, datetime, Post]] = []
+            for candidate in candidates:
+                candidate_tag_ids = {tag.id for tag in candidate.tags}
+                candidate_keywords = PostService.extract_related_keywords(
+                    candidate.title,
+                    candidate.excerpt,
+                    PostService.extract_first_paragraph(candidate.content, candidate.content_blocks),
+                )
+
+                shared_tags = len(current_tag_ids & candidate_tag_ids)
+                shared_keywords = len(current_keywords & candidate_keywords)
+                same_category = int(
+                    bool(db_post.category_id) and bool(candidate.category_id) and candidate.category_id == db_post.category_id
+                )
+                score = (shared_tags * 10) + (shared_keywords * 4) + (same_category * 2)
+
+                if score <= 0:
+                    continue
+
+                recency = candidate.published_at or candidate.created_at or datetime.min
+                scored_candidates.append((score, recency, candidate))
+
+            scored_candidates.sort(key=lambda item: (item[0], item[1]), reverse=True)
+            top_candidate_ids = [candidate.id for _, _, candidate in scored_candidates[:limit]]
+
+            if not top_candidate_ids:
+                return []
+
+            final_query = select(Post).where(Post.id.in_(top_candidate_ids))
+            final_query = PostService._apply_post_relationships(final_query)
+            final_query = PostService._add_soft_delete_filter(final_query, include_deleted)
+            final_result = await session.execute(final_query)
+            final_posts = final_result.scalars().all()
+            posts_by_id = {post.id: post for post in final_posts}
+
+            return [posts_by_id[post_id] for post_id in top_candidate_ids if post_id in posts_by_id]
         except HTTPException:
             raise
         except Exception as e:
