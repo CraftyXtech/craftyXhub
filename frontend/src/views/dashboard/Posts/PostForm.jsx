@@ -1,9 +1,10 @@
+import { Suspense, lazy } from 'react';
 import { useAuth } from '@/api/AuthProvider';
 import { isModerator } from '@/utils/roleUtils';
 
 // Role-specific editors
-import UserPostEditor from './UserPostEditor';
-import AdminPostEditor from './AdminPostEditor';
+const UserPostEditor = lazy(() => import('./UserPostEditor'));
+const AdminPostEditor = lazy(() => import('./AdminPostEditor'));
 
 /**
  * PostForm - Role-switching wrapper
@@ -17,9 +18,9 @@ export default function PostForm() {
   const hasModeratorAccess = isModerator(user?.role);
 
   // Render appropriate editor based on role
-  if (hasModeratorAccess) {
-    return <AdminPostEditor />;
-  }
-
-  return <UserPostEditor />;
+  return (
+    <Suspense fallback={<div style={{ padding: '2rem', color: '#54657d' }}>Loading editor...</div>}>
+      {hasModeratorAccess ? <AdminPostEditor /> : <UserPostEditor />}
+    </Suspense>
+  );
 }
