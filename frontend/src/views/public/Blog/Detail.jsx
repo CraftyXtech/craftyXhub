@@ -90,14 +90,20 @@ function AuthorBox({ author }) {
 /**
  * Social Share Component
  */
-function SocialShare({ title, slug, uuid }) {
+function SocialShare({ title, slug, uuid, shareVersion }) {
   const shareBaseUrl =
     import.meta.env.VITE_SHARE_BASE_URL ||
     (typeof window !== 'undefined' ? window.location.origin : getApiBaseUrl());
   const shareUrlPrefix =
     import.meta.env.VITE_SHARE_URL_PREFIX ||
     `${shareBaseUrl.replace(/\/$/, '')}/s`;
-  const shareUrl = `${shareUrlPrefix.replace(/\/$/, '')}/${encodeURIComponent(uuid || slug)}`;
+  const shareTarget = `${shareUrlPrefix.replace(/\/$/, '')}/${encodeURIComponent(uuid || slug)}`;
+  const normalizedVersion = shareVersion
+    ? new Date(shareVersion).getTime() || String(shareVersion).trim()
+    : '';
+  const shareUrl = normalizedVersion
+    ? `${shareTarget}?v=${encodeURIComponent(normalizedVersion)}`
+    : shareTarget;
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(title);
   
@@ -695,7 +701,12 @@ export default function BlogDetail() {
 
             {/* Social Share */}
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-              <SocialShare title={post.title} slug={post.slug} uuid={post.uuid} />
+              <SocialShare
+                title={post.title}
+                slug={post.slug}
+                uuid={post.uuid}
+                shareVersion={post.updated_at || post.published_at}
+              />
             </Box>
           </Grid>
 
