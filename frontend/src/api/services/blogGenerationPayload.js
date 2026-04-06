@@ -3,13 +3,13 @@ export const resolveUseWebSearch = (use_web_search = true) =>
 
 export const buildBlogGenerationPayload = ({
   topic,
-  blog_type = 'how-to',
+  blog_type = 'news',
   keywords = [],
   audience = null,
   word_count = 'medium',
   tone = 'professional',
   language = 'en-US',
-  model = 'glm-5',
+  model = 'glm-5-turbo',
   creativity = 0.7,
   use_web_search = true,
   save_draft = true,

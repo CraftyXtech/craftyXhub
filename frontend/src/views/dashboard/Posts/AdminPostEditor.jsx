@@ -111,6 +111,9 @@ export default function AdminPostEditor() {
   const [selectedTags, setSelectedTags] = useState([]);
   const [metaTitle, setMetaTitle] = useState(aiState?.metaTitle || '');
   const [metaDescription, setMetaDescription] = useState(aiState?.metaDescription || '');
+  const [seoKeywords, setSeoKeywords] = useState(
+    Array.isArray(aiState?.seoKeywords) ? aiState.seoKeywords.join(', ') : (aiState?.seoKeywords || '')
+  );
   const [featuredImage, setFeaturedImage] = useState(null);
   const [featuredImagePath, setFeaturedImagePath] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -176,6 +179,7 @@ export default function AdminPostEditor() {
           setSelectedTags(post.tags?.map(t => t.id) || []);
           setMetaTitle(post.meta_title || '');
           setMetaDescription(post.meta_description || '');
+          setSeoKeywords(Array.isArray(post.seo_keywords) ? post.seo_keywords.join(', ') : '');
           
           if (post.featured_image) {
             setImagePreview(getImageUrl(post.featured_image));
@@ -267,14 +271,23 @@ export default function AdminPostEditor() {
   const handleAiMetadataFill = useCallback((metadata) => {
     if (!metadata) return;
 
-    if (metadata.title) setTitle(metadata.title);
-    if (metadata.slug) setSlug(metadata.slug);
-    if (metadata.excerpt) {
+    if (metadata.title && !title.trim()) setTitle(metadata.title);
+    if (metadata.slug && !slug.trim()) setSlug(metadata.slug);
+    if (metadata.excerpt && !excerpt.trim()) {
       setExcerpt(metadata.excerpt);
       setExcerptError('');
     }
-    if (metadata.metaTitle) setMetaTitle(metadata.metaTitle);
-    if (metadata.metaDescription) setMetaDescription(metadata.metaDescription);
+    if (metadata.metaTitle && !metaTitle.trim()) setMetaTitle(metadata.metaTitle);
+    if (metadata.metaDescription && !metaDescription.trim()) setMetaDescription(metadata.metaDescription);
+    if (metadata.seoKeywords?.length > 0 && !seoKeywords.trim()) {
+      setSeoKeywords(metadata.seoKeywords.join(', '));
+    }
+    if (metadata.categoryId && !categoryId) setCategoryId(String(metadata.categoryId));
+
+    if (metadata.tagIds?.length > 0 && selectedTags.length === 0) {
+      setSelectedTags(metadata.tagIds);
+      return;
+    }
 
     // Auto-match AI-generated tag names against loaded tags
     if (metadata.tags?.length > 0 && tags.length > 0) {
@@ -283,11 +296,11 @@ export default function AdminPostEditor() {
           aiTag => t.name.toLowerCase() === aiTag.toLowerCase()
         ))
         .map(t => t.id);
-      if (matchedTagIds.length > 0) {
+      if (matchedTagIds.length > 0 && selectedTags.length === 0) {
         setSelectedTags(matchedTagIds);
       }
     }
-  }, [tags]);
+  }, [categoryId, excerpt, metaDescription, metaTitle, selectedTags.length, seoKeywords, slug, tags, title]);
 
   const handleGenerateExcerpt = useCallback(async () => {
     const currentContent = editorRef.current ? editorRef.current.getContent() : content;
@@ -353,6 +366,7 @@ export default function AdminPostEditor() {
       formData.append('excerpt', normalizeExcerpt(excerpt));
       formData.append('meta_title', metaTitle || '');
       formData.append('meta_description', metaDescription || '');
+      formData.append('seo_keywords', seoKeywords || '');
       formData.append('is_published', shouldPublish ? 'true' : 'false');
       
       if (categoryId) {
@@ -619,6 +633,17 @@ export default function AdminPostEditor() {
                       placeholder="Why the article matters, in one tight teaser"
                       helperText={`${metaDescription.length}/155 characters. Keep it specific and social-ready.`}
                       inputProps={{ maxLength: 155 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="SEO Keywords"
+                      fullWidth
+                      size="small"
+                      value={seoKeywords}
+                      onChange={(e) => setSeoKeywords(e.target.value)}
+                      placeholder="AI-generated if blank, comma-separated"
+                      helperText="Use short search phrases separated by commas."
                     />
                   </Grid>
                 </Grid>

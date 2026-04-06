@@ -20,30 +20,14 @@ export const getCategories = async () => {
  * @returns {Promise<object>} Category with parent info if subcategory
  */
 export const getCategoryBySlug = async (slug) => {
-  const { data } = await axiosPublic.get('/posts/categories/');
-  const categories = data.categories || [];
-  
-  // Search parents first
-  const parent = categories.find((c) => c.slug === slug);
-  if (parent) {
-    return { ...parent, parent: null, isSubcategory: false };
+  try {
+    const { data } = await axiosPublic.get(`/posts/categories/resolve/${encodeURIComponent(slug)}`);
+    return data;
+  } catch (error) {
+    const err = new Error(error.response?.data?.detail || 'Category not found');
+    err.status = error.response?.status || 500;
+    throw err;
   }
-  
-  // Then search subcategories
-  for (const c of categories) {
-    const match = (c.subcategories || []).find((s) => s.slug === slug);
-    if (match) {
-      return {
-        ...match,
-        parent: { id: c.id, name: c.name, slug: c.slug },
-        isSubcategory: true,
-      };
-    }
-  }
-  
-  const err = new Error('Category not found');
-  err.status = 404;
-  throw err;
 };
 
 /**

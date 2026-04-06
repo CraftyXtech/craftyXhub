@@ -21,9 +21,12 @@ from schemas.post import (
     CategoryCreateResponse,
     CategoryResponse,
     CategoryListResponse,
+    CategorySlugResolveResponse,
     TagCreate,
+    TagUpdate,
     TagResponse,
     TagListResponse,
+    TagGroupedListResponse,
     PostStatsResponse,
     ReportCreate,
     ReportResponse
@@ -54,6 +57,27 @@ def _resolve_client_fingerprint(request: Request) -> str:
     )
     user_agent = (request.headers.get("user-agent") or "").strip().lower()[:200]
     return f"{ip}|{user_agent}"
+
+
+def _parse_csv_ints(raw: Optional[str], field_name: str) -> Optional[List[int]]:
+    if raw is None:
+        return None
+    if raw == "":
+        return []
+    try:
+        return [int(item.strip()) for item in raw.split(",") if item.strip()]
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid {field_name} format. Must be comma-separated integers.",
+        ) from exc
+
+
+def _parse_csv_strings(raw: Optional[str]) -> Optional[List[str]]:
+    if raw is None:
+        return None
+    values = [item.strip() for item in raw.split(",") if item.strip()]
+    return values or []
 
 
 @router.get("/trending/", response_model=PostListResponse)
@@ -366,6 +390,7 @@ async def create_post(
         excerpt: Optional[str] = Form(None),
         meta_title: Optional[str] = Form(None),
         meta_description: Optional[str] = Form(None),
+        seo_keywords: Optional[str] = Form(None),
         category_id: Optional[int] = Form(None),
         tag_ids: Optional[str] = Form(None),
         reading_time: Optional[int] = Form(None),
@@ -379,15 +404,8 @@ async def create_post(
     if featured_image and featured_image.filename:
         featured_image_path = await PostService.save_uploaded_file(featured_image, UPLOAD_DIR)
 
-    parsed_tag_ids = []
-    if tag_ids:
-        try:
-            parsed_tag_ids = [int(tag_id.strip()) for tag_id in tag_ids.split(",") if tag_id.strip()]
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid tag_ids format. Must be comma-separated integers."
-            )
+    parsed_tag_ids = _parse_csv_ints(tag_ids, "tag_ids") or []
+    parsed_seo_keywords = _parse_csv_strings(seo_keywords)
 
     if not slug:
         generated_slug = await PostService.generate_unique_slug(session, title, Post)
@@ -415,6 +433,7 @@ async def create_post(
             excerpt=excerpt,
             meta_title=meta_title,
             meta_description=meta_description,
+            seo_keywords=parsed_seo_keywords,
             category_id=category_id,
             tag_ids=parsed_tag_ids,
             reading_time=reading_time,
@@ -458,6 +477,7 @@ async def update_post(
         excerpt: Optional[str] = Form(None),
         meta_title: Optional[str] = Form(None),
         meta_description: Optional[str] = Form(None),
+        seo_keywords: Optional[str] = Form(None),
         category_id: Optional[int] = Form(None),
         tag_ids: Optional[str] = Form(None),
         reading_time: Optional[int] = Form(None),
@@ -484,15 +504,8 @@ async def update_post(
     else:
         featured_image_path = existing_post.featured_image
 
-    parsed_tag_ids = None
-    if tag_ids:
-        try:
-            parsed_tag_ids = [int(tag_id.strip()) for tag_id in tag_ids.split(",") if tag_id.strip()]
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid tag_ids format. Must be comma-separated integers."
-            )
+    parsed_tag_ids = _parse_csv_ints(tag_ids, "tag_ids")
+    parsed_seo_keywords = _parse_csv_strings(seo_keywords)
 
     # Parse content_blocks JSON if provided
     parsed_blocks = None
@@ -516,6 +529,7 @@ async def update_post(
         'excerpt': excerpt,
         'meta_title': meta_title,
         'meta_description': meta_description,
+        'seo_keywords': parsed_seo_keywords,
         'category_id': category_id,
         'tag_ids': parsed_tag_ids,
         'reading_time': reading_time,
@@ -606,6 +620,49 @@ async def get_categories(
     return {"categories": categories}
 
 
+@router.get("/categories/resolve/{slug:path}", response_model=CategorySlugResolveResponse)
+async def resolve_category_slug(
+        slug: str,
+        session: AsyncSession = Depends(get_db_session)
+):
+    category, matched_slug, redirect_required = await PostService.resolve_category_slug(
+        session,
+        slug,
+    )
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found",
+        )
+
+    counts_result = await session.execute(
+        select(Post.category_id, func.count(Post.id).label("post_count"))
+        .where(Post.deleted_at.is_(None), Post.category_id.is_not(None))
+        .group_by(Post.category_id)
+    )
+    post_counts = {category_id: post_count for category_id, post_count in counts_result.all()}
+
+    category.post_count = post_counts.get(category.id, 0)
+    for subcategory in category.subcategories:
+        subcategory.post_count = post_counts.get(subcategory.id, 0)
+
+    return {
+        "id": category.id,
+        "name": category.name,
+        "slug": category.slug,
+        "description": category.description,
+        "parent_id": category.parent_id,
+        "created_at": category.created_at,
+        "post_count": category.post_count,
+        "subcategories": category.subcategories,
+        "parent": category.parent,
+        "is_subcategory": category.parent_id is not None,
+        "matched_slug": matched_slug,
+        "canonical_slug": category.slug,
+        "redirect_required": redirect_required,
+    }
+
+
 @router.post("/categories/", response_model=CategoryCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
         category_data: CategoryCreate,
@@ -638,10 +695,13 @@ async def delete_category(
 @router.get("/tags/", response_model=TagListResponse)
 async def get_tags(
         category_id: Optional[int] = None,
+        include_inactive: bool = Query(False),
         session: AsyncSession = Depends(get_db_session)
 ):
     """Get all tags, optionally filtered by category"""
     query = select(Tag)
+    if not include_inactive:
+        query = query.where(Tag.is_active.is_(True), Tag.canonical_tag_id.is_(None))
     if category_id is not None:
         query = query.where(Tag.category_id == category_id)
     result = await session.execute(query)
@@ -649,8 +709,9 @@ async def get_tags(
     return {"tags": tags}
 
 
-@router.get("/tags/grouped/")
+@router.get("/tags/grouped/", response_model=TagGroupedListResponse)
 async def get_tags_grouped(
+        include_inactive: bool = Query(False),
         session: AsyncSession = Depends(get_db_session)
 ):
     """Get tags grouped by category for easier selection when writing articles"""
@@ -672,7 +733,14 @@ async def get_tags_grouped(
         
         # Get tags for this category and its subcategories
         tags_result = await session.execute(
-            select(Tag).where(Tag.category_id.in_(all_category_ids))
+            select(Tag).where(
+                Tag.category_id.in_(all_category_ids),
+                *(
+                    []
+                    if include_inactive
+                    else [Tag.is_active.is_(True), Tag.canonical_tag_id.is_(None)]
+                ),
+            )
         )
         tags = tags_result.scalars().all()
         
@@ -689,7 +757,7 @@ async def get_tags_grouped(
 @router.post("/tags/", response_model=TagResponse, status_code=status.HTTP_201_CREATED)
 async def create_tag(
         tag_data: TagCreate,
-        current_user: User = Depends(get_current_active_user),
+        current_user: User = Depends(get_current_admin_only),
         session: AsyncSession = Depends(get_db_session)
 ):
     return await PostService.create_tag(session, tag_data)
@@ -698,53 +766,20 @@ async def create_tag(
 @router.put("/tags/{tag_id}", response_model=TagResponse)
 async def update_tag(
         tag_id: int,
-        tag_data: TagCreate,
-        current_user: User = Depends(get_current_active_user),
+        tag_data: TagUpdate,
+        current_user: User = Depends(get_current_admin_only),
         session: AsyncSession = Depends(get_db_session)
 ):
-    """Update an existing tag"""
-    # Check if tag exists
-    result = await session.execute(select(Tag).where(Tag.id == tag_id))
-    tag = result.scalar_one_or_none()
-    
-    if not tag:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tag not found"
-        )
-    
-    # Update tag fields
-    if tag_data.name:
-        tag.name = tag_data.name
-    if tag_data.slug:
-        tag.slug = tag_data.slug
-    if tag_data.category_id is not None:
-        tag.category_id = tag_data.category_id
-    
-    await session.commit()
-    await session.refresh(tag)
-    return tag
+    return await PostService.update_tag(session, tag_id, tag_data)
 
 
 @router.delete("/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_tag(
         tag_id: int,
-        current_user: User = Depends(get_current_active_user),
+        current_user: User = Depends(get_current_admin_only),
         session: AsyncSession = Depends(get_db_session)
 ):
-    """Delete a tag"""
-    # Check if tag exists
-    result = await session.execute(select(Tag).where(Tag.id == tag_id))
-    tag = result.scalar_one_or_none()
-    
-    if not tag:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tag not found"
-        )
-    
-    await session.delete(tag)
-    await session.commit()
+    await PostService.delete_tag(session, tag_id)
     return None
 
 

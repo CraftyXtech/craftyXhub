@@ -4,7 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.connection import get_db_session
 from services.user.auth import get_current_active_user
-from services.ai import AIGeneratorService, AIDraftService, BlogAgentService, WebSearchService
+from services.ai import (
+    AIGeneratorService,
+    AIDraftService,
+    BlogAgentService,
+    BlogTaxonomyService,
+    WebSearchService,
+)
+from services.ai.seo_keywords import resolve_seo_keywords
 from services.post import PostService
 from schemas.ai import (
     GenerateRequest,
@@ -19,7 +26,7 @@ from schemas.ai import (
     BlogGenerateResponse,
     BlogPost,
 )
-from schemas.post import PostCreate, TagCreate
+from schemas.post import PostCreate
 from models import User
 from typing import List
 from datetime import datetime, timezone
@@ -318,11 +325,11 @@ async def get_blog_options():
 
     return {
         "blog_types": [
+            {"value": "news", "label": "News Article"},
             {"value": "how-to", "label": "How-To Guide"},
             {"value": "listicle", "label": "Listicle"},
             {"value": "tutorial", "label": "Tutorial"},
             {"value": "opinion", "label": "Opinion/Editorial"},
-            {"value": "news", "label": "News Article"},
             {"value": "review", "label": "Product Review"},
             {"value": "comparison", "label": "Comparison"},
             {"value": "case-study", "label": "Case Study"},
@@ -387,12 +394,16 @@ async def generate_blog(
         # Initialize the blog agent service
         blog_agent = BlogAgentService()
         use_web_search = request.use_web_search
+        seed_keywords = resolve_seo_keywords(
+            topic=request.topic,
+            provided_keywords=request.keywords,
+        )
 
         # Generate the blog post
         blog_post, generation_time, web_search_used, sources = await blog_agent.generate(
             topic=request.topic,
             blog_type=request.blog_type,
-            keywords=request.keywords,
+            keywords=seed_keywords,
             audience=request.audience,
             word_count=request.word_count or "medium",
             tone=request.tone or "professional",
@@ -402,10 +413,23 @@ async def generate_blog(
             use_web_search=use_web_search,
         )
 
+        taxonomy_suggestion = await BlogTaxonomyService.suggest_for_generated_post(
+            db,
+            topic=request.topic,
+            blog_post=blog_post,
+            keywords=seed_keywords,
+            preferred_category_id=request.category_id,
+        )
+        resolved_keywords = resolve_seo_keywords(
+            topic=request.topic,
+            provided_keywords=seed_keywords,
+            blog_post=blog_post,
+            taxonomy_suggestion=taxonomy_suggestion,
+        )
         quality_report = blog_agent.build_quality_report(
             blog_post=blog_post,
             word_count=request.word_count or "medium",
-            keywords=request.keywords,
+            keywords=resolved_keywords,
             phase_metrics=blog_agent.get_last_phase_metrics(),
         )
 
@@ -428,12 +452,20 @@ async def generate_blog(
                         "blog_type": request.blog_type,
                         "seo_title": blog_post.seo_title,
                         "seo_description": blog_post.seo_description,
+                        "resolved_keywords": resolved_keywords,
                         "tags": blog_post.tags,
                         "slug": blog_post.slug,
                         "use_web_search": use_web_search,
                         "web_search_used": web_search_used,
                         "phase_metrics": blog_agent.get_last_phase_metrics(),
                         "quality_report": quality_report,
+                        "taxonomy_suggestion": taxonomy_suggestion.model_dump(
+                            exclude_none=True
+                        ),
+                        "resolved_category_id": taxonomy_suggestion.category.id
+                        if taxonomy_suggestion.category
+                        else None,
+                        "resolved_tag_ids": [tag.id for tag in taxonomy_suggestion.tags],
                     },
                 )
                 saved_draft = await AIDraftService.create_draft(
@@ -456,24 +488,12 @@ async def generate_blog(
                     for section in blog_post.sections
                 )
                 reading_time = max(1, word_count // 200)
-
-                # Create tags if they don't exist and get their IDs
-                tag_ids = []
-                for tag_name in blog_post.tags[:5]:  # Limit to 5 tags
-                    try:
-                        # Try to create or get existing tag
-                        existing_tag = await PostService.get_tag_by_slug(
-                            db, tag_name.lower().replace(" ", "-")
-                        )
-                        if existing_tag:
-                            tag_ids.append(existing_tag.id)
-                        else:
-                            tag_data = TagCreate(name=tag_name)
-                            new_tag = await PostService.create_tag(db, tag_data)
-                            tag_ids.append(new_tag.id)
-                    except Exception:
-                        # Skip tag if creation fails
-                        pass
+                tag_ids = [
+                    tag.id for tag in taxonomy_suggestion.tags[: BlogTaxonomyService.MAX_TAGS]
+                ]
+                category_id = request.category_id
+                if category_id is None and taxonomy_suggestion.category is not None:
+                    category_id = taxonomy_suggestion.category.id
 
                 # Create the post
                 post_content_blocks = {
@@ -484,8 +504,12 @@ async def generate_blog(
                         "web_search_used": web_search_used,
                         "search_sources_count": len(sources or []),
                         "generated_at": datetime.now(timezone.utc).isoformat(),
+                        "resolved_keywords": resolved_keywords,
                         "phase_metrics": blog_agent.get_last_phase_metrics(),
                         "quality_report": quality_report,
+                        "taxonomy_suggestion": taxonomy_suggestion.model_dump(
+                            exclude_none=True
+                        ),
                     }
                 }
 
@@ -497,7 +521,8 @@ async def generate_blog(
                     excerpt=blog_post.summary,
                     meta_title=blog_post.seo_title,
                     meta_description=blog_post.seo_description,
-                    category_id=request.category_id,
+                    seo_keywords=resolved_keywords,
+                    category_id=category_id,
                     tag_ids=tag_ids,
                     reading_time=reading_time,
                     is_published=request.is_published if request.is_published is not None else False,
@@ -514,6 +539,8 @@ async def generate_blog(
 
         return BlogGenerateResponse(
             blog_post=blog_post,
+            resolved_keywords=resolved_keywords,
+            taxonomy_suggestion=taxonomy_suggestion,
             draft_id=draft_id,
             post_id=post_id,
             model_used=request.model,

@@ -238,6 +238,7 @@ frontend/Litho/node_modules/
 frontend/Litho/build/
 frontend/Litho/.cursor/
 frontend/admin/.cursor/
+output/playwright/
 api/.cursor/
 
 # Database files

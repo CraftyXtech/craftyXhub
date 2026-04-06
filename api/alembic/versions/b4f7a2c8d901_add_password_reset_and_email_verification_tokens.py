@@ -16,89 +16,111 @@ branch_labels = None
 depends_on = None
 
 
+def _existing_indexes(inspector, table_name: str) -> set[str]:
+    if not inspector.has_table(table_name):
+        return set()
+    return {index["name"] for index in inspector.get_indexes(table_name)}
+
+
+def _ensure_index(table_name: str, index_name: str, columns: list[str], *, unique: bool) -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    existing_indexes = _existing_indexes(inspector, table_name)
+    if index_name in existing_indexes:
+        return
+    op.create_index(index_name, table_name, columns, unique=unique)
+
+
 def upgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+
     # Create password_reset_tokens table
-    op.create_table(
+    if not inspector.has_table("password_reset_tokens"):
+        op.create_table(
+            "password_reset_tokens",
+            sa.Column("id", sa.Integer(), nullable=False, autoincrement=True),
+            sa.Column("uuid", sa.String(length=36), nullable=True),
+            sa.Column(
+                "created_at",
+                sa.DateTime(),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+                nullable=False,
+            ),
+            sa.Column(
+                "updated_at",
+                sa.DateTime(),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+                nullable=True,
+            ),
+            sa.Column("user_id", sa.Integer(), nullable=False),
+            sa.Column("token", sa.String(length=255), nullable=False),
+            sa.Column("expires_at", sa.DateTime(), nullable=False),
+            sa.Column("used", sa.Boolean(), server_default=sa.text("false"), nullable=True),
+            sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
+            sa.PrimaryKeyConstraint("id"),
+        )
+        inspector = sa.inspect(bind)
+    _ensure_index(
         "password_reset_tokens",
-        sa.Column("id", sa.Integer(), nullable=False, autoincrement=True),
-        sa.Column("uuid", sa.String(length=36), nullable=True),
-        sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-            nullable=False,
-        ),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(),
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-            nullable=True,
-        ),
-        sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("token", sa.String(length=255), nullable=False),
-        sa.Column("expires_at", sa.DateTime(), nullable=False),
-        sa.Column("used", sa.Boolean(), server_default=sa.text("false"), nullable=True),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(
         "ix_password_reset_tokens_user_id",
-        "password_reset_tokens",
         ["user_id"],
         unique=False,
     )
-    op.create_index(
-        "ix_password_reset_tokens_token",
+    _ensure_index(
         "password_reset_tokens",
+        "ix_password_reset_tokens_token",
         ["token"],
         unique=True,
     )
-    op.create_index(
-        "ix_password_reset_tokens_uuid",
+    _ensure_index(
         "password_reset_tokens",
+        "ix_password_reset_tokens_uuid",
         ["uuid"],
         unique=True,
     )
 
     # Create email_verification_tokens table
-    op.create_table(
+    if not inspector.has_table("email_verification_tokens"):
+        op.create_table(
+            "email_verification_tokens",
+            sa.Column("id", sa.Integer(), nullable=False, autoincrement=True),
+            sa.Column("uuid", sa.String(length=36), nullable=True),
+            sa.Column(
+                "created_at",
+                sa.DateTime(),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+                nullable=False,
+            ),
+            sa.Column(
+                "updated_at",
+                sa.DateTime(),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+                nullable=True,
+            ),
+            sa.Column("user_id", sa.Integer(), nullable=False),
+            sa.Column("token", sa.String(length=255), nullable=False),
+            sa.Column("expires_at", sa.DateTime(), nullable=False),
+            sa.Column("used", sa.Boolean(), server_default=sa.text("false"), nullable=True),
+            sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
+            sa.PrimaryKeyConstraint("id"),
+        )
+        inspector = sa.inspect(bind)
+    _ensure_index(
         "email_verification_tokens",
-        sa.Column("id", sa.Integer(), nullable=False, autoincrement=True),
-        sa.Column("uuid", sa.String(length=36), nullable=True),
-        sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-            nullable=False,
-        ),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(),
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-            nullable=True,
-        ),
-        sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("token", sa.String(length=255), nullable=False),
-        sa.Column("expires_at", sa.DateTime(), nullable=False),
-        sa.Column("used", sa.Boolean(), server_default=sa.text("false"), nullable=True),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(
         "ix_email_verification_tokens_user_id",
-        "email_verification_tokens",
         ["user_id"],
         unique=False,
     )
-    op.create_index(
-        "ix_email_verification_tokens_token",
+    _ensure_index(
         "email_verification_tokens",
+        "ix_email_verification_tokens_token",
         ["token"],
         unique=True,
     )
-    op.create_index(
-        "ix_email_verification_tokens_uuid",
+    _ensure_index(
         "email_verification_tokens",
+        "ix_email_verification_tokens_uuid",
         ["uuid"],
         unique=True,
     )

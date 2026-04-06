@@ -1,6 +1,6 @@
 from .base import Base
 from .user import User, Profile, UserRoleChange, PasswordResetToken, EmailVerificationToken
-from .post import Post, Category, Tag
+from .post import Post, Category, Tag, CategorySlugHistory, TagSlugHistory
 from .comment import Comment
 from .report import Report
 from .comment_report import CommentReport
@@ -18,6 +18,8 @@ __all__ = [
     'Post',
     'Category',
     'Tag',
+    'CategorySlugHistory',
+    'TagSlugHistory',
     'Comment',
     'Report',
     'CommentReport',

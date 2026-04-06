@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
+import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -27,6 +27,7 @@ const MotionBox = motion.create(Box);
  * - Subcategory: Shows posts directly with parent breadcrumb
  */
 export default function Category() {
+  const navigate = useNavigate();
   const { slug } = useParams();
   const [page, setPage] = useState(1);
   const postsPerPage = 6;
@@ -57,6 +58,10 @@ export default function Category() {
         setCategoryLoading(true);
         setCategoryError(null);
         const data = await getCategoryBySlug(slug);
+        if (data?.redirect_required && data?.canonical_slug && data.canonical_slug !== slug) {
+          navigate(`/category/${data.canonical_slug}`, { replace: true });
+          return;
+        }
         setCategory(data);
         setSelectedSubcategory('all'); // Reset filter
       } catch (err) {
@@ -70,7 +75,7 @@ export default function Category() {
 
     fetchCategory();
     setPage(1);
-  }, [slug]);
+  }, [slug, navigate]);
 
   // Get category IDs to query
   const categoryIdsToQuery = useMemo(() => {
