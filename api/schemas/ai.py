@@ -7,7 +7,7 @@ from datetime import datetime
 
 class GenerateRequest(BaseModel):
     tool_id: str = Field(..., description="ID from AI_TOOLS")
-    model: str = Field(default="claude-sonnet-4.6", description="AI model name (e.g., claude-sonnet-4.6, gpt-5.2)")
+    model: str = Field(default="claude-sonnet-4.6", description="AI model name (e.g., claude-sonnet-4.6, gpt-5.4, glm-5-turbo, qwen-3.6-plus)")
     params: Dict[str, Any] = Field(..., description="Tool-specific fields")
     prompt: Optional[str] = Field(default=None, description="Freeform prompt to use when tool params are incomplete or for generic generation")
     keywords: Optional[List[str] | str] = Field(default=None, description="Primary keywords to guide generation; list or comma-separated string")
@@ -54,7 +54,7 @@ class ExcerptGenerateRequest(BaseModel):
     content: str = Field(..., min_length=50, description="Full article content or plain text")
     model: str = Field(
         default="claude-sonnet-4.6",
-        description="AI model name (e.g., claude-sonnet-4.6, gpt-5.2)",
+        description="AI model name (e.g., claude-sonnet-4.6, gpt-5.4, glm-5-turbo, qwen-3.6-plus)",
     )
     tone: Optional[str] = Field(default="professional", description="Writing tone")
     language: Optional[str] = Field(default="en-US", description="Output language")
@@ -161,14 +161,43 @@ class BlogPost(BaseModel):
             raise ValueError("tags must be unique")
         return normalized
 
+
+class BlogTaxonomyCategory(BaseModel):
+    id: int
+    name: str
+    slug: Optional[str] = None
+    parent_id: Optional[int] = None
+
+
+class BlogTaxonomyTag(BaseModel):
+    id: int
+    name: str
+    slug: Optional[str] = None
+    category_id: Optional[int] = None
+
+
+class BlogTaxonomySuggestion(BaseModel):
+    category: Optional[BlogTaxonomyCategory] = None
+    tags: List[BlogTaxonomyTag] = Field(default_factory=list)
+    confidence_score: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Deterministic confidence score for the taxonomy suggestion",
+    )
+    review_required: bool = Field(
+        default=False,
+        description="Whether the suggestion is low-confidence and should be reviewed before use",
+    )
+
 class BlogGenerateRequest(BaseModel):
     """Request to generate a complete blog post."""
     topic: str = Field(..., min_length=3, max_length=500, description="Blog topic or title idea")
     blog_type: Literal[
         "how-to", "listicle", "tutorial", "opinion", "case-study", "news", "review", "comparison"
-    ] = Field(default="how-to", description="Type of blog post to generate")
+    ] = Field(default="news", description="Type of blog post to generate")
     keywords: Optional[List[str]] = Field(
-        default=None, description="Target SEO keywords"
+        default=None, description="Target SEO keywords. Leave blank to auto-generate suggestions."
     )
     audience: Optional[str] = Field(
         default=None, description="Target audience description"
@@ -180,7 +209,7 @@ class BlogGenerateRequest(BaseModel):
     language: Optional[str] = Field(default="en-US", description="Output language")
     model: str = Field(
         default="claude-sonnet-4.6",
-        description="AI model (claude-sonnet-4.6, gpt-5.2, deepseek-v3.2)"
+        description="AI model (claude-sonnet-4.6, gpt-5.4, glm-5-turbo, kimi-k2.5, qwen-3.6-plus)"
     )
     creativity: Optional[float] = Field(
         default=0.7, ge=0.0, le=1.0, description="Creativity/temperature"
@@ -206,6 +235,14 @@ class BlogGenerateRequest(BaseModel):
 class BlogGenerateResponse(BaseModel):
     """Response from blog generation."""
     blog_post: BlogPost = Field(..., description="Generated blog post")
+    resolved_keywords: List[str] = Field(
+        default_factory=list,
+        description="Normalized SEO keywords used or suggested for this generation",
+    )
+    taxonomy_suggestion: Optional[BlogTaxonomySuggestion] = Field(
+        default=None,
+        description="Database-backed category and tag suggestions for the generated article",
+    )
     draft_id: Optional[str] = Field(
         default=None, description="AI Draft UUID if saved"
     )

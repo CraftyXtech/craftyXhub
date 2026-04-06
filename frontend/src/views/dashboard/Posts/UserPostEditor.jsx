@@ -75,6 +75,9 @@ export default function UserPostEditor() {
   const [selectedTags, setSelectedTags] = useState([]);
   const [metaTitle, setMetaTitle] = useState(aiState?.metaTitle || '');
   const [metaDescription, setMetaDescription] = useState(aiState?.metaDescription || '');
+  const [seoKeywords, setSeoKeywords] = useState(
+    Array.isArray(aiState?.seoKeywords) ? aiState.seoKeywords.join(', ') : (aiState?.seoKeywords || '')
+  );
   const [customReadingTime, setCustomReadingTime] = useState(null);
 
   // Auto-save state
@@ -153,6 +156,7 @@ export default function UserPostEditor() {
           setSelectedTags(post.tags?.map(t => t.id) || []);
           setMetaTitle(post.meta_title || '');
           setMetaDescription(post.meta_description || '');
+          setSeoKeywords(Array.isArray(post.seo_keywords) ? post.seo_keywords.join(', ') : '');
           setCustomReadingTime(post.reading_time || null);
           
           if (post.featured_image) {
@@ -185,6 +189,7 @@ export default function UserPostEditor() {
       formData.append('excerpt', normalizeExcerpt(manualExcerpt));
       formData.append('meta_title', metaTitle || '');
       formData.append('meta_description', metaDescription || '');
+      formData.append('seo_keywords', seoKeywords || '');
       formData.append(
         'reading_time',
         String(customReadingTime || calculateReadingTime(calculateWordCount(contentData.blocks))),
@@ -210,7 +215,7 @@ export default function UserPostEditor() {
       console.error('Auto-save failed:', err);
       setSaveStatus('error');
     }
-  }, [manualExcerpt, metaTitle, metaDescription, customReadingTime, categoryId, selectedTags]);
+  }, [manualExcerpt, metaTitle, metaDescription, seoKeywords, customReadingTime, categoryId, selectedTags]);
 
   // Handle editor changes
   const handleEditorChange = useCallback((contentData) => {
@@ -319,6 +324,7 @@ export default function UserPostEditor() {
       formData.append('excerpt', normalizeExcerpt(manualExcerpt));
       formData.append('meta_title', metaTitle || '');
       formData.append('meta_description', metaDescription || '');
+      formData.append('seo_keywords', seoKeywords || '');
       formData.append('reading_time', String(stats.readingTime));
       formData.append('is_published', 'true');
 
@@ -341,7 +347,7 @@ export default function UserPostEditor() {
     }
   }, [
     editorData, extractedTitle,
-    manualExcerpt, metaTitle, metaDescription, stats.readingTime,
+    manualExcerpt, metaTitle, metaDescription, seoKeywords, stats.readingTime,
     publishCategoryId, publishTags, publishFeaturedFile, navigate
   ]);
 
@@ -433,6 +439,7 @@ export default function UserPostEditor() {
     selectedTags,
     metaTitle,
     metaDescription,
+    seoKeywords,
     customReadingTime,
     handleAutoSave,
   ]);
@@ -495,10 +502,12 @@ export default function UserPostEditor() {
         onTagToggle={handleTagToggle}
         metaTitle={metaTitle}
         metaDescription={metaDescription}
+        seoKeywords={seoKeywords}
         readingTime={stats.readingTime}
         onMetaChange={(updates) => {
           if (updates.metaTitle !== undefined) setMetaTitle(updates.metaTitle);
           if (updates.metaDescription !== undefined) setMetaDescription(updates.metaDescription);
+          if (updates.seoKeywords !== undefined) setSeoKeywords(updates.seoKeywords);
           if (updates.readingTime !== undefined) setCustomReadingTime(updates.readingTime);
           setIsDirty(true);
         }}

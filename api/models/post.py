@@ -1,7 +1,7 @@
 from  datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, JSON, text
 from sqlalchemy.orm import relationship
-from .base import  BaseTable, post_tags, post_likes, post_bookmarks
+from .base import  Base, BaseTable, post_tags, post_likes, post_bookmarks
 
 class Category(BaseTable):
     __tablename__ = 'categories'
@@ -14,6 +14,11 @@ class Category(BaseTable):
 
     parent = relationship("Category", remote_side='Category.id', back_populates="subcategories")
     subcategories = relationship("Category", back_populates="parent")
+    slug_history = relationship(
+        "CategorySlugHistory",
+        back_populates="category",
+        cascade="all, delete-orphan",
+    )
 
 
 class Tag(BaseTable):
@@ -22,8 +27,21 @@ class Tag(BaseTable):
     name = Column(String(50), unique=True, nullable=False)
     slug = Column(String(50), unique=True, nullable=False)
     category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    canonical_tag_id = Column(Integer, ForeignKey('tags.id'), nullable=True)
     posts = relationship("Post", secondary=post_tags, back_populates="tags")
     category = relationship("Category", foreign_keys=[category_id])
+    canonical_tag = relationship(
+        "Tag",
+        remote_side="Tag.id",
+        foreign_keys=[canonical_tag_id],
+        backref="deprecated_variants",
+    )
+    slug_history = relationship(
+        "TagSlugHistory",
+        back_populates="tag",
+        cascade="all, delete-orphan",
+    )
 
 
 class Post(BaseTable):
@@ -43,6 +61,7 @@ class Post(BaseTable):
     reading_time = Column(Integer, nullable=True)
     meta_title = Column(String(200), nullable=True)
     meta_description = Column(String(300), nullable=True)
+    seo_keywords = Column(JSON, nullable=True)
     published_at = Column(DateTime, nullable=True)
     deleted_at = Column(DateTime, nullable=True, default=None)
     is_reviewed = Column(Boolean, default=False, nullable=False)
@@ -67,3 +86,25 @@ class Post(BaseTable):
     @property
     def is_deleted(self):
         return self.deleted_at is not None
+
+
+class CategorySlugHistory(Base):
+    __tablename__ = 'category_slug_history'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    category_id = Column(Integer, ForeignKey('categories.id', ondelete='CASCADE'), nullable=False, index=True)
+    slug = Column(String(100), unique=True, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"), nullable=False)
+
+    category = relationship("Category", back_populates="slug_history")
+
+
+class TagSlugHistory(Base):
+    __tablename__ = 'tag_slug_history'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tag_id = Column(Integer, ForeignKey('tags.id', ondelete='CASCADE'), nullable=False, index=True)
+    slug = Column(String(50), unique=True, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"), nullable=False)
+
+    tag = relationship("Tag", back_populates="slug_history")

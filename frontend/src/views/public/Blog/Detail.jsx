@@ -351,6 +351,12 @@ export default function BlogDetail() {
     );
   }
 
+  const publishedAtMs = post.published_at ? new Date(post.published_at).getTime() : null;
+  const updatedAtMs = post.updated_at ? new Date(post.updated_at).getTime() : null;
+  const showUpdatedAt = Boolean(
+    updatedAtMs && (!publishedAtMs || updatedAtMs - publishedAtMs > 60_000)
+  );
+
   return (
     <Box>
       {/* Article Content */}
@@ -368,7 +374,15 @@ export default function BlogDetail() {
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <IconCalendar size={16} color="#14213D" />
                   <Typography variant="body2" color="text.secondary">
-                    {formatDate(post.published_at)}
+                    Published {formatDate(post.published_at)}
+                  </Typography>
+                </Stack>
+              )}
+              {showUpdatedAt && (
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <IconCalendar size={16} color="#14213D" />
+                  <Typography variant="body2" color="text.secondary">
+                    Updated {formatDate(post.updated_at)}
                   </Typography>
                 </Stack>
               )}

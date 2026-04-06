@@ -42,6 +42,7 @@ const DRAWER_WIDTH = 360;
  * @param {function} props.onTagToggle - Tag toggle handler
  * @param {string} props.metaTitle - SEO title
  * @param {string} props.metaDescription - SEO description
+ * @param {string} props.seoKeywords - SEO keywords CSV
  * @param {number} props.readingTime - Reading time in minutes
  * @param {function} props.onMetaChange - Meta change handler
  * @param {boolean} props.categoriesLoading - Loading categories
@@ -63,6 +64,7 @@ const PostSettingsSidebar = ({
   onTagToggle,
   metaTitle = '',
   metaDescription = '',
+  seoKeywords = '',
   readingTime = 1,
   onMetaChange,
   categoriesLoading = false,
@@ -264,6 +266,15 @@ const PostSettingsSidebar = ({
                 helperText={`${metaDescription.length}/155 characters. Keep it specific and social-ready.`}
                 inputProps={{ maxLength: 155 }}
               />
+              <TextField
+                label="SEO Keywords"
+                size="small"
+                fullWidth
+                value={seoKeywords}
+                onChange={(e) => onMetaChange?.({ seoKeywords: e.target.value })}
+                placeholder="AI-generated if blank, comma-separated"
+                helperText="Use short search phrases separated by commas."
+              />
             </Stack>
           </Box>
         </Stack>
@@ -295,6 +306,7 @@ PostSettingsSidebar.propTypes = {
   onTagToggle: PropTypes.func,
   metaTitle: PropTypes.string,
   metaDescription: PropTypes.string,
+  seoKeywords: PropTypes.string,
   readingTime: PropTypes.number,
   onMetaChange: PropTypes.func,
   categoriesLoading: PropTypes.bool,

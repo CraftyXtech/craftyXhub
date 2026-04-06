@@ -39,11 +39,11 @@ import { renderBlogPostToHtml } from '@/utils/blogMarkdown';
 
 const FALLBACK_OPTIONS = {
   blog_types: [
+    { value: 'news', label: 'News Article' },
     { value: 'how-to', label: 'How-To Guide' },
     { value: 'listicle', label: 'Listicle' },
     { value: 'tutorial', label: 'Tutorial' },
     { value: 'opinion', label: 'Opinion' },
-    { value: 'news', label: 'News' },
     { value: 'review', label: 'Review' },
     { value: 'comparison', label: 'Comparison' },
     { value: 'case-study', label: 'Case Study' },
@@ -71,6 +71,10 @@ const FALLBACK_OPTIONS = {
   ],
   models: [
     { value: 'claude-sonnet-4.6', label: 'Sonnet 4.6' },
+    { value: 'gpt-5.4', label: 'GPT-5.4' },
+    { value: 'glm-5-turbo', label: 'GLM 5 Turbo' },
+    { value: 'kimi-k2.5', label: 'Kimi K2.5' },
+    { value: 'qwen-3.6-plus', label: 'Qwen 3.6 Plus' },
   ],
   use_web_search_default: true,
 };
@@ -82,7 +86,7 @@ const FALLBACK_OPTIONS = {
 export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
   const [options, setOptions] = useState(FALLBACK_OPTIONS);
   const [topic, setTopic] = useState('');
-  const [blogType, setBlogType] = useState('how-to');
+  const [blogType, setBlogType] = useState('news');
   const [keywords, setKeywords] = useState('');
   const [audience, setAudience] = useState('general');
   const [tone, setTone] = useState('professional');
@@ -93,6 +97,8 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [generatedContent, setGeneratedContent] = useState(null);
+  const [taxonomySuggestion, setTaxonomySuggestion] = useState(null);
+  const [resolvedKeywords, setResolvedKeywords] = useState([]);
   const [generationTime, setGenerationTime] = useState(null);
   const [searchSources, setSearchSources] = useState(null);
   const [showSources, setShowSources] = useState(false);
@@ -118,7 +124,7 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
   const handleGenerate = useCallback(async () => {
     if (!topic.trim()) { setError('Enter a topic'); return; }
     try {
-      setGenerating(true); setError(null); setGeneratedContent(null); setSearchSources(null);
+      setGenerating(true); setError(null); setGeneratedContent(null); setTaxonomySuggestion(null); setResolvedKeywords([]); setSearchSources(null);
       const result = await generateBlog({
         topic, blog_type: blogType,
         keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
@@ -127,7 +133,12 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
         save_draft: true, publish_post: false,
       });
       setGeneratedContent(result.blog_post);
+      setTaxonomySuggestion(result.taxonomy_suggestion || null);
+      setResolvedKeywords(result.resolved_keywords || []);
       setGenerationTime(result.generation_time);
+      if (Array.isArray(result.resolved_keywords) && result.resolved_keywords.length > 0) {
+        setKeywords(result.resolved_keywords.join(', '));
+      }
       if (result.search_sources) {
         setSearchSources(result.search_sources);
       }
@@ -143,12 +154,20 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
 
   const getMetadata = useCallback(() => {
     if (!generatedContent) return null;
-    return {
-      title: generatedContent.title, slug: generatedContent.slug,
-      excerpt: generatedContent.summary, metaTitle: generatedContent.seo_title,
-      metaDescription: generatedContent.seo_description, tags: generatedContent.tags || [],
-    };
-  }, [generatedContent]);
+      return {
+        title: generatedContent.title, slug: generatedContent.slug,
+        excerpt: generatedContent.summary, metaTitle: generatedContent.seo_title,
+        metaDescription: generatedContent.seo_description,
+        seoKeywords: resolvedKeywords,
+        tags: generatedContent.tags || [],
+        categoryId: taxonomySuggestion?.category?.id || null,
+        tagIds: (taxonomySuggestion?.tags || []).map((tag) => tag.id),
+      };
+  }, [generatedContent, resolvedKeywords, taxonomySuggestion]);
+
+  const taxonomyConfidence = typeof taxonomySuggestion?.confidence_score === 'number'
+    ? Math.round(taxonomySuggestion.confidence_score * 100)
+    : null;
 
   const handleInsert = useCallback(() => {
     if (onInsert && generatedContent) {
@@ -240,7 +259,7 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
 
             {/* Keywords */}
             <TextField
-              placeholder="SEO keywords (comma-separated)"
+              placeholder="SEO keywords (auto-generate if blank)"
               fullWidth size="small"
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
@@ -322,6 +341,23 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
                     sx={{ mr: 0.5, mb: 0.5, height: 20, fontSize: 11, '& .MuiChip-label': { px: 1 } }}
                   />
                 ))}
+              </Box>
+            )}
+
+            {taxonomySuggestion?.category && (
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  Suggested category: {taxonomySuggestion.category.name}
+                </Typography>
+                {taxonomyConfidence !== null && (
+                  <Typography
+                    variant="caption"
+                    color={taxonomySuggestion.review_required ? 'warning.main' : 'text.secondary'}
+                    sx={{ display: 'block', fontSize: 11 }}
+                  >
+                    Taxonomy confidence: {taxonomyConfidence}%{taxonomySuggestion.review_required ? ' • review suggested' : ''}
+                  </Typography>
+                )}
               </Box>
             )}
 

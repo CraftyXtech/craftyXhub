@@ -8,7 +8,17 @@ from html import unescape
 import hashlib
 import time
 import re
-from models import Post, Category, Tag, User, Report, Comment
+import unicodedata
+from models import (
+    Post,
+    Category,
+    Tag,
+    User,
+    Report,
+    Comment,
+    CategorySlugHistory,
+    TagSlugHistory,
+)
 from models.base import post_likes, post_bookmarks
 from schemas.post import (
     PostCreate,
@@ -16,6 +26,7 @@ from schemas.post import (
     CategoryCreate,
     CategoryUpdate,
     TagCreate,
+    TagUpdate,
     ReportCreate
 )
 from utils.slug_generator import generate_slug, generate_random_slug
@@ -38,6 +49,8 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".avif",
 class PostService:
     EXCERPT_MIN_CHARACTERS = 70
     EXCERPT_MIN_WORDS = 10
+    TAXONOMY_SLUG_MAX_LENGTH = 100
+    TAG_SLUG_MAX_LENGTH = 50
     RELATED_KEYWORD_STOP_WORDS = {
         "about",
         "after",
@@ -80,6 +93,218 @@ class PostService:
     def normalize_excerpt(excerpt: Optional[str]) -> Optional[str]:
         normalized = PostService.normalize_text(excerpt)
         return normalized or None
+
+    @staticmethod
+    def normalize_seo_keywords(keywords: Optional[List[str]]) -> Optional[List[str]]:
+        if keywords is None:
+            return None
+
+        normalized_keywords: list[str] = []
+        seen: set[str] = set()
+        for keyword in keywords:
+            cleaned = re.sub(r"\s+", " ", str(keyword or "").strip())
+            if not cleaned:
+                continue
+            canonical = cleaned.lower()
+            if canonical in seen:
+                continue
+            normalized_keywords.append(cleaned)
+            seen.add(canonical)
+
+        return normalized_keywords or None
+
+    @staticmethod
+    def normalize_taxonomy_slug(value: str, *, max_length: int) -> str:
+        if not value or not value.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Slug cannot be empty",
+            )
+
+        slug = unicodedata.normalize("NFKD", value.strip().lower())
+        slug = "".join(char for char in slug if not unicodedata.combining(char))
+        slug = re.sub(r"[^a-z0-9]+", "-", slug)
+        slug = re.sub(r"-{2,}", "-", slug).strip("-")
+
+        if not slug:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Slug must contain at least one letter or number",
+            )
+
+        return slug[:max_length].strip("-")
+
+    @staticmethod
+    def _taxonomy_history_owner_field(history_model):
+        if history_model is CategorySlugHistory:
+            return CategorySlugHistory.category_id
+        if history_model is TagSlugHistory:
+            return TagSlugHistory.tag_id
+        raise ValueError("Unsupported history model")
+
+    @staticmethod
+    async def _slug_in_use(
+        session: AsyncSession,
+        model,
+        history_model,
+        slug: str,
+        *,
+        exclude_id: Optional[int] = None,
+    ) -> bool:
+        current_query = select(model.id).where(model.slug == slug)
+        if exclude_id is not None:
+            current_query = current_query.where(model.id != exclude_id)
+        current_result = await session.execute(current_query.limit(1))
+        if current_result.scalar_one_or_none() is not None:
+            return True
+
+        owner_field = PostService._taxonomy_history_owner_field(history_model)
+        history_query = select(history_model.id).where(history_model.slug == slug)
+        if exclude_id is not None:
+            history_query = history_query.where(owner_field != exclude_id)
+        history_result = await session.execute(history_query.limit(1))
+        return history_result.scalar_one_or_none() is not None
+
+    @staticmethod
+    async def _record_slug_history(
+        session: AsyncSession,
+        *,
+        history_model,
+        owner_id: int,
+        slug: Optional[str],
+    ) -> None:
+        if not slug:
+            return
+
+        owner_field = PostService._taxonomy_history_owner_field(history_model)
+        existing = await session.execute(
+            select(history_model.id).where(
+                history_model.slug == slug,
+                owner_field == owner_id,
+            )
+        )
+        if existing.scalar_one_or_none() is not None:
+            return
+
+        payload = {"slug": slug}
+        if history_model is CategorySlugHistory:
+            payload["category_id"] = owner_id
+        else:
+            payload["tag_id"] = owner_id
+        session.add(history_model(**payload))
+
+    @staticmethod
+    async def generate_unique_taxonomy_slug(
+        session: AsyncSession,
+        title: str,
+        model,
+        history_model,
+        *,
+        max_length: int,
+        max_attempts: int = 25,
+    ) -> str:
+        base_slug = PostService.normalize_taxonomy_slug(title, max_length=max_length)
+        candidate = base_slug
+        attempt = 1
+        while await PostService._slug_in_use(session, model, history_model, candidate):
+            suffix = str(attempt + 1)
+            trimmed_base = base_slug[: max_length - len(suffix) - 1].strip("-")
+            candidate = f"{trimmed_base}-{suffix}" if trimmed_base else suffix
+            attempt += 1
+            if attempt > max_attempts:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to generate a unique slug",
+                )
+        return candidate
+
+    @staticmethod
+    async def _validate_category_exists(
+        session: AsyncSession,
+        category_id: Optional[int],
+    ) -> None:
+        if category_id is None:
+            return
+
+        result = await session.execute(select(Category.id).where(Category.id == category_id))
+        if result.scalar_one_or_none() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Category not found",
+            )
+
+    @staticmethod
+    async def _validate_tags_match_category_branch(
+        session: AsyncSession,
+        *,
+        category_id: Optional[int],
+        tags: List[Tag],
+    ) -> None:
+        if category_id is None or not tags:
+            return
+
+        tag_category_ids = {tag.category_id for tag in tags if tag.category_id is not None}
+        if not tag_category_ids:
+            return
+
+        category_rows = await session.execute(select(Category.id, Category.parent_id))
+        parent_by_id = {row[0]: row[1] for row in category_rows.all()}
+
+        def lineage(category_value: int) -> set[int]:
+            lineage_ids: set[int] = set()
+            current_id: Optional[int] = category_value
+            while current_id is not None and current_id not in lineage_ids:
+                lineage_ids.add(current_id)
+                current_id = parent_by_id.get(current_id)
+            return lineage_ids
+
+        selected_lineage = lineage(category_id)
+        if not selected_lineage:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Category not found",
+            )
+
+        for tag_category_id in tag_category_ids:
+            tag_lineage = lineage(tag_category_id)
+            if not tag_lineage:
+                continue
+
+            # Allow parent<->child lineage matches while blocking sibling branches.
+            if category_id not in tag_lineage and tag_category_id not in selected_lineage:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Selected tags must belong to the chosen category branch",
+                )
+
+    @staticmethod
+    async def resolve_category_slug(
+        session: AsyncSession,
+        slug: str,
+    ) -> tuple[Optional[Category], str, bool]:
+        normalized_slug = slug.strip()
+
+        current_result = await session.execute(
+            select(Category)
+            .where(Category.slug == normalized_slug)
+            .options(selectinload(Category.parent), selectinload(Category.subcategories))
+        )
+        category = current_result.scalar_one_or_none()
+        if category is not None:
+            return category, normalized_slug, False
+
+        history_result = await session.execute(
+            select(Category, CategorySlugHistory.slug)
+            .join(CategorySlugHistory, CategorySlugHistory.category_id == Category.id)
+            .where(CategorySlugHistory.slug == normalized_slug)
+            .options(selectinload(Category.parent), selectinload(Category.subcategories))
+        )
+        matched = history_result.first()
+        if matched is None:
+            return None, normalized_slug, False
+
+        category, matched_slug = matched
+        return category, matched_slug, category.slug != matched_slug
 
     @staticmethod
     def extract_related_keywords(*values: Optional[str]) -> set[str]:
@@ -688,7 +913,9 @@ class PostService:
                 db_post.content_blocks,
             )
             db_post.is_published = True
-            db_post.published_at = datetime.utcnow()
+            if not db_post.published_at:
+                db_post.published_at = datetime.utcnow()
+            db_post.updated_at = datetime.utcnow()
             await session.commit()
             await session.refresh(db_post)
             
@@ -725,6 +952,7 @@ class PostService:
 
             db_post.is_published = False
             db_post.published_at = None
+            db_post.updated_at = datetime.utcnow()
             await session.commit()
             await session.refresh(db_post)
             return db_post
@@ -935,8 +1163,6 @@ class PostService:
             conditions = []
             if published_only:
                 conditions.append(Post.is_published == True)
-            else:
-                conditions.append(Post.is_published == False)
 
             if author_id:
                 conditions.append(Post.author_id == author_id)
@@ -974,8 +1200,6 @@ class PostService:
             conditions = []
             if published_only:
                 conditions.append(Post.is_published == True)
-            else:
-                conditions.append(Post.is_published == False)
 
             if is_featured:
                 conditions.append(Post.is_featured == is_featured)
@@ -1024,6 +1248,10 @@ class PostService:
 
             post_payload = post_data.model_dump(exclude={"tag_ids"})
             post_payload["excerpt"] = normalized_excerpt
+            post_payload["seo_keywords"] = PostService.normalize_seo_keywords(
+                post_data.seo_keywords
+            )
+            await PostService._validate_category_exists(session, post_payload.get("category_id"))
             db_post = Post(
                 **post_payload,
                 author_id=author_id
@@ -1036,6 +1264,11 @@ class PostService:
 
             if post_data.tag_ids:
                 tags = await PostService.get_tags_by_ids(session, post_data.tag_ids)
+                await PostService._validate_tags_match_category_branch(
+                    session,
+                    category_id=post_payload.get("category_id"),
+                    tags=tags,
+                )
                 db_post.tags.extend(tags)
 
             session.add(db_post)
@@ -1074,10 +1307,24 @@ class PostService:
             update_data = post_data.model_dump(exclude_unset=True, exclude={"tag_ids"})
             if "excerpt" in update_data:
                 update_data["excerpt"] = PostService.normalize_excerpt(update_data["excerpt"])
+            if "seo_keywords" in update_data:
+                update_data["seo_keywords"] = PostService.normalize_seo_keywords(
+                    update_data["seo_keywords"]
+                )
 
             if post_data.tag_ids is not None:
                 tags = await PostService.get_tags_by_ids(session, post_data.tag_ids)
                 db_post.tags = tags
+            else:
+                tags = list(db_post.tags)
+
+            final_category_id = update_data.get("category_id", db_post.category_id)
+            await PostService._validate_category_exists(session, final_category_id)
+            await PostService._validate_tags_match_category_branch(
+                session,
+                category_id=final_category_id,
+                tags=tags,
+            )
 
             should_publish = update_data.get("is_published")
             if should_publish is None:
@@ -1094,6 +1341,8 @@ class PostService:
                 )
                 update_data["excerpt"] = validated_excerpt
 
+            was_published = db_post.is_published
+            existing_published_at = db_post.published_at
             for field, value in update_data.items():
                 setattr(db_post, field, value)
 
@@ -1101,7 +1350,10 @@ class PostService:
             if post_data.is_published is not None:
                 if post_data.is_published:
                     db_post.is_published = True
-                    db_post.published_at = datetime.utcnow()
+                    if not was_published or not existing_published_at:
+                        db_post.published_at = datetime.utcnow()
+                    else:
+                        db_post.published_at = existing_published_at
                 else:
                     db_post.is_published = False
                     db_post.published_at = None
@@ -1436,14 +1688,23 @@ class PostService:
             category_data: CategoryCreate
     ) -> Category:
         try:
+            await PostService._validate_category_exists(session, category_data.parent_id)
             if not category_data.slug or not category_data.slug.strip():
-                generated_slug = await PostService.generate_unique_slug(session, category_data.name, Category)
-            else:
-                generated_slug = category_data.slug.strip()
-                existing_category = await session.execute(
-                    select(Category).where(Category.slug == generated_slug)
+                generated_slug = await PostService.generate_unique_taxonomy_slug(
+                    session,
+                    category_data.name,
+                    Category,
+                    CategorySlugHistory,
+                    max_length=PostService.TAXONOMY_SLUG_MAX_LENGTH,
                 )
-                if existing_category.scalar_one_or_none():
+            else:
+                generated_slug = PostService.normalize_taxonomy_slug(
+                    category_data.slug,
+                    max_length=PostService.TAXONOMY_SLUG_MAX_LENGTH,
+                )
+                if await PostService._slug_in_use(
+                    session, Category, CategorySlugHistory, generated_slug
+                ):
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Category with this slug already exists"
@@ -1458,8 +1719,12 @@ class PostService:
 
             session.add(db_category)
             await session.commit()
-            await session.refresh(db_category)
-            return db_category
+            result = await session.execute(
+                select(Category)
+                .where(Category.id == db_category.id)
+                .options(selectinload(Category.parent), selectinload(Category.subcategories))
+            )
+            return result.scalar_one()
         except HTTPException:
             raise
         except Exception as e:
@@ -1487,29 +1752,34 @@ class PostService:
                     detail="Category not found"
                 )
 
-            # Update fields if provided
             if category_data.name is not None:
                 db_category.name = category_data.name
-                
-                # Generate new slug if name changed and no slug provided
-                if category_data.slug is None:
-                    generated_slug = await PostService.generate_unique_slug(session, category_data.name, Category)
-                    db_category.slug = generated_slug
             
             if category_data.slug is not None:
                 if category_data.slug.strip():
-                    existing_category = await session.execute(
-                        select(Category).where(
-                            Category.slug == category_data.slug.strip(),
-                            Category.id != category_id
-                        )
+                    normalized_slug = PostService.normalize_taxonomy_slug(
+                        category_data.slug,
+                        max_length=PostService.TAXONOMY_SLUG_MAX_LENGTH,
                     )
-                    if existing_category.scalar_one_or_none():
+                    if await PostService._slug_in_use(
+                        session,
+                        Category,
+                        CategorySlugHistory,
+                        normalized_slug,
+                        exclude_id=category_id,
+                    ):
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
                             detail="Category with this slug already exists"
                         )
-                    db_category.slug = category_data.slug.strip()
+                    if normalized_slug != db_category.slug:
+                        await PostService._record_slug_history(
+                            session,
+                            history_model=CategorySlugHistory,
+                            owner_id=db_category.id,
+                            slug=db_category.slug,
+                        )
+                        db_category.slug = normalized_slug
             
             if category_data.description is not None:
                 db_category.description = category_data.description
@@ -1522,7 +1792,6 @@ class PostService:
                         detail="Category cannot be its own parent"
                     )
                 if category_data.parent_id > 0:
-                    # Verify parent exists
                     parent_result = await session.execute(
                         select(Category).where(Category.id == category_data.parent_id)
                     )
@@ -1532,7 +1801,6 @@ class PostService:
                             status_code=status.HTTP_404_NOT_FOUND,
                             detail="Parent category not found"
                         )
-                    # Check that parent is not a subcategory of this category (prevent circular reference)
                     if parent_category.parent_id == category_id:
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1540,12 +1808,15 @@ class PostService:
                         )
                     db_category.parent_id = category_data.parent_id
                 else:
-                    # parent_id = 0 means make it a top-level category
                     db_category.parent_id = None
 
             await session.commit()
-            await session.refresh(db_category)
-            return db_category
+            result = await session.execute(
+                select(Category)
+                .where(Category.id == db_category.id)
+                .options(selectinload(Category.parent), selectinload(Category.subcategories))
+            )
+            return result.scalar_one()
         except HTTPException:
             raise
         except Exception as e:
@@ -1632,7 +1903,17 @@ class PostService:
                 .where(Tag.slug == slug)
                 .options(selectinload(Tag.posts))
             )
-            return result.scalar_one_or_none()
+            tag = result.scalar_one_or_none()
+            if tag is not None:
+                return tag
+
+            history_result = await session.execute(
+                select(Tag)
+                .join(TagSlugHistory, TagSlugHistory.tag_id == Tag.id)
+                .where(TagSlugHistory.slug == slug)
+                .options(selectinload(Tag.posts))
+            )
+            return history_result.scalar_one_or_none()
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -1645,11 +1926,49 @@ class PostService:
             tag_ids: List[int]
     ) -> List[Tag]:
         try:
+            if not tag_ids:
+                return []
+            requested_ids = list(dict.fromkeys(tag_ids))
             result = await session.execute(
                 select(Tag)
-                .where(Tag.id.in_(tag_ids))
+                .options(selectinload(Tag.canonical_tag))
+                .where(
+                    Tag.id.in_(requested_ids),
+                )
             )
-            return result.scalars().all()
+            fetched_tags = {tag.id: tag for tag in result.scalars().all()}
+            if len(fetched_tags) != len(requested_ids):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="One or more selected tags are unavailable",
+                )
+
+            resolved_tags: dict[int, Tag] = {}
+            ordered_resolved_tags: list[Tag] = []
+            for requested_id in requested_ids:
+                tag = fetched_tags[requested_id]
+                target_tag = tag
+                if not tag.is_active or tag.canonical_tag_id is not None:
+                    target_tag = tag.canonical_tag
+                    if (
+                        target_tag is None
+                        or not target_tag.is_active
+                        or target_tag.canonical_tag_id is not None
+                    ):
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="One or more selected tags are unavailable",
+                        )
+
+                if target_tag.id in resolved_tags:
+                    continue
+
+                resolved_tags[target_tag.id] = target_tag
+                ordered_resolved_tags.append(target_tag)
+
+            return ordered_resolved_tags
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -1662,24 +1981,53 @@ class PostService:
             tag_data: TagCreate
     ) -> Tag:
         try:
+            await PostService._validate_category_exists(session, tag_data.category_id)
             if not tag_data.slug or not tag_data.slug.strip():
-                generated_slug = await PostService.generate_unique_slug(session, tag_data.name, Tag)
-            else:
-                generated_slug = tag_data.slug.strip()
-                existing_tag = await session.execute(
-                    select(Tag)
-                    .where((Tag.name == tag_data.name) | (Tag.slug == tag_data.slug))
+                generated_slug = await PostService.generate_unique_taxonomy_slug(
+                    session,
+                    tag_data.name,
+                    Tag,
+                    TagSlugHistory,
+                    max_length=PostService.TAG_SLUG_MAX_LENGTH,
                 )
-                if existing_tag.scalar_one_or_none():
+            else:
+                generated_slug = PostService.normalize_taxonomy_slug(
+                    tag_data.slug,
+                    max_length=PostService.TAG_SLUG_MAX_LENGTH,
+                )
+                existing_tag = await session.execute(
+                    select(Tag.id).where(Tag.name == tag_data.name)
+                )
+                if existing_tag.scalar_one_or_none() or await PostService._slug_in_use(
+                    session, Tag, TagSlugHistory, generated_slug
+                ):
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Tag with this name or slug already exists"
                     )
 
+            canonical_tag_id = tag_data.canonical_tag_id
+            if canonical_tag_id is not None:
+                canonical_result = await session.execute(
+                    select(Tag).where(
+                        Tag.id == canonical_tag_id,
+                        Tag.is_active.is_(True),
+                        Tag.canonical_tag_id.is_(None),
+                    )
+                )
+                if canonical_result.scalar_one_or_none() is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Canonical replacement tag not found",
+                    )
+            is_active = tag_data.is_active if tag_data.is_active is not None else canonical_tag_id is None
+
             db_tag = Tag(
                 name=tag_data.name,
                 slug=generated_slug,
-                category_id=tag_data.category_id
+                category_id=tag_data.category_id,
+                is_active=is_active if canonical_tag_id is None else False,
+                canonical_tag_id=canonical_tag_id,
             )
 
             session.add(db_tag)
@@ -1693,6 +2041,137 @@ class PostService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to create tag: {str(e)}"
+            )
+
+    @staticmethod
+    async def update_tag(
+            session: AsyncSession,
+            tag_id: int,
+            tag_data: TagUpdate
+    ) -> Tag:
+        try:
+            result = await session.execute(select(Tag).where(Tag.id == tag_id))
+            db_tag = result.scalar_one_or_none()
+            if not db_tag:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Tag not found",
+                )
+
+            if tag_data.name is not None:
+                existing_name = await session.execute(
+                    select(Tag.id).where(Tag.name == tag_data.name, Tag.id != tag_id)
+                )
+                if existing_name.scalar_one_or_none() is not None:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Tag with this name already exists",
+                    )
+                db_tag.name = tag_data.name
+
+            if tag_data.category_id is not None:
+                await PostService._validate_category_exists(session, tag_data.category_id)
+                db_tag.category_id = tag_data.category_id
+
+            if tag_data.slug is not None and tag_data.slug.strip():
+                normalized_slug = PostService.normalize_taxonomy_slug(
+                    tag_data.slug,
+                    max_length=PostService.TAG_SLUG_MAX_LENGTH,
+                )
+                if await PostService._slug_in_use(
+                    session, Tag, TagSlugHistory, normalized_slug, exclude_id=tag_id
+                ):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Tag with this slug already exists",
+                    )
+                if normalized_slug != db_tag.slug:
+                    await PostService._record_slug_history(
+                        session,
+                        history_model=TagSlugHistory,
+                        owner_id=db_tag.id,
+                        slug=db_tag.slug,
+                    )
+                    db_tag.slug = normalized_slug
+
+            if "canonical_tag_id" in tag_data.model_fields_set:
+                canonical_tag_id = tag_data.canonical_tag_id
+                if canonical_tag_id == tag_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="A tag cannot point to itself as canonical",
+                    )
+                if canonical_tag_id is None:
+                    db_tag.canonical_tag_id = None
+                else:
+                    canonical_result = await session.execute(
+                        select(Tag).where(
+                            Tag.id == canonical_tag_id,
+                            Tag.is_active.is_(True),
+                            Tag.canonical_tag_id.is_(None),
+                        )
+                    )
+                    if canonical_result.scalar_one_or_none() is None:
+                        raise HTTPException(
+                            status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Canonical replacement tag not found",
+                        )
+                    db_tag.canonical_tag_id = canonical_tag_id
+                    db_tag.is_active = False
+
+            if "is_active" in tag_data.model_fields_set and tag_data.is_active is not None:
+                if db_tag.canonical_tag_id is not None and tag_data.is_active:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Deprecated tags cannot remain active",
+                    )
+                db_tag.is_active = tag_data.is_active
+
+            await session.commit()
+            await session.refresh(db_tag)
+            return db_tag
+        except HTTPException:
+            raise
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to update tag: {str(e)}"
+            )
+
+    @staticmethod
+    async def delete_tag(
+            session: AsyncSession,
+            tag_id: int
+    ) -> None:
+        try:
+            result = await session.execute(
+                select(Tag)
+                .where(Tag.id == tag_id)
+                .options(selectinload(Tag.posts))
+            )
+            db_tag = result.scalar_one_or_none()
+            if not db_tag:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Tag not found",
+                )
+
+            if db_tag.posts:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot delete a tag that is still attached to posts. Deprecate it instead.",
+                )
+
+            await session.delete(db_tag)
+            await session.commit()
+        except HTTPException:
+            raise
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to delete tag: {str(e)}"
             )
 
     @staticmethod

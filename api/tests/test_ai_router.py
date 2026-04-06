@@ -5,6 +5,7 @@ from httpx import ASGITransport, AsyncClient
 from routers.v1.ai import router as ai_router
 from services.ai.generator import AIGeneratorService
 from services.ai.blog_agent import BlogAgentService
+from services.ai.taxonomy import BlogTaxonomyService
 from services.post import PostService
 from services.user.auth import get_current_active_user
 from database.connection import get_db_session
@@ -121,7 +122,13 @@ async def test_generate_excerpt_ok(app, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_generate_blog_ok_without_save_or_publish(app, monkeypatch):
-    from schemas.ai import BlogPost, BlogSection
+    from schemas.ai import (
+        BlogPost,
+        BlogSection,
+        BlogTaxonomyCategory,
+        BlogTaxonomySuggestion,
+        BlogTaxonomyTag,
+    )
 
     async def fake_blog_generate(self, **kwargs):
         post = BlogPost(
@@ -161,7 +168,27 @@ async def test_generate_blog_ok_without_save_or_publish(app, monkeypatch):
         )
         return post, 0.12, False, None
 
+    async def fake_taxonomy_suggestion(*args, **kwargs):
+        return BlogTaxonomySuggestion(
+            category=BlogTaxonomyCategory(
+                id=45,
+                name="Artificial Intelligence",
+                slug="artificial-intelligence",
+                parent_id=44,
+            ),
+            tags=[
+                BlogTaxonomyTag(id=101, name="AI", slug="ai", category_id=45),
+                BlogTaxonomyTag(id=104, name="LLMs", slug="llms", category_id=45),
+            ],
+        )
+
     monkeypatch.setattr(BlogAgentService, "generate", fake_blog_generate, raising=True)
+    monkeypatch.setattr(
+        BlogTaxonomyService,
+        "suggest_for_generated_post",
+        fake_taxonomy_suggestion,
+        raising=True,
+    )
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
@@ -183,6 +210,80 @@ async def test_generate_blog_ok_without_save_or_publish(app, monkeypatch):
         assert "passed" in data["quality_report"]
         assert "readability" in data["quality_report"]
         assert "phase_metrics" in data["quality_report"]
+        assert data["resolved_keywords"][:2] == ["AI Writer", "Pydantic AI"]
+        assert data["taxonomy_suggestion"]["category"]["id"] == 45
+        assert [tag["id"] for tag in data["taxonomy_suggestion"]["tags"]] == [101, 104]
+
+
+@pytest.mark.asyncio
+async def test_generate_blog_auto_generates_keywords_when_blank(app, monkeypatch):
+    from schemas.ai import (
+        BlogPost,
+        BlogSection,
+        BlogTaxonomyCategory,
+        BlogTaxonomySuggestion,
+        BlogTaxonomyTag,
+    )
+
+    async def fake_blog_generate(self, **kwargs):
+        post = BlogPost(
+            title="OpenAI and Anthropic IPO Rumors and AI Valuation Signals",
+            slug="openai-and-anthropic-ipo-rumors-and-ai-valuation-signals",
+            summary=(
+                "A grounded news analysis of what IPO rumors can signal for "
+                "venture sentiment, startup multiples, and public-market "
+                "expectations around artificial intelligence companies."
+            ),
+            sections=[
+                BlogSection(heading="Headline Context", body_markdown=" ".join(["word"] * 200)),
+                BlogSection(heading="Market Signals", body_markdown=" ".join(["word"] * 210)),
+                BlogSection(heading="Investor Readthrough", body_markdown=" ".join(["word"] * 220)),
+            ],
+            tags=["startup-valuations", "ai-investing", "ipo-rumors"],
+            seo_title="What OpenAI and Anthropic IPO Rumors Signal for AI Valuations",
+            seo_description=(
+                "Understand how OpenAI and Anthropic IPO rumors can affect "
+                "investor confidence, startup valuation narratives, and "
+                "artificial intelligence market sentiment."
+            ),
+        )
+        return post, 0.2, True, [{"title": "Source", "url": "https://example.com"}]
+
+    async def fake_taxonomy_suggestion(*args, **kwargs):
+        return BlogTaxonomySuggestion(
+            category=BlogTaxonomyCategory(
+                id=53,
+                name="Creator Business",
+                slug="creator-economy-and-monetization",
+                parent_id=50,
+            ),
+            tags=[
+                BlogTaxonomyTag(id=150, name="Artificial Intelligence", slug="artificial-intelligence", category_id=45),
+                BlogTaxonomyTag(id=151, name="Startup Valuations", slug="startup-valuations", category_id=51),
+            ],
+        )
+
+    monkeypatch.setattr(BlogAgentService, "generate", fake_blog_generate, raising=True)
+    monkeypatch.setattr(
+        BlogTaxonomyService,
+        "suggest_for_generated_post",
+        fake_taxonomy_suggestion,
+        raising=True,
+    )
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        payload = {
+            "topic": "What OpenAI and Anthropic IPO rumors mean for investor confidence in artificial intelligence startup valuations today.",
+            "save_draft": False,
+            "publish_post": False,
+        }
+        resp = await ac.post("/v1/ai/generate/blog", json=payload)
+
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["resolved_keywords"]
+    assert "Artificial Intelligence" in data["resolved_keywords"]
 
 
 @pytest.mark.asyncio
@@ -194,6 +295,7 @@ async def test_get_blog_options_exposes_web_search_default(app):
     assert resp.status_code == status.HTTP_200_OK
     data = resp.json()
     assert data["use_web_search_default"] is True
+    assert data["blog_types"][0]["value"] == "news"
 
 
 @pytest.mark.asyncio
@@ -218,7 +320,13 @@ async def test_generate_blog_quality_error_returns_400(app, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_generate_blog_publish_persists_quality_metadata(app, monkeypatch):
-    from schemas.ai import BlogPost, BlogSection
+    from schemas.ai import (
+        BlogPost,
+        BlogSection,
+        BlogTaxonomyCategory,
+        BlogTaxonomySuggestion,
+        BlogTaxonomyTag,
+    )
 
     async def fake_blog_generate(self, **kwargs):
         post = BlogPost(
@@ -245,11 +353,31 @@ async def test_generate_blog_publish_persists_quality_metadata(app, monkeypatch)
         )
         return post, 0.33, True, [{"title": "Source", "url": "https://example.com"}]
 
+    async def fake_taxonomy_suggestion(*args, **kwargs):
+        return BlogTaxonomySuggestion(
+            category=BlogTaxonomyCategory(
+                id=45,
+                name="Artificial Intelligence",
+                slug="artificial-intelligence",
+                parent_id=44,
+            ),
+            tags=[
+                BlogTaxonomyTag(id=101, name="AI", slug="ai", category_id=45),
+                BlogTaxonomyTag(id=104, name="LLMs", slug="llms", category_id=45),
+            ],
+        )
+
     monkeypatch.setattr(BlogAgentService, "generate", fake_blog_generate, raising=True)
     monkeypatch.setattr(
         BlogAgentService,
         "blog_post_to_html",
         lambda self, blog_post: "<p>stub html</p>",
+        raising=True,
+    )
+    monkeypatch.setattr(
+        BlogTaxonomyService,
+        "suggest_for_generated_post",
+        fake_taxonomy_suggestion,
         raising=True,
     )
 
@@ -285,5 +413,9 @@ async def test_generate_blog_publish_persists_quality_metadata(app, monkeypatch)
     persisted = captured["post_data"].content_blocks
     assert "ai_generation" in persisted
     assert persisted["ai_generation"]["generator"] == "blog-agent"
+    assert persisted["ai_generation"]["resolved_keywords"][:2] == ["AI Pipeline", "Quality Metrics"]
     assert "quality_report" in persisted["ai_generation"]
     assert "phase_metrics" in persisted["ai_generation"]
+    assert persisted["ai_generation"]["taxonomy_suggestion"]["category"]["id"] == 45
+    assert captured["post_data"].category_id == 45
+    assert captured["post_data"].tag_ids == [101, 104]

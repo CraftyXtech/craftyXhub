@@ -28,3 +28,10 @@ test('buildBlogGenerationPayload defaults web search to on', () => {
     true,
   );
 });
+
+test('buildBlogGenerationPayload defaults blog type to news', () => {
+  assert.equal(
+    buildBlogGenerationPayload({ topic: 'Default blog type' }).blog_type,
+    'news',
+  );
+});

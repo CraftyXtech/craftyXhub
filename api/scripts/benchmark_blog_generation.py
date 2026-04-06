@@ -305,7 +305,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--runs-per-mode", type=int, default=20)
     parser.add_argument("--warmup-runs", type=int, default=1)
     parser.add_argument("--search-states", type=str, default="off,on")
-    parser.add_argument("--model", type=str, default="glm-5")
+    parser.add_argument("--model", type=str, default="glm-5-turbo")
     parser.add_argument("--word-count", type=str, default="medium")
     parser.add_argument("--latency-slo-seconds", type=float, default=60.0)
     parser.add_argument("--per-run-timeout-seconds", type=float, default=75.0)

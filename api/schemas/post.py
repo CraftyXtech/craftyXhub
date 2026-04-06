@@ -47,10 +47,31 @@ class CategoryCreateResponse(CategoryBase, BaseSchema):
 class CategoryListResponse(BaseModel):
     categories: List[CategoryResponse]
 
+
+class CategorySlugResolveResponse(BaseModel):
+    id: int
+    name: str
+    slug: Optional[str] = None
+    description: Optional[str] = None
+    parent_id: Optional[int] = None
+    created_at: datetime
+    post_count: Optional[int] = 0
+    subcategories: List[CategoryChildResponse] = []
+    parent: Optional[CategoryChildResponse] = None
+    is_subcategory: bool = False
+    matched_slug: str
+    canonical_slug: str
+    redirect_required: bool = False
+
 class TagBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=50)
     slug: Optional[str] = Field(None, min_length=1, max_length=50)
     category_id: Optional[int] = Field(None, description="Category ID for grouping tags")
+    is_active: Optional[bool] = Field(default=True, description="Whether the tag can be assigned to new posts")
+    canonical_tag_id: Optional[int] = Field(
+        default=None,
+        description="Canonical replacement tag id when this tag is deprecated",
+    )
 
 
 class TagCreate(TagBase):
@@ -61,6 +82,11 @@ class TagUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=50)
     slug: Optional[str] = Field(None, min_length=1, max_length=50)
     category_id: Optional[int] = Field(None, description="Category ID for grouping tags")
+    is_active: Optional[bool] = Field(default=None, description="Whether the tag can be assigned to new posts")
+    canonical_tag_id: Optional[int] = Field(
+        default=None,
+        description="Canonical replacement tag id when this tag is deprecated",
+    )
 
 
 class TagResponse(TagBase, BaseSchema):
@@ -105,6 +131,7 @@ class PostCreate(PostBase):
     slug: str = Field(..., min_length=1, max_length=200)
     category_id: Optional[int] = None
     tag_ids: Optional[List[int]] = []
+    seo_keywords: Optional[List[str]] = None
     featured_image: Optional[str] = None
     reading_time: Optional[int] = None
     is_published: Optional[bool] = False
@@ -119,6 +146,7 @@ class PostUpdate(BaseModel):
     excerpt: Optional[str] = Field(None, max_length=500)
     category_id: Optional[int] = None
     tag_ids: Optional[List[int]] = None
+    seo_keywords: Optional[List[str]] = None
     featured_image: Optional[str] = None
     reading_time: Optional[int] = None
     meta_title: Optional[str] = Field(None, max_length=200)
@@ -140,6 +168,7 @@ class PostResponse(BaseModel):
     reading_time: Optional[int]
     meta_title: Optional[str]
     meta_description: Optional[str]
+    seo_keywords: Optional[List[str]]
     published_at: Optional[datetime]
     created_at: datetime
     updated_at: Optional[datetime]

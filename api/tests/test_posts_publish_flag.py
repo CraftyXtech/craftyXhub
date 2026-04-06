@@ -1,3 +1,4 @@
+import asyncio
 import json
 import pytest
 from uuid import uuid4
@@ -79,6 +80,35 @@ async def test_update_post_toggle_publish(client_author):
     body2 = resp2.json()
     assert body2["is_published"] is False
     assert body2["published_at"] is None
+
+
+@pytest.mark.asyncio
+async def test_update_published_post_keeps_original_published_at(client_author):
+    create = await client_author.post("/v1/posts/", data={
+        "title": "Published Post",
+        "content": "<p>Original content</p>",
+        "excerpt": VALID_EXCERPT,
+        "is_published": "true",
+    })
+    assert create.status_code == 201, create.text
+    post = create.json()
+
+    original_published_at = post["published_at"]
+    original_updated_at = post["updated_at"]
+
+    await asyncio.sleep(0.01)
+
+    update = await client_author.put(f"/v1/posts/{post['uuid']}", data={
+        "title": "Published Post Updated",
+        "content": "<p>Updated content</p>",
+        "is_published": "true",
+    })
+    assert update.status_code == 200, update.text
+    body = update.json()
+
+    assert body["is_published"] is True
+    assert body["published_at"] == original_published_at
+    assert body["updated_at"] != original_updated_at
 
 
 @pytest.mark.asyncio

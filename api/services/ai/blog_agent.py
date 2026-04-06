@@ -738,7 +738,7 @@ class BlogAgentService:
     async def generate(
         self,
         topic: str,
-        blog_type: str = "how-to",
+        blog_type: str = "news",
         keywords: Optional[list[str]] = None,
         audience: Optional[str] = None,
         word_count: str = "medium",

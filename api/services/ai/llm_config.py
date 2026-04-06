@@ -24,17 +24,17 @@ AVAILABLE_MODELS = {
         "supports_compat_json": True,
         "blog_enabled": True,
     },
-    "gpt-5.2": {
-        "id": "openai/gpt-5.2",
-        "label": "GPT-5.2",
+    "gpt-5.4": {
+        "id": "openai/gpt-5.4",
+        "label": "GPT-5.4",
         "provider": "OpenAI",
         "supports_structured": True,
         "supports_compat_json": True,
         "blog_enabled": True,
     },
-    "glm-5": {
-        "id": "z-ai/glm-5",
-        "label": "GLM-5",
+    "glm-5-turbo": {
+        "id": "z-ai/glm-5-turbo",
+        "label": "GLM 5 Turbo",
         "provider": "Z.AI",
         "supports_structured": False,
         "supports_compat_json": True,
@@ -48,9 +48,17 @@ AVAILABLE_MODELS = {
         "supports_compat_json": True,
         "blog_enabled": True,
     },
+    "qwen-3.6-plus": {
+        "id": "qwen/qwen3.6-plus",
+        "label": "Qwen 3.6 Plus",
+        "provider": "Qwen",
+        "supports_structured": False,
+        "supports_compat_json": True,
+        "blog_enabled": True,
+    },
 }
 
-DEFAULT_MODEL = "glm-5"
+DEFAULT_MODEL = "glm-5-turbo"
 
 
 def _ensure_api_key():
@@ -110,14 +118,19 @@ def get_model_from_id(model_id: str) -> OpenAIModel:
 def get_models_for_frontend() -> list[dict]:
     """Return the model list formatted for frontend dropdowns."""
     if not settings.OPENROUTER_API_KEY:
+        default_entry = AVAILABLE_MODELS[DEFAULT_MODEL]
         return [
             {
                 "value": DEFAULT_MODEL,
-                "label": f"{AVAILABLE_MODELS[DEFAULT_MODEL]['label']} (needs API key)",
-                "supports_structured": True,
-                "supports_compat_json": True,
-                "blog_enabled": True,
-                "default_path": "structured",
+                "label": f"{default_entry['label']} (needs API key)",
+                "supports_structured": bool(default_entry.get("supports_structured", False)),
+                "supports_compat_json": bool(default_entry.get("supports_compat_json", False)),
+                "blog_enabled": bool(default_entry.get("blog_enabled", False)),
+                "default_path": (
+                    "structured"
+                    if default_entry.get("supports_structured", False)
+                    else "compat_json"
+                ),
             }
         ]
 
