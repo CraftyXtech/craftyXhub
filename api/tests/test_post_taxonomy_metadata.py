@@ -302,3 +302,36 @@ async def test_tag_can_be_deprecated_into_canonical_tag_and_hidden_from_default_
     legacy_payload = next(tag for tag in admin_tags.json()["tags"] if tag["id"] == legacy["id"])
     assert legacy_payload["canonical_tag_id"] == canonical["id"]
     assert legacy_payload["is_active"] is False
+
+
+@pytest.mark.asyncio
+async def test_grouped_tags_hide_deprecated_variants_from_selector(client_admin, client_public):
+    tech = await _create_category(client_admin, name="Tech Selector", slug="tech-selector")
+    software = await _create_category(
+        client_admin,
+        name="Software Development",
+        slug="software-development",
+        parent_id=tech["id"],
+    )
+    canonical = await _create_tag(
+        client_admin,
+        name="Backend Development",
+        slug="backend-development",
+        category_id=software["id"],
+    )
+    await _create_tag(
+        client_admin,
+        name="Python",
+        slug="python",
+        category_id=software["id"],
+        is_active=False,
+        canonical_tag_id=canonical["id"],
+    )
+
+    grouped_response = await client_public.get("/v1/posts/tags/grouped/")
+    assert grouped_response.status_code == 200, grouped_response.text
+    groups = grouped_response.json()["groups"]
+    tech_group = next(group for group in groups if group["category_name"] == "Tech Selector")
+    tag_names = {tag["name"] for tag in tech_group["tags"]}
+    assert "Backend Development" in tag_names
+    assert "Python" not in tag_names
