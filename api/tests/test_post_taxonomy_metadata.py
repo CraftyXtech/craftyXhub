@@ -335,3 +335,39 @@ async def test_grouped_tags_hide_deprecated_variants_from_selector(client_admin,
     tag_names = {tag["name"] for tag in tech_group["tags"]}
     assert "Backend Development" in tag_names
     assert "Python" not in tag_names
+
+
+@pytest.mark.asyncio
+async def test_grouped_tags_show_generalized_canonical_tags_after_mobile_cleanup(
+    client_admin,
+    client_public,
+):
+    tech = await _create_category(client_admin, name="Apps Selector", slug="apps-selector")
+    software = await _create_category(
+        client_admin,
+        name="Software Development",
+        slug="software-development",
+        parent_id=tech["id"],
+    )
+    canonical = await _create_tag(
+        client_admin,
+        name="App Development",
+        slug="app-development",
+        category_id=software["id"],
+    )
+    await _create_tag(
+        client_admin,
+        name="Mobile Apps",
+        slug="mobile-apps",
+        category_id=software["id"],
+        is_active=False,
+        canonical_tag_id=canonical["id"],
+    )
+
+    grouped_response = await client_public.get("/v1/posts/tags/grouped/")
+    assert grouped_response.status_code == 200, grouped_response.text
+    groups = grouped_response.json()["groups"]
+    tech_group = next(group for group in groups if group["category_name"] == "Apps Selector")
+    tag_names = {tag["name"] for tag in tech_group["tags"]}
+    assert "App Development" in tag_names
+    assert "Mobile Apps" not in tag_names
