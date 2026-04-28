@@ -49,6 +49,7 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".avif",
 class PostService:
     EXCERPT_MIN_CHARACTERS = 70
     EXCERPT_MIN_WORDS = 10
+    HOMEPAGE_TRENDING_LIMIT = 3
     TAXONOMY_SLUG_MAX_LENGTH = 100
     TAG_SLUG_MAX_LENGTH = 50
     RELATED_KEYWORD_STOP_WORDS = {
@@ -678,6 +679,35 @@ class PostService:
             )
 
     @staticmethod
+    async def get_homepage_trending_posts(
+            session: AsyncSession,
+            skip: int = 0,
+            limit: int = 3,
+            include_deleted: bool = False
+    ) -> List[Post]:
+        try:
+            query = select(Post).where(and_(
+                Post.is_published == True,
+                Post.is_homepage_trending == True
+            ))
+            query = PostService._apply_post_relationships(query)
+            query = PostService._add_soft_delete_filter(query, include_deleted)
+            query = query.order_by(
+                Post.homepage_trending_order.asc(),
+                Post.homepage_trending_picked_at.desc(),
+                Post.created_at.desc()
+            )
+            query = query.offset(skip).limit(min(limit, PostService.HOMEPAGE_TRENDING_LIMIT))
+
+            result = await session.execute(query)
+            return result.scalars().all()
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to get homepage trending posts: {str(e)}"
+            )
+
+    @staticmethod
     async def get_recent_posts(
             session: AsyncSession,
             skip: int = 0,
@@ -738,7 +768,28 @@ class PostService:
         from models.collection import ReadingHistory
 
         try:
+            from services.content_intelligence import ContentIntelligenceService
+
             personalized_posts: List[Post] = []
+
+            raw_affinity_ids = await ContentIntelligenceService.affinity_ranked_post_ids(
+                session,
+                user_id=user_id,
+                limit=skip + limit,
+            )
+            affinity_ids = raw_affinity_ids[skip:skip + limit]
+            if affinity_ids:
+                affinity_query = select(Post).where(Post.id.in_(affinity_ids))
+                affinity_query = PostService._apply_post_relationships(affinity_query)
+                affinity_query = PostService._add_soft_delete_filter(affinity_query, include_deleted)
+                affinity_result = await session.execute(affinity_query)
+                affinity_posts = affinity_result.scalars().all()
+                posts_by_id = {post.id: post for post in affinity_posts}
+                personalized_posts = [
+                    posts_by_id[post_id]
+                    for post_id in affinity_ids
+                    if post_id in posts_by_id
+                ]
 
             # --- Step 1: personalized query ---
             followed_authors_subq = (
@@ -767,10 +818,12 @@ class PostService:
                 .distinct()
             )
 
+            seen_personalized_ids = {post.id for post in personalized_posts}
             query = select(Post).where(
                 and_(
                     Post.is_published == True,
                     Post.author_id != user_id,  # exclude own posts
+                    Post.id.notin_(seen_personalized_ids) if seen_personalized_ids else True,
                     or_(
                         Post.author_id.in_(followed_authors_subq),
                         Post.category_id.in_(read_categories_subq),
@@ -783,10 +836,11 @@ class PostService:
             query = PostService._apply_post_relationships(query)
             query = PostService._add_soft_delete_filter(query, include_deleted)
             query = query.order_by(Post.created_at.desc())
-            query = query.offset(skip).limit(limit)
+            legacy_offset = max(0, skip - len(raw_affinity_ids))
+            query = query.offset(legacy_offset).limit(max(0, limit - len(personalized_posts)))
 
             result = await session.execute(query)
-            personalized_posts = list(result.scalars().all())
+            personalized_posts.extend(result.scalars().all())
 
             # --- Step 2: backfill if not enough results ---
             if len(personalized_posts) < limit:
@@ -897,14 +951,18 @@ class PostService:
     async def publish_post(
         session: AsyncSession,
         post_uuid: str,
-        current_user: User
+        current_user: User,
+        override_quality_gate: bool = False,
+        override_reason: Optional[str] = None,
     ) -> Post:
         try:
+            from services.content_intelligence import ContentIntelligenceService
+
             db_post = await PostService.get_post_by_uuid(session, post_uuid)
             if not db_post:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
-            if not current_user.is_moderator or db_post.author_id != current_user.id:
+            if db_post.author_id != current_user.id and not current_user.is_moderator():
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to publish this post")
 
             db_post.excerpt = PostService.validate_excerpt_for_publish(
@@ -912,20 +970,39 @@ class PostService:
                 db_post.content,
                 db_post.content_blocks,
             )
+            await ContentIntelligenceService.validate_publish_gate(
+                session,
+                post=db_post,
+                current_user=current_user,
+                override_quality_gate=override_quality_gate,
+                override_reason=override_reason,
+            )
             db_post.is_published = True
             if not db_post.published_at:
                 db_post.published_at = datetime.utcnow()
             db_post.updated_at = datetime.utcnow()
             await session.commit()
             await session.refresh(db_post)
+            try:
+                await ContentIntelligenceService.generate_distribution_assets(
+                    session,
+                    post_uuid=post_uuid,
+                    current_user=current_user,
+                )
+            except Exception as distribution_error:
+                logger.warning(
+                    "Failed to generate distribution assets for %s: %s",
+                    post_uuid,
+                    distribution_error,
+                )
             
             await NotificationService.notify_followers_new_post(
                 session=session,
                 post=db_post,
                 author_id=db_post.author_id
             )
-            
-            return db_post
+
+            return await PostService.get_post_by_uuid(session, post_uuid) or db_post
         except HTTPException:
             raise
         except Exception as e:
@@ -946,12 +1023,15 @@ class PostService:
             if not db_post:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
-            if not current_user.is_moderator or db_post.author_id != current_user.id:
+            if db_post.author_id != current_user.id and not current_user.is_moderator():
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                     detail="Not authorized to unpublish this post")
 
             db_post.is_published = False
             db_post.published_at = None
+            db_post.is_homepage_trending = False
+            db_post.homepage_trending_order = None
+            db_post.homepage_trending_picked_at = None
             db_post.updated_at = datetime.utcnow()
             await session.commit()
             await session.refresh(db_post)
@@ -991,6 +1071,99 @@ class PostService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to feature post: {str(e)}"
+            )
+
+    @staticmethod
+    async def set_homepage_trending(
+            session: AsyncSession,
+            post_uuid: str,
+            current_user: User,
+            trending: bool = True,
+            order: Optional[int] = None
+    ) -> Post:
+        try:
+            if not current_user.is_moderator():
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to manage homepage trending posts")
+
+            db_post = await PostService.get_post_by_uuid(session, post_uuid)
+            if not db_post:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+            if trending and not db_post.is_published:
+                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Only published posts can be added to homepage trending")
+
+            if order is not None and (order < 1 or order > PostService.HOMEPAGE_TRENDING_LIMIT):
+                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Homepage trending order must be between 1 and 3")
+
+            if not trending:
+                db_post.is_homepage_trending = False
+                db_post.homepage_trending_order = None
+                db_post.homepage_trending_picked_at = None
+                await session.commit()
+                return await PostService.get_post_by_uuid(session, post_uuid) or db_post
+
+            result = await session.execute(
+                select(Post)
+                .where(and_(
+                    Post.is_homepage_trending == True,
+                    Post.id != db_post.id,
+                ))
+                .order_by(Post.homepage_trending_order.asc())
+            )
+            selected_posts = result.scalars().all()
+
+            used_orders = {
+                post.homepage_trending_order
+                for post in selected_posts
+                if post.homepage_trending_order is not None
+            }
+
+            if order is None:
+                if db_post.is_homepage_trending and db_post.homepage_trending_order:
+                    order = db_post.homepage_trending_order
+                else:
+                    order = next(
+                        (
+                            candidate
+                            for candidate in range(1, PostService.HOMEPAGE_TRENDING_LIMIT + 1)
+                            if candidate not in used_orders
+                        ),
+                        None,
+                    )
+
+            if order is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Homepage trending already has 3 picked posts. Remove one before adding another.",
+                )
+
+            occupying_post = next(
+                (
+                    post
+                    for post in selected_posts
+                    if post.homepage_trending_order == order
+                ),
+                None,
+            )
+            if occupying_post:
+                occupying_post.is_homepage_trending = False
+                occupying_post.homepage_trending_order = None
+                occupying_post.homepage_trending_picked_at = None
+                session.add(occupying_post)
+
+            db_post.is_homepage_trending = True
+            db_post.homepage_trending_order = order
+            db_post.homepage_trending_picked_at = datetime.utcnow()
+            session.add(db_post)
+            await session.commit()
+            return await PostService.get_post_by_uuid(session, post_uuid) or db_post
+        except HTTPException:
+            raise
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to update homepage trending status: {str(e)}"
             )
 
     @staticmethod
@@ -1359,10 +1532,20 @@ class PostService:
                     db_post.published_at = None
 
             db_post.updated_at = datetime.utcnow()
+
+            if was_published and db_post.is_published:
+                from services.content_intelligence import ContentIntelligenceService
+
+                await ContentIntelligenceService.validate_uncommitted_publish_gate(
+                    session,
+                    post=db_post,
+                )
+
             await session.commit()
             await session.refresh(db_post)
             return db_post
         except HTTPException:
+            await session.rollback()
             raise
         except Exception as e:
             await session.rollback()

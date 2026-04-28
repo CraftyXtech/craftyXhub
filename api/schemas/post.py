@@ -164,6 +164,9 @@ class PostResponse(BaseModel):
     featured_image: Optional[str]
     is_published: bool
     is_featured: bool
+    is_homepage_trending: bool = False
+    homepage_trending_order: Optional[int] = None
+    homepage_trending_picked_at: Optional[datetime] = None
     view_count: int
     reading_time: Optional[int]
     meta_title: Optional[str]

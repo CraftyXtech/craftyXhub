@@ -3,19 +3,35 @@ import json
 import pytest
 from uuid import uuid4
 
+from sqlalchemy import select
+
+from models import Category, Post
+from models.content_intelligence import PostQualityReview
+
 VALID_EXCERPT = (
     "A publish-ready summary that captures the full article, highlights the "
     "main takeaway, and gives readers a clear reason to keep reading on the site."
 )
 
 
+async def create_publish_category(test_session):
+    suffix = uuid4().hex[:8]
+    category = Category(name=f"Publishing {suffix}", slug=f"publishing-{suffix}")
+    test_session.add(category)
+    await test_session.commit()
+    await test_session.refresh(category)
+    return category
+
+
 @pytest.mark.asyncio
-async def test_create_post_published_immediately(client_author):
+async def test_create_post_published_immediately(client_author, test_session):
+    category = await create_publish_category(test_session)
     data = {
         "title": "My First Post",
         "content": "<p>Hello world</p>",
         "excerpt": VALID_EXCERPT,
         "is_published": "true",
+        "category_id": str(category.id),
         "content_blocks": json.dumps({"blocks": [{"type": "paragraph", "text": "Hello"}]}),
     }
 
@@ -52,7 +68,8 @@ async def test_create_post_published_immediately_requires_excerpt(client_author)
 
 
 @pytest.mark.asyncio
-async def test_update_post_toggle_publish(client_author):
+async def test_update_post_toggle_publish(client_author, test_session):
+    category = await create_publish_category(test_session)
     # create draft
     create = await client_author.post("/v1/posts/", data={
         "title": "Draft Post",
@@ -66,6 +83,7 @@ async def test_update_post_toggle_publish(client_author):
     resp = await client_author.put(f"/v1/posts/{post['uuid']}", data={
         "excerpt": VALID_EXCERPT,
         "is_published": "true",
+        "category_id": str(category.id),
     })
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -83,11 +101,13 @@ async def test_update_post_toggle_publish(client_author):
 
 
 @pytest.mark.asyncio
-async def test_update_published_post_keeps_original_published_at(client_author):
+async def test_update_published_post_keeps_original_published_at(client_author, test_session):
+    category = await create_publish_category(test_session)
     create = await client_author.post("/v1/posts/", data={
         "title": "Published Post",
         "content": "<p>Original content</p>",
         "excerpt": VALID_EXCERPT,
+        "category_id": str(category.id),
         "is_published": "true",
     })
     assert create.status_code == 201, create.text
@@ -112,11 +132,87 @@ async def test_update_published_post_keeps_original_published_at(client_author):
 
 
 @pytest.mark.asyncio
-async def test_publish_endpoint_still_works(client_author):
+async def test_publish_reruns_stale_quality_review_after_draft_edit(client_author, test_session):
+    category = await create_publish_category(test_session)
+    create = await client_author.post("/v1/posts/", data={
+        "title": "Draft With Old Review",
+        "content": "<p>Original content without review warnings.</p>",
+        "excerpt": VALID_EXCERPT,
+        "category_id": str(category.id),
+        "is_published": "false",
+    })
+    assert create.status_code == 201, create.text
+    post = create.json()
+
+    db_post_id = (
+        await test_session.execute(select(Post.id).where(Post.uuid == post["uuid"]))
+    ).scalar_one()
+    test_session.add(PostQualityReview(
+        post_id=db_post_id,
+        checks={"warnings": [], "critical_failures": []},
+        needs_human_review=False,
+        score=100,
+        status="passed",
+    ))
+    await test_session.commit()
+
+    update = await client_author.put(f"/v1/posts/{post['uuid']}", data={
+        "content": (
+            "<p>Research shows 75% of teams need better publishing controls "
+            "before scaling editorial operations.</p>"
+        ),
+    })
+    assert update.status_code == 200, update.text
+
+    publish = await client_author.put(f"/v1/posts/{post['uuid']}/publish")
+    assert publish.status_code == 409, publish.text
+    assert publish.json()["detail"]["quality_status"] == "needs_review"
+
+    db_post = (
+        await test_session.execute(select(Post).where(Post.uuid == post["uuid"]))
+    ).scalar_one()
+    assert db_post.is_published is False
+
+
+@pytest.mark.asyncio
+async def test_rejected_published_edit_does_not_commit_content(client_author, test_session):
+    category = await create_publish_category(test_session)
+    original_content = "<p>Original published content.</p>"
+    create = await client_author.post("/v1/posts/", data={
+        "title": "Published Quality Gate",
+        "content": original_content,
+        "excerpt": VALID_EXCERPT,
+        "category_id": str(category.id),
+        "is_published": "true",
+    })
+    assert create.status_code == 201, create.text
+    post = create.json()
+
+    update = await client_author.put(f"/v1/posts/{post['uuid']}", data={
+        "content": (
+            "<p>Research shows 75% of teams need better publishing controls "
+            "before scaling editorial operations.</p>"
+        ),
+        "is_published": "true",
+    })
+    assert update.status_code == 409, update.text
+    assert update.json()["detail"]["quality_status"] == "needs_review"
+
+    db_post = (
+        await test_session.execute(select(Post).where(Post.uuid == post["uuid"]))
+    ).scalar_one()
+    assert db_post.is_published is True
+    assert db_post.content == original_content
+
+
+@pytest.mark.asyncio
+async def test_publish_endpoint_still_works(client_author, test_session):
+    category = await create_publish_category(test_session)
     create = await client_author.post("/v1/posts/", data={
         "title": "Draft 2",
         "content": "<p>Draft 2</p>",
         "excerpt": VALID_EXCERPT,
+        "category_id": str(category.id),
         "is_published": "false",
     })
     assert create.status_code == 201, create.text
@@ -171,12 +267,14 @@ async def test_publish_rejects_opening_paragraph_snippet(client_author):
 
 
 @pytest.mark.asyncio
-async def test_admin_flag_unpublishes(client_admin, client_author):
+async def test_admin_flag_unpublishes(client_admin, client_author, test_session):
+    category = await create_publish_category(test_session)
     # author creates published post
     create = await client_author.post("/v1/posts/", data={
         "title": "Flaggable",
         "content": "<p>Flag me</p>",
         "excerpt": VALID_EXCERPT,
+        "category_id": str(category.id),
         "is_published": "true",
     })
     assert create.status_code == 201, create.text
@@ -192,12 +290,14 @@ async def test_admin_flag_unpublishes(client_admin, client_author):
 
 
 @pytest.mark.asyncio
-async def test_delete_permissions(client_author, client_admin):
+async def test_delete_permissions(client_author, client_admin, test_session):
+    category = await create_publish_category(test_session)
     # author creates
     create = await client_author.post("/v1/posts/", data={
         "title": "Delete Me",
         "content": "<p>bye</p>",
         "excerpt": VALID_EXCERPT,
+        "category_id": str(category.id),
         "is_published": "true",
     })
     assert create.status_code == 201, create.text
@@ -212,6 +312,7 @@ async def test_delete_permissions(client_author, client_admin):
         "title": "Delete Me 2",
         "content": "<p>bye2</p>",
         "excerpt": VALID_EXCERPT,
+        "category_id": str(category.id),
         "is_published": "true",
     })
     assert create2.status_code == 201, create2.text
@@ -222,11 +323,13 @@ async def test_delete_permissions(client_author, client_admin):
 
 
 @pytest.mark.asyncio
-async def test_record_post_view_counts_once_per_client_window(client_author):
+async def test_record_post_view_counts_once_per_client_window(client_author, test_session):
+    category = await create_publish_category(test_session)
     create = await client_author.post("/v1/posts/", data={
         "title": "View Count Test",
         "content": "<p>Count me</p>",
         "excerpt": VALID_EXCERPT,
+        "category_id": str(category.id),
         "is_published": "true",
     })
     assert create.status_code == 201, create.text

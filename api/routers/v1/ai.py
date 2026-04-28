@@ -525,13 +525,21 @@ async def generate_blog(
                     category_id=category_id,
                     tag_ids=tag_ids,
                     reading_time=reading_time,
-                    is_published=request.is_published if request.is_published is not None else False,
+                    is_published=False,
                     is_featured=False,
                 )
 
                 created_post = await PostService.create_post(
                     db, post_data, current_user.id
                 )
+                if request.is_published:
+                    created_post = await PostService.publish_post(
+                        db,
+                        created_post.uuid,
+                        current_user,
+                        override_quality_gate=True,
+                        override_reason="Approved AI-generated post during generation.",
+                    )
                 post_id = created_post.uuid
             except Exception as post_error:
                 # Log but don't fail the whole request

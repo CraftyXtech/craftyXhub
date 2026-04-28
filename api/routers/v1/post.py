@@ -1,6 +1,6 @@
 import os
 import json
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, status, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import func
@@ -107,6 +107,21 @@ async def get_featured_posts(
     return {
         "posts": posts,
         "total": total,
+        "page": skip // limit + 1,
+        "size": limit
+    }
+
+
+@router.get("/homepage-trending", response_model=PostListResponse)
+async def get_homepage_trending_posts(
+        skip: int = Query(0, ge=0),
+        limit: int = Query(3, ge=1, le=3),
+        session: AsyncSession = Depends(get_db_session)
+):
+    posts = await PostService.get_homepage_trending_posts(session, skip=skip, limit=limit)
+    return {
+        "posts": posts,
+        "total": len(posts),
         "page": skip // limit + 1,
         "size": limit
     }
@@ -423,6 +438,8 @@ async def create_post(
                 detail="Invalid content_blocks format. Must be valid JSON."
             )
 
+    requested_publish = bool(is_published)
+
     # Validate input via schema; return 422 on validation errors instead of 500
     try:
         post_data = PostCreate(
@@ -438,7 +455,7 @@ async def create_post(
             tag_ids=parsed_tag_ids,
             reading_time=reading_time,
             featured_image=featured_image_path,
-            is_published=is_published or False
+            is_published=False
         )
     except ValidationError as e:
         if featured_image_path and os.path.exists(featured_image_path):
@@ -458,11 +475,14 @@ async def create_post(
             }
         )
 
+    post = None
     try:
         post = await PostService.create_post(session, post_data, current_user.id)
+        if requested_publish:
+            post = await PostService.publish_post(session, post.uuid, current_user)
         return post
     except Exception as e:
-        if featured_image_path and os.path.exists(featured_image_path):
+        if post is None and featured_image_path and os.path.exists(featured_image_path):
             os.remove(featured_image_path)
         raise e
 
@@ -521,6 +541,7 @@ async def update_post(
                     detail="Invalid content_blocks format. Must be valid JSON."
                 )
 
+    requested_publish = is_published
     form_data = {
         'title': title,
         'slug': slug,
@@ -533,7 +554,7 @@ async def update_post(
         'category_id': category_id,
         'tag_ids': parsed_tag_ids,
         'reading_time': reading_time,
-        'is_published': is_published,
+        'is_published': None if is_published is True else is_published,
     }
 
     # Always include the resolved image path (from direct upload, eager upload, or existing)
@@ -563,13 +584,16 @@ async def update_post(
             }
         )
 
+    updated_post = None
     try:
         updated_post = await PostService.update_post(session, post_uuid, post_data, current_user.id)
+        if requested_publish is True:
+            updated_post = await PostService.publish_post(session, post_uuid, current_user)
         await PostService.cleanup_old_image(old_image_path, featured_image_path, UPLOAD_DIR)
 
         return updated_post
     except Exception as e:
-        if featured_image_path and featured_image_path != existing_post.featured_image:
+        if updated_post is None and featured_image_path and featured_image_path != existing_post.featured_image:
             PostService.delete_image_file(featured_image_path, UPLOAD_DIR)
         raise e
 
@@ -794,10 +818,24 @@ async def get_post_stats(
 @router.put("/{post_uuid}/publish", response_model=PostResponse)
 async def publish_post(
         post_uuid: str,
+        override_quality_gate: bool = Body(False),
+        override_reason: Optional[str] = Body(None),
         current_user: User = Depends(get_current_active_user),
         session: AsyncSession = Depends(get_db_session)
 ):
-    return await PostService.publish_post(session, post_uuid, current_user)
+    if override_quality_gate and not current_user.is_moderator():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only moderators and admins can approve quality gate overrides",
+        )
+
+    return await PostService.publish_post(
+        session,
+        post_uuid,
+        current_user,
+        override_quality_gate=override_quality_gate,
+        override_reason=override_reason,
+    )
 
 
 @router.put("/{post_uuid}/unpublish", response_model=PostResponse)
@@ -817,6 +855,23 @@ async def feature_post(
         session: AsyncSession = Depends(get_db_session)
 ):
     return await PostService.feature_post(session, post_uuid, current_user, feature=feature)
+
+
+@router.put("/{post_uuid}/homepage-trending", response_model=PostResponse)
+async def set_homepage_trending(
+        post_uuid: str,
+        trending: bool = True,
+        order: Optional[int] = Query(None, ge=1, le=3),
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    return await PostService.set_homepage_trending(
+        session,
+        post_uuid,
+        current_user,
+        trending=trending,
+        order=order,
+    )
 
 
 @router.post("/{post_uuid}/report", response_model=ReportResponse)

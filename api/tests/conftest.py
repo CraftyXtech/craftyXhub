@@ -23,6 +23,10 @@ TEST_DB_URL = "sqlite+aiosqlite:///./test_api.sqlite3"
 
 @pytest_asyncio.fixture(scope="session")
 async def test_engine():
+    try:
+        os.remove("test_api.sqlite3")
+    except FileNotFoundError:
+        pass
     engine = create_async_engine(TEST_DB_URL, future=True)
     async with engine.begin() as conn:
         await conn.run_sync(ModelsBase.metadata.create_all)
