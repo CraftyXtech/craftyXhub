@@ -9,6 +9,7 @@ from .comment import router as comment_router
 from .content_intelligence import router as content_intelligence_router
 from .dashboard import router as dashboard_router
 from .media import router as media_router
+from .newsletter import router as newsletter_router
 from .notification import router as notification_router
 from .post import router as post_router
 from .profile import router as profile_router
@@ -24,6 +25,7 @@ router.include_router(post_router)
 router.include_router(comment_router)
 router.include_router(collection_router)
 router.include_router(media_router)
+router.include_router(newsletter_router)
 router.include_router(ai_router)
 router.include_router(notification_router)
 router.include_router(admin_users_router)

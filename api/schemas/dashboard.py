@@ -82,6 +82,13 @@ class DashboardDocumentSummary(BaseModel):
     category: Optional[str] = None
 
 
+class NewsletterSubscriberSummary(BaseModel):
+    uuid: str
+    email: str
+    source: str
+    created_at: datetime
+
+
 class AdminDashboardResponse(BaseModel):
     """
     Response envelope for the admin/moderator dashboard.
@@ -92,6 +99,8 @@ class AdminDashboardResponse(BaseModel):
     engagement_metrics: EngagementMetrics
     top_posts: List[DashboardPostSummary]
     recent_activity: List[DashboardActivityItem]
+    newsletter_subscribers: int = Field(default=0, ge=0)
+    recent_subscribers: List[NewsletterSubscriberSummary] = []
     drafts: List[DashboardDocumentSummary] = []
     recent_documents: List[DashboardDocumentSummary] = []
 
@@ -108,5 +117,4 @@ class UserDashboardResponse(BaseModel):
     recent_activity: List[DashboardActivityItem]
     drafts: List[DashboardDocumentSummary] = []
     recent_documents: List[DashboardDocumentSummary] = []
-
 

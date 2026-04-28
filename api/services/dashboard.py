@@ -15,9 +15,11 @@ from schemas.dashboard import (
     DashboardOverview,
     DashboardPostSummary,
     EngagementMetrics,
+    NewsletterSubscriberSummary,
     PostOverviewStats,
     UserDashboardResponse,
 )
+from services.newsletter import NewsletterService
 from schemas.notification import NotificationType
 from services.post.post import PostService
 from services.user.notification import NotificationService
@@ -141,6 +143,17 @@ class DashboardService:
                 session=session, limit=10
             )
 
+            newsletter_subscribers = await NewsletterService.active_count(session)
+            recent_subscribers = [
+                NewsletterSubscriberSummary(
+                    uuid=subscriber.uuid,
+                    email=subscriber.email,
+                    source=subscriber.source,
+                    created_at=subscriber.created_at,
+                )
+                for subscriber in await NewsletterService.list_recent(session, limit=5)
+            ]
+
             overview = DashboardOverview(
                 total_posts=total_posts,
                 published_posts=published_posts,
@@ -197,6 +210,8 @@ class DashboardService:
                 engagement_metrics=engagement_metrics,
                 top_posts=top_posts,
                 recent_activity=recent_activity,
+                newsletter_subscribers=newsletter_subscribers,
+                recent_subscribers=recent_subscribers,
                 drafts=drafts,
                 recent_documents=recent_documents,
             )
@@ -504,5 +519,4 @@ class DashboardService:
 
         icon, color = mapping.get(notification_type, ("activity", "secondary"))
         return icon, color
-
 
