@@ -9,7 +9,10 @@ from sqlmodel import select
 import os
 import uuid
 import aiofiles
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 class ProfileService:
     UPLOAD_DIR = "uploads/avatars"
@@ -73,10 +76,10 @@ class ProfileService:
                 avatar=avatar_url,
                 bio=profile_data.bio,
                 location=profile_data.location,
-                website=profile_data.website,
                 twitter_handle=profile_data.twitter_handle,
-                github_handle=profile_data.github_handle,
                 linkedin_handle=profile_data.linkedin_handle,
+                instagram_handle=profile_data.instagram_handle,
+                facebook_handle=profile_data.facebook_handle,
                 birth_date=profile_data.birth_date
             )
 
@@ -121,7 +124,8 @@ class ProfileService:
             user_uuid: str,
             profile_data: ProfileUpdate,
             avatar: UploadFile = None,
-            current_user: User = None
+            current_user: User = None,
+            user_data: dict | None = None,
     ):
         old_avatar_path = None
         new_avatar_path = None
@@ -136,13 +140,23 @@ class ProfileService:
             if user.id != current_user.id:
                 raise HTTPException(status_code=403, detail="Not authorized to update this profile")
 
+            if user_data:
+                full_name = user_data.get("full_name")
+                username = user_data.get("username")
+                if full_name is not None:
+                    user.full_name = full_name
+                if username is not None:
+                    user.username = username
+
             profile_result = await db.execute(
                 select(Profile).options(joinedload(Profile.user)).where(Profile.user_id == user.id)
             )
             profile = profile_result.scalar_one_or_none()
 
             if not profile:
-                return None
+                profile = Profile(user_id=user.id)
+                db.add(profile)
+                await db.flush()
 
             if avatar:
                 try:
@@ -178,7 +192,7 @@ class ProfileService:
                 ProfileService._delete_avatar(new_avatar_path)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Profile data violates database constraints"
+                detail="Profile data violates database constraints. Username may already be taken."
             )
         except SQLAlchemyError as e:
             await db.rollback()

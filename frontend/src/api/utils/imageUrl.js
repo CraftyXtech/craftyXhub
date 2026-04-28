@@ -51,7 +51,8 @@ export const getAvatarUrl = (avatarPath) => {
   if (avatarPath.startsWith('http')) return avatarPath;
   
   const apiBase = getApiBaseUrl();
-  return `${apiBase}/v1/uploads/avatars/${avatarPath}`;
+  const filename = avatarPath.split('/').pop();
+  return `${apiBase}/v1/uploads/images/${filename}?folder=avatars`;
 };
 
 /**

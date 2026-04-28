@@ -61,6 +61,8 @@ async def get_profile(user_uuid: str, db: Session = Depends(get_db)):
 @router.put("/{user_uuid}", response_model=ProfileResponse)
 async def update_profile(
         user_uuid: str,
+        full_name: Optional[str] = Form(None),
+        username: Optional[str] = Form(None),
         bio: Optional[str] = Form(None),
         location: Optional[str] = Form(None),
         twitter_handle: Optional[str] = Form(None),
@@ -88,7 +90,11 @@ async def update_profile(
         user_uuid=user_uuid,
         profile_data=profile_data,
         avatar=avatar,
-        current_user=current_user
+        current_user=current_user,
+        user_data=clean_form_data(
+            full_name=full_name,
+            username=username,
+        ),
     )
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")

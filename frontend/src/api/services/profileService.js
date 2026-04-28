@@ -52,6 +52,8 @@ export const updateProfile = async (userUuid, profileData) => {
   const formData = new FormData();
   
   if (profileData.bio !== undefined) formData.append('bio', profileData.bio || '');
+  if (profileData.full_name !== undefined) formData.append('full_name', profileData.full_name || '');
+  if (profileData.username !== undefined) formData.append('username', profileData.username || '');
   if (profileData.location !== undefined) formData.append('location', profileData.location || '');
   if (profileData.twitter_handle !== undefined) formData.append('twitter_handle', profileData.twitter_handle || '');
   if (profileData.linkedin_handle !== undefined) formData.append('linkedin_handle', profileData.linkedin_handle || '');
@@ -89,5 +91,6 @@ export const getAvatarUrl = (avatarPath) => {
   if (avatarPath.startsWith('http')) return avatarPath;
   
   const apiBase = getApiBaseUrl();
-  return `${apiBase}/v1/uploads/avatars/${avatarPath}`;
+  const filename = avatarPath.split('/').pop();
+  return `${apiBase}/v1/uploads/images/${filename}?folder=avatars`;
 };

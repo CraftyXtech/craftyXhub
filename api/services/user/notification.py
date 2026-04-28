@@ -9,6 +9,7 @@ import logging
 from models import Notification, User, Post, Comment
 from models.base import user_follows
 from models.notification import NotificationType
+from models.user import UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -563,7 +564,13 @@ class NotificationService:
                 return
 
             admins_query = select(User.id).where(
-                or_(User.is_admin == True, User.is_moderator == True)
+                User.role.in_(
+                    [
+                        UserRole.SUPER_ADMIN,
+                        UserRole.ADMIN,
+                        UserRole.MODERATOR,
+                    ]
+                )
             )
             admins_result = await session.execute(admins_query)
             admin_ids = [row[0] for row in admins_result.all()]

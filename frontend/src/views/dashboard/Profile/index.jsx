@@ -25,7 +25,7 @@ import {
 
 // API
 import { useAuth } from '@/api/AuthProvider';
-import { getProfile, updateProfile } from '@/api/services/profileService';
+import { getProfile, updateProfile, getAvatarUrl } from '@/api/services/profileService';
 
 /**
  * Profile Settings Page
@@ -78,7 +78,7 @@ export default function Profile() {
           facebook: profile.facebook_handle || ''
         });
         if (profile.avatar) {
-          setAvatarPreview(profile.avatar);
+          setAvatarPreview(getAvatarUrl(profile.avatar));
         }
       } catch (err) {
         console.error('Failed to load profile:', err);
@@ -125,6 +125,8 @@ export default function Profile() {
 
       // Map form field names to API field names
       const profileData = {
+        full_name: data.full_name || '',
+        username: data.username || '',
         bio: data.bio || '',
         twitter_handle: data.twitter || '',
         linkedin_handle: data.linkedin || '',
@@ -140,8 +142,18 @@ export default function Profile() {
       
       // Update auth context
       if (updateUser) {
-        updateUser(updatedProfile);
+        updateUser({
+          ...user,
+          full_name: data.full_name || user.full_name,
+          username: data.username || user.username,
+          avatar: updatedProfile.avatar,
+          profile: updatedProfile,
+        });
       }
+      if (updatedProfile.avatar) {
+        setAvatarPreview(getAvatarUrl(updatedProfile.avatar));
+      }
+      setAvatarFile(null);
       
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
