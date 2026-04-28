@@ -6,7 +6,17 @@ from .report import Report
 from .comment_report import CommentReport
 from .ai_draft import AIDraft, AIGenerationLog
 from .notification import Notification
+from .newsletter import NewsletterSubscriber
 from .collection import ReadingList, ReadingListItem, ReadingHistory, Highlight
+from .content_intelligence import (
+    ContentSource,
+    DistributionAsset,
+    PostQualityReview,
+    SiteSearchQuery,
+    TopicBrief,
+    TrackingClick,
+    TrackingLink,
+)
 
 __all__ = [
     'Base',
@@ -26,8 +36,16 @@ __all__ = [
     'AIDraft',
     'AIGenerationLog',
     'Notification',
+    'NewsletterSubscriber',
     'ReadingList',
     'ReadingListItem',
     'ReadingHistory',
     'Highlight',
+    'ContentSource',
+    'DistributionAsset',
+    'PostQualityReview',
+    'SiteSearchQuery',
+    'TopicBrief',
+    'TrackingClick',
+    'TrackingLink',
 ]

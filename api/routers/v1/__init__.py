@@ -6,6 +6,7 @@ from .ai import router as ai_router
 from .auth import router as auth_router
 from .collection import router as collection_router
 from .comment import router as comment_router
+from .content_intelligence import router as content_intelligence_router
 from .dashboard import router as dashboard_router
 from .media import router as media_router
 from .notification import router as notification_router
@@ -27,3 +28,4 @@ router.include_router(ai_router)
 router.include_router(notification_router)
 router.include_router(admin_users_router)
 router.include_router(dashboard_router)
+router.include_router(content_intelligence_router)

@@ -11,6 +11,7 @@ from pathlib import Path
 import logging
 from services.post.post import PostService
 from services.share import SharePageService
+from services.content_intelligence import ContentIntelligenceService
 
 # Initialize cached settings
 settings = get_settings()
@@ -35,6 +36,7 @@ def include_routers(app: FastAPI) -> None:
 
     @app.get("/search", tags=["Global Search"], summary="Global Search")
     async def global_search(
+        request: Request,
         q: str = Query(..., min_length=1),
         db=Depends(get_db_session),
     ):
@@ -64,11 +66,37 @@ def include_routers(app: FastAPI) -> None:
         users_result = await db.execute(users_stmt)
         categories_result = await db.execute(categories_stmt)
 
+        posts = posts_result.scalars().all()
+        users = users_result.scalars().all()
+        categories = categories_result.scalars().all()
+        try:
+            await ContentIntelligenceService.log_site_search(
+                db,
+                query=q,
+                result_count=len(posts) + len(users) + len(categories),
+                request=request,
+            )
+        except Exception as exc:
+            logger.warning("Failed to record site search query: %s", exc)
+
         return {
-            "posts": posts_result.scalars().all(),
-            "users": users_result.scalars().all(),
-            "categories": categories_result.scalars().all(),
+            "posts": posts,
+            "users": users,
+            "categories": categories,
         }
+
+    @app.get("/r/{token}", include_in_schema=False)
+    async def content_tracking_redirect(
+        token: str,
+        request: Request,
+        db=Depends(get_db_session),
+    ):
+        destination = await ContentIntelligenceService.record_tracking_click(
+            db,
+            token=token,
+            request=request,
+        )
+        return RedirectResponse(url=destination, status_code=status.HTTP_302_FOUND)
 
     @app.api_route(
         "/v1/uploads/images/{filename}",
