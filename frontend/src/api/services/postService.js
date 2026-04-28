@@ -149,6 +149,16 @@ export const getFeaturedPosts = async (params = {}) => {
 };
 
 /**
+ * Get admin-picked homepage trending posts
+ * @param {object} params - { limit }
+ * @returns {Promise<object>} Posts list
+ */
+export const getHomepageTrendingPosts = async (params = {}) => {
+  const response = await axiosPublic.get('/posts/homepage-trending', { params });
+  return response.data;
+};
+
+/**
  * Get personalized "For You" posts based on following and reading history
  * @param {object} params - { limit }
  * @returns {Promise<object>} Personalized posts list
@@ -349,8 +359,11 @@ export const deletePost = async (postUuid) => {
  * @param {string} postUuid - Post UUID
  * @returns {Promise<object>} Published post
  */
-export const publishPost = async (postUuid) => {
-  const response = await axiosPrivate.put(`/posts/${postUuid}/publish`);
+export const publishPost = async (postUuid, options = {}) => {
+  const response = await axiosPrivate.put(`/posts/${postUuid}/publish`, {
+    override_quality_gate: Boolean(options.overrideQualityGate),
+    override_reason: options.overrideReason || null,
+  });
   return response.data;
 };
 
@@ -372,6 +385,20 @@ export const unpublishPost = async (postUuid) => {
  */
 export const featurePost = async (postUuid, feature = true) => {
   const response = await axiosPrivate.put(`/posts/${postUuid}/feature?feature=${feature}`);
+  return response.data;
+};
+
+/**
+ * Add/remove a post from the admin-picked homepage trending carousel
+ * @param {string} postUuid - Post UUID
+ * @param {boolean} trending - True to add, false to remove
+ * @param {number|null} order - Optional slot order from 1-3
+ * @returns {Promise<object>} Updated post
+ */
+export const setHomepageTrending = async (postUuid, trending = true, order = null) => {
+  const params = { trending };
+  if (order) params.order = order;
+  const response = await axiosPrivate.put(`/posts/${postUuid}/homepage-trending`, null, { params });
   return response.data;
 };
 

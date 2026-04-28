@@ -91,6 +91,12 @@ export default function Drafts() {
 
   const handlePublish = async () => {
     if (!selectedDraft) return;
+
+    if (!selectedDraft.category && !selectedDraft.category_id) {
+      handleMenuClose();
+      navigate(`/dashboard/posts/edit/${selectedDraft.uuid}`);
+      return;
+    }
     
     try {
       setActionLoading(true);

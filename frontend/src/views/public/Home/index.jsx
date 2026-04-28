@@ -3,6 +3,7 @@ import { Box, Collapse } from '@mui/material';
 import HeroSection from './sections/HeroSection';
 import LatestPosts from './sections/LatestPosts';
 import PopularPosts from './sections/PopularPosts';
+import ExploreTopics from './sections/ExploreTopics';
 import Newsletter from './Newsletter';
 import Categories from './Categories';
 
@@ -27,8 +28,11 @@ export default function Home() {
         </Box>
       </Collapse>
 
-      {/* Latest Articles - 4 col grid */}
+      {/* Latest Articles - 3 col grid (6 articles) */}
       <LatestPosts />
+
+      {/* Explore More Topics - Featured topics section */}
+      <ExploreTopics />
 
       {/* Popular Articles - 3 col grid */}
       <PopularPosts />

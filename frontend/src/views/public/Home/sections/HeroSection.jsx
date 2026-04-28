@@ -4,31 +4,90 @@ import { useRef, useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Keyboard } from 'swiper/modules';
 import { IconArrowRight, IconArrowLeft } from '@tabler/icons-react';
-import { getFeaturedPosts, getImageUrl } from '@/api/services/postService';
+import { getFeaturedPosts, getHomepageTrendingPosts, getImageUrl } from '@/api/services/postService';
 
 // Swiper styles
 import 'swiper/css';
 
-// Hero slides data (static - could be made dynamic later)
-const heroSlides = [
-  {
-    image: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1600&h=900&fit=crop',
-    label: 'Featured',
-    title: 'Discover Stories That Inspire',
-    to: '/'
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=1600&h=900&fit=crop',
-    label: 'Trending',
-    title: 'What The Community Is Reading',
-    to: '/'
-  }
-];
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1600&h=900&fit=crop';
+
+function getPostUrl(post) {
+  return `/post/${post.slug || post.uuid || post.id}`;
+}
+
+function HeroPostSlide({ post }) {
+  const imageUrl = getImageUrl(post.featured_image) || FALLBACK_IMAGE;
+  const categoryName = typeof post.category === 'object' ? post.category?.name : post.category;
+
+  return (
+    <Box
+      component={RouterLink}
+      to={getPostUrl(post)}
+      sx={{
+        position: 'relative',
+        display: 'block',
+        height: '100%',
+        backgroundImage: `url(${imageUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        textDecoration: 'none'
+      }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.08) 55%)'
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 50,
+          bgcolor: 'rgba(0,0,0,0.7)',
+          py: { xs: 3, md: 4 },
+          px: { xs: 3, md: 5 },
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          gap: { xs: 1, sm: 3 }
+        }}
+      >
+        <Typography
+          variant="overline"
+          sx={{
+            color: 'accent.main',
+            fontWeight: 600,
+            letterSpacing: 2,
+            borderRight: '1px solid rgba(255,255,255,0.2)',
+            pr: { xs: 0, sm: 3 },
+            borderRightWidth: { xs: 0, sm: 1 }
+          }}
+        >
+          {categoryName || 'Trending'}
+        </Typography>
+        <Typography
+          variant="h5"
+          sx={{
+            color: 'white',
+            fontWeight: 300,
+            textDecoration: 'none',
+            lineHeight: 1.2
+          }}
+        >
+          {post.title}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
 
 // Featured Post Card Component
 function FeaturedPostCard({ post, height = '100%' }) {
-  const postUrl = `/post/${post.slug || post.uuid || post.id}`;
-  const imageUrl = getImageUrl(post.featured_image) || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=600&fit=crop';
+  const postUrl = getPostUrl(post);
+  const imageUrl = getImageUrl(post.featured_image) || FALLBACK_IMAGE;
   const categoryName = typeof post.category === 'object' ? post.category?.name : post.category;
   const postDate = post.published_at || post.created_at;
   const formattedDate = postDate ? new Date(postDate).toLocaleDateString('en-US', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
@@ -123,24 +182,31 @@ function FeaturedPostCard({ post, height = '100%' }) {
 
 export default function HeroSection() {
   const swiperRef = useRef(null);
+  const [trendingPosts, setTrendingPosts] = useState([]);
   const [featuredPosts, setFeaturedPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [trendingLoading, setTrendingLoading] = useState(true);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
 
   useEffect(() => {
-    const fetchFeaturedPosts = async () => {
+    const fetchHomepagePosts = async () => {
       try {
-        setLoading(true);
-        const data = await getFeaturedPosts({ limit: 2 });
-        // API returns { posts: [...] } - extract the array
-        setFeaturedPosts(data?.posts || []);
+        setTrendingLoading(true);
+        setFeaturedLoading(true);
+        const [trendingData, featuredData] = await Promise.all([
+          getHomepageTrendingPosts({ limit: 3 }),
+          getFeaturedPosts({ limit: 2 })
+        ]);
+        setTrendingPosts(trendingData?.posts || []);
+        setFeaturedPosts(featuredData?.posts || []);
       } catch (err) {
-        console.error('Failed to fetch featured posts:', err);
+        console.error('Failed to fetch homepage posts:', err);
       } finally {
-        setLoading(false);
+        setTrendingLoading(false);
+        setFeaturedLoading(false);
       }
     };
 
-    fetchFeaturedPosts();
+    fetchHomepagePosts();
   }, []);
 
   return (
@@ -150,73 +216,37 @@ export default function HeroSection() {
           {/* Left: Hero Slider */}
           <Grid size={{ xs: 12, lg: 6 }}>
             <Box sx={{ position: 'relative', height: { xs: 350, md: 500 } }}>
-              <Swiper
-                modules={[Autoplay, Keyboard]}
-                autoplay={{ delay: 4000, disableOnInteraction: false }}
-                keyboard={{ enabled: true }}
-                loop={true}
-                style={{ height: '100%' }}
-                onSwiper={(swiper) => { swiperRef.current = swiper; }}
-              >
-                {heroSlides.map((slide, index) => (
-                  <SwiperSlide key={index}>
-                    <Box
-                      sx={{
-                        position: 'relative',
-                        height: '100%',
-                        backgroundImage: `url(${slide.image})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center'
-                      }}
-                    >
-                      {/* Bottom Bar Overlay */}
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          bottom: 0,
-                          left: 0,
-                          right: 50,
-                          bgcolor: 'rgba(0,0,0,0.7)',
-                          py: { xs: 3, md: 4 },
-                          px: { xs: 3, md: 5 },
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 3
-                        }}
-                      >
-                        <Typography
-                          component={RouterLink}
-                          to={slide.to}
-                          variant="overline"
-                          sx={{
-                            color: 'accent.main',
-                            fontWeight: 600,
-                            letterSpacing: 2,
-                            textDecoration: 'none',
-                            borderRight: '1px solid rgba(255,255,255,0.2)',
-                            pr: 3,
-                            '&:hover': { color: 'white' }
-                          }}
-                        >
-                          {slide.label}
-                        </Typography>
-                        <Typography
-                          component={RouterLink}
-                          to={slide.to}
-                          variant="h5"
-                          sx={{
-                            color: 'white',
-                            fontWeight: 300,
-                            textDecoration: 'none'
-                          }}
-                        >
-                          {slide.title}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </SwiperSlide>
-                ))}
-              </Swiper>
+              {trendingLoading ? (
+                <Skeleton variant="rounded" height="100%" />
+              ) : trendingPosts.length > 0 ? (
+                <Swiper
+                  modules={[Autoplay, Keyboard]}
+                  autoplay={trendingPosts.length > 1 ? { delay: 4000, disableOnInteraction: false } : false}
+                  keyboard={{ enabled: true }}
+                  loop={trendingPosts.length > 1}
+                  style={{ height: '100%' }}
+                  onSwiper={(swiper) => { swiperRef.current = swiper; }}
+                >
+                  {trendingPosts.map((post) => (
+                    <SwiperSlide key={post.uuid || post.id}>
+                      <HeroPostSlide post={post} />
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+              ) : (
+                <Box
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: 'grey.200',
+                    color: 'text.secondary'
+                  }}
+                >
+                  <Typography>Trending stories coming soon</Typography>
+                </Box>
+              )}
 
               {/* Nav Arrows - Stacked on right */}
               <Stack
@@ -230,24 +260,28 @@ export default function HeroSection() {
               >
                 <IconButton
                   onClick={() => swiperRef.current?.slideNext()}
+                  disabled={trendingPosts.length < 2}
                   sx={{
                     bgcolor: 'black',
                     color: 'white',
                     borderRadius: 0,
                     height: { xs: 50, md: 70 },
-                    '&:hover': { bgcolor: 'grey.900' }
+                    '&:hover': { bgcolor: 'grey.900' },
+                    '&.Mui-disabled': { bgcolor: 'grey.900', color: 'grey.600' }
                   }}
                 >
                   <IconArrowRight size={20} />
                 </IconButton>
                 <IconButton
                   onClick={() => swiperRef.current?.slidePrev()}
+                  disabled={trendingPosts.length < 2}
                   sx={{
                     bgcolor: 'black',
                     color: 'white',
                     borderRadius: 0,
                     height: { xs: 50, md: 70 },
-                    '&:hover': { bgcolor: 'grey.900' }
+                    '&:hover': { bgcolor: 'grey.900' },
+                    '&.Mui-disabled': { bgcolor: 'grey.900', color: 'grey.600' }
                   }}
                 >
                   <IconArrowLeft size={20} />
@@ -259,7 +293,7 @@ export default function HeroSection() {
           {/* Right: Featured Posts - Side by Side */}
           <Grid size={{ xs: 12, lg: 6 }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ minHeight: { xs: 520, sm: 250, lg: 500 } }}>
-              {loading ? (
+              {featuredLoading ? (
                 // Loading skeletons
                 [...Array(2)].map((_, index) => (
                   <Box key={index} sx={{ flex: 1, height: { xs: 250, lg: 'auto' }, minHeight: 250 }}>

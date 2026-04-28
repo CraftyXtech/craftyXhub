@@ -76,6 +76,7 @@ const PostSettingsSidebar = ({
       open={isOpen}
       onClose={onClose}
       sx={{
+        zIndex: (theme) => theme.zIndex.drawer + 2,
         '& .MuiDrawer-paper': {
           width: DRAWER_WIDTH,
           boxSizing: 'border-box',

@@ -13,7 +13,7 @@ export default function LatestPosts() {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const data = await getRecentPosts({ limit: 4 });
+        const data = await getRecentPosts({ limit: 6 });
         // API returns { posts: [...] } - extract the array
         setPosts(data?.posts || []);
       } catch (err) {
@@ -38,9 +38,9 @@ export default function LatestPosts() {
 
         <Grid container spacing={3}>
           {loading ? (
-            // Loading skeletons
-            [...Array(4)].map((_, index) => (
-              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+            // Loading skeletons - 6 articles in 3 columns
+            [...Array(6)].map((_, index) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
                 <Box>
                   <Skeleton variant="rounded" height={200} sx={{ mb: 2 }} />
                   <Skeleton width="60%" height={20} sx={{ mb: 1 }} />
@@ -63,7 +63,7 @@ export default function LatestPosts() {
             </Grid>
           ) : (
             posts.map((post, index) => (
-              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={post.uuid || post.id}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={post.uuid || post.id}>
                 <PostCard post={post} animationDelay={index * 0.1} />
               </Grid>
             ))

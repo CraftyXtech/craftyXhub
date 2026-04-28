@@ -22,6 +22,8 @@ import Alert from '@mui/material/Alert';
 import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 
 // TinyMCE
 import { Editor } from '@tinymce/tinymce-react';
@@ -54,6 +56,7 @@ import {
   IconX,
   IconSettings,
   IconSparkles,
+  IconCheck,
 } from '@tabler/icons-react';
 
 // Components
@@ -61,6 +64,20 @@ import AiWriterPanel from '@/components/ai-writer/AiWriterPanel';
 
 // API
 import { createPost, updatePost, getPost, getImageUrl, uploadPostImage } from '@/api/services/postService';
+import {
+  approvePostQualityOverride,
+  createContentSource,
+  generateDistributionAssets,
+  generateTopicBriefs,
+  getDistributionAssets,
+  getLatestPostQualityReview,
+  getTopicBriefs,
+  importSearchConsoleRows,
+  importTrendingRows,
+  runPostQualityReview,
+  updateTopicBriefStatus,
+  updateDistributionAssetStatus,
+} from '@/api/services/contentIntelligenceService';
 import { getCategories } from '@/api/services/categoryService';
 import { getTags } from '@/api/services/tagService';
 import { generateExcerpt as generateAiExcerpt } from '@/api/services/aiService';
@@ -71,10 +88,22 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { getPublishExcerptError, normalizeExcerpt } from '@/utils/editorUtils';
 import {
   FEATURED_IMAGE_GUIDANCE,
+  getImageFileFromClipboardEvent,
+  normalizeFeaturedImageFile,
+  readImageFileFromClipboard,
   validateFeaturedImageFile,
 } from '@/utils/featuredImageValidation';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 const SETTINGS_PANEL_WIDTH = 200;
+const INTELLIGENCE_PANEL_WIDTH = 380;
+
+const parseJsonRows = (value) => {
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  const parsed = JSON.parse(trimmed);
+  return Array.isArray(parsed) ? parsed : [parsed];
+};
 
 /**
  * AdminPostEditor - TinyMCE editor with AI writing panel for admins/moderators
@@ -89,6 +118,8 @@ export default function AdminPostEditor() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const aiState = location.state;
+  const intelligenceRequest = new URLSearchParams(location.search).get('intelligence');
+  const imageInputRef = useRef(null);
 
   // State
   const [loading, setLoading] = useState(false);
@@ -99,6 +130,8 @@ export default function AdminPostEditor() {
   // Drawer state
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  const [intelligenceOpen, setIntelligenceOpen] = useState(Boolean(aiState?.openIntelligence || intelligenceRequest));
+  const [intelligenceTab, setIntelligenceTab] = useState(aiState?.openIntelligence || intelligenceRequest || 'brief');
 
   // Form state
   const [title, setTitle] = useState(aiState?.title || '');
@@ -119,12 +152,28 @@ export default function AdminPostEditor() {
   const [imagePreview, setImagePreview] = useState(null);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadProgress, setImageUploadProgress] = useState(0);
+  const [qualityReview, setQualityReview] = useState(null);
+  const [distributionAssets, setDistributionAssets] = useState([]);
+  const [intelligenceLoading, setIntelligenceLoading] = useState(false);
+  const [topicBriefs, setTopicBriefs] = useState([]);
+  const [briefStatusFilter, setBriefStatusFilter] = useState('pending');
+  const [briefsLoading, setBriefsLoading] = useState(false);
+  const [sourceName, setSourceName] = useState('');
+  const [sourceType, setSourceType] = useState('rss');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [importJson, setImportJson] = useState('');
 
   // Data
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
 
   const [wordCount, setWordCount] = useState(0);
+
+  useEffect(() => {
+    if (aiState?.categoryId && !categoryId) {
+      setCategoryId(String(aiState.categoryId));
+    }
+  }, [aiState?.categoryId, categoryId]);
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -195,9 +244,45 @@ export default function AdminPostEditor() {
     }
   }, [id, isEditing]);
 
+  const loadIntelligence = useCallback(async () => {
+    if (!isEditing || !id) return;
+    try {
+      const [review, assets] = await Promise.all([
+        getLatestPostQualityReview(id),
+        getDistributionAssets(id),
+      ]);
+      setQualityReview(review || null);
+      setDistributionAssets(assets || []);
+    } catch (err) {
+      console.error('Failed to load content intelligence:', err);
+    }
+  }, [id, isEditing]);
+
+  useEffect(() => {
+    loadIntelligence();
+  }, [loadIntelligence]);
+
+  const loadTopicBriefs = useCallback(async () => {
+    try {
+      setBriefsLoading(true);
+      const data = await getTopicBriefs({ status: briefStatusFilter || undefined, limit: 20 });
+      setTopicBriefs(data || []);
+    } catch (err) {
+      console.error('Failed to load topic briefs:', err);
+      setError(getApiErrorMessage(err, 'Failed to load topic briefs'));
+    } finally {
+      setBriefsLoading(false);
+    }
+  }, [briefStatusFilter]);
+
+  useEffect(() => {
+    if (intelligenceOpen && intelligenceTab === 'brief') {
+      loadTopicBriefs();
+    }
+  }, [intelligenceOpen, intelligenceTab, loadTopicBriefs]);
+
   // Handle image upload — eagerly uploads when user selects a file
-  const handleImageChange = async (e) => {
-    const file = e.target.files?.[0];
+  const processFeaturedImageFile = useCallback(async (file) => {
     if (!file) return;
 
     const validation = await validateFeaturedImageFile(file);
@@ -208,14 +293,22 @@ export default function AdminPostEditor() {
 
     setError(null);
 
+    let normalizedFile;
+    try {
+      normalizedFile = await normalizeFeaturedImageFile(file);
+    } catch (normalizationError) {
+      setError(normalizationError.message || 'Failed to prepare the image. Please try a different file.');
+      return;
+    }
+
     // Show preview immediately
-    setImagePreview(URL.createObjectURL(file));
-    setFeaturedImage(file);
+    setImagePreview(URL.createObjectURL(normalizedFile));
+    setFeaturedImage(normalizedFile);
     setImageUploading(true);
     setImageUploadProgress(0);
 
     try {
-      const result = await uploadPostImage(file, (progress) => {
+      const result = await uploadPostImage(normalizedFile, (progress) => {
         setImageUploadProgress(progress);
       });
       // Store the file_path returned by the upload
@@ -229,7 +322,33 @@ export default function AdminPostEditor() {
       setFeaturedImagePath(null);
       setImageUploading(false);
     }
+  }, []);
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files?.[0];
+    await processFeaturedImageFile(file);
+    e.target.value = '';
   };
+
+  const handleImagePaste = useCallback(async (event) => {
+    const file = getImageFileFromClipboardEvent(event);
+    if (!file) return;
+    event.preventDefault();
+    await processFeaturedImageFile(file);
+  }, [processFeaturedImageFile]);
+
+  const openImagePicker = useCallback(() => {
+    imageInputRef.current?.click();
+  }, []);
+
+  const handlePasteImageButton = useCallback(async () => {
+    try {
+      const file = await readImageFileFromClipboard();
+      await processFeaturedImageFile(file);
+    } catch (clipboardError) {
+      setError(clipboardError.message || 'Clipboard image unavailable.');
+    }
+  }, [processFeaturedImageFile]);
 
   const handleImageRemove = () => {
     setFeaturedImage(null);
@@ -241,12 +360,26 @@ export default function AdminPostEditor() {
   // Drawer toggles — only one open at a time
   const toggleSettings = () => {
     setSettingsOpen(!settingsOpen);
-    if (!settingsOpen) setAiDrawerOpen(false);
+    if (!settingsOpen) {
+      setAiDrawerOpen(false);
+      setIntelligenceOpen(false);
+    }
   };
 
   const toggleAiDrawer = () => {
     setAiDrawerOpen(!aiDrawerOpen);
-    if (!aiDrawerOpen) setSettingsOpen(false);
+    if (!aiDrawerOpen) {
+      setSettingsOpen(false);
+      setIntelligenceOpen(false);
+    }
+  };
+
+  const toggleIntelligence = () => {
+    setIntelligenceOpen(!intelligenceOpen);
+    if (!intelligenceOpen) {
+      setSettingsOpen(false);
+      setAiDrawerOpen(false);
+    }
   };
 
   // Handle AI content insert (append)
@@ -322,11 +455,160 @@ export default function AdminPostEditor() {
       setExcerpt(result.excerpt || '');
     } catch (err) {
       console.error('Failed to generate excerpt:', err);
-      setError(err.response?.data?.detail || 'Failed to generate excerpt');
+      setError(getApiErrorMessage(err, 'Failed to generate excerpt'));
     } finally {
       setIsGeneratingExcerpt(false);
     }
   }, [content, title]);
+
+  const handleRunQualityReview = useCallback(async () => {
+    if (!isEditing || !id) {
+      setError('Save the post before running quality checks.');
+      return;
+    }
+    try {
+      setIntelligenceLoading(true);
+      setError(null);
+      const review = await runPostQualityReview(id);
+      setQualityReview(review);
+    } catch (err) {
+      console.error('Failed to run quality review:', err);
+      setError(getApiErrorMessage(err, 'Failed to run quality review'));
+    } finally {
+      setIntelligenceLoading(false);
+    }
+  }, [id, isEditing]);
+
+  const handleApproveQualityOverride = useCallback(async () => {
+    if (!isEditing || !id) return;
+    const reason = window.prompt('Why are you approving this post despite quality warnings?');
+    if (!reason?.trim()) return;
+    try {
+      setIntelligenceLoading(true);
+      const review = await approvePostQualityOverride(id, reason.trim());
+      setQualityReview(review);
+    } catch (err) {
+      console.error('Failed to approve quality override:', err);
+      setError(getApiErrorMessage(err, 'Failed to approve quality override'));
+    } finally {
+      setIntelligenceLoading(false);
+    }
+  }, [id, isEditing]);
+
+  const handleGenerateDistributionAssets = useCallback(async () => {
+    if (!isEditing || !id) {
+      setError('Save the post before generating distribution assets.');
+      return;
+    }
+    try {
+      setIntelligenceLoading(true);
+      const assets = await generateDistributionAssets(id);
+      setDistributionAssets(assets || []);
+    } catch (err) {
+      console.error('Failed to generate distribution assets:', err);
+      setError(getApiErrorMessage(err, 'Failed to generate distribution assets'));
+    } finally {
+      setIntelligenceLoading(false);
+    }
+  }, [id, isEditing]);
+
+  const handleApproveAsset = useCallback(async (asset) => {
+    try {
+      setIntelligenceLoading(true);
+      await updateDistributionAssetStatus(asset.uuid, 'approved');
+      await loadIntelligence();
+    } catch (err) {
+      console.error('Failed to approve asset:', err);
+      setError(getApiErrorMessage(err, 'Failed to approve distribution asset'));
+    } finally {
+      setIntelligenceLoading(false);
+    }
+  }, [loadIntelligence]);
+
+  const handleCopyAsset = useCallback((asset) => {
+    const text = asset.tracked_url ? `${asset.content}\n${asset.tracked_url}` : asset.content;
+    navigator.clipboard.writeText(text);
+  }, []);
+
+  const handleGenerateBriefs = useCallback(async () => {
+    try {
+      setIntelligenceLoading(true);
+      setError(null);
+      await generateTopicBriefs({ limit: 10 });
+      await loadTopicBriefs();
+    } catch (err) {
+      console.error('Failed to generate topic briefs:', err);
+      setError(getApiErrorMessage(err, 'Failed to generate topic briefs'));
+    } finally {
+      setIntelligenceLoading(false);
+    }
+  }, [loadTopicBriefs]);
+
+  const handleBriefStatus = useCallback(async (brief, nextStatus) => {
+    try {
+      setIntelligenceLoading(true);
+      await updateTopicBriefStatus(brief.uuid, nextStatus);
+      await loadTopicBriefs();
+    } catch (err) {
+      console.error('Failed to update topic brief:', err);
+      setError(getApiErrorMessage(err, 'Failed to update topic brief'));
+    } finally {
+      setIntelligenceLoading(false);
+    }
+  }, [loadTopicBriefs]);
+
+  const handleApplyBrief = useCallback(async (brief) => {
+    setTitle(brief.title || '');
+    setExcerpt(brief.angle || '');
+    setExcerptError('');
+    setSeoKeywords((brief.keywords || []).join(', '));
+    if (brief.category_id) setCategoryId(String(brief.category_id));
+    await handleBriefStatus(brief, 'approved');
+    setIntelligenceTab('quality');
+  }, [handleBriefStatus]);
+
+  const handleCreateSource = useCallback(async () => {
+    if (!sourceName.trim()) {
+      setError('Source name is required');
+      return;
+    }
+    try {
+      setIntelligenceLoading(true);
+      setError(null);
+      await createContentSource({
+        name: sourceName.trim(),
+        source_type: sourceType,
+        url: sourceUrl.trim() || null,
+      });
+      setSourceName('');
+      setSourceUrl('');
+    } catch (err) {
+      console.error('Failed to add content source:', err);
+      setError(getApiErrorMessage(err, 'Failed to add source'));
+    } finally {
+      setIntelligenceLoading(false);
+    }
+  }, [sourceName, sourceType, sourceUrl]);
+
+  const handleImportSignals = useCallback(async (kind) => {
+    try {
+      setIntelligenceLoading(true);
+      setError(null);
+      const rows = parseJsonRows(importJson);
+      if (kind === 'search_console') {
+        await importSearchConsoleRows(rows);
+      } else {
+        await importTrendingRows(rows);
+      }
+      setImportJson('');
+      await loadTopicBriefs();
+    } catch (err) {
+      console.error('Failed to import signal rows:', err);
+      setError(getApiErrorMessage(err, 'Failed to import rows'));
+    } finally {
+      setIntelligenceLoading(false);
+    }
+  }, [importJson, loadTopicBriefs]);
 
   // Submit form
   const handleSubmit = async (shouldPublish = false) => {
@@ -392,11 +674,18 @@ export default function AdminPostEditor() {
       navigate('/dashboard/posts');
     } catch (err) {
       console.error('Failed to save:', err);
-      setError(err.response?.data?.detail || 'Failed to save post');
+      setError(getApiErrorMessage(err, 'Failed to save post'));
     } finally {
       setSaving(false);
     }
   };
+
+  const qualityIssues = qualityReview
+    ? [
+        ...(qualityReview.checks?.critical_failures || []),
+        ...(qualityReview.checks?.warnings || [])
+      ]
+    : [];
 
   if (loading) {
     return (
@@ -448,6 +737,18 @@ export default function AdminPostEditor() {
               }}
             >
               <IconSparkles size={20} />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Content Intelligence">
+            <IconButton
+              onClick={toggleIntelligence}
+              sx={{
+                bgcolor: intelligenceOpen ? 'action.selected' : 'transparent',
+                '&:hover': { bgcolor: 'action.hover' }
+              }}
+            >
+              <IconCheck size={20} />
             </IconButton>
           </Tooltip>
 
@@ -649,6 +950,24 @@ export default function AdminPostEditor() {
                 </Grid>
               </CardContent>
             </Card>
+
+            <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+              <CardContent>
+                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={1.5}>
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      Content Intelligence
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Topic briefs, publish checks, and distribution assets live in the editor side panel.
+                    </Typography>
+                  </Box>
+                  <Button size="small" variant="outlined" startIcon={<IconSparkles size={16} />} onClick={toggleIntelligence}>
+                    Open Panel
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
           </Stack>
         </Box>
 
@@ -690,10 +1009,33 @@ export default function AdminPostEditor() {
                     </IconButton>
                   </Box>
                 ) : (
-                  <Button variant="outlined" component="label" fullWidth startIcon={<IconPhoto size={16} />} sx={{ py: 2, fontSize: 12 }}>
-                    Upload
-                    <input type="file" hidden accept="image/*" onChange={handleImageChange} />
-                  </Button>
+                  <Box
+                    onPaste={handleImagePaste}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      py: 2,
+                      px: 1.5,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                    <Stack spacing={1} alignItems="stretch">
+                      <Button variant="outlined" fullWidth startIcon={<IconPhoto size={16} />} onClick={openImagePicker}>
+                        Upload
+                      </Button>
+                      <Button variant="text" fullWidth onClick={handlePasteImageButton}>
+                        Paste image
+                      </Button>
+                    </Stack>
+                  </Box>
                 )}
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
                   {FEATURED_IMAGE_GUIDANCE}
@@ -768,6 +1110,7 @@ export default function AdminPostEditor() {
           variant="temporary"
           ModalProps={{ keepMounted: true }}
           sx={{
+            zIndex: (theme) => theme.zIndex.drawer + 2,
             '& .MuiDrawer-paper': {
               width: 280,
               px: 2,
@@ -800,10 +1143,33 @@ export default function AdminPostEditor() {
                   </IconButton>
                 </Box>
               ) : (
-                <Button variant="outlined" component="label" fullWidth startIcon={<IconPhoto size={16} />} sx={{ py: 2, fontSize: 12 }}>
-                  Upload
-                  <input type="file" hidden accept="image/*" onChange={handleImageChange} />
-                </Button>
+                <Box
+                  onPaste={handleImagePaste}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    py: 2,
+                    px: 1.5,
+                    textAlign: 'center',
+                  }}
+                >
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                  <Stack spacing={1} alignItems="stretch">
+                    <Button variant="outlined" fullWidth startIcon={<IconPhoto size={16} />} onClick={openImagePicker}>
+                      Upload
+                    </Button>
+                    <Button variant="text" fullWidth onClick={handlePasteImageButton}>
+                      Paste image
+                    </Button>
+                  </Stack>
+                </Box>
               )}
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
                 {FEATURED_IMAGE_GUIDANCE}
@@ -849,6 +1215,274 @@ export default function AdminPostEditor() {
         </Drawer>
       )}
 
+      {/* Content Intelligence Drawer */}
+      <Drawer
+        anchor="right"
+        open={intelligenceOpen}
+        onClose={() => setIntelligenceOpen(false)}
+        variant="temporary"
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 2,
+          '& .MuiDrawer-paper': {
+            width: { xs: '100%', sm: INTELLIGENCE_PANEL_WIDTH },
+            p: 0,
+          }
+        }}
+      >
+        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+            <Box>
+              <Typography variant="h6" fontWeight={600}>Content Intelligence</Typography>
+              <Typography variant="caption" color="text.secondary">Briefs, gates, and distribution</Typography>
+            </Box>
+            <IconButton size="small" onClick={() => setIntelligenceOpen(false)}>
+              <IconX size={18} />
+            </IconButton>
+          </Stack>
+        </Box>
+
+        <Tabs
+          value={intelligenceTab}
+          onChange={(_, value) => setIntelligenceTab(value)}
+          variant="fullWidth"
+          sx={{ borderBottom: '1px solid', borderColor: 'divider', minHeight: 42 }}
+        >
+          <Tab value="brief" label="Brief" sx={{ minHeight: 42 }} />
+          <Tab value="quality" label="Quality" sx={{ minHeight: 42 }} />
+          <Tab value="distribution" label="Distribution" sx={{ minHeight: 42 }} />
+        </Tabs>
+
+        <Box sx={{ p: 2, overflowY: 'auto' }}>
+          {intelligenceTab === 'brief' && (
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={1.25} alignItems="center">
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={intelligenceLoading ? <CircularProgress size={14} color="inherit" /> : <IconSparkles size={14} />}
+                  onClick={handleGenerateBriefs}
+                  disabled={intelligenceLoading}
+                  sx={{ textTransform: 'none', px: 2 }}
+                >
+                  Generate
+                </Button>
+                <Button size="small" variant="outlined" onClick={loadTopicBriefs} disabled={briefsLoading} sx={{ textTransform: 'none', px: 2 }}>
+                  Refresh
+                </Button>
+                <TextField
+                  select
+                  size="small"
+                  value={briefStatusFilter}
+                  onChange={(event) => setBriefStatusFilter(event.target.value)}
+                  sx={{ minWidth: 140 }}
+                >
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="approved">Approved</MenuItem>
+                  <MenuItem value="dismissed">Dismissed</MenuItem>
+                  <MenuItem value="">All</MenuItem>
+                </TextField>
+              </Stack>
+
+              {briefsLoading ? (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CircularProgress size={18} />
+                  <Typography variant="body2" color="text.secondary">Loading briefs...</Typography>
+                </Stack>
+              ) : topicBriefs.length === 0 ? (
+                <Alert severity="info" variant="outlined">
+                  No briefs found. Generate briefs from search, import, RSS, and gap signals.
+                </Alert>
+              ) : (
+                <Stack spacing={1.25}>
+                  {topicBriefs.map((brief) => (
+                    <Box key={brief.uuid} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.25 }}>
+                      <Stack spacing={1}>
+                        <Stack direction="row" justifyContent="space-between" spacing={1}>
+                          <Typography variant="subtitle2" fontWeight={600}>{brief.title}</Typography>
+                          <Chip size="small" label={brief.status} variant="outlined" />
+                        </Stack>
+                        {brief.angle && (
+                          <Typography variant="body2" color="text.secondary">{brief.angle}</Typography>
+                        )}
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                          {(brief.keywords || []).slice(0, 5).map((keyword) => (
+                            <Chip key={keyword} size="small" label={keyword} variant="outlined" />
+                          ))}
+                        </Stack>
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <Button size="small" onClick={() => handleApplyBrief(brief)}>Apply</Button>
+                          {brief.status !== 'approved' && (
+                            <Button size="small" startIcon={<IconCheck size={14} />} onClick={() => handleBriefStatus(brief, 'approved')} disabled={intelligenceLoading}>
+                              Approve
+                            </Button>
+                          )}
+                          {brief.status !== 'dismissed' && (
+                            <Button size="small" color="inherit" onClick={() => handleBriefStatus(brief, 'dismissed')} disabled={intelligenceLoading}>
+                              Dismiss
+                            </Button>
+                          )}
+                        </Stack>
+                      </Stack>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+
+              <Divider />
+              <Box>
+                <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>Signals</Typography>
+                <Stack spacing={1.25}>
+                  <TextField size="small" label="Source name" value={sourceName} onChange={(event) => setSourceName(event.target.value)} />
+                  <Stack direction="row" spacing={1}>
+                    <TextField
+                      select
+                      size="small"
+                      label="Type"
+                      value={sourceType}
+                      onChange={(event) => setSourceType(event.target.value)}
+                      sx={{ width: 130 }}
+                    >
+                      <MenuItem value="rss">RSS</MenuItem>
+                      <MenuItem value="competitor">Competitor</MenuItem>
+                      <MenuItem value="category">Category</MenuItem>
+                    </TextField>
+                    <TextField size="small" label="URL" value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} fullWidth />
+                  </Stack>
+                  <Button size="small" variant="outlined" onClick={handleCreateSource} disabled={intelligenceLoading}>
+                    Add Source
+                  </Button>
+                  <TextField
+                    label="Import rows as JSON"
+                    size="small"
+                    multiline
+                    minRows={4}
+                    value={importJson}
+                    onChange={(event) => setImportJson(event.target.value)}
+                    placeholder='[{"query":"ai automation","impressions":1200,"clicks":24}]'
+                  />
+                  <Stack direction="row" spacing={1}>
+                    <Button size="small" variant="outlined" onClick={() => handleImportSignals('search_console')} disabled={intelligenceLoading}>
+                      Search Console
+                    </Button>
+                    <Button size="small" variant="outlined" onClick={() => handleImportSignals('trending')} disabled={intelligenceLoading}>
+                      Trending
+                    </Button>
+                  </Stack>
+                </Stack>
+              </Box>
+            </Stack>
+          )}
+
+          {intelligenceTab === 'quality' && (
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Button size="small" variant="contained" onClick={handleRunQualityReview} disabled={intelligenceLoading}>
+                  Run Check
+                </Button>
+                {qualityReview?.status === 'needs_review' && (
+                  <Button size="small" startIcon={<IconCheck size={14} />} onClick={handleApproveQualityOverride} disabled={intelligenceLoading}>
+                    Approve Override
+                  </Button>
+                )}
+              </Stack>
+
+              {qualityReview ? (
+                <Stack spacing={2}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Chip
+                      size="small"
+                      label={qualityReview.status === 'passed' ? 'Passed' : qualityReview.status === 'blocked' ? 'Blocked' : 'Needs Review'}
+                      color={qualityReview.status === 'passed' ? 'success' : qualityReview.status === 'blocked' ? 'error' : 'warning'}
+                    />
+                    <Typography variant="caption" color="text.secondary">Score {qualityReview.score}/100</Typography>
+                  </Stack>
+
+                  <Box>
+                    <Typography variant="caption" fontWeight={600} color="text.secondary">Gate Results</Typography>
+                    {qualityIssues.length ? (
+                      qualityIssues.map((item) => (
+                        <Typography key={item} variant="body2" color="text.secondary">• {item}</Typography>
+                      ))
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">No warnings recorded.</Typography>
+                    )}
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" fontWeight={600} color="text.secondary">Internal Links</Typography>
+                    {(qualityReview.checks?.internal_link_suggestions || []).length ? (
+                      (qualityReview.checks?.internal_link_suggestions || []).map((item) => (
+                        <Typography key={item.post_uuid} variant="body2" color="text.secondary">• Link to {item.title}</Typography>
+                      ))
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">No link suggestions yet.</Typography>
+                    )}
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" fontWeight={600} color="text.secondary">FAQ / Schema</Typography>
+                    {(qualityReview.checks?.faq_suggestions || []).length ? (
+                      (qualityReview.checks?.faq_suggestions || []).map((item) => (
+                        <Typography key={item.question} variant="body2" color="text.secondary">• {item.question}</Typography>
+                      ))
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">No schema suggestions yet.</Typography>
+                    )}
+                  </Box>
+                </Stack>
+              ) : (
+                <Alert severity="info" variant="outlined">
+                  Save the post, then run a quality check to see publish gates and suggestions.
+                </Alert>
+              )}
+            </Stack>
+          )}
+
+          {intelligenceTab === 'distribution' && (
+            <Stack spacing={2}>
+              <Button size="small" variant="contained" onClick={handleGenerateDistributionAssets} disabled={intelligenceLoading}>
+                Generate Assets
+              </Button>
+              {distributionAssets.length === 0 ? (
+                <Alert severity="info" variant="outlined">
+                  Save the post, then generate platform snippets, previews, alt text, summaries, and tracked links.
+                </Alert>
+              ) : (
+                <Stack spacing={1.25}>
+                  {distributionAssets.map((asset) => (
+                    <Box key={asset.uuid} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.25 }}>
+                      <Stack spacing={1}>
+                        <Stack direction="row" justifyContent="space-between" spacing={1}>
+                          <Stack direction="row" spacing={0.75} alignItems="center">
+                            <Chip size="small" label={asset.platform} variant="outlined" />
+                            <Chip size="small" label={asset.status} color={asset.status === 'approved' ? 'success' : 'default'} />
+                          </Stack>
+                          <Stack direction="row" spacing={0.5}>
+                            <Button size="small" onClick={() => handleCopyAsset(asset)}>Copy</Button>
+                            {asset.status === 'pending' && (
+                              <Button size="small" onClick={() => handleApproveAsset(asset)}>Approve</Button>
+                            )}
+                          </Stack>
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                          {asset.content}
+                        </Typography>
+                        {asset.tracked_url && (
+                          <Typography variant="caption" color="primary" sx={{ wordBreak: 'break-all' }}>
+                            {asset.tracked_url}
+                          </Typography>
+                        )}
+                      </Stack>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          )}
+        </Box>
+      </Drawer>
+
       {/* ===== AI Writer Drawer (Right) ===== */}
       <Drawer
         anchor="right"
@@ -857,6 +1491,7 @@ export default function AdminPostEditor() {
         variant="temporary"
         ModalProps={{ keepMounted: true }}
         sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 2,
           '& .MuiDrawer-paper': {
             width: { xs: '100%', sm: 380 },
             p: 0,
@@ -864,6 +1499,8 @@ export default function AdminPostEditor() {
         }}
       >
         <AiWriterPanel
+          initialTopic={aiState?.title || ''}
+          initialKeywords={aiState?.seoKeywords || []}
           onInsert={handleAiInsert}
           onReplace={handleAiReplace}
           onMetadataFill={handleAiMetadataFill}

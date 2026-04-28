@@ -44,8 +44,12 @@ import {
 } from '@/utils/editorUtils';
 import {
   FEATURED_IMAGE_GUIDANCE,
+  getImageFileFromClipboardEvent,
+  normalizeFeaturedImageFile,
+  readImageFileFromClipboard,
   validateFeaturedImageFile,
 } from '@/utils/featuredImageValidation';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 /**
  * UserPostEditor - Medium-style distraction-free writing experience
@@ -85,6 +89,7 @@ export default function UserPostEditor() {
   const [lastSaved, setLastSaved] = useState(null);
   const autoSaveTimeoutRef = useRef(null);
   const postIdRef = useRef(id);
+  const publishImageInputRef = useRef(null);
 
   // Publish dialog state
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
@@ -257,7 +262,7 @@ export default function UserPostEditor() {
       setIsDirty(true);
     } catch (err) {
       console.error('Failed to generate excerpt:', err);
-      setError(err.response?.data?.detail || 'Failed to generate excerpt');
+      setError(getApiErrorMessage(err, 'Failed to generate excerpt'));
     } finally {
       setIsGeneratingExcerpt(false);
     }
@@ -271,8 +276,7 @@ export default function UserPostEditor() {
     setPublishDialogOpen(true);
   }, [categoryId, selectedTags]);
 
-  const handleFeaturedImageChange = useCallback(async (event) => {
-    const file = event.target.files?.[0];
+  const processPublishFeaturedFile = useCallback(async (file) => {
     if (!file) return;
 
     const validation = await validateFeaturedImageFile(file);
@@ -282,12 +286,44 @@ export default function UserPostEditor() {
     }
 
     setError(null);
-    setPublishFeaturedFile(file);
 
-    const reader = new FileReader();
-    reader.onload = (loadEvent) => setPublishFeaturedPreview(loadEvent.target.result);
-    reader.readAsDataURL(file);
+    try {
+      const normalizedFile = await normalizeFeaturedImageFile(file);
+      setPublishFeaturedFile(normalizedFile);
+
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => setPublishFeaturedPreview(loadEvent.target.result);
+      reader.readAsDataURL(normalizedFile);
+    } catch (normalizationError) {
+      setError(normalizationError.message || 'Failed to prepare the image. Please try a different file.');
+    }
   }, []);
+
+  const handleFeaturedImageChange = useCallback(async (event) => {
+    const file = event.target.files?.[0];
+    await processPublishFeaturedFile(file);
+    event.target.value = '';
+  }, [processPublishFeaturedFile]);
+
+  const handleFeaturedImagePaste = useCallback(async (event) => {
+    const file = getImageFileFromClipboardEvent(event);
+    if (!file) return;
+    event.preventDefault();
+    await processPublishFeaturedFile(file);
+  }, [processPublishFeaturedFile]);
+
+  const openPublishImagePicker = useCallback(() => {
+    publishImageInputRef.current?.click();
+  }, []);
+
+  const handlePastePublishImageButton = useCallback(async () => {
+    try {
+      const file = await readImageFileFromClipboard();
+      await processPublishFeaturedFile(file);
+    } catch (clipboardError) {
+      setError(clipboardError.message || 'Clipboard image unavailable.');
+    }
+  }, [processPublishFeaturedFile]);
 
   // Publish post
   const handlePublish = useCallback(async () => {
@@ -341,7 +377,7 @@ export default function UserPostEditor() {
       navigate('/dashboard/posts');
     } catch (err) {
       console.error('Failed to publish:', err);
-      setError(err.response?.data?.detail || 'Failed to publish post');
+      setError(getApiErrorMessage(err, 'Failed to publish post'));
     } finally {
       setIsPublishing(false);
     }
@@ -592,6 +628,7 @@ export default function UserPostEditor() {
             <Box>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>Feature Image</Typography>
               <Box
+                onPaste={handleFeaturedImagePaste}
                 sx={{
                   border: '2px dashed',
                   borderColor: 'divider',
@@ -613,11 +650,25 @@ export default function UserPostEditor() {
                   </Typography>
                 )}
                 <input
+                  ref={publishImageInputRef}
                   type="file"
+                  hidden
                   accept="image/*"
                   onChange={handleFeaturedImageChange}
-                  style={{ marginTop: 12, width: '100%' }}
                 />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  sx={{ mt: 1.5 }}
+                  onClick={(event) => {
+                    openPublishImagePicker();
+                  }}
+                >
+                  Upload
+                </Button>
+                <Button variant="text" size="small" sx={{ mt: 1 }} onClick={handlePastePublishImageButton}>
+                  Paste image
+                </Button>
                 {publishFeaturedPreview && (
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
                     {FEATURED_IMAGE_GUIDANCE}

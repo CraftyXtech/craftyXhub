@@ -1,19 +1,46 @@
 import { useState } from 'react';
-import { Box, Container, Typography, TextField, Button, Stack, InputAdornment } from '@mui/material';
+import {
+  Box,
+  Container,
+  Typography,
+  TextField,
+  Button,
+  Stack,
+  InputAdornment,
+  Alert,
+  CircularProgress,
+} from '@mui/material';
 import { motion } from 'framer-motion';
 import { IconMail, IconCheck } from '@tabler/icons-react';
+import { subscribeToNewsletter } from '@/api/services/newsletterService';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 const MotionBox = motion.create(Box);
 
 export default function Newsletter() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email) {
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError('Enter your email to subscribe.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError('');
+      await subscribeToNewsletter({ email: trimmedEmail, source: 'homepage' });
       setSubmitted(true);
-      // In real app, would call API here
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Could not subscribe right now. Please try again.'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -81,6 +108,7 @@ export default function Newsletter() {
                   type="email"
                   placeholder="Enter your email"
                   value={email}
+                  disabled={submitting}
                   onChange={(e) => setEmail(e.target.value)}
                   InputProps={{
                     startAdornment: (
@@ -102,6 +130,8 @@ export default function Newsletter() {
                   type="submit"
                   variant="contained"
                   size="large"
+                  disabled={submitting}
+                  startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : null}
                   sx={{
                     bgcolor: 'primary.main',
                     color: 'white',
@@ -112,9 +142,14 @@ export default function Newsletter() {
                     }
                   }}
                 >
-                  Subscribe
+                  {submitting ? 'Subscribing' : 'Subscribe'}
                 </Button>
               </Stack>
+              {error && (
+                <Alert severity="error" sx={{ mt: 2, textAlign: 'left' }} onClose={() => setError('')}>
+                  {error}
+                </Alert>
+              )}
               <Typography variant="caption" sx={{ mt: 2, display: 'block', opacity: 0.7 }}>
                 No spam, unsubscribe at any time.
               </Typography>

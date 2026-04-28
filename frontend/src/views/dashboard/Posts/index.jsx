@@ -42,14 +42,32 @@ import {
   IconArrowBack,
   IconRefresh,
   IconStar,
-  IconStarOff
+  IconStarOff,
+  IconFlame
 } from '@tabler/icons-react';
 
 // API
-import { getPosts, deletePost, publishPost, unpublishPost, featurePost, getImageUrl } from '@/api/services/postService';
+import {
+  getPosts,
+  deletePost,
+  publishPost,
+  unpublishPost,
+  featurePost,
+  setHomepageTrending,
+  getImageUrl
+} from '@/api/services/postService';
+import {
+  approvePostQualityOverride,
+  generateDistributionAssets,
+  getDistributionAssets,
+  getPostIntelligenceStatuses,
+  runPostQualityReview,
+  updateDistributionAssetStatus,
+} from '@/api/services/contentIntelligenceService';
 import { useAuth } from '@/api/AuthProvider';
+import { getApiErrorMessage } from '@/utils/apiError';
 
-const isAdminOrMod = (user) => user?.role === 'admin' || user?.role === 'moderator';
+const isAdminOrMod = (user) => ['super_admin', 'admin', 'moderator'].includes(user?.role);
 
 /**
  * Posts List Page
@@ -71,6 +89,7 @@ export default function Posts() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [intelligenceStatuses, setIntelligenceStatuses] = useState({});
 
   // Fetch posts
   const fetchPosts = useCallback(async () => {
@@ -103,6 +122,22 @@ export default function Posts() {
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts]);
+
+  useEffect(() => {
+    const loadStatuses = async () => {
+      if (!isAdminOrMod(user) || posts.length === 0) {
+        setIntelligenceStatuses({});
+        return;
+      }
+      try {
+        const statuses = await getPostIntelligenceStatuses(posts.map((post) => post.uuid));
+        setIntelligenceStatuses(statuses || {});
+      } catch (err) {
+        console.error('Failed to load content intelligence statuses:', err);
+      }
+    };
+    loadStatuses();
+  }, [posts, user]);
 
   // Handle menu open
   const handleMenuOpen = (event, post) => {
@@ -171,6 +206,79 @@ export default function Posts() {
       fetchPosts();
     } catch (err) {
       console.error('Failed to toggle publish:', err);
+      const detail = err.response?.data?.detail;
+      if (detail?.message) {
+        setError(`${detail.message} ${detail.warnings?.join(' ') || detail.critical_failures?.join(' ') || ''}`.trim());
+      } else {
+        setError(getApiErrorMessage(err, 'Failed to toggle publish'));
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRunQuality = async () => {
+    if (!selectedPost) return;
+    try {
+      setActionLoading(true);
+      await runPostQualityReview(selectedPost.uuid);
+      handleMenuClose();
+      fetchPosts();
+    } catch (err) {
+      console.error('Failed to run quality check:', err);
+      setError(getApiErrorMessage(err, 'Failed to run quality check'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleGenerateDistribution = async () => {
+    if (!selectedPost) return;
+    try {
+      setActionLoading(true);
+      await generateDistributionAssets(selectedPost.uuid);
+      handleMenuClose();
+      fetchPosts();
+    } catch (err) {
+      console.error('Failed to generate distribution assets:', err);
+      setError(getApiErrorMessage(err, 'Failed to generate distribution assets'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleApproveAssets = async () => {
+    if (!selectedPost) return;
+    try {
+      setActionLoading(true);
+      const assets = await getDistributionAssets(selectedPost.uuid);
+      await Promise.all(
+        (assets || [])
+          .filter((asset) => asset.status === 'pending')
+          .map((asset) => updateDistributionAssetStatus(asset.uuid, 'approved'))
+      );
+      handleMenuClose();
+      fetchPosts();
+    } catch (err) {
+      console.error('Failed to approve distribution assets:', err);
+      setError(getApiErrorMessage(err, 'Failed to approve distribution assets'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleApproveOverride = async () => {
+    if (!selectedPost) return;
+    const reason = window.prompt('Why are you approving this post despite quality warnings?');
+    if (!reason?.trim()) return;
+    try {
+      setActionLoading(true);
+      await approvePostQualityOverride(selectedPost.uuid, reason.trim());
+      handleMenuClose();
+      fetchPosts();
+    } catch (err) {
+      console.error('Failed to approve override:', err);
+      setError(getApiErrorMessage(err, 'Failed to approve quality override'));
     } finally {
       setActionLoading(false);
     }
@@ -187,6 +295,22 @@ export default function Posts() {
     } catch (err) {
       console.error('Failed to toggle feature:', err);
       setError('Failed to update featured status');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleHomepageTrendingToggle = async () => {
+    if (!selectedPost) return;
+
+    try {
+      setActionLoading(true);
+      await setHomepageTrending(selectedPost.uuid, !selectedPost.is_homepage_trending);
+      handleMenuClose();
+      fetchPosts();
+    } catch (err) {
+      console.error('Failed to update homepage trending:', err);
+      setError(getApiErrorMessage(err, 'Failed to update homepage trending'));
     } finally {
       setActionLoading(false);
     }
@@ -210,6 +334,38 @@ export default function Posts() {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const getQualityChip = (post) => {
+    const status = intelligenceStatuses[post.uuid];
+    const quality = status?.quality_status || 'not_checked';
+    const labels = {
+      not_checked: 'Not Checked',
+      passed: 'Passed',
+      needs_review: 'Needs Review',
+      blocked: 'Blocked',
+    };
+    const colors = {
+      not_checked: 'default',
+      passed: 'success',
+      needs_review: 'warning',
+      blocked: 'error',
+    };
+    return (
+      <Stack spacing={0.5} alignItems="flex-start">
+        <Chip
+          label={labels[quality] || quality}
+          size="small"
+          color={colors[quality] || 'default'}
+          variant={quality === 'not_checked' ? 'outlined' : 'filled'}
+        />
+        {status?.distribution_pending > 0 && (
+          <Typography variant="caption" color="text.secondary">
+            {status.distribution_pending} assets pending
+          </Typography>
+        )}
+      </Stack>
+    );
   };
 
   return (
@@ -275,6 +431,7 @@ export default function Posts() {
               <TableRow>
                 <TableCell>Post</TableCell>
                 <TableCell>Status</TableCell>
+                {isAdminOrMod(user) && <TableCell>Quality</TableCell>}
                 <TableCell>Views</TableCell>
                 <TableCell>Date</TableCell>
                 <TableCell align="right">Actions</TableCell>
@@ -295,6 +452,7 @@ export default function Posts() {
                       </Stack>
                     </TableCell>
                     <TableCell><Skeleton width={80} /></TableCell>
+                    {isAdminOrMod(user) && <TableCell><Skeleton width={90} /></TableCell>}
                     <TableCell><Skeleton width={50} /></TableCell>
                     <TableCell><Skeleton width={100} /></TableCell>
                     <TableCell><Skeleton width={40} /></TableCell>
@@ -302,14 +460,14 @@ export default function Posts() {
                 ))
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={isAdminOrMod(user) ? 6 : 5} align="center" sx={{ py: 4 }}>
                     <Typography color="error">{error}</Typography>
                     <Button onClick={fetchPosts} sx={{ mt: 1 }}>Try Again</Button>
                   </TableCell>
                 </TableRow>
               ) : posts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
+                  <TableCell colSpan={isAdminOrMod(user) ? 6 : 5} align="center" sx={{ py: 6 }}>
                     <Typography color="text.secondary" sx={{ mb: 2 }}>
                       No posts yet. Start writing!
                     </Typography>
@@ -360,7 +518,21 @@ export default function Posts() {
                           icon={<IconStar size={14} />}
                         />
                       )}
+                      {post.is_homepage_trending && (
+                        <Chip
+                          label={`Trending #${post.homepage_trending_order || ''}`.trim()}
+                          size="small"
+                          color="error"
+                          variant="filled"
+                          icon={<IconFlame size={14} />}
+                        />
+                      )}
                     </TableCell>
+                    {isAdminOrMod(user) && (
+                      <TableCell>
+                        {getQualityChip(post)}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Typography variant="body2">{post.view_count || 0}</Typography>
                     </TableCell>
@@ -418,12 +590,40 @@ export default function Posts() {
           </ListItemIcon>
           {selectedPost?.is_published ? 'Unpublish' : 'Publish'}
         </MenuItem>
+        {isAdminOrMod(user) && (
+          <MenuItem onClick={handleRunQuality} disabled={actionLoading}>
+            Run Quality Check
+          </MenuItem>
+        )}
+        {isAdminOrMod(user) && (
+          <MenuItem onClick={handleGenerateDistribution} disabled={actionLoading}>
+            Generate Distribution
+          </MenuItem>
+        )}
+        {isAdminOrMod(user) && intelligenceStatuses[selectedPost?.uuid]?.distribution_pending > 0 && (
+          <MenuItem onClick={handleApproveAssets} disabled={actionLoading}>
+            Approve Assets
+          </MenuItem>
+        )}
+        {isAdminOrMod(user) && intelligenceStatuses[selectedPost?.uuid]?.quality_status === 'needs_review' && (
+          <MenuItem onClick={handleApproveOverride} disabled={actionLoading}>
+            Approve Override
+          </MenuItem>
+        )}
         {isAdminOrMod(user) && selectedPost?.is_published && (
           <MenuItem onClick={handleFeatureToggle} disabled={actionLoading}>
             <ListItemIcon>
               {selectedPost?.is_featured ? <IconStarOff size={18} /> : <IconStar size={18} />}
             </ListItemIcon>
             {selectedPost?.is_featured ? 'Unfeature' : 'Feature'}
+          </MenuItem>
+        )}
+        {isAdminOrMod(user) && selectedPost?.is_published && (
+          <MenuItem onClick={handleHomepageTrendingToggle} disabled={actionLoading}>
+            <ListItemIcon>
+              <IconFlame size={18} />
+            </ListItemIcon>
+            {selectedPost?.is_homepage_trending ? 'Remove from Trending' : 'Add to Trending'}
           </MenuItem>
         )}
         <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>

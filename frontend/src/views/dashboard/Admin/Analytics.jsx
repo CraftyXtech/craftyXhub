@@ -19,6 +19,7 @@ import {
   IconEye,
   IconFileText,
   IconUsers,
+  IconMail,
   IconMessageCircle,
   IconHeart,
   IconTrendingUp,
@@ -98,14 +99,16 @@ export default function Analytics() {
   const stats = {
     total_views: data?.engagement_metrics?.total_views || 0,
     total_posts: data?.posts_overview?.total_posts || 0,
-    total_users: data?.overview?.total_users || 0,
-    total_comments: data?.engagement_metrics?.total_comments || 0,
+  total_users: data?.overview?.total_users || 0,
+  newsletter_subscribers: data?.newsletter_subscribers || 0,
+  total_comments: data?.engagement_metrics?.total_comments || 0,
     total_likes: data?.engagement_metrics?.total_likes || 0,
     total_bookmarks: data?.engagement_metrics?.total_bookmarks || 0
   };
 
   const topPosts = data?.top_posts || [];
   const recentActivity = data?.recent_activity || [];
+  const recentSubscribers = data?.recent_subscribers || [];
 
   return (
     <Box>
@@ -139,7 +142,7 @@ export default function Analytics() {
       {/* Stats Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {loading ? (
-          [...Array(6)].map((_, i) => (
+          [...Array(7)].map((_, i) => (
             <Grid item xs={12} sm={6} md={4} lg={2} key={i}>
               <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
                 <CardContent>
@@ -177,6 +180,14 @@ export default function Analytics() {
             </Grid>
             <Grid item xs={12} sm={6} md={4} lg={2}>
               <StatCard
+                icon={IconMail}
+                title="Subscribers"
+                value={stats.newsletter_subscribers}
+                color="secondary"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4} lg={2}>
+              <StatCard
                 icon={IconMessageCircle}
                 title="Comments"
                 value={stats.total_comments}
@@ -205,7 +216,7 @@ export default function Analytics() {
 
       {/* Recent Activity */}
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={4}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
@@ -246,7 +257,7 @@ export default function Analytics() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={4}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
@@ -283,6 +294,50 @@ export default function Analytics() {
                   <IconCalendar size={40} color="#9E9E9E" style={{ marginBottom: 8 }} />
                   <Typography variant="body2" color="text.secondary">
                     No recent activity
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+                Recent Subscribers
+              </Typography>
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <Stack key={i} direction="row" spacing={2} sx={{ mb: 2 }}>
+                    <Skeleton width={40} height={40} variant="circular" />
+                    <Box sx={{ flex: 1 }}>
+                      <Skeleton width="75%" />
+                      <Skeleton width="35%" height={16} />
+                    </Box>
+                  </Stack>
+                ))
+              ) : recentSubscribers.length ? (
+                recentSubscribers.slice(0, 5).map((subscriber) => (
+                  <Stack key={subscriber.uuid} direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                    <Avatar sx={{ bgcolor: 'secondary.lighter', color: 'secondary.main' }}>
+                      <IconMail size={20} />
+                    </Avatar>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" fontWeight={500} noWrap>
+                        {subscriber.email}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {subscriber.source} • {new Date(subscriber.created_at).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                ))
+              ) : (
+                <Box sx={{ py: 4, textAlign: 'center' }}>
+                  <IconMail size={40} color="#9E9E9E" style={{ marginBottom: 8 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    No subscribers yet
                   </Typography>
                 </Box>
               )}

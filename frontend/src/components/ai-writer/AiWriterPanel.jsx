@@ -83,11 +83,11 @@ const FALLBACK_OPTIONS = {
  * AiWriterPanel — Linear.app-inspired compact AI content generation panel
  * Design: 8px spacing grid, 4px sub-grid for dense areas, minimal visual noise
  */
-export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
+export default function AiWriterPanel({ initialTopic = '', initialKeywords = [], onInsert, onReplace, onMetadataFill }) {
   const [options, setOptions] = useState(FALLBACK_OPTIONS);
-  const [topic, setTopic] = useState('');
+  const [topic, setTopic] = useState(initialTopic || '');
   const [blogType, setBlogType] = useState('news');
-  const [keywords, setKeywords] = useState('');
+  const [keywords, setKeywords] = useState(Array.isArray(initialKeywords) ? initialKeywords.join(', ') : (initialKeywords || ''));
   const [audience, setAudience] = useState('general');
   const [tone, setTone] = useState('professional');
   const [length, setLength] = useState('medium');
@@ -443,6 +443,11 @@ export default function AiWriterPanel({ onInsert, onReplace, onMetadataFill }) {
 }
 
 AiWriterPanel.propTypes = {
+  initialTopic: PropTypes.string,
+  initialKeywords: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.arrayOf(PropTypes.string),
+  ]),
   onInsert: PropTypes.func.isRequired,
   onReplace: PropTypes.func,
   onMetadataFill: PropTypes.func,
