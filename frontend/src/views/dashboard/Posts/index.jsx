@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 // MUI
 import Box from '@mui/material/Box';
@@ -43,7 +45,8 @@ import {
   IconRefresh,
   IconStar,
   IconStarOff,
-  IconFlame
+  IconFlame,
+  IconBolt
 } from '@tabler/icons-react';
 
 // API
@@ -54,6 +57,7 @@ import {
   unpublishPost,
   featurePost,
   setHomepageTrending,
+  setBreakingNews,
   getImageUrl
 } from '@/api/services/postService';
 import {
@@ -76,6 +80,8 @@ const isAdminOrMod = (user) => ['super_admin', 'admin', 'moderator'].includes(us
 export default function Posts() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   // State
   const [posts, setPosts] = useState([]);
@@ -88,6 +94,12 @@ export default function Posts() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedPost, setSelectedPost] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [breakingDialogOpen, setBreakingDialogOpen] = useState(false);
+  const [breakingOrderInput, setBreakingOrderInput] = useState('');
+  const [breakingOrderError, setBreakingOrderError] = useState('');
+  const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
+  const [overrideReasonError, setOverrideReasonError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [intelligenceStatuses, setIntelligenceStatuses] = useState({});
 
@@ -147,6 +159,26 @@ export default function Posts() {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+    setSelectedPost(null);
+  };
+
+  const closeMenuOnly = () => {
+    setAnchorEl(null);
+  };
+
+  const closeBreakingDialog = () => {
+    if (actionLoading) return;
+    setBreakingDialogOpen(false);
+    setBreakingOrderInput('');
+    setBreakingOrderError('');
+    setSelectedPost(null);
+  };
+
+  const closeOverrideDialog = () => {
+    if (actionLoading) return;
+    setOverrideDialogOpen(false);
+    setOverrideReason('');
+    setOverrideReasonError('');
     setSelectedPost(null);
   };
 
@@ -269,19 +301,10 @@ export default function Posts() {
 
   const handleApproveOverride = async () => {
     if (!selectedPost) return;
-    const reason = window.prompt('Why are you approving this post despite quality warnings?');
-    if (!reason?.trim()) return;
-    try {
-      setActionLoading(true);
-      await approvePostQualityOverride(selectedPost.uuid, reason.trim());
-      handleMenuClose();
-      fetchPosts();
-    } catch (err) {
-      console.error('Failed to approve override:', err);
-      setError(getApiErrorMessage(err, 'Failed to approve quality override'));
-    } finally {
-      setActionLoading(false);
-    }
+    setOverrideReason('');
+    setOverrideReasonError('');
+    setOverrideDialogOpen(true);
+    closeMenuOnly();
   };
 
   const handleFeatureToggle = async () => {
@@ -311,6 +334,89 @@ export default function Posts() {
     } catch (err) {
       console.error('Failed to update homepage trending:', err);
       setError(getApiErrorMessage(err, 'Failed to update homepage trending'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBreakingNewsToggle = async () => {
+    if (!selectedPost) return;
+
+    if (!selectedPost.is_breaking_news) {
+      setBreakingOrderInput('');
+      setBreakingOrderError('');
+      setBreakingDialogOpen(true);
+      closeMenuOnly();
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      await setBreakingNews(selectedPost.uuid, false);
+      handleMenuClose();
+      fetchPosts();
+    } catch (err) {
+      console.error('Failed to update breaking news:', err);
+      setError(getApiErrorMessage(err, 'Failed to update breaking news'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBreakingDialogSubmit = async () => {
+    if (!selectedPost) return;
+
+    const trimmedOrder = breakingOrderInput.trim();
+    let order = null;
+
+    if (trimmedOrder) {
+      if (!/^\d+$/.test(trimmedOrder)) {
+        setBreakingOrderError('Enter a whole number like 1, 2, or 3.');
+        return;
+      }
+      order = Number.parseInt(trimmedOrder, 10);
+      if (order < 1) {
+        setBreakingOrderError('Order must be 1 or greater.');
+        return;
+      }
+    }
+
+    try {
+      setActionLoading(true);
+      setBreakingOrderError('');
+      await setBreakingNews(selectedPost.uuid, true, order);
+      setBreakingDialogOpen(false);
+      setBreakingOrderInput('');
+      setSelectedPost(null);
+      fetchPosts();
+    } catch (err) {
+      console.error('Failed to update breaking news:', err);
+      setError(getApiErrorMessage(err, 'Failed to update breaking news'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleOverrideDialogSubmit = async () => {
+    if (!selectedPost) return;
+
+    const trimmedReason = overrideReason.trim();
+    if (!trimmedReason) {
+      setOverrideReasonError('Please explain why this post should be approved.');
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setOverrideReasonError('');
+      await approvePostQualityOverride(selectedPost.uuid, trimmedReason);
+      setOverrideDialogOpen(false);
+      setOverrideReason('');
+      setSelectedPost(null);
+      fetchPosts();
+    } catch (err) {
+      console.error('Failed to approve override:', err);
+      setError(getApiErrorMessage(err, 'Failed to approve quality override'));
     } finally {
       setActionLoading(false);
     }
@@ -371,7 +477,7 @@ export default function Posts() {
   return (
     <Box>
       {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 3 }}>
         <Box>
           <Typography variant="h5" fontWeight={600}>
             My Posts
@@ -432,8 +538,8 @@ export default function Posts() {
                 <TableCell>Post</TableCell>
                 <TableCell>Status</TableCell>
                 {isAdminOrMod(user) && <TableCell>Quality</TableCell>}
-                <TableCell>Views</TableCell>
-                <TableCell>Date</TableCell>
+                {!isMobile && <TableCell>Views</TableCell>}
+                {!isMobile && <TableCell>Date</TableCell>}
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -453,8 +559,8 @@ export default function Posts() {
                     </TableCell>
                     <TableCell><Skeleton width={80} /></TableCell>
                     {isAdminOrMod(user) && <TableCell><Skeleton width={90} /></TableCell>}
-                    <TableCell><Skeleton width={50} /></TableCell>
-                    <TableCell><Skeleton width={100} /></TableCell>
+                    {!isMobile && <TableCell><Skeleton width={50} /></TableCell>}
+                    {!isMobile && <TableCell><Skeleton width={100} /></TableCell>}
                     <TableCell><Skeleton width={40} /></TableCell>
                   </TableRow>
                 ))
@@ -493,7 +599,7 @@ export default function Posts() {
                           {post.title?.[0]?.toUpperCase()}
                         </Avatar>
                         <Box>
-                          <Typography variant="body2" fontWeight={500} noWrap sx={{ maxWidth: 280 }}>
+                          <Typography variant="body2" fontWeight={500} noWrap sx={{ maxWidth: { xs: 160, sm: 200, md: 280 } }}>
                             {post.title}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
@@ -527,20 +633,33 @@ export default function Posts() {
                           icon={<IconFlame size={14} />}
                         />
                       )}
+                      {post.is_breaking_news && (
+                        <Chip
+                          label={`Breaking #${post.breaking_news_order || ''}`.trim()}
+                          size="small"
+                          color="primary"
+                          variant="filled"
+                          icon={<IconBolt size={14} />}
+                        />
+                      )}
                     </TableCell>
                     {isAdminOrMod(user) && (
                       <TableCell>
                         {getQualityChip(post)}
                       </TableCell>
                     )}
-                    <TableCell>
-                      <Typography variant="body2">{post.view_count || 0}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {formatDate(post.published_at || post.created_at)}
-                      </Typography>
-                    </TableCell>
+                    {!isMobile && (
+                      <TableCell>
+                        <Typography variant="body2">{post.view_count || 0}</Typography>
+                      </TableCell>
+                    )}
+                    {!isMobile && (
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {formatDate(post.published_at || post.created_at)}
+                        </Typography>
+                      </TableCell>
+                    )}
                     <TableCell align="right">
                       <IconButton onClick={(e) => handleMenuOpen(e, post)} size="small">
                         <IconDotsVertical size={18} />
@@ -626,6 +745,14 @@ export default function Posts() {
             {selectedPost?.is_homepage_trending ? 'Remove from Trending' : 'Add to Trending'}
           </MenuItem>
         )}
+        {isAdminOrMod(user) && selectedPost?.is_published && (
+          <MenuItem onClick={handleBreakingNewsToggle} disabled={actionLoading}>
+            <ListItemIcon>
+              <IconBolt size={18} />
+            </ListItemIcon>
+            {selectedPost?.is_breaking_news ? 'Remove from Breaking' : 'Mark as Breaking'}
+          </MenuItem>
+        )}
         <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
           <ListItemIcon><IconTrash size={18} color="currentColor" /></ListItemIcon>
           Delete
@@ -651,6 +778,95 @@ export default function Posts() {
             disabled={actionLoading}
           >
             {actionLoading ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={breakingDialogOpen}
+        onClose={closeBreakingDialog}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Mark As Breaking</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Choose where this story should appear in the breaking list. Leave it blank to add it at the end.
+            </Typography>
+            <TextField
+              label="Breaking order"
+              placeholder="Append to end"
+              value={breakingOrderInput}
+              onChange={(event) => {
+                setBreakingOrderInput(event.target.value);
+                if (breakingOrderError) {
+                  setBreakingOrderError('');
+                }
+              }}
+              type="number"
+              inputProps={{ min: 1, step: 1 }}
+              error={Boolean(breakingOrderError)}
+              helperText={breakingOrderError || 'Use 1 to pin it at the top, 2 for second, and so on.'}
+              autoFocus
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeBreakingDialog} disabled={actionLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleBreakingDialogSubmit}
+            variant="contained"
+            disabled={actionLoading}
+          >
+            {actionLoading ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={overrideDialogOpen}
+        onClose={closeOverrideDialog}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Approve Override</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Add a short reason for approving this post even though the quality review flagged it.
+            </Typography>
+            <TextField
+              label="Approval reason"
+              value={overrideReason}
+              onChange={(event) => {
+                setOverrideReason(event.target.value);
+                if (overrideReasonError) {
+                  setOverrideReasonError('');
+                }
+              }}
+              error={Boolean(overrideReasonError)}
+              helperText={overrideReasonError}
+              multiline
+              minRows={3}
+              autoFocus
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeOverrideDialog} disabled={actionLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleOverrideDialogSubmit}
+            variant="contained"
+            disabled={actionLoading}
+          >
+            {actionLoading ? 'Saving...' : 'Approve'}
           </Button>
         </DialogActions>
       </Dialog>

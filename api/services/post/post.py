@@ -82,6 +82,46 @@ class PostService:
     }
 
     @staticmethod
+    def _resequence_curated_posts(posts: List[Post], order_attr: str) -> List[Post]:
+        ordered = sorted(
+            posts,
+            key=lambda post: (
+                getattr(post, order_attr) is None,
+                getattr(post, order_attr) or 10**9,
+                post.created_at or datetime.min,
+                post.id or 0,
+            ),
+        )
+        for index, post in enumerate(ordered, start=1):
+            setattr(post, order_attr, index)
+        return ordered
+
+    @staticmethod
+    async def _clear_breaking_news_selection(
+            session: AsyncSession,
+            db_post: Post
+    ) -> None:
+        result = await session.execute(
+            select(Post)
+            .where(and_(
+                Post.is_breaking_news == True,
+                Post.id != db_post.id,
+            ))
+            .order_by(Post.breaking_news_order.asc(), Post.created_at.desc())
+        )
+        remaining_posts = PostService._resequence_curated_posts(
+            result.scalars().all(),
+            "breaking_news_order",
+        )
+        for post in remaining_posts:
+            post.is_breaking_news = True
+            session.add(post)
+
+        db_post.is_breaking_news = False
+        db_post.breaking_news_order = None
+        session.add(db_post)
+
+    @staticmethod
     def normalize_text(value: Optional[str]) -> str:
         if not value:
             return ""
@@ -679,6 +719,34 @@ class PostService:
             )
 
     @staticmethod
+    async def get_breaking_posts(
+            session: AsyncSession,
+            skip: int = 0,
+            limit: int = 10,
+            include_deleted: bool = False
+    ) -> List[Post]:
+        try:
+            query = select(Post).where(and_(
+                Post.is_published == True,
+                Post.is_breaking_news == True
+            ))
+            query = PostService._apply_post_relationships(query)
+            query = PostService._add_soft_delete_filter(query, include_deleted)
+            query = query.order_by(
+                Post.breaking_news_order.asc(),
+                Post.published_at.desc().nullslast(),
+                Post.created_at.desc(),
+            )
+            query = query.offset(skip).limit(limit)
+            result = await session.execute(query)
+            return result.scalars().all()
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to get breaking posts: {str(e)}"
+            )
+
+    @staticmethod
     async def get_homepage_trending_posts(
             session: AsyncSession,
             skip: int = 0,
@@ -1029,6 +1097,7 @@ class PostService:
 
             db_post.is_published = False
             db_post.published_at = None
+            await PostService._clear_breaking_news_selection(session, db_post)
             db_post.is_homepage_trending = False
             db_post.homepage_trending_order = None
             db_post.homepage_trending_picked_at = None
@@ -1164,6 +1233,67 @@ class PostService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to update homepage trending status: {str(e)}"
+            )
+
+    @staticmethod
+    async def set_breaking_news(
+            session: AsyncSession,
+            post_uuid: str,
+            current_user: User,
+            breaking: bool = True,
+            order: Optional[int] = None
+    ) -> Post:
+        try:
+            if not current_user.is_moderator():
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to manage breaking news posts")
+
+            db_post = await PostService.get_post_by_uuid(session, post_uuid)
+            if not db_post:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+            if breaking and not db_post.is_published:
+                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Only published posts can be added to breaking news")
+
+            result = await session.execute(
+                select(Post)
+                .where(and_(
+                    Post.is_breaking_news == True,
+                    Post.id != db_post.id,
+                ))
+                .order_by(Post.breaking_news_order.asc(), Post.created_at.desc())
+            )
+            other_breaking_posts = PostService._resequence_curated_posts(
+                result.scalars().all(),
+                "breaking_news_order",
+            )
+
+            if not breaking:
+                await PostService._clear_breaking_news_selection(session, db_post)
+                await session.commit()
+                return await PostService.get_post_by_uuid(session, post_uuid) or db_post
+
+            max_position = len(other_breaking_posts) + 1
+            if order is None:
+                order = db_post.breaking_news_order if db_post.is_breaking_news else max_position
+            order = max(1, min(order, max_position))
+
+            combined_posts = list(other_breaking_posts)
+            combined_posts.insert(order - 1, db_post)
+
+            for index, post in enumerate(combined_posts, start=1):
+                post.is_breaking_news = True
+                post.breaking_news_order = index
+                session.add(post)
+
+            await session.commit()
+            return await PostService.get_post_by_uuid(session, post_uuid) or db_post
+        except HTTPException:
+            raise
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to update breaking news status: {str(e)}"
             )
 
     @staticmethod
@@ -1530,6 +1660,10 @@ class PostService:
                 else:
                     db_post.is_published = False
                     db_post.published_at = None
+                    await PostService._clear_breaking_news_selection(session, db_post)
+                    db_post.is_homepage_trending = False
+                    db_post.homepage_trending_order = None
+                    db_post.homepage_trending_picked_at = None
 
             db_post.updated_at = datetime.utcnow()
 
@@ -1897,7 +2031,9 @@ class PostService:
                 name=category_data.name,
                 slug=generated_slug,
                 parent_id=category_data.parent_id,
-                description=category_data.description
+                description=category_data.description,
+                tagline=category_data.tagline,
+                cover_image=category_data.cover_image,
             )
 
             session.add(db_category)
@@ -1966,6 +2102,12 @@ class PostService:
             
             if category_data.description is not None:
                 db_category.description = category_data.description
+
+            if category_data.tagline is not None:
+                db_category.tagline = category_data.tagline
+
+            if category_data.cover_image is not None:
+                db_category.cover_image = category_data.cover_image
 
             # Handle parent_id changes (for moving categories or creating subcategories)
             if category_data.parent_id is not None:

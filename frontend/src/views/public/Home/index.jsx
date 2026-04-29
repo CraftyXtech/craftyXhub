@@ -2,15 +2,16 @@ import { useLocation } from 'react-router-dom';
 import { Box, Collapse } from '@mui/material';
 import HeroSection from './sections/HeroSection';
 import LatestPosts from './sections/LatestPosts';
+import CategoryCarouselSection from './sections/CategoryCarouselSection';
 import PopularPosts from './sections/PopularPosts';
 import ExploreTopics from './sections/ExploreTopics';
-import Newsletter from './Newsletter';
 import Categories from './Categories';
 
 /**
  * Homepage
  * Structure inspired by litho Magazine page
  * Hero section now includes slider + featured posts side by side
+ * Newsletter is now embedded in the PopularPosts sidebar
  */
 export default function Home() {
   const location = useLocation();
@@ -28,17 +29,28 @@ export default function Home() {
         </Box>
       </Collapse>
 
-      {/* Latest Articles - 3 col grid (6 articles) */}
+      {/* Latest Articles + Breaking News sidebar */}
       <LatestPosts />
+
+      {/* Business articles from the Business & Finance taxonomy */}
+      <CategoryCarouselSection
+        title="Business"
+        parentSlug="business-and-finance"
+        background="background.default"
+      />
+
+      {/* Technology articles from the Tech & Innovation taxonomy */}
+      <CategoryCarouselSection
+        title="Technology"
+        parentSlug="tech-and-innovation"
+        background="grey.50"
+      />
 
       {/* Explore More Topics - Featured topics section */}
       <ExploreTopics />
 
-      {/* Popular Articles - 3 col grid */}
+      {/* Popular Articles + Newsletter sidebar */}
       <PopularPosts />
-
-      {/* Newsletter */}
-      <Newsletter />
     </Box>
   );
 }

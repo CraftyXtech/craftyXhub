@@ -149,6 +149,16 @@ export const getFeaturedPosts = async (params = {}) => {
 };
 
 /**
+ * Get admin-picked breaking posts
+ * @param {object} params - { limit }
+ * @returns {Promise<object>} Posts list
+ */
+export const getBreakingPosts = async (params = {}) => {
+  const response = await axiosPublic.get('/posts/breaking', { params });
+  return response.data;
+};
+
+/**
  * Get admin-picked homepage trending posts
  * @param {object} params - { limit }
  * @returns {Promise<object>} Posts list
@@ -189,6 +199,56 @@ export const getPostsByCategory = async (categoryId, params = {}) => {
   const clientParams = { ...params, category_id: categoryId, published: true };
   const response = await axiosPublic.get('/posts/', { params: clientParams });
   return response.data;
+};
+
+/**
+ * Get recent published posts across multiple categories.
+ * @param {number[]} categoryIds - Category IDs to query
+ * @param {object} params - { limit }
+ * @returns {Promise<object>} { posts, total, page, size }
+ */
+export const getPostsForCategoryIds = async (categoryIds = [], params = {}) => {
+  const ids = [...new Set(categoryIds.filter(Boolean))];
+  const limit = params.limit || 12;
+
+  if (ids.length === 0) {
+    return { posts: [], total: 0, page: 1, size: limit };
+  }
+
+  const responses = await Promise.all(
+    ids.map((categoryId) =>
+      getPosts({
+        ...params,
+        category_id: categoryId,
+        limit,
+      })
+    )
+  );
+
+  const postsByKey = new Map();
+  responses.forEach((response) => {
+    (response.posts || []).forEach((post) => {
+      const key = post.uuid || post.id || post.slug;
+      if (key && !postsByKey.has(key)) {
+        postsByKey.set(key, post);
+      }
+    });
+  });
+
+  const posts = Array.from(postsByKey.values())
+    .sort((a, b) => {
+      const dateA = new Date(a.published_at || a.created_at || 0).getTime();
+      const dateB = new Date(b.published_at || b.created_at || 0).getTime();
+      return dateB - dateA;
+    })
+    .slice(0, limit);
+
+  return {
+    posts,
+    total: posts.length,
+    page: 1,
+    size: limit,
+  };
 };
 
 /**
@@ -399,6 +459,20 @@ export const setHomepageTrending = async (postUuid, trending = true, order = nul
   const params = { trending };
   if (order) params.order = order;
   const response = await axiosPrivate.put(`/posts/${postUuid}/homepage-trending`, null, { params });
+  return response.data;
+};
+
+/**
+ * Add/remove a post from the breaking news ticker
+ * @param {string} postUuid - Post UUID
+ * @param {boolean} breaking - True to add, false to remove
+ * @param {number|null} order - Optional manual order
+ * @returns {Promise<object>} Updated post
+ */
+export const setBreakingNews = async (postUuid, breaking = true, order = null) => {
+  const params = { breaking };
+  if (order) params.order = order;
+  const response = await axiosPrivate.put(`/posts/${postUuid}/breaking`, null, { params });
   return response.data;
 };
 

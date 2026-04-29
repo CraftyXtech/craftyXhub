@@ -46,6 +46,7 @@ class Settings:
     GROK_API_KEY: str = os.getenv("GROK_API_KEY", "")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    TWELVEDATA_API_KEY: str = os.getenv("TWELVEDATA_API_KEY", "")
     LOGFIRE_ENABLED: bool = os.getenv("LOGFIRE_ENABLED", "false").lower() == "true"
     LOGFIRE_TOKEN: str = os.getenv("LOGFIRE_TOKEN", "")
     BLOG_AGENT_V2_REQUIRE_NATIVE: bool = (

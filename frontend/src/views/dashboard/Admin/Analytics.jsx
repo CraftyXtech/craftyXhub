@@ -113,7 +113,7 @@ export default function Analytics() {
   return (
     <Box>
       {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 3 }}>
         <Box>
           <Typography variant="h5" fontWeight={600}>
             Analytics
@@ -143,7 +143,7 @@ export default function Analytics() {
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {loading ? (
           [...Array(7)].map((_, i) => (
-            <Grid item xs={12} sm={6} md={4} lg={2} key={i}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={i}>
               <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
                 <CardContent>
                   <Skeleton width="60%" height={20} />
@@ -154,7 +154,7 @@ export default function Analytics() {
           ))
         ) : (
           <>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
               <StatCard
                 icon={IconEye}
                 title="Total Views"
@@ -162,7 +162,7 @@ export default function Analytics() {
                 color="primary"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
               <StatCard
                 icon={IconFileText}
                 title="Total Posts"
@@ -170,7 +170,7 @@ export default function Analytics() {
                 color="info"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
               <StatCard
                 icon={IconUsers}
                 title="Total Users"
@@ -178,7 +178,7 @@ export default function Analytics() {
                 color="success"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
               <StatCard
                 icon={IconMail}
                 title="Subscribers"
@@ -186,7 +186,7 @@ export default function Analytics() {
                 color="secondary"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
               <StatCard
                 icon={IconMessageCircle}
                 title="Comments"
@@ -194,7 +194,7 @@ export default function Analytics() {
                 color="warning"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
               <StatCard
                 icon={IconHeart}
                 title="Total Likes"
@@ -202,7 +202,7 @@ export default function Analytics() {
                 color="error"
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
               <StatCard
                 icon={IconBookmark}
                 title="Bookmarks"
@@ -216,7 +216,7 @@ export default function Analytics() {
 
       {/* Recent Activity */}
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
@@ -257,7 +257,7 @@ export default function Analytics() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
@@ -301,7 +301,7 @@ export default function Analytics() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>

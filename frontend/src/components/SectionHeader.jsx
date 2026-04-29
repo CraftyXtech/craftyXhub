@@ -1,4 +1,5 @@
 import { Box, Typography } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const MotionBox = motion.create(Box);
@@ -10,7 +11,9 @@ export default function SectionHeader({
   overline, 
   title, 
   subtitle,
-  align = 'center',
+  align = 'left',
+  moreLink,
+  moreLinkText,
   sx = {}
 }) {
   return (
@@ -33,9 +36,37 @@ export default function SectionHeader({
           {overline}
         </Typography>
       )}
-      <Typography variant="h3" sx={{ mt: overline ? 1 : 0, fontWeight: 700 }}>
-        {title}
-      </Typography>
+
+      {/* Title row with optional "More" link */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: moreLink ? 'space-between' : (align === 'center' ? 'center' : 'flex-start'),
+        }}
+      >
+        <Typography variant="h3" sx={{ mt: overline ? 1 : 0, fontWeight: 700 }}>
+          {title}
+        </Typography>
+        {moreLink && (
+          <Typography
+            component={RouterLink}
+            to={moreLink}
+            variant="body2"
+            sx={{
+              color: 'primary.main',
+              fontWeight: 700,
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+              letterSpacing: '0.05em',
+              '&:hover': { textDecoration: 'underline' },
+            }}
+          >
+            {moreLinkText || `MORE ${title.toUpperCase()} →`}
+          </Typography>
+        )}
+      </Box>
+
       {subtitle && (
         <Typography
           variant="body1"

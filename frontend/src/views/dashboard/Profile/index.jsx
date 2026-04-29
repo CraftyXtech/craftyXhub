@@ -200,7 +200,7 @@ export default function Profile() {
       <form onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={3}>
           {/* Avatar Section */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
               <CardContent sx={{ textAlign: 'center', py: 4 }}>
                 <Box sx={{ position: 'relative', display: 'inline-block' }}>
@@ -250,7 +250,7 @@ export default function Profile() {
           </Grid>
 
           {/* Form Section */}
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
               <CardContent>
                 <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
@@ -259,7 +259,7 @@ export default function Profile() {
 
                 <Stack spacing={2.5}>
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Controller
                         name="full_name"
                         control={control}
@@ -268,7 +268,7 @@ export default function Profile() {
                         )}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Controller
                         name="username"
                         control={control}
@@ -311,7 +311,7 @@ export default function Profile() {
 
                 <Stack spacing={2}>
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Controller
                         name="twitter"
                         control={control}
@@ -320,7 +320,7 @@ export default function Profile() {
                         )}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Controller
                         name="linkedin"
                         control={control}
@@ -331,7 +331,7 @@ export default function Profile() {
                     </Grid>
                   </Grid>
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Controller
                         name="instagram"
                         control={control}
@@ -340,7 +340,7 @@ export default function Profile() {
                         )}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Controller
                         name="facebook"
                         control={control}

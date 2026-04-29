@@ -86,7 +86,7 @@ export default function DashboardLayout() {
         <Toolbar sx={{ minHeight: { xs: 48, md: 48 } }} />
 
         {/* Page Content */}
-        <Box sx={{ py: 2 }}>
+        <Box sx={{ py: 2, overflow: 'hidden' }}>
           <Outlet />
         </Box>
       </Main>

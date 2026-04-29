@@ -10,6 +10,8 @@ class CategoryBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     slug: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
+    tagline: Optional[str] = Field(None, max_length=200)
+    cover_image: Optional[str] = None
 
 
 class CategoryCreate(CategoryBase):
@@ -21,12 +23,16 @@ class CategoryUpdate(BaseModel):
     slug: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     parent_id: Optional[int] = None
+    tagline: Optional[str] = Field(None, max_length=200)
+    cover_image: Optional[str] = None
 
 class CategoryChildResponse(BaseModel):
     id: int
     name: str
     slug: Optional[str] = None
     description: Optional[str] = None
+    tagline: Optional[str] = None
+    cover_image: Optional[str] = None
 
 class CategoryResponse(CategoryBase, BaseSchema):
     id: int
@@ -53,6 +59,8 @@ class CategorySlugResolveResponse(BaseModel):
     name: str
     slug: Optional[str] = None
     description: Optional[str] = None
+    tagline: Optional[str] = None
+    cover_image: Optional[str] = None
     parent_id: Optional[int] = None
     created_at: datetime
     post_count: Optional[int] = 0
@@ -164,6 +172,8 @@ class PostResponse(BaseModel):
     featured_image: Optional[str]
     is_published: bool
     is_featured: bool
+    is_breaking_news: bool = False
+    breaking_news_order: Optional[int] = None
     is_homepage_trending: bool = False
     homepage_trending_order: Optional[int] = None
     homepage_trending_picked_at: Optional[datetime] = None

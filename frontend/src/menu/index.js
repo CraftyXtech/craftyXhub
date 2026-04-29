@@ -127,6 +127,11 @@ export const menuItems = [
         title: 'Tags', 
         url: '/dashboard/tags' 
       },
+      {
+        id: 'admin-ads',
+        title: 'Ad Banners',
+        url: '/dashboard/ads'
+      },
       { 
         id: 'admin-settings', 
         title: 'Settings', 

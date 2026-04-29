@@ -13,6 +13,7 @@ from .newsletter import router as newsletter_router
 from .notification import router as notification_router
 from .post import router as post_router
 from .profile import router as profile_router
+from .settings import router as settings_router
 from .user import router as user_router
 
 
@@ -20,6 +21,7 @@ router = APIRouter(prefix="/v1")
 
 router.include_router(auth_router)
 router.include_router(profile_router)
+router.include_router(settings_router)
 router.include_router(user_router)
 router.include_router(post_router)
 router.include_router(comment_router)

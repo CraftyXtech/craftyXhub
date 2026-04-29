@@ -47,7 +47,7 @@ export default function Newsletter() {
   return (
     <Box
       sx={{
-        py: { xs: 8, md: 12 },
+        py: { xs: 4, md: 8 },
         bgcolor: 'secondary.main',
         color: 'white',
         position: 'relative',

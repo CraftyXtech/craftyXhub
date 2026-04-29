@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 // MUI
 import Box from '@mui/material/Box';
@@ -44,6 +46,9 @@ import { getCategories, createCategory, updateCategory, deleteCategory } from '@
  * Category Management Page (Admin Only)
  */
 export default function Categories() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   // State
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -159,7 +164,7 @@ export default function Categories() {
   return (
     <Box>
       {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 2 }}>
         <Box>
           <Typography variant="h5" fontWeight={600}>
             Categories
@@ -190,9 +195,9 @@ export default function Categories() {
             <TableHead>
               <TableRow>
                 <TableCell>Name</TableCell>
-                <TableCell>Slug</TableCell>
+                {!isMobile && <TableCell>Slug</TableCell>}
                 <TableCell>Type</TableCell>
-                <TableCell>Posts</TableCell>
+                {!isMobile && <TableCell>Posts</TableCell>}
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -201,15 +206,15 @@ export default function Categories() {
                 [...Array(4)].map((_, i) => (
                   <TableRow key={i}>
                     <TableCell><Skeleton width={120} /></TableCell>
-                    <TableCell><Skeleton width={100} /></TableCell>
+                    {!isMobile && <TableCell><Skeleton width={100} /></TableCell>}
                     <TableCell><Skeleton width={80} /></TableCell>
-                    <TableCell><Skeleton width={40} /></TableCell>
+                    {!isMobile && <TableCell><Skeleton width={40} /></TableCell>}
                     <TableCell><Skeleton width={60} /></TableCell>
                   </TableRow>
                 ))
               ) : hierarchicalCategories.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
+                  <TableCell colSpan={isMobile ? 3 : 5} align="center" sx={{ py: 6 }}>
                     <IconCategory size={48} color="#9E9E9E" style={{ marginBottom: 8 }} />
                     <Typography color="text.secondary">No categories yet</Typography>
                     <Button onClick={() => handleOpenDialog()} sx={{ mt: 1 }}>
@@ -234,9 +239,11 @@ export default function Categories() {
                         </Typography>
                       </Stack>
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">{category.slug}</Typography>
-                    </TableCell>
+                    {!isMobile && (
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">{category.slug}</Typography>
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Chip 
                         label={category.isParent ? 'Category' : 'Subcategory'} 
@@ -245,9 +252,11 @@ export default function Categories() {
                         variant={category.isParent ? 'filled' : 'outlined'}
                       />
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{category.post_count || 0}</Typography>
-                    </TableCell>
+                    {!isMobile && (
+                      <TableCell>
+                        <Typography variant="body2">{category.post_count || 0}</Typography>
+                      </TableCell>
+                    )}
                     <TableCell align="right">
                       <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                         <IconButton size="small" onClick={() => handleOpenDialog(category)}>

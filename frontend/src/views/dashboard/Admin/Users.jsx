@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 // MUI
 import Box from '@mui/material/Box';
@@ -50,6 +52,9 @@ import { getUsers, changeUserRole, deactivateUser, toggleUserStatus } from '@/ap
  * User Management Page (Admin Only)
  */
 export default function Users() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   // State
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -175,7 +180,7 @@ export default function Users() {
   return (
     <Box>
       {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 3 }}>
         <Box>
           <Typography variant="h5" fontWeight={600}>
             User Management
@@ -216,10 +221,10 @@ export default function Users() {
             <TableHead>
               <TableRow>
                 <TableCell>User</TableCell>
-                <TableCell>Email</TableCell>
+                {!isMobile && <TableCell>Email</TableCell>}
                 <TableCell>Role</TableCell>
                 <TableCell>Status</TableCell>
-                <TableCell>Joined</TableCell>
+                {!isMobile && <TableCell>Joined</TableCell>}
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -228,16 +233,16 @@ export default function Users() {
                 [...Array(5)].map((_, i) => (
                   <TableRow key={i}>
                     <TableCell><Skeleton width={150} /></TableCell>
-                    <TableCell><Skeleton width={180} /></TableCell>
+                    {!isMobile && <TableCell><Skeleton width={180} /></TableCell>}
                     <TableCell><Skeleton width={80} /></TableCell>
                     <TableCell><Skeleton width={60} /></TableCell>
-                    <TableCell><Skeleton width={100} /></TableCell>
+                    {!isMobile && <TableCell><Skeleton width={100} /></TableCell>}
                     <TableCell><Skeleton width={40} /></TableCell>
                   </TableRow>
                 ))
               ) : users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                  <TableCell colSpan={isMobile ? 4 : 6} align="center" sx={{ py: 6 }}>
                     <IconUsers size={48} color="#9E9E9E" style={{ marginBottom: 8 }} />
                     <Typography color="text.secondary">No users found</Typography>
                   </TableCell>
@@ -260,9 +265,11 @@ export default function Users() {
                         </Box>
                       </Stack>
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{user.email}</Typography>
-                    </TableCell>
+                    {!isMobile && (
+                      <TableCell>
+                        <Typography variant="body2" noWrap>{user.email}</Typography>
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Chip
                         label={user.role || 'User'}
@@ -279,11 +286,13 @@ export default function Users() {
                         variant="outlined"
                       />
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDate(user.created_at)}
-                      </Typography>
-                    </TableCell>
+                    {!isMobile && (
+                      <TableCell>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDate(user.created_at)}
+                        </Typography>
+                      </TableCell>
+                    )}
                     <TableCell align="right">
                       <IconButton size="small" onClick={(e) => handleMenuOpen(e, user)}>
                         <IconDotsVertical size={18} />

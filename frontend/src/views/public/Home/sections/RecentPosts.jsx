@@ -30,7 +30,7 @@ export default function RecentPosts() {
   }
 
   return (
-    <Box sx={{ py: { xs: 6, md: 10 }, bgcolor: 'grey.50' }}>
+    <Box sx={{ py: { xs: 4, md: 6 }, bgcolor: 'grey.50' }}>
       <Container maxWidth="lg">
         <SectionHeader
           overline="Just Published"

@@ -12,9 +12,11 @@ import RequireAuth from '@/components/RequireAuth';
 // Public Views
 const Home = lazy(() => import('@/views/public/Home'));
 const BlogDetail = lazy(() => import('@/views/public/Blog/Detail'));
+const Brief = lazy(() => import('@/views/public/Brief'));
 const Category = lazy(() => import('@/views/public/Category'));
 const Author = lazy(() => import('@/views/public/Author'));
 const About = lazy(() => import('@/views/public/About'));
+const Search = lazy(() => import('@/views/public/Search'));
 const Login = lazy(() => import('@/views/public/Auth/Login'));
 const Register = lazy(() => import('@/views/public/Auth/Register'));
 const ForgotPassword = lazy(() => import('@/views/public/Auth/ForgotPassword'));
@@ -51,6 +53,7 @@ const Analytics = lazy(() => import('@/views/dashboard/Admin/Analytics'));
 const Categories = lazy(() => import('@/views/dashboard/Admin/Categories'));
 const Tags = lazy(() => import('@/views/dashboard/Admin/Tags'));
 const Settings = lazy(() => import('@/views/dashboard/Admin/Settings'));
+const AdBanners = lazy(() => import('@/views/dashboard/Admin/AdBanners'));
 
 function RouteFallback() {
   return (
@@ -77,8 +80,10 @@ function App() {
         {/* Public Routes with Layout */}
         <Route element={<PublicLayout />}>
           <Route index element={<Home />} />
+          <Route path="/brief" element={<Brief />} />
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/post/:slug" element={<BlogDetail />} />
+          <Route path="/search" element={<Search />} />
           <Route path="/author/:username" element={<Author />} />
           <Route path="/about" element={<About />} />
         </Route>
@@ -169,6 +174,14 @@ function App() {
             element={
               <RequireRole role="admin">
                 <Settings />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="ads"
+            element={
+              <RequireRole role="admin">
+                <AdBanners />
               </RequireRole>
             }
           />

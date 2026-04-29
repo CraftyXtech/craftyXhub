@@ -92,7 +92,7 @@ export default function BlogList() {
       <Box
         sx={{
           bgcolor: 'grey.50',
-          py: { xs: 6, md: 8 },
+          py: { xs: 3, md: 5 },
           borderBottom: '1px solid',
           borderColor: 'divider'
         }}

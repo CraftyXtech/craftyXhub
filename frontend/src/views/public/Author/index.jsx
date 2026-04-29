@@ -82,7 +82,7 @@ export default function Author() {
   if (loading) {
     return (
       <Box>
-        <Box sx={{ bgcolor: 'grey.50', py: { xs: 6, md: 8 } }}>
+        <Box sx={{ bgcolor: 'grey.50', py: { xs: 3, md: 5 } }}>
           <Container maxWidth="lg">
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems="center">
               <Skeleton variant="circular" width={120} height={120} />
@@ -136,7 +136,7 @@ export default function Author() {
       <Box
         sx={{
           bgcolor: 'grey.50',
-          py: { xs: 6, md: 8 },
+          py: { xs: 3, md: 5 },
           borderBottom: '1px solid',
           borderColor: 'divider'
         }}

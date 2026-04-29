@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Container, Grid, Skeleton, Typography } from '@mui/material';
 import PostCard from '@/components/PostCard';
 import SectionHeader from '@/components/SectionHeader';
+import BreakingNewsSidebar from './BreakingNewsSidebar';
 import { getRecentPosts } from '@/api/services/postService';
 
 export default function LatestPosts() {
@@ -28,49 +29,55 @@ export default function LatestPosts() {
   }, []);
 
   return (
-    <Box sx={{ py: { xs: 6, md: 10 } }}>
+    <Box sx={{ pt: { xs: 2, md: 3 }, pb: { xs: 4, md: 6 } }}>
       <Container maxWidth="lg">
-        <SectionHeader
-          overline="Explore"
-          title="Latest Articles"
-          subtitle="Discover fresh insights from our community of writers"
-        />
+        <SectionHeader title="Latest Articles" />
 
-        <Grid container spacing={3}>
-          {loading ? (
-            // Loading skeletons - 6 articles in 3 columns
-            [...Array(6)].map((_, index) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
-                <Box>
-                  <Skeleton variant="rounded" height={200} sx={{ mb: 2 }} />
-                  <Skeleton width="60%" height={20} sx={{ mb: 1 }} />
-                  <Skeleton width="90%" height={24} sx={{ mb: 1 }} />
-                  <Skeleton width="100%" height={40} />
-                </Box>
-              </Grid>
-            ))
-          ) : error ? (
-            <Grid size={{ xs: 12 }}>
-              <Typography color="text.secondary" textAlign="center" py={4}>
-                {error}
-              </Typography>
+        {/* 2-Column Layout: Main Content + Sidebar */}
+        <Grid container spacing={4}>
+          {/* Main Content — Article Grid */}
+          <Grid size={{ xs: 12, lg: 9 }}>
+            <Grid container spacing={3}>
+              {loading ? (
+                // Loading skeletons - 6 articles in 3 columns
+                [...Array(6)].map((_, index) => (
+                  <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+                    <Box>
+                      <Skeleton variant="rounded" height={200} sx={{ mb: 2 }} />
+                      <Skeleton width="60%" height={20} sx={{ mb: 1 }} />
+                      <Skeleton width="90%" height={24} sx={{ mb: 1 }} />
+                      <Skeleton width="100%" height={40} />
+                    </Box>
+                  </Grid>
+                ))
+              ) : error ? (
+                <Grid size={{ xs: 12 }}>
+                  <Typography color="text.secondary" textAlign="center" py={4}>
+                    {error}
+                  </Typography>
+                </Grid>
+              ) : posts.length === 0 ? (
+                <Grid size={{ xs: 12 }}>
+                  <Typography color="text.secondary" textAlign="center" py={4}>
+                    No posts available yet. Check back soon!
+                  </Typography>
+                </Grid>
+              ) : (
+                posts.map((post, index) => (
+                  <Grid size={{ xs: 12, sm: 6, md: 4 }} key={post.uuid || post.id}>
+                    <PostCard post={post} animationDelay={index * 0.1} />
+                  </Grid>
+                ))
+              )}
             </Grid>
-          ) : posts.length === 0 ? (
-            <Grid size={{ xs: 12 }}>
-              <Typography color="text.secondary" textAlign="center" py={4}>
-                No posts available yet. Check back soon!
-              </Typography>
-            </Grid>
-          ) : (
-            posts.map((post, index) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={post.uuid || post.id}>
-                <PostCard post={post} animationDelay={index * 0.1} />
-              </Grid>
-            ))
-          )}
+          </Grid>
+
+          {/* Sidebar — Breaking News */}
+          <Grid size={{ xs: 12, lg: 3 }}>
+            <BreakingNewsSidebar />
+          </Grid>
         </Grid>
       </Container>
     </Box>
   );
 }
-

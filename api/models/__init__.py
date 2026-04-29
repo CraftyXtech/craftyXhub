@@ -7,6 +7,7 @@ from .comment_report import CommentReport
 from .ai_draft import AIDraft, AIGenerationLog
 from .notification import Notification
 from .newsletter import NewsletterSubscriber
+from .site_settings import SiteSettings
 from .collection import ReadingList, ReadingListItem, ReadingHistory, Highlight
 from .content_intelligence import (
     ContentSource,
@@ -37,6 +38,7 @@ __all__ = [
     'AIGenerationLog',
     'Notification',
     'NewsletterSubscriber',
+    'SiteSettings',
     'ReadingList',
     'ReadingListItem',
     'ReadingHistory',

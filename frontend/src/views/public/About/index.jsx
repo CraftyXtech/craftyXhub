@@ -94,7 +94,7 @@ export default function About() {
         sx={{
           bgcolor: 'primary.main',
           color: 'white',
-          py: { xs: 8, md: 12 },
+          py: { xs: 4, md: 8 },
           position: 'relative',
           overflow: 'hidden'
         }}
@@ -154,7 +154,7 @@ export default function About() {
       </Box>
 
       {/* Our Story */}
-      <Container maxWidth="md" sx={{ py: { xs: 6, md: 10 } }}>
+      <Container maxWidth="md" sx={{ py: { xs: 4, md: 6 } }}>
         <MotionBox
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -179,7 +179,7 @@ export default function About() {
       </Container>
 
       {/* Values Section */}
-      <Box sx={{ bgcolor: 'grey.50', py: { xs: 6, md: 10 } }}>
+      <Box sx={{ bgcolor: 'grey.50', py: { xs: 4, md: 6 } }}>
         <Container maxWidth="lg">
           <SectionHeader
             overline="What We Believe"
@@ -234,7 +234,7 @@ export default function About() {
       </Box>
 
       {/* Team Section */}
-      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
         <SectionHeader
           overline="The People"
           title="Meet Our Team"
@@ -299,7 +299,7 @@ export default function About() {
         sx={{
           bgcolor: 'grey.900',
           color: 'white',
-          py: { xs: 6, md: 8 },
+          py: { xs: 3, md: 5 },
           textAlign: 'center'
         }}
       >

@@ -9,6 +9,8 @@ class Category(BaseTable):
     name = Column(String(100), unique=True, nullable=False)
     slug = Column(String(100), unique=True, nullable=False)
     description = Column(Text, nullable=True)
+    tagline = Column(String(200), nullable=True)
+    cover_image = Column(String(500), nullable=True)
     posts = relationship("Post", back_populates="category")
     parent_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
 
@@ -57,6 +59,8 @@ class Post(BaseTable):
     category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
     is_published = Column(Boolean, default=False)
     is_featured = Column(Boolean, default=False)
+    is_breaking_news = Column(Boolean, default=False, nullable=False)
+    breaking_news_order = Column(Integer, nullable=True)
     is_homepage_trending = Column(Boolean, default=False, nullable=False)
     homepage_trending_order = Column(Integer, nullable=True)
     homepage_trending_picked_at = Column(DateTime, nullable=True)

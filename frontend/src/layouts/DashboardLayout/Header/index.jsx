@@ -3,6 +3,8 @@ import { useLocation, Link as RouterLink, useNavigate } from 'react-router-dom';
 
 // MUI
 import { styled } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Box from '@mui/material/Box';
@@ -54,6 +56,8 @@ export default function Header({ onMenuClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [anchorEl, setAnchorEl] = useState(null);
   const [searchAnchorEl, setSearchAnchorEl] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -188,6 +192,17 @@ export default function Header({ onMenuClick }) {
             </Typography>
           </Box>
 
+          {/* Mobile Search Icon */}
+          <IconButton
+            onClick={handleSearchClick}
+            color="inherit"
+            sx={{
+              display: { xs: 'inline-flex', sm: 'none' },
+            }}
+          >
+            <IconSearch size={20} />
+          </IconButton>
+
           {/* Search Dropdown Menu */}
           <Menu
             anchorEl={searchAnchorEl}
@@ -228,12 +243,14 @@ export default function Header({ onMenuClick }) {
               color: 'text.primary',
               fontWeight: 500,
               textTransform: 'none',
+              minWidth: { xs: 'auto', sm: 'unset' },
+              px: { xs: 1, sm: 2 },
               '&:hover': {
                 backgroundColor: 'action.hover'
               }
             }}
           >
-            Write
+            {!isMobile && 'Write'}
           </Button>
 
           {/* Notifications */}

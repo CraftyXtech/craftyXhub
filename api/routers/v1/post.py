@@ -112,6 +112,21 @@ async def get_featured_posts(
     }
 
 
+@router.get("/breaking", response_model=PostListResponse)
+async def get_breaking_posts(
+        skip: int = Query(0, ge=0),
+        limit: int = Query(8, ge=1, le=20),
+        session: AsyncSession = Depends(get_db_session)
+):
+    posts = await PostService.get_breaking_posts(session, skip=skip, limit=limit)
+    return {
+        "posts": posts,
+        "total": len(posts),
+        "page": skip // limit + 1,
+        "size": limit
+    }
+
+
 @router.get("/homepage-trending", response_model=PostListResponse)
 async def get_homepage_trending_posts(
         skip: int = Query(0, ge=0),
@@ -870,6 +885,23 @@ async def set_homepage_trending(
         post_uuid,
         current_user,
         trending=trending,
+        order=order,
+    )
+
+
+@router.put("/{post_uuid}/breaking", response_model=PostResponse)
+async def set_breaking_news(
+        post_uuid: str,
+        breaking: bool = True,
+        order: Optional[int] = Query(None, ge=1),
+        current_user: User = Depends(get_current_active_user),
+        session: AsyncSession = Depends(get_db_session)
+):
+    return await PostService.set_breaking_news(
+        session,
+        post_uuid,
+        current_user,
+        breaking=breaking,
         order=order,
     )
 

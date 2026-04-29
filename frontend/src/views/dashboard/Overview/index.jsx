@@ -108,7 +108,7 @@ export default function Overview() {
     <Box>
       {/* Welcome Section */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom fontWeight={600}>
+        <Typography variant="h4" gutterBottom fontWeight={600} sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
           {greeting}, {displayName}! 👋
         </Typography>
         <Typography variant="body1" color="text.secondary">

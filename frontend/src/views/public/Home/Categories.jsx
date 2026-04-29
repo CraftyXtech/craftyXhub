@@ -132,24 +132,12 @@ export default function Categories() {
   };
 
   return (
-    <Box sx={{ py: { xs: 8, md: 12 } }}>
+    <Box sx={{ py: { xs: 4, md: 8 } }}>
       <Container maxWidth="lg">
         {/* Section Header */}
         <Box sx={{ textAlign: 'center', mb: 6 }}>
-          <Typography
-            variant="overline"
-            sx={{ color: 'text.secondary', fontWeight: 600 }}
-          >
-            Explore Topics
-          </Typography>
-          <Typography variant="h3" sx={{ mt: 1, fontWeight: 700 }}>
+          <Typography variant="h3" sx={{ fontWeight: 700 }}>
             Browse by category
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{ mt: 2, color: 'text.secondary', maxWidth: 500, mx: 'auto' }}
-          >
-            Find articles that match your interests across our diverse range of topics
           </Typography>
         </Box>
 

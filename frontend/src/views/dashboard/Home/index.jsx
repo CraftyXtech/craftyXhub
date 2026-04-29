@@ -333,7 +333,7 @@ export default function DashboardHome() {
   };
 
   return (
-    <Box sx={{ display: 'flex', gap: 6, maxWidth: 1100, mx: 'auto', py: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: { xs: 3, md: 4, lg: 6 }, maxWidth: 1100, mx: 'auto', py: 2 }}>
       {/* Main Feed */}
       <Box sx={{ flex: 1, minWidth: 0, maxWidth: 680 }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
@@ -364,21 +364,21 @@ export default function DashboardHome() {
       </Box>
 
       {/* Right Sidebar */}
+      {/* Right Sidebar — visible below feed on mobile, sticky on desktop */}
       <Box
         sx={{
-          width: 320,
+          width: { xs: '100%', lg: 320 },
           flexShrink: 0,
-          display: { xs: 'none', lg: 'block' },
-          position: 'sticky',
-          top: 80,
-          alignSelf: 'flex-start',
-          maxHeight: 'calc(100vh - 100px)',
-          overflowY: 'auto',
+          position: { xs: 'static', lg: 'sticky' },
+          top: { lg: 80 },
+          alignSelf: { lg: 'flex-start' },
+          maxHeight: { lg: 'calc(100vh - 100px)' },
+          overflowY: { lg: 'auto' },
           // Hide scrollbar like Twitter/X
-          scrollbarWidth: 'none', // Firefox
-          msOverflowStyle: 'none', // IE/Edge
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
           '&::-webkit-scrollbar': {
-            display: 'none' // Chrome, Safari, Opera
+            display: 'none'
           }
         }}
       >

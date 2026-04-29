@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Keyboard } from 'swiper/modules';
 import { IconArrowRight, IconArrowLeft } from '@tabler/icons-react';
-import { getFeaturedPosts, getHomepageTrendingPosts, getImageUrl } from '@/api/services/postService';
+import { getFeaturedPosts, getHomepageTrendingPosts, getImageUrl, getRecentPosts } from '@/api/services/postService';
 
 // Swiper styles
 import 'swiper/css';
@@ -45,7 +45,7 @@ function HeroPostSlide({ post }) {
           position: 'absolute',
           bottom: 0,
           left: 0,
-          right: 50,
+          right: { xs: 0, md: 50 },
           bgcolor: 'rgba(0,0,0,0.7)',
           py: { xs: 3, md: 4 },
           px: { xs: 3, md: 5 },
@@ -192,12 +192,34 @@ export default function HeroSection() {
       try {
         setTrendingLoading(true);
         setFeaturedLoading(true);
-        const [trendingData, featuredData] = await Promise.all([
+        const [trendingData, featuredData, recentData] = await Promise.all([
           getHomepageTrendingPosts({ limit: 3 }),
-          getFeaturedPosts({ limit: 2 })
+          getFeaturedPosts({ limit: 2 }),
+          getRecentPosts({ limit: 6 }),
         ]);
-        setTrendingPosts(trendingData?.posts || []);
-        setFeaturedPosts(featuredData?.posts || []);
+        const curatedTrending = trendingData?.posts || [];
+        const curatedFeatured = featuredData?.posts || [];
+        const recentPosts = recentData?.posts || [];
+
+        const resolvedTrending = curatedTrending.length > 0
+          ? curatedTrending
+          : recentPosts.slice(0, 3);
+
+        const usedFeaturedIds = new Set(curatedFeatured.map((post) => post.uuid || post.id));
+        const featuredFallbackPool = recentPosts.filter((post) => {
+          const postId = post.uuid || post.id;
+          if (!postId || usedFeaturedIds.has(postId)) {
+            return false;
+          }
+          return !resolvedTrending.some((trendingPost) => (trendingPost.uuid || trendingPost.id) === postId);
+        });
+
+        const resolvedFeatured = curatedFeatured.length >= 2
+          ? curatedFeatured.slice(0, 2)
+          : [...curatedFeatured, ...featuredFallbackPool].slice(0, 2);
+
+        setTrendingPosts(resolvedTrending);
+        setFeaturedPosts(resolvedFeatured);
       } catch (err) {
         console.error('Failed to fetch homepage posts:', err);
       } finally {
@@ -210,18 +232,18 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <Box sx={{ bgcolor: '#f8f4f0', py: { xs: 4, md: 6 }, px: { xs: 2, md: 6 } }}>
+    <Box sx={{ bgcolor: '#f8f4f0', pt: { xs: 4, md: 6 }, pb: { xs: 2, md: 3 }, px: { xs: 2, md: 6 } }}>
       <Container maxWidth={false}>
         <Grid container spacing={2}>
           {/* Left: Hero Slider */}
           <Grid size={{ xs: 12, lg: 6 }}>
-            <Box sx={{ position: 'relative', height: { xs: 350, md: 500 } }}>
+            <Box sx={{ position: 'relative', height: { xs: 280, md: 380 } }}>
               {trendingLoading ? (
                 <Skeleton variant="rounded" height="100%" />
               ) : trendingPosts.length > 0 ? (
                 <Swiper
                   modules={[Autoplay, Keyboard]}
-                  autoplay={trendingPosts.length > 1 ? { delay: 4000, disableOnInteraction: false } : false}
+                  autoplay={trendingPosts.length > 1 ? { delay: 5000, disableOnInteraction: false } : false}
                   keyboard={{ enabled: true }}
                   loop={trendingPosts.length > 1}
                   style={{ height: '100%' }}
@@ -244,7 +266,7 @@ export default function HeroSection() {
                     color: 'text.secondary'
                   }}
                 >
-                  <Typography>Trending stories coming soon</Typography>
+                  <Typography>No published stories available yet</Typography>
                 </Box>
               )}
 
@@ -265,7 +287,7 @@ export default function HeroSection() {
                     bgcolor: 'black',
                     color: 'white',
                     borderRadius: 0,
-                    height: { xs: 50, md: 70 },
+                    height: { xs: 40, md: 56 },
                     '&:hover': { bgcolor: 'grey.900' },
                     '&.Mui-disabled': { bgcolor: 'grey.900', color: 'grey.600' }
                   }}
@@ -279,7 +301,7 @@ export default function HeroSection() {
                     bgcolor: 'black',
                     color: 'white',
                     borderRadius: 0,
-                    height: { xs: 50, md: 70 },
+                    height: { xs: 48, md: 56 },
                     '&:hover': { bgcolor: 'grey.900' },
                     '&.Mui-disabled': { bgcolor: 'grey.900', color: 'grey.600' }
                   }}
@@ -292,7 +314,7 @@ export default function HeroSection() {
 
           {/* Right: Featured Posts - Side by Side */}
           <Grid size={{ xs: 12, lg: 6 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ minHeight: { xs: 520, sm: 250, lg: 500 } }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ minHeight: { xs: 420, sm: 250, lg: 380 } }}>
               {featuredLoading ? (
                 // Loading skeletons
                 [...Array(2)].map((_, index) => (
@@ -310,9 +332,8 @@ export default function HeroSection() {
                   </Box>
                 ))
               ) : (
-                // Fallback placeholders when no posts
                 <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.200', minHeight: 250 }}>
-                  <Typography color="text.secondary">Featured posts coming soon</Typography>
+                  <Typography color="text.secondary">No published stories available yet</Typography>
                 </Box>
               )}
             </Stack>

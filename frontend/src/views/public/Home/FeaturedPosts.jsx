@@ -42,7 +42,7 @@ export default function FeaturedPosts() {
   }
 
   return (
-    <Box sx={{ py: { xs: 8, md: 12 }, bgcolor: 'grey.50' }}>
+    <Box sx={{ py: { xs: 4, md: 8 }, bgcolor: 'grey.50' }}>
       <Container maxWidth="lg">
         {/* Section Header */}
         <Box sx={{ textAlign: 'center', mb: 6 }}>
