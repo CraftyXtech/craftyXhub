@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 from pydantic_ai.models import cached_async_http_client
-from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.models.openrouter import OpenRouterModel
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 from core.config import settings
 
@@ -77,28 +77,31 @@ def get_model_id(model_name: str) -> str:
     return entry["id"]
 
 
-def get_blog_model_capabilities(model_name: str) -> dict[str, bool]:
+def get_blog_model_capabilities(model_name: str) -> dict:
     entry = get_model_entry(model_name)
     return {
         "supports_structured": bool(entry.get("supports_structured", False)),
         "supports_compat_json": bool(entry.get("supports_compat_json", False)),
         "blog_enabled": bool(entry.get("blog_enabled", False)),
+        "output_mode": entry.get("output_mode", "prompted_json"),
+        "reasoning": entry.get("reasoning"),
+        "send_temperature": bool(entry.get("send_temperature", True)),
+        "json_object_fallback": bool(entry.get("json_object_fallback", True)),
     }
 
 
-def get_model(model_name: str) -> OpenAIModel:
+def get_model(model_name: str) -> OpenRouterModel:
     """
-    Return a PydanticAI-compatible model instance for the given name.
-    All models go through OpenRouter's OpenAI-compatible API.
+    Return a PydanticAI-compatible OpenRouter model instance for the given name.
     """
-    return OpenAIModel(
+    return OpenRouterModel(
         get_model_id(model_name),
         provider=_get_openrouter_provider(),
     )
 
 
-def get_model_from_id(model_id: str) -> OpenAIModel:
-    return OpenAIModel(
+def get_model_from_id(model_id: str) -> OpenRouterModel:
+    return OpenRouterModel(
         model_id,
         provider=_get_openrouter_provider(),
     )
@@ -115,11 +118,7 @@ def get_models_for_frontend() -> list[dict]:
                 "supports_structured": bool(default_entry.get("supports_structured", False)),
                 "supports_compat_json": bool(default_entry.get("supports_compat_json", False)),
                 "blog_enabled": bool(default_entry.get("blog_enabled", False)),
-                "default_path": (
-                    "structured"
-                    if default_entry.get("supports_structured", False)
-                    else "compat_json"
-                ),
+                "default_path": default_entry.get("output_mode", "prompted_json"),
             }
         ]
 
@@ -136,11 +135,7 @@ def get_models_for_frontend() -> list[dict]:
             "supports_structured": bool(entry.get("supports_structured", False)),
             "supports_compat_json": bool(entry.get("supports_compat_json", False)),
             "blog_enabled": bool(entry.get("blog_enabled", False)),
-            "default_path": (
-                "structured"
-                if entry.get("supports_structured", False)
-                else "compat_json"
-            ),
+            "default_path": entry.get("output_mode", "prompted_json"),
         }
         for key, entry in visible_models
     ]
@@ -160,6 +155,8 @@ def get_models_for_test() -> list[dict]:
             "supports_structured": bool(entry.get("supports_structured", False)),
             "supports_compat_json": bool(entry.get("supports_compat_json", False)),
             "blog_enabled": bool(entry.get("blog_enabled", False)),
+            "output_mode": entry.get("output_mode", "prompted_json"),
+            "reasoning": entry.get("reasoning"),
         }
         for key, entry in AVAILABLE_MODELS.items()
     ]

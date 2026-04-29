@@ -220,7 +220,7 @@ class BlogGenerateRequest(BaseModel):
     )
     # Save/publish options
     save_draft: Optional[bool] = Field(
-        default=True, description="Save as AI draft"
+        default=False, description="Save as AI draft"
     )
     publish_post: Optional[bool] = Field(
         default=False, description="Publish directly to Posts"

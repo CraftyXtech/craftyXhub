@@ -478,7 +478,7 @@ async def generate_blog(
     - Optional hero image prompt
     
     Options:
-    - save_draft: Save the generated content as an AI draft
+    - save_draft: Optionally save the generated content as an AI draft
     - publish_post: Create a post directly in the Posts system
     - use_web_search: Enable or disable DuckDuckGo grounding
     """

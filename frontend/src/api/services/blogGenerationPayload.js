@@ -12,7 +12,7 @@ export const buildBlogGenerationPayload = ({
   model,
   creativity = 0.7,
   use_web_search = true,
-  save_draft = true,
+  save_draft = false,
   publish_post = false,
   category_id = null,
   is_published = false,

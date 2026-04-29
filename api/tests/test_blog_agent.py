@@ -1,6 +1,7 @@
 import pytest
 
 from schemas.ai import BlogPost, BlogSection
+from core.config import settings
 from services.ai.blog_agent import BlogAgentService
 
 
@@ -119,6 +120,7 @@ async def test_generate_retries_on_quality_issues(monkeypatch):
 
     monkeypatch.setattr(BlogAgentService, "_get_model_for_name", lambda self, model_name: object())
     monkeypatch.setattr("services.ai.blog_agent.Agent", _FakeAgent)
+    monkeypatch.setattr(settings, "BLOG_AGENT_EDITORIAL_REVISION_ENABLED", True)
 
     _FakeAgent.call_count = 0
     _FakeAgent.responses = [
@@ -153,6 +155,7 @@ async def test_generate_returns_best_effort_when_quality_persists(monkeypatch):
 
     monkeypatch.setattr(BlogAgentService, "_get_model_for_name", lambda self, model_name: object())
     monkeypatch.setattr("services.ai.blog_agent.Agent", _FakeAgent)
+    monkeypatch.setattr(settings, "BLOG_AGENT_EDITORIAL_REVISION_ENABLED", True)
 
     _FakeAgent.call_count = 0
     _FakeAgent.responses = [
@@ -170,6 +173,35 @@ async def test_generate_returns_best_effort_when_quality_persists(monkeypatch):
     )
     assert blog_post is not None
     assert blog_post.title
+
+
+@pytest.mark.asyncio
+async def test_generate_skips_editorial_revision_by_default(monkeypatch):
+    service = BlogAgentService()
+
+    monkeypatch.setattr(BlogAgentService, "_get_model_for_name", lambda self, model_name: object())
+    monkeypatch.setattr("services.ai.blog_agent.Agent", _FakeAgent)
+    monkeypatch.setattr(settings, "BLOG_AGENT_EDITORIAL_REVISION_ENABLED", False)
+
+    _FakeAgent.call_count = 0
+    _FakeAgent.responses = [
+        _build_blog(80),
+        _build_blog(150),
+    ]
+
+    blog_post, generation_time, web_search_used, sources = await service.generate(
+        topic="Building a reliable AI blog writer",
+        blog_type="how-to",
+        keywords=["pydantic ai", "ai blog writer"],
+        word_count="medium",
+        use_web_search=False,
+    )
+
+    assert isinstance(blog_post, BlogPost)
+    assert _FakeAgent.call_count == 1
+    assert generation_time >= 0
+    assert web_search_used is False
+    assert sources is None
 
 
 def test_build_outline_guidance_contains_keywords_and_sections():
@@ -443,6 +475,42 @@ def test_build_quality_report_returns_expected_shape():
     assert "passed" in report
     assert "phase_metrics" in report
     assert report["phase_metrics"]["timings_ms"]["total"] == 123.45
+
+
+def test_build_model_settings_omits_temperature_for_reasoning_model():
+    service = BlogAgentService()
+
+    model_settings = service._build_model_settings(
+        {
+            "reasoning": {"effort": "low", "exclude": True},
+            "send_temperature": False,
+        },
+        creativity=0.7,
+        word_count="medium",
+    )
+
+    assert "temperature" not in model_settings
+    assert model_settings["openrouter_reasoning"] == {"effort": "low", "exclude": True}
+
+
+def test_build_model_settings_adds_json_object_fallback():
+    service = BlogAgentService()
+
+    model_settings = service._build_model_settings(
+        {
+            "supports_compat_json": True,
+            "json_object_fallback": True,
+            "send_temperature": True,
+        },
+        creativity=0.4,
+        word_count="short",
+        force_json_object=True,
+    )
+
+    assert model_settings["temperature"] == 0.4
+    assert model_settings["extra_body"] == {
+        "response_format": {"type": "json_object"}
+    }
 
 
 @pytest.mark.asyncio

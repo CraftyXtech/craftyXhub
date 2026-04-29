@@ -3,6 +3,7 @@ from fastapi import FastAPI, status
 from httpx import ASGITransport, AsyncClient
 
 from routers.v1.ai import router as ai_router
+from schemas.ai import BlogGenerateRequest
 from services.ai.generator import AIGeneratorService
 from services.ai.blog_agent import BlogAgentService
 from services.ai.llm_config import DEFAULT_MODEL
@@ -15,6 +16,12 @@ from database.connection import get_db_session
 class DummyUser:
     def __init__(self, user_id: int = 1):
         self.id = user_id
+
+
+def test_blog_generate_request_does_not_save_draft_by_default():
+    request = BlogGenerateRequest(topic="Fast AI blog generation")
+
+    assert request.save_draft is False
 
 
 @pytest.fixture

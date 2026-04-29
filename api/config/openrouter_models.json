@@ -5,17 +5,31 @@
       "id": "openai/gpt-5.5",
       "label": "GPT-5.5",
       "provider": "OpenAI",
-      "supports_structured": false,
+      "supports_structured": true,
       "supports_compat_json": true,
-      "blog_enabled": true
+      "blog_enabled": true,
+      "output_mode": "native_json_schema",
+      "reasoning": {
+        "effort": "low",
+        "exclude": true
+      },
+      "send_temperature": false,
+      "json_object_fallback": true
     },
     "glm-5.1": {
       "id": "z-ai/glm-5.1",
       "label": "GLM 5.1",
       "provider": "Z.AI",
-      "supports_structured": false,
+      "supports_structured": true,
       "supports_compat_json": true,
-      "blog_enabled": true
+      "blog_enabled": true,
+      "output_mode": "native_json_schema",
+      "reasoning": {
+        "enabled": false,
+        "exclude": true
+      },
+      "send_temperature": true,
+      "json_object_fallback": true
     },
     "kimi-k2.6": {
       "id": "moonshotai/kimi-k2.6",
@@ -23,15 +37,59 @@
       "provider": "Moonshot AI",
       "supports_structured": false,
       "supports_compat_json": true,
-      "blog_enabled": false
+      "blog_enabled": true,
+      "output_mode": "json_object",
+      "reasoning": {
+        "enabled": false,
+        "exclude": true
+      },
+      "send_temperature": true,
+      "json_object_fallback": true
+    },
+    "deepseek-v4-flash": {
+      "id": "deepseek/deepseek-v4-flash",
+      "label": "DeepSeek V4 Flash",
+      "provider": "DeepSeek",
+      "supports_structured": false,
+      "supports_compat_json": true,
+      "blog_enabled": true,
+      "output_mode": "json_object",
+      "reasoning": {
+        "enabled": false,
+        "exclude": true
+      },
+      "send_temperature": true,
+      "json_object_fallback": true
+    },
+    "deepseek-v4-pro": {
+      "id": "deepseek/deepseek-v4-pro",
+      "label": "DeepSeek V4 Pro",
+      "provider": "DeepSeek",
+      "supports_structured": false,
+      "supports_compat_json": true,
+      "blog_enabled": true,
+      "output_mode": "json_object",
+      "reasoning": {
+        "enabled": false,
+        "exclude": true
+      },
+      "send_temperature": true,
+      "json_object_fallback": true
     },
     "qwen-3.6-max-preview": {
       "id": "qwen/qwen3.6-max-preview",
       "label": "Qwen 3.6 Max Preview",
       "provider": "Qwen",
-      "supports_structured": false,
+      "supports_structured": true,
       "supports_compat_json": true,
-      "blog_enabled": true
+      "blog_enabled": true,
+      "output_mode": "native_json_schema",
+      "reasoning": {
+        "enabled": false,
+        "exclude": true
+      },
+      "send_temperature": true,
+      "json_object_fallback": true
     },
     "claude-sonnet-4.6": {
       "id": "anthropic/claude-sonnet-4.6",
@@ -39,7 +97,14 @@
       "provider": "Anthropic",
       "supports_structured": true,
       "supports_compat_json": true,
-      "blog_enabled": true
+      "blog_enabled": true,
+      "output_mode": "native_json_schema",
+      "reasoning": {
+        "enabled": false,
+        "exclude": true
+      },
+      "send_temperature": true,
+      "json_object_fallback": true
     }
   }
 }

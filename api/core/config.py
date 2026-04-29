@@ -52,6 +52,9 @@ class Settings:
     BLOG_AGENT_EDITORIAL_SKIP_AFTER_SECONDS: float = float(
         os.getenv("BLOG_AGENT_EDITORIAL_SKIP_AFTER_SECONDS", "45")
     )
+    BLOG_AGENT_EDITORIAL_REVISION_ENABLED: bool = (
+        os.getenv("BLOG_AGENT_EDITORIAL_REVISION_ENABLED", "false").lower() == "true"
+    )
     CONTENT_INTELLIGENCE_ENABLED: bool = (
         os.getenv("CONTENT_INTELLIGENCE_ENABLED", "true").lower() == "true"
     )

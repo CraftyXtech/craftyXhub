@@ -10,7 +10,7 @@ import re
 import time
 from typing import Any, Optional
 
-from pydantic_ai import Agent, PromptedOutput
+from pydantic_ai import Agent, NativeOutput
 
 from core.config import settings
 from schemas.ai import BlogPost, BlogSection
@@ -226,6 +226,14 @@ class BlogAgentService:
             keywords=keywords,
         )
         if not quality_issues:
+            return blog_post, None, False
+
+        if not settings.BLOG_AGENT_EDITORIAL_REVISION_ENABLED:
+            logger.info(
+                "Skipping editorial revision because BLOG_AGENT_EDITORIAL_REVISION_ENABLED=false "
+                "(issues: %s)",
+                quality_issues,
+            )
             return blog_post, None, False
 
         if draft_elapsed_s >= settings.BLOG_AGENT_EDITORIAL_SKIP_AFTER_SECONDS:
@@ -448,6 +456,33 @@ class BlogAgentService:
             return run_result.output
         return getattr(run_result, "data", None)
 
+    def _build_model_settings(
+        self,
+        model_capabilities: dict[str, Any],
+        creativity: float,
+        word_count: str,
+        *,
+        force_json_object: bool = False,
+    ) -> dict[str, Any]:
+        settings_payload: dict[str, Any] = {
+            "max_tokens": self._get_max_tokens(word_count),
+            "timeout": settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS,
+        }
+
+        reasoning = model_capabilities.get("reasoning")
+        if isinstance(reasoning, dict) and reasoning:
+            settings_payload["openrouter_reasoning"] = reasoning
+
+        if model_capabilities.get("send_temperature", True):
+            settings_payload["temperature"] = creativity
+
+        if force_json_object and model_capabilities.get("json_object_fallback", True):
+            settings_payload["extra_body"] = {
+                "response_format": {"type": "json_object"}
+            }
+
+        return settings_payload
+
     async def _run_generation_once(
         self,
         pydantic_model,
@@ -456,25 +491,37 @@ class BlogAgentService:
         creativity: float,
         word_count: str,
     ) -> tuple[BlogPost, dict[str, Any] | None]:
-        # ── Attempt 1: structured output (tool_choice / function-calling) ──
-        # Some OpenRouter-routed models do not support structured output at all.
-        supports_structured = bool(model_capabilities.get("supports_structured", False))
-        if supports_structured:
+        # ── Attempt 1: native provider JSON schema ───────────────────
+        # Use provider-enforced structured output where OpenRouter and the
+        # model profile support it. This avoids the PromptedOutput validation
+        # retry loop that can fail on reasoning models such as GPT-5.5.
+        output_mode = str(model_capabilities.get("output_mode") or "")
+        supports_native_schema = (
+            output_mode == "native_json_schema"
+            or bool(model_capabilities.get("supports_structured", False))
+        )
+        if supports_native_schema:
             try:
                 agent = Agent(
                     pydantic_model,
-                    output_type=BlogPost,
+                    output_type=NativeOutput(
+                        BlogPost,
+                        strict=False,
+                        description=(
+                            "A complete publication-ready blog post as JSON."
+                        ),
+                    ),
                     system_prompt=self.system_prompt,
                     retries=self._structured_retries,
                 )
 
                 result = await agent.run(
                     prompt,
-                    model_settings={
-                        "temperature": creativity,
-                        "max_tokens": self._get_max_tokens(word_count),
-                        "timeout": settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS,
-                    },
+                    model_settings=self._build_model_settings(
+                        model_capabilities,
+                        creativity,
+                        word_count,
+                    ),
                 )
                 structured_output = self._run_result_output(result)
                 if isinstance(structured_output, BlogPost):
@@ -489,18 +536,18 @@ class BlogAgentService:
                     )
                 return normalized_output, self._extract_usage_payload(result)
             except Exception as structured_error:
-                # Log the structured-output failure (often a tool_choice 404 from
-                # OpenRouter) and proceed to text-based fallback.
                 logger.warning(
-                    "Structured output failed, falling back to text parsing: %s",
+                    "Native JSON schema output failed, falling back to raw JSON parsing: %s",
                     structured_error,
                 )
         else:
-            logger.info("Skipping structured output for model without support")
+            logger.info("Skipping native JSON schema for model without support")
 
-        # ── Attempt 2: plain-text generation + JSON extraction ──
-        # Build an explicit, terse JSON-only prompt for the text fallback so
-        # the model doesn't wrap its reply in prose or code fences.
+        # ── Attempt 2: raw text JSON + local validation ──────────────
+        # This deliberately avoids PromptedOutput. PromptedOutput asks
+        # PydanticAI to validate/retry model outputs, which is the failure
+        # path seen with GPT-5.5 through OpenRouter. Here the model returns
+        # plain text, then we parse and normalize it locally.
         text_fallback_prompt = (
             f"{prompt}\n\n"
             "CRITICAL — OUTPUT FORMAT:\n"
@@ -520,24 +567,21 @@ class BlogAgentService:
 
                 agent = Agent(
                     pydantic_model,
-                    output_type=PromptedOutput(
-                        BlogPost,
-                        template=(
-                            "Return a raw JSON object matching this schema. "
-                            "Do not include markdown fences or commentary.\n\n{schema}"
-                        ),
-                    ),
+                    output_type=str,
                     system_prompt=self.system_prompt,
-                    retries=1,
+                    retries=0,
                 )
 
                 result = await agent.run(
                     text_fallback_prompt,
-                    model_settings={
-                        "temperature": creativity,
-                        "max_tokens": self._get_max_tokens(word_count),
-                        "timeout": settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS,
-                    },
+                    model_settings=self._build_model_settings(
+                        model_capabilities,
+                        creativity,
+                        word_count,
+                        force_json_object=bool(
+                            model_capabilities.get("supports_compat_json", False)
+                        ),
+                    ),
                 )
 
                 fallback_output = self._run_result_output(result)

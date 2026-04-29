@@ -90,7 +90,7 @@ test('admin AI flow auto-fills taxonomy and SEO, preserves publish date, and sho
         { id: 302, name: 'Automation', slug: 'automation', category_id: 74 },
       ],
     },
-    draft_id: 'ai-draft-1',
+    draft_id: null,
     post_id: null,
     model_used: 'claude-sonnet-4.6',
     generation_time: 0.42,
@@ -130,6 +130,7 @@ test('admin AI flow auto-fills taxonomy and SEO, preserves publish date, and sho
       const body = request.postDataJSON();
       expect(body.blog_type).toBe('news');
       expect(body.use_web_search).toBe(true);
+      expect(body.save_draft).toBe(false);
       return json(route, generated);
     }
 

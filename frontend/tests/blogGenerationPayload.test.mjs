@@ -35,3 +35,17 @@ test('buildBlogGenerationPayload defaults blog type to news', () => {
     'news',
   );
 });
+
+test('buildBlogGenerationPayload does not save AI drafts by default', () => {
+  assert.equal(
+    buildBlogGenerationPayload({ topic: 'Fast generation' }).save_draft,
+    false,
+  );
+});
+
+test('buildBlogGenerationPayload still allows explicit draft saving', () => {
+  assert.equal(
+    buildBlogGenerationPayload({ topic: 'Save this draft', save_draft: true }).save_draft,
+    true,
+  );
+});

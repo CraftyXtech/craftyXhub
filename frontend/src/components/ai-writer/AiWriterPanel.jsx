@@ -127,7 +127,7 @@ export default function AiWriterPanel({ initialTopic = '', initialKeywords = [],
         keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
         audience: audience || null, word_count: length, tone, model: model || undefined, creativity,
         use_web_search: useWebSearch,
-        save_draft: true, publish_post: false,
+        save_draft: false, publish_post: false,
       });
       setGeneratedContent(result.blog_post);
       setTaxonomySuggestion(result.taxonomy_suggestion || null);
