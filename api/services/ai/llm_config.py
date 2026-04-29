@@ -1,64 +1,44 @@
-"""
-Central LLM configuration — single source of truth for all AI models.
+"""Central LLM configuration loaded from the OpenRouter model config file."""
 
-All models are routed through OpenRouter. Add new models here and they
-become available everywhere: blog agent, content generator, test endpoints,
-and the frontend options dropdown.
-"""
+import json
+import os
+from pathlib import Path
 
+from pydantic_ai.models import cached_async_http_client
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 from core.config import settings
 
 
-# ── Model registry ──────────────────────────────────────────────────
-# Key   = value used in API requests and stored in DB
-# label = human-readable name shown in the frontend dropdown
-# id    = OpenRouter model identifier
-AVAILABLE_MODELS = {
-    "claude-sonnet-4.6": {
-        "id": "anthropic/claude-sonnet-4.6",
-        "label": "Sonnet 4.6",
-        "provider": "Anthropic",
-        "supports_structured": True,
-        "supports_compat_json": True,
-        "blog_enabled": True,
-    },
-    "gpt-5.4": {
-        "id": "openai/gpt-5.4",
-        "label": "GPT-5.4",
-        "provider": "OpenAI",
-        "supports_structured": True,
-        "supports_compat_json": True,
-        "blog_enabled": True,
-    },
-    "glm-5-turbo": {
-        "id": "z-ai/glm-5-turbo",
-        "label": "GLM 5 Turbo",
-        "provider": "Z.AI",
-        "supports_structured": False,
-        "supports_compat_json": True,
-        "blog_enabled": True,
-    },
-    "kimi-k2.5": {
-        "id": "moonshotai/kimi-k2.5",
-        "label": "Kimi K2.5",
-        "provider": "Moonshot AI",
-        "supports_structured": True,
-        "supports_compat_json": True,
-        "blog_enabled": True,
-    },
-    "qwen-3.6-plus": {
-        "id": "qwen/qwen3.6-plus",
-        "label": "Qwen 3.6 Plus",
-        "provider": "Qwen",
-        "supports_structured": False,
-        "supports_compat_json": True,
-        "blog_enabled": True,
-    },
-}
+DEFAULT_CONFIG_PATH = (
+    Path(__file__).resolve().parents[2] / "config" / "openrouter_models.json"
+)
+MODEL_CONFIG_PATH = Path(os.getenv("OPENROUTER_MODELS_CONFIG", DEFAULT_CONFIG_PATH))
 
-DEFAULT_MODEL = "glm-5-turbo"
+
+def _load_model_config() -> dict:
+    try:
+        with MODEL_CONFIG_PATH.open("r", encoding="utf-8") as config_file:
+            config = json.load(config_file)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Unable to load OpenRouter model config: {MODEL_CONFIG_PATH}"
+        ) from exc
+
+    models = config.get("models")
+    default_model = config.get("default_model")
+    if not isinstance(models, dict) or not models:
+        raise RuntimeError(
+            "OpenRouter model config must define a non-empty models object"
+        )
+    if not default_model or default_model not in models:
+        raise RuntimeError("OpenRouter model config default_model must exist in models")
+    return config
+
+
+_MODEL_CONFIG = _load_model_config()
+AVAILABLE_MODELS = _MODEL_CONFIG["models"]
+DEFAULT_MODEL = _MODEL_CONFIG["default_model"]
 
 
 def _ensure_api_key():
@@ -70,7 +50,16 @@ def _ensure_api_key():
 
 def _get_openrouter_provider() -> OpenRouterProvider:
     _ensure_api_key()
-    return OpenRouterProvider(api_key=settings.OPENROUTER_API_KEY)
+    request_timeout = settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS
+    http_client = cached_async_http_client(
+        provider=f"openrouter-{request_timeout}",
+        timeout=request_timeout,
+        connect=5,
+    )
+    return OpenRouterProvider(
+        api_key=settings.OPENROUTER_API_KEY,
+        http_client=http_client,
+    )
 
 
 def get_model_entry(model_name: str) -> dict:
@@ -134,6 +123,12 @@ def get_models_for_frontend() -> list[dict]:
             }
         ]
 
+    visible_models = [
+        (key, entry)
+        for key, entry in AVAILABLE_MODELS.items()
+        if bool(entry.get("blog_enabled", False))
+    ]
+
     return [
         {
             "value": key,
@@ -147,7 +142,7 @@ def get_models_for_frontend() -> list[dict]:
                 else "compat_json"
             ),
         }
-        for key, entry in AVAILABLE_MODELS.items()
+        for key, entry in visible_models
     ]
 
 

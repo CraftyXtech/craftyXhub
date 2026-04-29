@@ -46,6 +46,15 @@ class Settings:
     GROK_API_KEY: str = os.getenv("GROK_API_KEY", "")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    AI_MODEL_REQUEST_TIMEOUT_SECONDS: int = int(
+        os.getenv("AI_MODEL_REQUEST_TIMEOUT_SECONDS", "45")
+    )
+    BLOG_AGENT_EDITORIAL_SKIP_AFTER_SECONDS: float = float(
+        os.getenv("BLOG_AGENT_EDITORIAL_SKIP_AFTER_SECONDS", "45")
+    )
+    CONTENT_INTELLIGENCE_ENABLED: bool = (
+        os.getenv("CONTENT_INTELLIGENCE_ENABLED", "true").lower() == "true"
+    )
     TWELVEDATA_API_KEY: str = os.getenv("TWELVEDATA_API_KEY", "")
     LOGFIRE_ENABLED: bool = os.getenv("LOGFIRE_ENABLED", "false").lower() == "true"
     LOGFIRE_TOKEN: str = os.getenv("LOGFIRE_TOKEN", "")

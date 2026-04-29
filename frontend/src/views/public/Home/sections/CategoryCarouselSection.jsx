@@ -234,13 +234,13 @@ function MagazineCard({ post, index }) {
 
   // Assign badge colors based on category for visual variety
   const badgeColors = {
-    Business: { bg: '#6B21A8', color: '#fff' },
-    Technology: { bg: '#1D4ED8', color: '#fff' },
-    Entertainment: { bg: '#9333EA', color: '#fff' },
+    Business: { bg: '#000', color: '#fff' },
+    Technology: { bg: '#000', color: '#fff' },
+    Entertainment: { bg: '#000', color: '#fff' },
     Africa: { bg: '#16A34A', color: '#fff' },
     Athletics: { bg: '#DC2626', color: '#fff' },
   };
-  const badge = badgeColors[categoryName] || { bg: '#6B21A8', color: '#fff' };
+  const badge = badgeColors[categoryName] || { bg: '#000', color: '#fff' };
 
   return (
     <MotionBox

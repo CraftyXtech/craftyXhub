@@ -72,6 +72,7 @@ import { useAuth } from '@/api/AuthProvider';
 import { getApiErrorMessage } from '@/utils/apiError';
 
 const isAdminOrMod = (user) => ['super_admin', 'admin', 'moderator'].includes(user?.role);
+const CONTENT_INTELLIGENCE_ENABLED = import.meta.env.VITE_CONTENT_INTELLIGENCE_ENABLED !== 'false';
 
 /**
  * Posts List Page
@@ -137,7 +138,7 @@ export default function Posts() {
 
   useEffect(() => {
     const loadStatuses = async () => {
-      if (!isAdminOrMod(user) || posts.length === 0) {
+      if (!CONTENT_INTELLIGENCE_ENABLED || !isAdminOrMod(user) || posts.length === 0) {
         setIntelligenceStatuses({});
         return;
       }
@@ -709,22 +710,22 @@ export default function Posts() {
           </ListItemIcon>
           {selectedPost?.is_published ? 'Unpublish' : 'Publish'}
         </MenuItem>
-        {isAdminOrMod(user) && (
+        {CONTENT_INTELLIGENCE_ENABLED && isAdminOrMod(user) && (
           <MenuItem onClick={handleRunQuality} disabled={actionLoading}>
             Run Quality Check
           </MenuItem>
         )}
-        {isAdminOrMod(user) && (
+        {CONTENT_INTELLIGENCE_ENABLED && isAdminOrMod(user) && (
           <MenuItem onClick={handleGenerateDistribution} disabled={actionLoading}>
             Generate Distribution
           </MenuItem>
         )}
-        {isAdminOrMod(user) && intelligenceStatuses[selectedPost?.uuid]?.distribution_pending > 0 && (
+        {CONTENT_INTELLIGENCE_ENABLED && isAdminOrMod(user) && intelligenceStatuses[selectedPost?.uuid]?.distribution_pending > 0 && (
           <MenuItem onClick={handleApproveAssets} disabled={actionLoading}>
             Approve Assets
           </MenuItem>
         )}
-        {isAdminOrMod(user) && intelligenceStatuses[selectedPost?.uuid]?.quality_status === 'needs_review' && (
+        {CONTENT_INTELLIGENCE_ENABLED && isAdminOrMod(user) && intelligenceStatuses[selectedPost?.uuid]?.quality_status === 'needs_review' && (
           <MenuItem onClick={handleApproveOverride} disabled={actionLoading}>
             Approve Override
           </MenuItem>

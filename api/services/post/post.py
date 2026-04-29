@@ -31,6 +31,7 @@ from schemas.post import (
 )
 from utils.slug_generator import generate_slug, generate_random_slug
 from services.user.notification import NotificationService
+from core.config import settings
 from fastapi import HTTPException, status, UploadFile
 from pathlib import Path
 import uuid
@@ -1038,31 +1039,33 @@ class PostService:
                 db_post.content,
                 db_post.content_blocks,
             )
-            await ContentIntelligenceService.validate_publish_gate(
-                session,
-                post=db_post,
-                current_user=current_user,
-                override_quality_gate=override_quality_gate,
-                override_reason=override_reason,
-            )
+            if settings.CONTENT_INTELLIGENCE_ENABLED:
+                await ContentIntelligenceService.validate_publish_gate(
+                    session,
+                    post=db_post,
+                    current_user=current_user,
+                    override_quality_gate=override_quality_gate,
+                    override_reason=override_reason,
+                )
             db_post.is_published = True
             if not db_post.published_at:
                 db_post.published_at = datetime.utcnow()
             db_post.updated_at = datetime.utcnow()
             await session.commit()
             await session.refresh(db_post)
-            try:
-                await ContentIntelligenceService.generate_distribution_assets(
-                    session,
-                    post_uuid=post_uuid,
-                    current_user=current_user,
-                )
-            except Exception as distribution_error:
-                logger.warning(
-                    "Failed to generate distribution assets for %s: %s",
-                    post_uuid,
-                    distribution_error,
-                )
+            if settings.CONTENT_INTELLIGENCE_ENABLED:
+                try:
+                    await ContentIntelligenceService.generate_distribution_assets(
+                        session,
+                        post_uuid=post_uuid,
+                        current_user=current_user,
+                    )
+                except Exception as distribution_error:
+                    logger.warning(
+                        "Failed to generate distribution assets for %s: %s",
+                        post_uuid,
+                        distribution_error,
+                    )
             
             await NotificationService.notify_followers_new_post(
                 session=session,
@@ -1667,7 +1670,11 @@ class PostService:
 
             db_post.updated_at = datetime.utcnow()
 
-            if was_published and db_post.is_published:
+            if (
+                settings.CONTENT_INTELLIGENCE_ENABLED
+                and was_published
+                and db_post.is_published
+            ):
                 from services.content_intelligence import ContentIntelligenceService
 
                 await ContentIntelligenceService.validate_uncommitted_publish_gate(

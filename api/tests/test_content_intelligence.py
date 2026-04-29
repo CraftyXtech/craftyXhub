@@ -15,6 +15,11 @@ from services.content_intelligence import ContentIntelligenceService
 from services.post.post import PostService
 
 
+@pytest.fixture(autouse=True)
+def enable_content_intelligence(monkeypatch):
+    monkeypatch.setattr(settings, "CONTENT_INTELLIGENCE_ENABLED", True)
+
+
 @pytest.mark.asyncio
 async def test_source_import_and_topic_brief_generation(client_admin):
     source_response = await client_admin.post(
@@ -56,6 +61,18 @@ async def test_source_import_and_topic_brief_generation(client_admin):
     assert briefs
     assert "ai automation tools" in briefs[0]["title"].lower()
     assert briefs[0]["status"] == "pending"
+
+
+@pytest.mark.asyncio
+async def test_content_intelligence_endpoints_return_404_when_disabled(
+    client_admin,
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "CONTENT_INTELLIGENCE_ENABLED", False)
+
+    response = await client_admin.get("/v1/content-intelligence/briefs")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Content Intelligence is temporarily disabled."
 
 
 @pytest.mark.asyncio

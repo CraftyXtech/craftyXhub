@@ -10,8 +10,9 @@ import re
 import time
 from typing import Any, Optional
 
-from pydantic_ai import Agent
+from pydantic_ai import Agent, PromptedOutput
 
+from core.config import settings
 from schemas.ai import BlogPost, BlogSection
 from .tools import ToolHandler
 from .llm_config import get_model, get_blog_model_capabilities, DEFAULT_MODEL
@@ -216,7 +217,7 @@ class BlogAgentService:
         """
         Editorial phase: deterministic quality checks and one corrective revision.
 
-        If draft_elapsed_s is already above 60 s we skip the editorial revision
+        If draft_elapsed_s is already above the configured threshold, skip the editorial revision
         to stay well within the 300 s frontend timeout.
         """
         quality_issues = self._collect_quality_issues(
@@ -227,7 +228,7 @@ class BlogAgentService:
         if not quality_issues:
             return blog_post, None, False
 
-        if draft_elapsed_s >= 60.0:
+        if draft_elapsed_s >= settings.BLOG_AGENT_EDITORIAL_SKIP_AFTER_SECONDS:
             logger.warning(
                 "Skipping editorial revision — draft already took %.1fs (issues: %s)",
                 draft_elapsed_s,
@@ -472,6 +473,7 @@ class BlogAgentService:
                     model_settings={
                         "temperature": creativity,
                         "max_tokens": self._get_max_tokens(word_count),
+                        "timeout": settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS,
                     },
                 )
                 structured_output = self._run_result_output(result)
@@ -518,7 +520,13 @@ class BlogAgentService:
 
                 agent = Agent(
                     pydantic_model,
-                    output_type=str,
+                    output_type=PromptedOutput(
+                        BlogPost,
+                        template=(
+                            "Return a raw JSON object matching this schema. "
+                            "Do not include markdown fences or commentary.\n\n{schema}"
+                        ),
+                    ),
                     system_prompt=self.system_prompt,
                     retries=1,
                 )
@@ -528,15 +536,21 @@ class BlogAgentService:
                     model_settings={
                         "temperature": creativity,
                         "max_tokens": self._get_max_tokens(word_count),
+                        "timeout": settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS,
                     },
                 )
 
-                raw_output = self._run_result_output(result)
-                raw = raw_output if isinstance(raw_output, str) else ""
-                if not raw.strip():
-                    raise ValueError("Received empty model response")
+                fallback_output = self._run_result_output(result)
+                if isinstance(fallback_output, BlogPost):
+                    parsed_data = fallback_output.model_dump()
+                elif isinstance(fallback_output, dict):
+                    parsed_data = fallback_output
+                else:
+                    raw = fallback_output if isinstance(fallback_output, str) else ""
+                    if not raw.strip():
+                        raise ValueError("Received empty model response")
+                    parsed_data = self._parse_json_from_text(raw)
 
-                parsed_data = self._parse_json_from_text(raw)
                 return (
                     self._validate_and_create_blog_post(parsed_data),
                     self._extract_usage_payload(result),
@@ -866,11 +880,11 @@ class BlogAgentService:
     def _get_max_tokens(self, word_count: str) -> int:
         """Get max tokens based on target word count."""
         return {
-            "short": 2000,
-            "medium": 4000,
-            "long": 6000,
-            "very-long": 8000,
-        }.get(word_count, 4000)
+            "short": 1200,
+            "medium": 1800,
+            "long": 4200,
+            "very-long": 6000,
+        }.get(word_count, 1800)
 
     def blog_post_to_html(self, blog_post: BlogPost) -> str:
         """

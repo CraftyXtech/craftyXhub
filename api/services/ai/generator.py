@@ -44,6 +44,7 @@ class AIGeneratorService:
             model=pydantic_model,
             output_type=str,
             system_prompt=system_prompt,
+            retries=1,
         )
 
     async def generate(
@@ -111,6 +112,7 @@ class AIGeneratorService:
                     model_settings=ModelSettings(
                         temperature=creativity,
                         max_tokens=ToolHandler.get_max_tokens(length),
+                        timeout=settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS,
                     ),
                 )
 
@@ -194,6 +196,7 @@ class AIGeneratorService:
             model_settings=ModelSettings(
                 temperature=creativity,
                 max_tokens=ToolHandler.get_max_tokens(length),
+                timeout=settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS,
             ),
         )
 

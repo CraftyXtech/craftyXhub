@@ -2,6 +2,7 @@ import pytest
 import types
 
 from services.ai.generator import AIGeneratorService
+from services.ai.llm_config import DEFAULT_MODEL
 from services.ai.tools import ToolHandler
 
 
@@ -37,7 +38,7 @@ async def test_generate_success_variants_count(monkeypatch):
 
     res = await service.generate(
         tool_id="blog-ideas",
-        model="gpt-3.5-turbo",
+        model=DEFAULT_MODEL,
         params={"category": "Tech", "keywords": "ai, ml", "audience": "devs"},
         tone="friendly",
         length="medium",
@@ -46,7 +47,7 @@ async def test_generate_success_variants_count(monkeypatch):
         variant_count=2,
     )
 
-    assert res["model_used"] == "gpt-3.5-turbo"
+    assert res["model_used"] == DEFAULT_MODEL
     assert res["tool_id"] == "blog-ideas"
     assert isinstance(res["generation_time"], float)
     assert len(res["variants"]) == 2
@@ -70,11 +71,10 @@ async def test_generate_unknown_model_raises():
 @pytest.mark.asyncio
 async def test_generate_missing_template_params_raises():
     service = AIGeneratorService()
-    service.agents = {"openai": FakeAgent()}
     with pytest.raises(ValueError):
         await service.generate(
             tool_id="blog-ideas",
-            model="openai",
+            model=DEFAULT_MODEL,
             params={"keywords": "ai"},  # missing 'category'
         )
 

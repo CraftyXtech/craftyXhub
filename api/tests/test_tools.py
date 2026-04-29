@@ -34,10 +34,10 @@ def test_build_prompt_includes_controls():
 @pytest.mark.parametrize(
     "length,expected",
     [
-        ("short", 200),
-        ("medium", 600),
-        ("long", 1000),
-        ("very-long", 2000),
+        ("short", 600),
+        ("medium", 1000),
+        ("long", 1800),
+        ("very-long", 3000),
     ],
 )
 def test_get_max_tokens_mapping(length, expected):

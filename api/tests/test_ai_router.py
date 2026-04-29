@@ -5,6 +5,7 @@ from httpx import ASGITransport, AsyncClient
 from routers.v1.ai import router as ai_router
 from services.ai.generator import AIGeneratorService
 from services.ai.blog_agent import BlogAgentService
+from services.ai.llm_config import DEFAULT_MODEL
 from services.ai.taxonomy import BlogTaxonomyService
 from services.post import PostService
 from services.user.auth import get_current_active_user
@@ -38,10 +39,10 @@ async def test_generate_ok(app, monkeypatch):
     async def fake_generate(self, **kwargs):
         return {
             "variants": [
-                {"content": "<p>ok</p>", "metadata": {"words": 1, "model": "openai"}}
+                {"content": "<p>ok</p>", "metadata": {"words": 1, "model": kwargs.get("model")}}
             ],
             "tool_id": kwargs.get("tool_id"),
-            "model_used": kwargs.get("model", "gpt-3.5-turbo"),
+            "model_used": kwargs.get("model", DEFAULT_MODEL),
             "generation_time": 0.01,
         }
 
@@ -51,7 +52,6 @@ async def test_generate_ok(app, monkeypatch):
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         payload = {
             "tool_id": "blog-ideas",
-            "model": "gpt-3.5-turbo",
             "params": {"category": "Tech", "keywords": "ai"},
             "tone": "professional",
             "length": "short",
@@ -62,7 +62,7 @@ async def test_generate_ok(app, monkeypatch):
         resp = await ac.post("/v1/ai/generate", json=payload)
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
-        assert data["model_used"] == "gpt-3.5-turbo"
+        assert data["model_used"] == DEFAULT_MODEL
         assert data["tool_id"] == "blog-ideas"
         assert len(data["variants"]) == 1
 
@@ -78,11 +78,49 @@ async def test_generate_bad_request_from_service(app, monkeypatch):
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         payload = {
             "tool_id": "blog-ideas",
-            "model": "gpt-3.5-turbo",
             "params": {},
         }
         resp = await ac.post("/v1/ai/generate", json=payload)
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.asyncio
+async def test_generate_timeout_returns_504(app, monkeypatch):
+    async def fake_generate(self, **kwargs):
+        raise TimeoutError("request timed out")
+
+    monkeypatch.setattr(AIGeneratorService, "generate", fake_generate, raising=True)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        payload = {
+            "tool_id": "blog-ideas",
+            "params": {"category": "Tech", "keywords": "ai"},
+        }
+        resp = await ac.post("/v1/ai/generate", json=payload)
+
+    assert resp.status_code == status.HTTP_504_GATEWAY_TIMEOUT
+    assert DEFAULT_MODEL in resp.json()["detail"]
+    assert "timed out" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_generate_provider_error_returns_502(app, monkeypatch):
+    async def fake_generate(self, **kwargs):
+        raise RuntimeError("OpenRouter upstream 502")
+
+    monkeypatch.setattr(AIGeneratorService, "generate", fake_generate, raising=True)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        payload = {
+            "tool_id": "blog-ideas",
+            "params": {"category": "Tech", "keywords": "ai"},
+        }
+        resp = await ac.post("/v1/ai/generate", json=payload)
+
+    assert resp.status_code == status.HTTP_502_BAD_GATEWAY
+    assert "failed at the ai provider" in resp.json()["detail"].lower()
 
 
 @pytest.mark.asyncio
@@ -93,11 +131,11 @@ async def test_generate_excerpt_ok(app, monkeypatch):
             "variants": [
                 {
                     "content": 'Excerpt: A sharp summary that captures the full article and gives readers a strong reason to continue reading.',
-                    "metadata": {"words": 18, "model": "claude-sonnet-4.6"},
+                    "metadata": {"words": 18, "model": kwargs.get("model")},
                 }
             ],
             "tool_id": "post-excerpt",
-            "model_used": kwargs.get("model", "claude-sonnet-4.6"),
+            "model_used": kwargs.get("model", DEFAULT_MODEL),
             "generation_time": 0.08,
         }
 
@@ -117,7 +155,7 @@ async def test_generate_excerpt_ok(app, monkeypatch):
     assert resp.status_code == status.HTTP_200_OK
     data = resp.json()
     assert data["excerpt"].startswith("A sharp summary")
-    assert data["model_used"] == "claude-sonnet-4.6"
+    assert data["model_used"] == DEFAULT_MODEL
 
 
 @pytest.mark.asyncio
@@ -319,6 +357,28 @@ async def test_generate_blog_quality_error_returns_400(app, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_generate_blog_timeout_returns_504(app, monkeypatch):
+    async def fake_blog_generate(self, **kwargs):
+        raise TimeoutError("blog generation timed out")
+
+    monkeypatch.setattr(BlogAgentService, "generate", fake_blog_generate, raising=True)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        payload = {
+            "topic": "Build an AI article writer",
+            "blog_type": "how-to",
+            "save_draft": False,
+            "publish_post": False,
+        }
+        resp = await ac.post("/v1/ai/generate/blog", json=payload)
+
+    assert resp.status_code == status.HTTP_504_GATEWAY_TIMEOUT
+    assert DEFAULT_MODEL in resp.json()["detail"]
+    assert "timed out" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
 async def test_generate_blog_publish_persists_quality_metadata(app, monkeypatch):
     from schemas.ai import (
         BlogPost,
@@ -391,7 +451,14 @@ async def test_generate_blog_publish_persists_quality_metadata(app, monkeypatch)
 
         return _CreatedPost()
 
+    async def fake_publish_post(session, post_uuid, current_user, **kwargs):
+        class _PublishedPost:
+            uuid = post_uuid
+
+        return _PublishedPost()
+
     monkeypatch.setattr(PostService, "create_post", fake_create_post, raising=True)
+    monkeypatch.setattr(PostService, "publish_post", fake_publish_post, raising=True)
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:

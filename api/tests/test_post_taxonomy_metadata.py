@@ -108,6 +108,7 @@ async def test_deprecated_tags_are_hidden_and_resolve_to_canonical_tag_on_save(
             "title": "Legacy Tag Draft",
             "content": "<p>Trying to use a deprecated tag.</p>",
             "excerpt": VALID_EXCERPT,
+            "category_id": str(category["id"]),
             "tag_ids": f"{deprecated['id']},{canonical['id']}",
             "is_published": "true",
         },

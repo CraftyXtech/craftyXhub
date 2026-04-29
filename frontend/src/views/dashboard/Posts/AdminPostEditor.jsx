@@ -97,6 +97,7 @@ import { getApiErrorMessage } from '@/utils/apiError';
 
 const SETTINGS_PANEL_WIDTH = 200;
 const INTELLIGENCE_PANEL_WIDTH = 380;
+const CONTENT_INTELLIGENCE_ENABLED = import.meta.env.VITE_CONTENT_INTELLIGENCE_ENABLED !== 'false';
 
 const parseJsonRows = (value) => {
   const trimmed = value.trim();
@@ -130,7 +131,9 @@ export default function AdminPostEditor() {
   // Drawer state
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
-  const [intelligenceOpen, setIntelligenceOpen] = useState(Boolean(aiState?.openIntelligence || intelligenceRequest));
+  const [intelligenceOpen, setIntelligenceOpen] = useState(
+    CONTENT_INTELLIGENCE_ENABLED && Boolean(aiState?.openIntelligence || intelligenceRequest)
+  );
   const [intelligenceTab, setIntelligenceTab] = useState(aiState?.openIntelligence || intelligenceRequest || 'brief');
 
   // Form state
@@ -375,6 +378,7 @@ export default function AdminPostEditor() {
   };
 
   const toggleIntelligence = () => {
+    if (!CONTENT_INTELLIGENCE_ENABLED) return;
     setIntelligenceOpen(!intelligenceOpen);
     if (!intelligenceOpen) {
       setSettingsOpen(false);
@@ -740,17 +744,19 @@ export default function AdminPostEditor() {
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Content Intelligence">
-            <IconButton
-              onClick={toggleIntelligence}
-              sx={{
-                bgcolor: intelligenceOpen ? 'action.selected' : 'transparent',
-                '&:hover': { bgcolor: 'action.hover' }
-              }}
-            >
-              <IconCheck size={20} />
-            </IconButton>
-          </Tooltip>
+          {CONTENT_INTELLIGENCE_ENABLED && (
+            <Tooltip title="Content Intelligence">
+              <IconButton
+                onClick={toggleIntelligence}
+                sx={{
+                  bgcolor: intelligenceOpen ? 'action.selected' : 'transparent',
+                  '&:hover': { bgcolor: 'action.hover' }
+                }}
+              >
+                <IconCheck size={20} />
+              </IconButton>
+            </Tooltip>
+          )}
 
           <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
 
@@ -951,23 +957,25 @@ export default function AdminPostEditor() {
               </CardContent>
             </Card>
 
-            <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-              <CardContent>
-                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={1.5}>
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      Content Intelligence
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Topic briefs, publish checks, and distribution assets live in the editor side panel.
-                    </Typography>
-                  </Box>
-                  <Button size="small" variant="outlined" startIcon={<IconSparkles size={16} />} onClick={toggleIntelligence}>
-                    Open Panel
-                  </Button>
-                </Stack>
-              </CardContent>
-            </Card>
+            {CONTENT_INTELLIGENCE_ENABLED && (
+              <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={1.5}>
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        Content Intelligence
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Topic briefs, publish checks, and distribution assets live in the editor side panel.
+                      </Typography>
+                    </Box>
+                    <Button size="small" variant="outlined" startIcon={<IconSparkles size={16} />} onClick={toggleIntelligence}>
+                      Open Panel
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            )}
           </Stack>
         </Box>
 

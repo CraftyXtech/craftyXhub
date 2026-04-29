@@ -365,7 +365,7 @@ function AdvertisementBand({ adSlot }) {
   ) : (
     <Box
       sx={{
-        minHeight: { xs: 88, md: 132 },
+        minHeight: { xs: 44, md: 64 },
         display: 'grid',
         placeItems: 'center',
         borderTop: '1px dashed rgba(23,24,28,0.12)',

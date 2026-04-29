@@ -11,8 +11,19 @@ VALID_EXCERPT = (
 )
 
 
+async def _create_share_category(client_admin, name: str):
+    suffix = uuid4().hex[:8]
+    response = await client_admin.post(
+        "/v1/posts/categories/",
+        json={"name": name, "slug": f"{name.lower().replace(' ', '-')}-{suffix}"},
+    )
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
 @pytest.mark.asyncio
 async def test_share_page_renders_social_meta_and_redirects(
+    client_admin,
     client_author,
     client_public,
     monkeypatch,
@@ -24,6 +35,7 @@ async def test_share_page_renders_social_meta_and_redirects(
         "https://craftyxhub.com/default-share.png",
     )
     monkeypatch.setattr(settings, "API_BASE_URL", "https://api.craftyxhub.com/v1")
+    category = await _create_share_category(client_admin, "Share Tests")
 
     create = await client_author.post(
         "/v1/posts/",
@@ -37,6 +49,7 @@ async def test_share_page_renders_social_meta_and_redirects(
             "meta_title": "Custom Share Title | CraftyXHub",
             "meta_description": "Custom share description for social cards.",
             "featured_image_path": "uploads/posts/share-card.jpg",
+            "category_id": str(category["id"]),
             "is_published": "true",
         },
     )
@@ -66,12 +79,14 @@ async def test_share_page_renders_social_meta_and_redirects(
 
 @pytest.mark.asyncio
 async def test_short_share_alias_renders_same_metadata(
+    client_admin,
     client_author,
     client_public,
     monkeypatch,
 ):
     monkeypatch.setattr(settings, "FRONTEND_URL", "https://craftyxhub.com")
     monkeypatch.setattr(settings, "API_BASE_URL", "https://api.craftyxhub.com/v1")
+    category = await _create_share_category(client_admin, "Short Share Tests")
 
     create = await client_author.post(
         "/v1/posts/",
@@ -80,6 +95,7 @@ async def test_short_share_alias_renders_same_metadata(
             "content": "<p>Body for the short alias route.</p>",
             "excerpt": VALID_EXCERPT,
             "meta_description": "Short alias description.",
+            "category_id": str(category["id"]),
             "is_published": "true",
         },
     )
@@ -96,11 +112,13 @@ async def test_short_share_alias_renders_same_metadata(
 
 @pytest.mark.asyncio
 async def test_share_page_supports_head_requests(
+    client_admin,
     client_author,
     client_public,
     monkeypatch,
 ):
     monkeypatch.setattr(settings, "FRONTEND_URL", "https://craftyxhub.com")
+    category = await _create_share_category(client_admin, "Head Share Tests")
 
     create = await client_author.post(
         "/v1/posts/",
@@ -108,6 +126,7 @@ async def test_share_page_supports_head_requests(
             "title": "Head Request Post",
             "content": "<p>Body for head request coverage.</p>",
             "excerpt": VALID_EXCERPT,
+            "category_id": str(category["id"]),
             "is_published": "true",
         },
     )
@@ -142,6 +161,7 @@ async def test_uploaded_image_route_supports_head_requests(client_public):
 
 @pytest.mark.asyncio
 async def test_share_page_uses_excerpt_and_default_image_when_seo_fields_missing(
+    client_admin,
     client_author,
     client_public,
     monkeypatch,
@@ -152,6 +172,7 @@ async def test_share_page_uses_excerpt_and_default_image_when_seo_fields_missing
         "DEFAULT_SHARE_IMAGE_URL",
         "https://craftyxhub.com/default-share.png",
     )
+    category = await _create_share_category(client_admin, "Fallback Share Tests")
 
     create = await client_author.post(
         "/v1/posts/",
@@ -162,6 +183,7 @@ async def test_share_page_uses_excerpt_and_default_image_when_seo_fields_missing
                 "Fallback excerpt for social previews that still captures the full "
                 "article and gives readers a useful reason to click through."
             ),
+            "category_id": str(category["id"]),
             "is_published": "true",
         },
     )

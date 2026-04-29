@@ -454,6 +454,7 @@ async def test_run_generation_once_retries_text_fallback_on_empty_response(monke
 
     blog_post, usage = await service._run_generation_once(
         pydantic_model=object(),
+        model_capabilities={"supports_structured": False},
         prompt="Write a blog post about resilient AI writing pipelines.",
         creativity=0.6,
         word_count="short",

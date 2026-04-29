@@ -633,8 +633,8 @@ Return ONLY the JSON object, no additional text.""",
 
     @staticmethod
     def get_max_tokens(length: str) -> int:
-        return {"short": 200, "medium": 600, "long": 1000, "very-long": 2000}.get(
-            length, 600
+        return {"short": 600, "medium": 1000, "long": 1800, "very-long": 3000}.get(
+            length, 1000
         )
 
     @staticmethod

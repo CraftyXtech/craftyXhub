@@ -7,7 +7,7 @@ from datetime import datetime
 
 class GenerateRequest(BaseModel):
     tool_id: str = Field(..., description="ID from AI_TOOLS")
-    model: str = Field(default="claude-sonnet-4.6", description="AI model name (e.g., claude-sonnet-4.6, gpt-5.4, glm-5-turbo, qwen-3.6-plus)")
+    model: Optional[str] = Field(default=None, description="AI model name from the configured backend model registry")
     params: Dict[str, Any] = Field(..., description="Tool-specific fields")
     prompt: Optional[str] = Field(default=None, description="Freeform prompt to use when tool params are incomplete or for generic generation")
     keywords: Optional[List[str] | str] = Field(default=None, description="Primary keywords to guide generation; list or comma-separated string")
@@ -52,9 +52,9 @@ class GenerateResponse(BaseModel):
 class ExcerptGenerateRequest(BaseModel):
     title: Optional[str] = Field(default=None, max_length=200)
     content: str = Field(..., min_length=50, description="Full article content or plain text")
-    model: str = Field(
-        default="claude-sonnet-4.6",
-        description="AI model name (e.g., claude-sonnet-4.6, gpt-5.4, glm-5-turbo, qwen-3.6-plus)",
+    model: Optional[str] = Field(
+        default=None,
+        description="AI model name from the configured backend model registry",
     )
     tone: Optional[str] = Field(default="professional", description="Writing tone")
     language: Optional[str] = Field(default="en-US", description="Output language")
@@ -207,9 +207,9 @@ class BlogGenerateRequest(BaseModel):
     )
     tone: Optional[str] = Field(default="professional", description="Writing tone")
     language: Optional[str] = Field(default="en-US", description="Output language")
-    model: str = Field(
-        default="claude-sonnet-4.6",
-        description="AI model (claude-sonnet-4.6, gpt-5.4, glm-5-turbo, kimi-k2.5, qwen-3.6-plus)"
+    model: Optional[str] = Field(
+        default=None,
+        description="AI model name from the configured backend model registry"
     )
     creativity: Optional[float] = Field(
         default=0.7, ge=0.0, le=1.0, description="Creativity/temperature"

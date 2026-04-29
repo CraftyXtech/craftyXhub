@@ -30,6 +30,7 @@ if str(API_DIR) not in sys.path:
 
 from core.config import settings
 from services.ai.blog_agent import BlogAgentService
+from services.ai.llm_config import DEFAULT_MODEL
 
 
 VALID_SEARCH_STATES = {"off", "on"}
@@ -305,7 +306,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--runs-per-mode", type=int, default=20)
     parser.add_argument("--warmup-runs", type=int, default=1)
     parser.add_argument("--search-states", type=str, default="off,on")
-    parser.add_argument("--model", type=str, default="glm-5-turbo")
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--word-count", type=str, default="medium")
     parser.add_argument("--latency-slo-seconds", type=float, default=60.0)
     parser.add_argument("--per-run-timeout-seconds", type=float, default=75.0)

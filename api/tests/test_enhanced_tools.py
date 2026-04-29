@@ -1,6 +1,7 @@
 import pytest
 
 from services.ai.generator import AIGeneratorService
+from services.ai.llm_config import DEFAULT_MODEL
 
 
 @pytest.mark.asyncio
@@ -51,7 +52,7 @@ async def test_all_16_tools_builds_prompts(monkeypatch):
     for tool_id, params in tools_to_test:
         res = await service.generate(
             tool_id=tool_id,
-            model="gpt-5-mini",
+            model=DEFAULT_MODEL,
             params=params,
             tone="professional",
             length="medium",

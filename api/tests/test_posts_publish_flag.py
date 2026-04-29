@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from models import Category, Post
 from models.content_intelligence import PostQualityReview
+from core.config import settings
 
 VALID_EXCERPT = (
     "A publish-ready summary that captures the full article, highlights the "
@@ -132,7 +133,12 @@ async def test_update_published_post_keeps_original_published_at(client_author, 
 
 
 @pytest.mark.asyncio
-async def test_publish_reruns_stale_quality_review_after_draft_edit(client_author, test_session):
+async def test_publish_reruns_stale_quality_review_after_draft_edit(
+    client_author,
+    test_session,
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "CONTENT_INTELLIGENCE_ENABLED", True)
     category = await create_publish_category(test_session)
     create = await client_author.post("/v1/posts/", data={
         "title": "Draft With Old Review",
@@ -175,7 +181,12 @@ async def test_publish_reruns_stale_quality_review_after_draft_edit(client_autho
 
 
 @pytest.mark.asyncio
-async def test_rejected_published_edit_does_not_commit_content(client_author, test_session):
+async def test_rejected_published_edit_does_not_commit_content(
+    client_author,
+    test_session,
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "CONTENT_INTELLIGENCE_ENABLED", True)
     category = await create_publish_category(test_session)
     original_content = "<p>Original published content.</p>"
     create = await client_author.post("/v1/posts/", data={
@@ -219,6 +230,34 @@ async def test_publish_endpoint_still_works(client_author, test_session):
     post = create.json()
 
     # publish via endpoint
+    resp = await client_author.put(f"/v1/posts/{post['uuid']}/publish")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["is_published"] is True
+    assert body["published_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_publish_bypasses_quality_gate_when_content_intelligence_disabled(
+    client_author,
+    test_session,
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "CONTENT_INTELLIGENCE_ENABLED", False)
+    category = await create_publish_category(test_session)
+    create = await client_author.post("/v1/posts/", data={
+        "title": "Draft Without CI Gate",
+        "content": (
+            "<p>Research shows 75% of teams need better publishing controls "
+            "before scaling editorial operations.</p>"
+        ),
+        "excerpt": VALID_EXCERPT,
+        "category_id": str(category.id),
+        "is_published": "false",
+    })
+    assert create.status_code == 201, create.text
+    post = create.json()
+
     resp = await client_author.put(f"/v1/posts/{post['uuid']}/publish")
     assert resp.status_code == 200, resp.text
     body = resp.json()

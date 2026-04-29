@@ -24,7 +24,7 @@ import { buildBlogGenerationPayload } from './blogGenerationPayload';
  */
 export const generate = async ({
   tool_id,
-  model = 'glm-5-turbo',
+  model,
   params = {},
   prompt,
   keywords,
@@ -69,7 +69,7 @@ export const generate = async ({
 export const generateExcerpt = async ({
   title,
   content,
-  model = 'claude-sonnet-4.6',
+  model,
   tone = 'professional',
   language = 'en-US',
   creativity = 0.4,
@@ -124,7 +124,7 @@ export const generateBlog = async ({
   word_count = 'medium',
   tone = 'professional',
   language = 'en-US',
-  model = 'glm-5-turbo',
+  model,
   creativity = 0.7,
   use_web_search = true,
   save_draft = true,

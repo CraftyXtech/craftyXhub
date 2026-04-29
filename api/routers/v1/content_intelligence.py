@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Body, Depends, Query, status
+from fastapi import APIRouter, Body, Depends, Query, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from core.config import settings
 from database.connection import get_db_session
 from models import Post, User
 from schemas.content_intelligence import (
@@ -23,9 +24,18 @@ from services.content_intelligence import ContentIntelligenceService
 from services.user.auth import get_current_admin_or_moderator
 
 
+def require_content_intelligence_enabled():
+    if not settings.CONTENT_INTELLIGENCE_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Content Intelligence is temporarily disabled.",
+        )
+
+
 router = APIRouter(
     prefix="/content-intelligence",
     tags=["Content Intelligence"],
+    dependencies=[Depends(require_content_intelligence_enabled)],
 )
 
 

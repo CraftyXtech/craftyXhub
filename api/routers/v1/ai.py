@@ -1,7 +1,10 @@
+import asyncio
+import logging
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from core.config import settings
 from database.connection import get_db_session
 from services.user.auth import get_current_active_user
 from services.ai import (
@@ -13,6 +16,7 @@ from services.ai import (
 )
 from services.ai.seo_keywords import resolve_seo_keywords
 from services.post import PostService
+from services.ai.llm_config import DEFAULT_MODEL
 from schemas.ai import (
     GenerateRequest,
     GenerateResponse,
@@ -32,6 +36,89 @@ from typing import List
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/ai", tags=["AI Content Generation"])
+logger = logging.getLogger(__name__)
+
+
+def _resolve_model_name(model_name: str | None) -> str:
+    return model_name or DEFAULT_MODEL
+
+
+def _iter_exception_messages(exc: Exception) -> list[str]:
+    messages: list[str] = []
+    current: BaseException | None = exc
+    seen: set[int] = set()
+
+    while current and id(current) not in seen:
+        seen.add(id(current))
+        message = str(current).strip()
+        if message:
+            messages.append(message)
+        current = current.__cause__ or current.__context__
+
+    return messages
+
+
+def _is_timeout_error(exc: Exception) -> bool:
+    if isinstance(exc, (TimeoutError, asyncio.TimeoutError)):
+        return True
+
+    timeout_markers = (
+        "timeout",
+        "timed out",
+        "readtimeout",
+        "connecttimeout",
+        "deadline exceeded",
+    )
+    return any(
+        marker in message.lower()
+        for marker in timeout_markers
+        for message in _iter_exception_messages(exc)
+    )
+
+
+def _sanitize_provider_error(exc: Exception) -> str:
+    messages = _iter_exception_messages(exc)
+    if not messages:
+        return "The upstream model provider returned an unexpected error."
+
+    primary = messages[0]
+    lower_primary = primary.lower()
+    if any(marker in lower_primary for marker in ("empty model response", "usable excerpt")):
+        return "The model returned an incomplete response. Please retry or switch models."
+    if "rate limit" in lower_primary:
+        return "The model provider is rate-limiting requests right now. Please retry shortly."
+    if "api key" in lower_primary or "authentication" in lower_primary:
+        return "The model provider rejected the request configuration."
+    return primary
+
+
+def _raise_ai_http_exception(
+    exc: Exception,
+    *,
+    model_name: str,
+    operation: str,
+) -> None:
+    if isinstance(exc, ValueError):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    if _is_timeout_error(exc):
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail=(
+                f"{operation} with {model_name} timed out after about "
+                f"{settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS} seconds. "
+                "Try again, shorten the request, or switch to GPT-5.5."
+            ),
+        )
+
+    logger.exception("%s failed for model %s", operation, model_name, exc_info=exc)
+    raise HTTPException(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        detail=(
+            f"{operation} with {model_name} failed at the AI provider. "
+            f"{_sanitize_provider_error(exc)}"
+        ),
+    )
 
 
 def _clean_generated_excerpt(raw_excerpt: str) -> str:
@@ -53,7 +140,7 @@ async def test_ai_models():
     Test endpoint to check which AI models are configured and available.
     No authentication required - for quick testing only.
     """
-    from services.ai.llm_config import get_models_for_test, AVAILABLE_MODELS
+    from services.ai.llm_config import get_models_for_test
 
     available_models = get_models_for_test()
 
@@ -121,10 +208,11 @@ async def generate_content(
     db: AsyncSession = Depends(get_db_session),
 ):
     generator = AIGeneratorService()
+    resolved_model = _resolve_model_name(request.model)
     try:
         result = await generator.generate(
             tool_id=request.tool_id,
-            model=request.model,
+            model=resolved_model,
             params=request.params,
             prompt=request.prompt,
             keywords=request.keywords,
@@ -138,8 +226,10 @@ async def generate_content(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        _raise_ai_http_exception(
+            e,
+            model_name=resolved_model,
+            operation="Content generation",
         )
 
 
@@ -152,6 +242,7 @@ async def generate_excerpt(
     del current_user, db
 
     generator = AIGeneratorService()
+    resolved_model = _resolve_model_name(request.model)
     cleaned_content = PostService.extract_plain_text_content(request.content, None)
     if len(cleaned_content) < 50:
         raise HTTPException(
@@ -162,7 +253,7 @@ async def generate_excerpt(
     try:
         result = await generator.generate(
             tool_id="post-excerpt",
-            model=request.model,
+            model=resolved_model,
             params={
                 "title": request.title or "Untitled article",
                 "content": cleaned_content,
@@ -191,9 +282,10 @@ async def generate_excerpt(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Excerpt generation failed: {str(e)}",
+        _raise_ai_http_exception(
+            e,
+            model_name=resolved_model,
+            operation="Excerpt generation",
         )
 
 
@@ -394,6 +486,7 @@ async def generate_blog(
         # Initialize the blog agent service
         blog_agent = BlogAgentService()
         use_web_search = request.use_web_search
+        resolved_model = _resolve_model_name(request.model)
         seed_keywords = resolve_seo_keywords(
             topic=request.topic,
             provided_keywords=request.keywords,
@@ -408,7 +501,7 @@ async def generate_blog(
             word_count=request.word_count or "medium",
             tone=request.tone or "professional",
             language=request.language or "en-US",
-            model=request.model,
+            model=resolved_model,
             creativity=request.creativity or 0.7,
             use_web_search=use_web_search,
         )
@@ -446,7 +539,7 @@ async def generate_blog(
                     name=blog_post.title,
                     content=draft_content,
                     tool_id="blog-agent",
-                    model_used=request.model,
+                    model_used=resolved_model,
                     favorite=False,
                     draft_metadata={
                         "blog_type": request.blog_type,
@@ -499,7 +592,7 @@ async def generate_blog(
                 post_content_blocks = {
                     "ai_generation": {
                         "generator": "blog-agent",
-                        "model": request.model,
+                        "model": resolved_model,
                         "use_web_search": use_web_search,
                         "web_search_used": web_search_used,
                         "search_sources_count": len(sources or []),
@@ -551,7 +644,7 @@ async def generate_blog(
             taxonomy_suggestion=taxonomy_suggestion,
             draft_id=draft_id,
             post_id=post_id,
-            model_used=request.model,
+            model_used=resolved_model,
             generation_time=round(generation_time, 2),
             web_search_used=web_search_used,
             search_sources=sources if web_search_used else None,
@@ -561,9 +654,10 @@ async def generate_blog(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Blog generation failed: {str(e)}",
+        _raise_ai_http_exception(
+            e,
+            model_name=_resolve_model_name(request.model),
+            operation="Blog generation",
         )
 
 

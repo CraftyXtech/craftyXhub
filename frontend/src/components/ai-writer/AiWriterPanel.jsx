@@ -36,6 +36,7 @@ import {
 // API
 import { generateBlog, getBlogOptions } from '@/api/services/aiService';
 import { renderBlogPostToHtml } from '@/utils/blogMarkdown';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 const FALLBACK_OPTIONS = {
   blog_types: [
@@ -69,13 +70,7 @@ const FALLBACK_OPTIONS = {
     { value: 'long', label: 'Long (~1000 words)' },
     { value: 'very-long', label: 'Very Long (~1500+ words)' },
   ],
-  models: [
-    { value: 'claude-sonnet-4.6', label: 'Sonnet 4.6' },
-    { value: 'gpt-5.4', label: 'GPT-5.4' },
-    { value: 'glm-5-turbo', label: 'GLM 5 Turbo' },
-    { value: 'kimi-k2.5', label: 'Kimi K2.5' },
-    { value: 'qwen-3.6-plus', label: 'Qwen 3.6 Plus' },
-  ],
+  models: [],
   use_web_search_default: true,
 };
 
@@ -91,7 +86,7 @@ export default function AiWriterPanel({ initialTopic = '', initialKeywords = [],
   const [audience, setAudience] = useState('general');
   const [tone, setTone] = useState('professional');
   const [length, setLength] = useState('medium');
-  const [model, setModel] = useState('claude-sonnet-4.6');
+  const [model, setModel] = useState('');
   const [creativity, setCreativity] = useState(0.7);
   const [useWebSearch, setUseWebSearch] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -109,9 +104,11 @@ export default function AiWriterPanel({ initialTopic = '', initialKeywords = [],
         const res = await getBlogOptions();
         if (res) {
           setOptions(res);
-          if (res.models?.length > 0 && !res.models.find(m => m.value === model)) {
-            setModel(res.models[0].value);
-          }
+          setModel((current) => (
+            res.models?.length > 0 && !res.models.find(m => m.value === current)
+              ? res.models[0].value
+              : current
+          ));
           if (typeof res.use_web_search_default === 'boolean') {
             setUseWebSearch(res.use_web_search_default);
           }
@@ -128,7 +125,7 @@ export default function AiWriterPanel({ initialTopic = '', initialKeywords = [],
       const result = await generateBlog({
         topic, blog_type: blogType,
         keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
-        audience: audience || null, word_count: length, tone, model, creativity,
+        audience: audience || null, word_count: length, tone, model: model || undefined, creativity,
         use_web_search: useWebSearch,
         save_draft: true, publish_post: false,
       });
@@ -143,7 +140,7 @@ export default function AiWriterPanel({ initialTopic = '', initialKeywords = [],
         setSearchSources(result.search_sources);
       }
     } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Generation failed');
+      setError(getApiErrorMessage(err, 'Generation failed'));
     } finally { setGenerating(false); }
   }, [topic, blogType, keywords, audience, tone, length, model, creativity, useWebSearch]);
 
@@ -268,7 +265,12 @@ export default function AiWriterPanel({ initialTopic = '', initialKeywords = [],
             {/* Model */}
             <FormControl fullWidth size="small">
               <InputLabel>Model</InputLabel>
-              <Select value={model} onChange={(e) => setModel(e.target.value)} label="Model">
+              <Select
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                label="Model"
+                displayEmpty
+              >
                 {options.models.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>)}
               </Select>
             </FormControl>
