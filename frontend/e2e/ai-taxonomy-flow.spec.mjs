@@ -92,7 +92,7 @@ test('admin AI flow auto-fills taxonomy and SEO, preserves publish date, and sho
     },
     draft_id: null,
     post_id: null,
-    model_used: 'claude-sonnet-4.6',
+    model_used: 'qwen-3.6-max-preview',
     generation_time: 0.42,
     web_search_used: true,
     search_sources: [{ title: 'Enterprise AI report', url: 'https://example.com/report' }],
@@ -121,7 +121,11 @@ test('admin AI flow auto-fills taxonomy and SEO, preserves publish date, and sho
         tones: [{ value: 'professional', label: 'Professional' }],
         audiences: [{ value: 'general', label: 'General Audience' }],
         lengths: [{ value: 'medium', label: 'Medium (~500 words)' }],
-        models: [{ value: 'claude-sonnet-4.6', label: 'Sonnet 4.6' }],
+        models: [
+          { value: 'qwen-3.6-max-preview', label: 'Qwen 3.6 Max Preview' },
+          { value: 'glm-5.1', label: 'GLM 5.1' },
+          { value: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro' },
+        ],
         use_web_search_default: true,
       });
     }
@@ -129,6 +133,7 @@ test('admin AI flow auto-fills taxonomy and SEO, preserves publish date, and sho
     if (path.endsWith('/ai/generate/blog') && request.method() === 'POST') {
       const body = request.postDataJSON();
       expect(body.blog_type).toBe('news');
+      expect(body.model).not.toBe('gpt-5.4');
       expect(body.use_web_search).toBe(true);
       expect(body.save_draft).toBe(false);
       return json(route, generated);

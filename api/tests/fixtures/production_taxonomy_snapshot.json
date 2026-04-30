@@ -1,0 +1,47 @@
+{
+  "source": "sanitized read-only export from crafty-vps on 2026-05-01",
+  "categories": [
+    {"id": 44, "name": "Tech & Innovation", "slug": "tech-and-innovation", "parent_id": null},
+    {"id": 45, "name": "Artificial Intelligence", "slug": "artificial-intelligence", "parent_id": 44},
+    {"id": 47, "name": "Automation", "slug": "automation-and-smart-tools", "parent_id": 44},
+    {"id": 48, "name": "Software Development", "slug": "programming-and-development", "parent_id": 44},
+    {"id": 49, "name": "Cybersecurity & Privacy", "slug": "cybersecurity-basics", "parent_id": 44},
+    {"id": 50, "name": "Business & Finance", "slug": "business-and-finance", "parent_id": null},
+    {"id": 52, "name": "Personal Finance & Investing", "slug": "personal-finance-and-investing", "parent_id": 50},
+    {"id": 53, "name": "Creator Business", "slug": "creator-economy-and-monetization", "parent_id": 50},
+    {"id": 54, "name": "Online Business & Marketing", "slug": "online-business-strategies", "parent_id": 50},
+    {"id": 56, "name": "Career & Growth", "slug": "career-and-growth", "parent_id": null},
+    {"id": 59, "name": "Productivity & Remote Work", "slug": "productivity-hacks-and-tools", "parent_id": 56},
+    {"id": 68, "name": "Global Issues", "slug": "global-issues", "parent_id": null},
+    {"id": 69, "name": "Conflict & War", "slug": "conflict-and-war", "parent_id": 68},
+    {"id": 70, "name": "Politics & Governance", "slug": "politics-and-governance", "parent_id": 68},
+    {"id": 71, "name": "Security & Intelligence", "slug": "security-and-intelligence", "parent_id": 68},
+    {"id": 73, "name": "Products & Platforms", "slug": "products-and-platforms", "parent_id": 44},
+    {"id": 74, "name": "Business News & Market Intelligence", "slug": "business-news-and-market-intelligence", "parent_id": 50}
+  ],
+  "tags": [
+    {"id": 102, "name": "Machine Learning", "slug": "machine-learning", "category_id": 45, "is_active": true, "canonical_tag_id": null},
+    {"id": 128, "name": "Automation", "slug": "automation", "category_id": 47, "is_active": true, "canonical_tag_id": null},
+    {"id": 137, "name": "Cybersecurity", "slug": "cybersecurity", "category_id": 49, "is_active": true, "canonical_tag_id": null},
+    {"id": 138, "name": "Privacy", "slug": "privacy", "category_id": 49, "is_active": true, "canonical_tag_id": null},
+    {"id": 180, "name": "Email Marketing", "slug": "email-marketing", "category_id": 54, "is_active": true, "canonical_tag_id": null},
+    {"id": 257, "name": "War Crimes", "slug": "war-crimes", "category_id": 69, "is_active": true, "canonical_tag_id": null},
+    {"id": 282, "name": "National Security", "slug": "national-security", "category_id": 71, "is_active": true, "canonical_tag_id": null},
+    {"id": 285, "name": "Border Security", "slug": "border-security", "category_id": 71, "is_active": true, "canonical_tag_id": null},
+    {"id": 286, "name": "Cyber Warfare", "slug": "cyber-warfare", "category_id": 71, "is_active": true, "canonical_tag_id": null},
+    {"id": 301, "name": "Productivity Tools", "slug": "productivity-tools", "category_id": 59, "is_active": true, "canonical_tag_id": null},
+    {"id": 306, "name": "Artificial Intelligence", "slug": "artificial-intelligence", "category_id": 45, "is_active": true, "canonical_tag_id": null},
+    {"id": 308, "name": "AI Assistants", "slug": "ai-assistants", "category_id": 45, "is_active": true, "canonical_tag_id": null},
+    {"id": 310, "name": "Identity & Access Security", "slug": "identity-access-security", "category_id": 49, "is_active": true, "canonical_tag_id": null},
+    {"id": 311, "name": "Privacy Tools", "slug": "privacy-tools", "category_id": 49, "is_active": true, "canonical_tag_id": null},
+    {"id": 316, "name": "Containerization", "slug": "containerization", "category_id": 48, "is_active": true, "canonical_tag_id": null}
+  ],
+  "post_slugs": [
+    "big-tech-ai-profits-soar-but-spending-worries-linger",
+    "openai-gpt-55-raises-the-bar-and-the-price",
+    "ai-in-journalism-the-transparency-and-trust-crisis",
+    "the-rise-of-ai-driven-startups-vs-traditional-firms",
+    "will-wearable-ai-devices-replace-smartphones-soon",
+    "future-of-artificial-intelligence"
+  ]
+}

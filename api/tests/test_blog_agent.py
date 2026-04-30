@@ -221,6 +221,68 @@ def test_build_outline_guidance_contains_keywords_and_sections():
     assert "Official docs" in guidance
 
 
+def test_generate_slug_removes_trailing_hyphen_after_truncation():
+    service = BlogAgentService()
+
+    slug = service._generate_slug(
+        "cloud-providers-launch-ai-safety-dashboards-small-businesses"
+    )
+
+    assert slug == "cloud-providers-launch-ai-safety-dashboards-small"
+
+
+def test_blog_agent_max_tokens_allow_for_structured_blog_json():
+    service = BlogAgentService()
+
+    assert service._get_max_tokens("short") == 2200
+    assert service._get_max_tokens("medium") == 3200
+    assert service._get_max_tokens(
+        "short",
+        {"max_tokens_by_word_count": {"short": 1600}},
+    ) == 1600
+
+
+def test_normalize_seo_title_expands_short_titles_to_quality_range():
+    service = BlogAgentService()
+
+    seo_title = service._normalize_seo_title(
+        "How Men Can Quit Smoking: A Practical Guide",
+        "How Men Can Quit Smoking for Good",
+    )
+
+    assert 45 <= len(seo_title) <= 65
+
+
+def test_apply_quality_repairs_replaces_tropes_and_preserves_primary_keyword():
+    service = BlogAgentService()
+    blog_post = _build_blog(250)
+    blog_post.seo_title = "Defense Technology Red Lines for Public Teams"
+    blog_post.seo_description = (
+        "A practical article about defense technology decisions, trust, and public oversight."
+    )
+    blog_post.sections[0].body_markdown = (
+        "Teams should leverage careful review instead of writing comprehensive guides. "
+        + blog_post.sections[0].body_markdown
+    )
+
+    repaired = service._apply_quality_repairs(blog_post, ["AI policy"])
+
+    assert "ai policy" in repaired.seo_title.lower()
+    assert "ai policy" in repaired.seo_description.lower()
+    assert "leverage" not in repaired.sections[0].body_markdown.lower()
+    assert "comprehensive guide" not in repaired.sections[0].body_markdown.lower()
+
+
+def test_enforce_body_word_ceiling_trims_excess_words_only():
+    service = BlogAgentService()
+    blog_post = _build_blog(160)
+
+    trimmed = service._enforce_body_word_ceiling(blog_post, "short")
+
+    assert service._count_total_words(trimmed) == 600
+    assert all(len(section.body_markdown.split()) >= 30 for section in trimmed.sections)
+
+
 def test_validate_blog_post_allows_natural_closing_headings():
     blog_post = BlogPost(
         title="How to Build Better Habits Without Turning Life Into a Spreadsheet",
@@ -513,16 +575,46 @@ def test_build_model_settings_adds_json_object_fallback():
     }
 
 
+def test_build_model_settings_passes_openrouter_provider_routing():
+    service = BlogAgentService()
+
+    model_settings = service._build_model_settings(
+        {
+            "openrouter_provider": {
+                "sort": "throughput",
+                "ignore": ["atlas-cloud"],
+            },
+            "send_temperature": True,
+        },
+        creativity=0.4,
+        word_count="short",
+    )
+
+    assert model_settings["openrouter_provider"] == {
+        "sort": "throughput",
+        "ignore": ["atlas-cloud"],
+    }
+
+
 @pytest.mark.asyncio
 async def test_run_generation_once_retries_text_fallback_on_empty_response(monkeypatch):
     service = BlogAgentService()
     monkeypatch.setattr("services.ai.blog_agent.Agent", _FallbackRetryAgent)
 
     _FallbackRetryAgent.text_attempt_count = 0
+    sleep_calls = []
+
+    async def fake_sleep(seconds):
+        sleep_calls.append(seconds)
+
+    monkeypatch.setattr("services.ai.blog_agent.asyncio.sleep", fake_sleep)
 
     blog_post, usage = await service._run_generation_once(
         pydantic_model=object(),
-        model_capabilities={"supports_structured": False},
+        model_capabilities={
+            "supports_structured": False,
+            "transient_retry_delay_seconds": 3,
+        },
         prompt="Write a blog post about resilient AI writing pipelines.",
         creativity=0.6,
         word_count="short",
@@ -531,4 +623,5 @@ async def test_run_generation_once_retries_text_fallback_on_empty_response(monke
     assert isinstance(blog_post, BlogPost)
     assert blog_post.title == "How to Build Reliable AI Writing Pipelines"
     assert _FallbackRetryAgent.text_attempt_count == 2
+    assert sleep_calls == [3]
     assert usage is None

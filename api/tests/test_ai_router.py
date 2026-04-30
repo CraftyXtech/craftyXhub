@@ -4,9 +4,10 @@ from httpx import ASGITransport, AsyncClient
 
 from routers.v1.ai import router as ai_router
 from schemas.ai import BlogGenerateRequest
+from core.config import settings
 from services.ai.generator import AIGeneratorService
 from services.ai.blog_agent import BlogAgentService
-from services.ai.llm_config import DEFAULT_MODEL
+from services.ai.llm_config import DEFAULT_MODEL, AVAILABLE_MODELS
 from services.ai.taxonomy import BlogTaxonomyService
 from services.post import PostService
 from services.user.auth import get_current_active_user
@@ -22,6 +23,12 @@ def test_blog_generate_request_does_not_save_draft_by_default():
     request = BlogGenerateRequest(topic="Fast AI blog generation")
 
     assert request.save_draft is False
+
+
+def test_gpt_54_exists_but_is_paused_for_blog_generation():
+    assert "gpt-5.4" in AVAILABLE_MODELS
+    assert AVAILABLE_MODELS["gpt-5.4"]["blog_enabled"] is False
+    assert DEFAULT_MODEL == "qwen-3.6-max-preview"
 
 
 @pytest.fixture
@@ -332,7 +339,9 @@ async def test_generate_blog_auto_generates_keywords_when_blank(app, monkeypatch
 
 
 @pytest.mark.asyncio
-async def test_get_blog_options_exposes_web_search_default(app):
+async def test_get_blog_options_exposes_web_search_default(app, monkeypatch):
+    monkeypatch.setattr(settings, "OPENROUTER_API_KEY", "test-key")
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         resp = await ac.get("/v1/ai/blog/options")
@@ -341,6 +350,37 @@ async def test_get_blog_options_exposes_web_search_default(app):
     data = resp.json()
     assert data["use_web_search_default"] is True
     assert data["blog_types"][0]["value"] == "news"
+    model_values = [model["value"] for model in data["models"]]
+    assert model_values == ["qwen-3.6-max-preview", "glm-5.1", "deepseek-v4-pro"]
+    assert "gpt-5.4" not in model_values
+
+
+@pytest.mark.asyncio
+async def test_generate_blog_rejects_paused_gpt_model_before_generation(app, monkeypatch):
+    called = False
+
+    async def fake_blog_generate(self, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("Paused model should be rejected before generation")
+
+    monkeypatch.setattr(BlogAgentService, "generate", fake_blog_generate, raising=True)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        resp = await ac.post(
+            "/v1/ai/generate/blog",
+            json={
+                "topic": "Build an AI article writer",
+                "model": "gpt-5.4",
+                "save_draft": False,
+                "publish_post": False,
+            },
+        )
+
+    assert resp.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Unsupported blog model" in resp.json()["detail"]
+    assert called is False
 
 
 @pytest.mark.asyncio
@@ -458,6 +498,9 @@ async def test_generate_blog_publish_persists_quality_metadata(app, monkeypatch)
 
         return _CreatedPost()
 
+    async def fake_get_post_by_slug(session, slug, include_deleted=False):
+        return None
+
     async def fake_publish_post(session, post_uuid, current_user, **kwargs):
         class _PublishedPost:
             uuid = post_uuid
@@ -465,6 +508,7 @@ async def test_generate_blog_publish_persists_quality_metadata(app, monkeypatch)
         return _PublishedPost()
 
     monkeypatch.setattr(PostService, "create_post", fake_create_post, raising=True)
+    monkeypatch.setattr(PostService, "get_post_by_slug", fake_get_post_by_slug, raising=True)
     monkeypatch.setattr(PostService, "publish_post", fake_publish_post, raising=True)
 
     transport = ASGITransport(app=app)
@@ -493,3 +537,74 @@ async def test_generate_blog_publish_persists_quality_metadata(app, monkeypatch)
     assert persisted["ai_generation"]["taxonomy_suggestion"]["category"]["id"] == 45
     assert captured["post_data"].category_id == 45
     assert captured["post_data"].tag_ids == [101, 104]
+
+
+@pytest.mark.asyncio
+async def test_generate_blog_publish_uses_unique_slug_on_collision(app, monkeypatch):
+    from schemas.ai import BlogPost, BlogSection, BlogTaxonomySuggestion
+
+    async def fake_blog_generate(self, **kwargs):
+        post = BlogPost(
+            title="AI in Journalism: The Transparency and Trust Crisis",
+            slug="ai-in-journalism-the-transparency-and-trust-crisis",
+            summary=(
+                "A practical article about AI journalism transparency, trust, "
+                "editorial labeling, and reader expectations for generated content."
+            ),
+            sections=[
+                BlogSection(heading="Why This Matters", body_markdown=" ".join(["word"] * 120)),
+                BlogSection(heading="What Changes Now", body_markdown=" ".join(["word"] * 120)),
+                BlogSection(heading="What To Do Next", body_markdown=" ".join(["word"] * 120)),
+            ],
+            tags=["artificial-intelligence", "journalism"],
+            seo_title="AI Journalism Transparency and Reader Trust",
+            seo_description=(
+                "Learn how AI journalism transparency, labeling, and editorial review "
+                "can help publishers build reader trust in generated content."
+            ),
+        )
+        return post, 0.12, False, None
+
+    async def fake_taxonomy_suggestion(*args, **kwargs):
+        return BlogTaxonomySuggestion()
+
+    class _ExistingPost:
+        slug = "ai-in-journalism-the-transparency-and-trust-crisis"
+
+    captured = {}
+
+    async def fake_get_post_by_slug(session, slug, include_deleted=False):
+        return _ExistingPost()
+
+    async def fake_generate_unique_slug(session, title, model):
+        return "ai-in-journalism-the-transparency-and-trust-crisis-2"
+
+    async def fake_create_post(session, post_data, author_id):
+        captured["post_data"] = post_data
+
+        class _CreatedPost:
+            uuid = "post-uuid-unique"
+
+        return _CreatedPost()
+
+    monkeypatch.setattr(BlogAgentService, "generate", fake_blog_generate, raising=True)
+    monkeypatch.setattr(BlogAgentService, "blog_post_to_html", lambda self, post: "<p>html</p>", raising=True)
+    monkeypatch.setattr(BlogTaxonomyService, "suggest_for_generated_post", fake_taxonomy_suggestion, raising=True)
+    monkeypatch.setattr(PostService, "get_post_by_slug", fake_get_post_by_slug, raising=True)
+    monkeypatch.setattr(PostService, "generate_unique_slug", fake_generate_unique_slug, raising=True)
+    monkeypatch.setattr(PostService, "create_post", fake_create_post, raising=True)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        resp = await ac.post(
+            "/v1/ai/generate/blog",
+            json={
+                "topic": "AI in journalism transparency",
+                "publish_post": True,
+                "save_draft": False,
+            },
+        )
+
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.json()["blog_post"]["slug"] == "ai-in-journalism-the-transparency-and-trust-crisis-2"
+    assert captured["post_data"].slug == "ai-in-journalism-the-transparency-and-trust-crisis-2"
