@@ -23,7 +23,7 @@ if str(API_DIR) not in sys.path:
 
 from services.ai.blog_agent import BlogAgentService
 from services.ai.generator import AIGeneratorService
-from services.ai.llm_config import AVAILABLE_MODELS, DEFAULT_MODEL
+from services.ai.llm_config import DEFAULT_MODEL, get_blog_model_keys
 
 
 BLOG_TYPES: dict[str, str] = {
@@ -161,6 +161,84 @@ def validate_blog_post(post: Any) -> list[str]:
     return problems
 
 
+def _contains_any(text: str, terms: list[str]) -> bool:
+    lowered = text.lower()
+    return any(term.lower() in lowered for term in terms)
+
+
+def score_editorial_quality(
+    post: Any,
+    *,
+    blog_type: str,
+    topic: str,
+    keywords: list[str],
+    use_web_search: bool,
+    source_count: int,
+    quality_report: dict[str, Any],
+) -> tuple[int, dict[str, int]]:
+    headings = [section.heading for section in post.sections or []]
+    full_text = " ".join(
+        [
+            post.title or "",
+            post.summary or "",
+            " ".join(headings),
+            " ".join(section.body_markdown or "" for section in post.sections or []),
+        ]
+    )
+    topic_tokens = [token for token in topic.lower().split() if len(token) > 3]
+    topic_hits = sum(1 for token in topic_tokens if token in full_text.lower())
+    keyword_hits = sum(1 for keyword in keywords if keyword.lower() in full_text.lower())
+    topic_relevance = 3
+    if keyword_hits >= 1 and topic_hits >= max(2, min(5, len(topic_tokens) // 3)):
+        topic_relevance = 4
+    if keyword_hits >= min(2, len(keywords)) and topic_hits >= max(4, min(8, len(topic_tokens) // 2)):
+        topic_relevance = 5
+
+    expected_by_type = {
+        "how-to": ["why", "step", "mistake", "next"],
+        "tutorial": ["why", "step", "mistake", "next", "checklist"],
+        "comparison": ["compare", "versus", "criteria", "best", "which"],
+        "review": ["review", "criteria", "pros", "cons", "verdict"],
+        "listicle": ["tool", "way", "use", "seven", "best"],
+        "case-study": ["problem", "approach", "result", "lesson"],
+        "news": ["what", "why", "means", "context", "next"],
+        "opinion": ["why", "argument", "trust", "creativity", "case"],
+    }
+    heading_blob = " ".join(headings).lower()
+    structure_hits = sum(1 for term in expected_by_type.get(blog_type, []) if term in heading_blob)
+    structure_match = 3 + min(2, structure_hits // 2)
+
+    source_grounding = 5
+    if use_web_search:
+        source_grounding = 2
+        if source_count >= 1:
+            source_grounding = 4
+        if source_count >= 3:
+            source_grounding = 5
+
+    readability = quality_report.get("readability") or {}
+    voice = 5
+    if readability.get("is_hard_to_read"):
+        voice -= 2
+    voice -= min(2, len(quality_report.get("ai_trope_hits") or []))
+    voice = max(1, voice)
+
+    actionability = 3
+    if _contains_any(full_text, ["step", "check", "use", "call", "compare", "choose", "start", "next", "measure"]):
+        actionability = 4
+    if _contains_any(heading_blob, ["step", "next", "checklist", "what to do", "before you"]):
+        actionability = 5
+
+    scores = {
+        "topic_relevance": topic_relevance,
+        "structure_match": structure_match,
+        "source_grounding": source_grounding,
+        "voice": voice,
+        "actionability": actionability,
+    }
+    return sum(scores.values()), scores
+
+
 class LiveAiChecker:
     def __init__(self, args: argparse.Namespace):
         self.args = args
@@ -204,7 +282,26 @@ class LiveAiChecker:
                 self.args.blog_timeout,
             )
             problems = validate_blog_post(post)
-            notes = f"web_used={web_used}; sources={len(sources or [])}"
+            quality_report = service.build_quality_report(
+                blog_post=post,
+                word_count="medium",
+                keywords=[blog_type, "AI tools", "small business"],
+                phase_metrics=service.get_last_phase_metrics(),
+            )
+            editorial_total, editorial_scores = score_editorial_quality(
+                post,
+                blog_type=blog_type,
+                topic=topic,
+                keywords=[blog_type, "AI tools", "small business"],
+                use_web_search=True,
+                source_count=len(sources or []),
+                quality_report=quality_report,
+            )
+            if not quality_report.get("passed"):
+                problems.append("quality_report failed: " + "; ".join(quality_report.get("issues") or []))
+            if editorial_total < 18:
+                problems.append(f"editorial_score={editorial_total}/25 {editorial_scores}")
+            notes = f"web_used={web_used}; sources={len(sources or [])}; editorial={editorial_total}/25"
             self.add(
                 f"blog_type:{blog_type}",
                 "FAIL" if problems else "PASS",
@@ -327,12 +424,31 @@ class LiveAiChecker:
                 self.args.blog_timeout,
             )
             problems = validate_blog_post(post)
+            quality_report = service.build_quality_report(
+                blog_post=post,
+                word_count="short",
+                keywords=["AI developments", "2026"],
+                phase_metrics=service.get_last_phase_metrics(),
+            )
+            editorial_total, editorial_scores = score_editorial_quality(
+                post,
+                blog_type="news",
+                topic="Latest AI developments in 2026",
+                keywords=["AI developments", "2026"],
+                use_web_search=False,
+                source_count=0,
+                quality_report=quality_report,
+            )
+            if not quality_report.get("passed"):
+                problems.append("quality_report failed: " + "; ".join(quality_report.get("issues") or []))
+            if editorial_total < 18:
+                problems.append(f"editorial_score={editorial_total}/25 {editorial_scores}")
             self.add(
                 f"model_switch:{model}",
                 "FAIL" if problems else "PASS",
                 round(generation_time or (time.perf_counter() - started), 2),
                 model,
-                "; ".join(problems) or f"web_used={web_used}",
+                "; ".join(problems) or f"web_used={web_used}; editorial={editorial_total}/25",
             )
         except Exception as exc:
             self.add(
@@ -366,12 +482,31 @@ class LiveAiChecker:
             problems = validate_blog_post(post)
             if attempted != bool(flag):
                 problems.append(f"ddg_attempted={attempted}, expected={bool(flag)}")
+            report = service.build_quality_report(
+                blog_post=post,
+                word_count="short",
+                keywords=["AI writing tools", "responsible AI"],
+                phase_metrics=metrics,
+            )
+            editorial_total, editorial_scores = score_editorial_quality(
+                post,
+                blog_type="how-to",
+                topic="How small teams can evaluate AI writing tools responsibly",
+                keywords=["AI writing tools", "responsible AI"],
+                use_web_search=flag,
+                source_count=len(_sources or []),
+                quality_report=report,
+            )
+            if not report.get("passed"):
+                problems.append("quality_report failed: " + "; ".join(report.get("issues") or []))
+            if editorial_total < 18:
+                problems.append(f"editorial_score={editorial_total}/25 {editorial_scores}")
             self.add(
                 f"web_search:{flag}",
                 "FAIL" if problems else "PASS",
                 round(generation_time or (time.perf_counter() - started), 2),
                 DEFAULT_MODEL,
-                "; ".join(problems) or f"ddg_attempted={attempted}; web_used={web_used}",
+                "; ".join(problems) or f"ddg_attempted={attempted}; web_used={web_used}; editorial={editorial_total}/25",
             )
         except Exception as exc:
             self.add(
@@ -406,6 +541,15 @@ class LiveAiChecker:
                 keywords=["AI quality checks", "editorial workflow"],
                 phase_metrics=service.get_last_phase_metrics(),
             )
+            editorial_total, editorial_scores = score_editorial_quality(
+                post,
+                blog_type="tutorial",
+                topic="Quality checks for AI generated editorial workflows",
+                keywords=["AI quality checks", "editorial workflow"],
+                use_web_search=False,
+                source_count=0,
+                quality_report=report,
+            )
             required = {
                 "target_length",
                 "body_word_count",
@@ -419,6 +563,10 @@ class LiveAiChecker:
                 "phase_metrics",
             }
             missing = sorted(required - set(report.keys()))
+            if not report.get("passed"):
+                missing.append("quality_report.passed")
+            if editorial_total < 18:
+                missing.append(f"editorial_score={editorial_total}/25 {editorial_scores}")
             self.add(
                 "quality_report",
                 "FAIL" if missing else "PASS",
@@ -438,7 +586,7 @@ class LiveAiChecker:
     async def run(self) -> int:
         print(
             f"LIVE_AI_CHECK default_model={DEFAULT_MODEL} "
-            f"models={','.join(AVAILABLE_MODELS.keys())}",
+            f"models={','.join(get_blog_model_keys())}",
             flush=True,
         )
         for blog_type, topic in BLOG_TYPES.items():
@@ -446,7 +594,7 @@ class LiveAiChecker:
         for tool_id, params in GENERIC_PARAMS.items():
             await self.run_generic(tool_id, params)
         await self.run_excerpt()
-        for model in AVAILABLE_MODELS.keys():
+        for model in get_blog_model_keys():
             await self.run_model_switch(model)
         await self.run_web_search(True)
         await self.run_web_search(False)
