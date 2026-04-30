@@ -525,23 +525,31 @@ export default function Navbar() {
   return (
     <Box component="header">
       <Box sx={{ bgcolor: '#17181C', color: 'white' }}>
-        <Stack
-          direction={{ xs: 'column', lg: 'row' }}
-          spacing={2}
-          alignItems={{ xs: 'stretch', lg: 'center' }}
+        <Box
           sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: 'auto 1fr',
+              lg: 'auto 1fr auto',
+            },
+            gridTemplateAreas: {
+              xs: `
+                "label date"
+                "ticker ticker"
+              `,
+              lg: `
+                "label ticker date"
+              `,
+            },
+            gap: { xs: 1.5, lg: 2 },
+            alignItems: 'center',
             maxWidth: 'none',
             mx: 'auto',
             px: { xs: 2, md: 6 },
             py: { xs: 1.25, md: 1 },
           }}
         >
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={1.25}
-            alignItems={{ xs: 'flex-start', sm: 'center' }}
-            sx={{ flexShrink: 0 }}
-          >
+          <Box sx={{ gridArea: 'label', display: 'flex', alignItems: 'center' }}>
               <Box
                 sx={{
                   px: 1.5,
@@ -557,18 +565,10 @@ export default function Navbar() {
               >
                 {settings.identity_label}
               </Box>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.78)' }}>
-                {new Date().toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </Typography>
-            </Stack>
+          </Box>
 
             {visibleMarketStrip.length > 0 && (
-              <Box sx={{ flex: 1, minWidth: 0, overflowX: 'auto', display: 'flex', alignItems: 'center' }}>
+              <Box sx={{ gridArea: 'ticker', minWidth: 0, overflowX: 'auto', display: 'flex', alignItems: 'center' }}>
                 <Stack direction="row" spacing={1} sx={{ pb: 0.2 }}>
                   {visibleMarketStrip.map((item) => (
                     <MarketChip key={`${item.symbol}-${item.label}`} item={item} pulseKey={marketPulseKey} />
@@ -579,11 +579,19 @@ export default function Navbar() {
 
             <Stack
               direction="row"
-              spacing={1}
+              spacing={2}
               alignItems="center"
-              justifyContent={{ xs: 'space-between', lg: 'flex-end' }}
-              sx={{ flexShrink: 0 }}
+              justifyContent="flex-end"
+              sx={{ gridArea: 'date' }}
             >
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.78)' }}>
+                {new Date().toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </Typography>
               {!isMobile && socialLinks.length > 0 && (
                 <Stack direction="row" spacing={0.5}>
                   {socialLinks.map((social) => {
@@ -649,7 +657,7 @@ export default function Navbar() {
                 )
               )}
             </Stack>
-        </Stack>
+        </Box>
       </Box>
 
       <BreakingTicker label={settings.breaking_label} posts={breakingPosts} />
@@ -665,55 +673,54 @@ export default function Navbar() {
           }}
         >
           <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={2}
+            direction="row"
+            spacing={1}
             alignItems="center"
             justifyContent="space-between"
           >
             <Stack
-              direction={{ xs: 'row', md: 'row' }}
+              direction="row"
               spacing={1}
               alignItems="center"
-              sx={{ flex: 1, justifyContent: { xs: 'space-between', md: 'flex-start' } }}
+              sx={{ flex: 1, justifyContent: 'flex-start' }}
             >
-              {isMobile && (
-                <IconButton onClick={handleDrawerToggle}>
-                  {mobileOpen ? <IconX size={22} /> : <IconMenu2 size={22} />}
-                </IconButton>
-              )}
               <Button
                 {...getHrefButtonProps(settings.daily_brief_url, '/brief')}
                 variant="contained"
                 color="error"
+                size={isMobile ? 'small' : 'medium'}
                 sx={{
                   fontWeight: 700,
-                  px: 3,
+                  px: { xs: 1.5, md: 3 },
+                  fontSize: { xs: '0.7rem', md: '0.875rem' },
                 }}
               >
                 {settings.daily_brief_label}
               </Button>
             </Stack>
 
-            <Box sx={{ display: 'flex', justifyContent: 'center', flex: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', flex: { xs: 0, md: 1 } }}>
               <RouterLink to="/" style={{ display: 'inline-flex', alignItems: 'center' }}>
                 <Logo />
               </RouterLink>
             </Box>
 
             <Stack
-              direction={{ xs: 'row', md: 'row' }}
+              direction="row"
               spacing={1}
               alignItems="center"
-              sx={{ flex: 1, justifyContent: { xs: 'stretch', md: 'flex-end' } }}
+              sx={{ flex: 1, justifyContent: 'flex-end' }}
             >
               {settings.active_spotlight && (
                 <Button
                   {...getNavigationProps(settings.active_spotlight.target_url)}
                   variant="contained"
-                  endIcon={<IconArrowRight size={14} />}
+                  endIcon={<IconArrowRight size={12} />}
+                  size={isMobile ? 'small' : 'medium'}
                   sx={{
                     fontWeight: 800,
-                    px: 3,
+                    px: { xs: 1.5, md: 3 },
+                    fontSize: { xs: '0.7rem', md: '0.875rem' },
                     ...activeSpotlightStyles,
                     '&:hover': {
                       ...activeSpotlightStyles,
@@ -751,25 +758,20 @@ export default function Navbar() {
           }}
         >
           {isMobile ? (
-            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
-              <Typography variant="body2" sx={{ fontWeight: 800, letterSpacing: 1 }}>
-                SECTIONS
-              </Typography>
-              <Stack direction="row" spacing={0.5} alignItems="center">
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end" sx={{ width: '100%' }}>
+              <Stack direction="row" spacing={1} alignItems="center">
                 <IconButton
                   onClick={() => setMobileSearchOpen(true)}
                   sx={{ color: 'white' }}
-                  size="small"
                 >
-                  <IconSearch size={18} />
+                  <IconSearch size={22} />
                 </IconButton>
-                <Button
+                <IconButton
                   onClick={handleDrawerToggle}
-                  startIcon={mobileOpen ? <IconX size={16} /> : <IconMenu2 size={16} />}
                   sx={{ color: 'white' }}
                 >
-                  Browse
-                </Button>
+                  {mobileOpen ? <IconX size={22} /> : <IconMenu2 size={22} />}
+                </IconButton>
               </Stack>
             </Stack>
           ) : (
@@ -851,37 +853,7 @@ export default function Navbar() {
           </Stack>
           <Divider />
 
-          <Box sx={{ px: 2, py: 2 }}>
-            <Button
-              {...getHrefButtonProps(settings.daily_brief_url, '/brief')}
-              variant="contained"
-              color="error"
-              fullWidth
-              onClick={handleDrawerToggle}
-            >
-              {settings.daily_brief_label}
-            </Button>
-            {settings.active_spotlight && (
-              <Button
-                {...getNavigationProps(settings.active_spotlight.target_url)}
-                variant="contained"
-                fullWidth
-                onClick={handleDrawerToggle}
-                sx={{
-                  mt: 1,
-                  ...activeSpotlightStyles,
-                  '&:hover': {
-                    ...activeSpotlightStyles,
-                    filter: 'brightness(0.94)',
-                  },
-                }}
-              >
-                {settings.active_spotlight.label}
-              </Button>
-            )}
-          </Box>
 
-          <Divider />
           <List sx={{ flexGrow: 1 }}>
             {navItems.map((item, index) => (
               <Box key={item.label}>
