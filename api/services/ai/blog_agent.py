@@ -66,12 +66,13 @@ class BlogAgentService:
         """
         Build the prompt for blog generation using the tool config.
         """
-        # Map word_count to descriptive text
+        # Map word_count to explicit body budgets. The quality checker uses
+        # these same ranges, so the prompt should speak in the same terms.
         word_count_map = {
-            "short": "around 300 words",
-            "medium": "around 500 words",
-            "long": "around 1000 words",
-            "very-long": "1500+ words",
+            "short": "200-600 total body words",
+            "medium": "350-900 total body words",
+            "long": "700-1600 total body words",
+            "very-long": "1100-2500 total body words",
         }
 
         params = {
@@ -85,6 +86,12 @@ class BlogAgentService:
 
         # Build the prompt from tool config
         prompt = self.tool_config["prompt"].format(**params)
+        if keywords:
+            prompt += (
+                "\n\nSEO REQUIREMENT: Use the primary keyword "
+                f"'{keywords[0]}' naturally in both seo_title and seo_description. "
+                "Do not keyword-stuff; one natural mention is enough."
+            )
 
         # Add language instruction if not English
         if language != "en-US":
@@ -98,6 +105,7 @@ class BlogAgentService:
         blog_type: str,
         keywords: Optional[list[str]],
         sources: Optional[list[dict]],
+        word_count: str = "medium",
     ) -> str:
         """
         Build explicit outline guidance for the draft phase.
@@ -110,10 +118,18 @@ class BlogAgentService:
             if isinstance(title, str) and title.strip():
                 source_titles.append(title.strip())
 
+        if word_count == "short":
+            section_budget = "Use 3-4 sections. Keep each section body tight, roughly 60-140 words."
+        elif word_count == "medium":
+            section_budget = "Use 4-5 sections. Keep each section body roughly 80-180 words."
+        elif word_count == "long":
+            section_budget = "Use 5-7 sections. Develop each section with useful specifics."
+        else:
+            section_budget = "Use 6-8 sections. Keep depth high without repeating ideas."
+
         if blog_type in ("how-to", "tutorial"):
             sections = [
                 "Why This Matters",
-                "Foundations and Key Concepts",
                 "Step-by-Step Implementation",
                 "Common Mistakes and Fixes",
                 "What to Do Next",
@@ -140,6 +156,7 @@ class BlogAgentService:
             f"- Topic focus: {topic}",
             f"- Blog type: {blog_type}",
             f"- Primary keywords: {keywords_text}",
+            f"- Length discipline: {section_budget}",
             "- Prefer specific, editorial headings over generic labels like 'Introduction' or 'Conclusion'.",
             "- Use headings in this spirit (adapt them to the topic):",
         ]
@@ -220,6 +237,10 @@ class BlogAgentService:
         If draft_elapsed_s is already above the configured threshold, skip the editorial revision
         to stay well within the 300 s frontend timeout.
         """
+        blog_post = self._enforce_body_word_ceiling(
+            self._apply_quality_repairs(blog_post, keywords),
+            word_count,
+        )
         quality_issues = self._collect_quality_issues(
             blog_post=blog_post,
             word_count=word_count,
@@ -255,6 +276,10 @@ class BlogAgentService:
             prompt=revision_prompt,
             creativity=max(0.2, min(creativity, 0.8)),
             word_count=word_count,
+        )
+        revised_blog_post = self._enforce_body_word_ceiling(
+            self._apply_quality_repairs(revised_blog_post, keywords),
+            word_count,
         )
         revised_issues = self._collect_quality_issues(
             blog_post=revised_blog_post,
@@ -299,6 +324,53 @@ class BlogAgentService:
     def _count_total_words(self, blog_post: BlogPost) -> int:
         return sum(len(section.body_markdown.split()) for section in blog_post.sections)
 
+    @staticmethod
+    def _target_word_range(word_count: str) -> tuple[int, int]:
+        target_ranges = {
+            "short": (200, 600),
+            "medium": (350, 900),
+            "long": (700, 1600),
+            "very-long": (1100, 8000),
+        }
+        return target_ranges.get(word_count, target_ranges["medium"])
+
+    @staticmethod
+    def _minimum_section_words(word_count: str) -> int:
+        section_minimums = {
+            "short": 30,
+            "medium": 45,
+            "long": 70,
+            "very-long": 90,
+        }
+        return section_minimums.get(word_count, 45)
+
+    def _enforce_body_word_ceiling(
+        self,
+        blog_post: BlogPost,
+        word_count: str,
+    ) -> BlogPost:
+        _, max_words = self._target_word_range(word_count)
+        excess_words = self._count_total_words(blog_post) - max_words
+        if excess_words <= 0:
+            return blog_post
+
+        min_section_words = self._minimum_section_words(word_count)
+        for section in reversed(blog_post.sections):
+            if excess_words <= 0:
+                break
+            words = section.body_markdown.split()
+            removable = max(0, len(words) - min_section_words)
+            if removable <= 0:
+                continue
+            remove_count = min(removable, excess_words)
+            remaining = words[:-remove_count]
+            section.body_markdown = " ".join(remaining).rstrip(" ,;:")
+            if section.body_markdown and section.body_markdown[-1] not in ".!?":
+                section.body_markdown += "."
+            excess_words -= remove_count
+
+        return blog_post
+
     def _collect_quality_issues(
         self,
         blog_post: BlogPost,
@@ -310,13 +382,7 @@ class BlogAgentService:
         # Target word-count ranges by requested length.
         # These are intentionally generous — the model regularly lands above
         # the old tight ceilings and we prefer content over strict trimming.
-        target_ranges = {
-            "short": (200, 600),
-            "medium": (350, 900),
-            "long": (700, 1600),
-            "very-long": (1100, 8000),
-        }
-        min_words, max_words = target_ranges.get(word_count, target_ranges["medium"])
+        min_words, max_words = self._target_word_range(word_count)
         total_words = self._count_total_words(blog_post)
         if total_words < min_words or total_words > max_words:
             issues.append(
@@ -324,13 +390,7 @@ class BlogAgentService:
             )
 
         # Per-section quality floor (adaptive by target size)
-        section_minimums = {
-            "short": 30,
-            "medium": 45,
-            "long": 70,
-            "very-long": 90,
-        }
-        min_section_words = section_minimums.get(word_count, 45)
+        min_section_words = self._minimum_section_words(word_count)
 
         for idx, section in enumerate(blog_post.sections, start=1):
             section_words = len(section.body_markdown.split())
@@ -456,6 +516,20 @@ class BlogAgentService:
             return run_result.output
         return getattr(run_result, "data", None)
 
+    @staticmethod
+    def _retry_delay_seconds(
+        model_capabilities: dict[str, Any],
+        attempt: int,
+    ) -> float:
+        configured_delay = model_capabilities.get("transient_retry_delay_seconds")
+        try:
+            delay = float(configured_delay)
+        except (TypeError, ValueError):
+            delay = 0.0
+        if delay > 0:
+            return delay
+        return float(attempt * 2)
+
     def _build_model_settings(
         self,
         model_capabilities: dict[str, Any],
@@ -465,13 +539,17 @@ class BlogAgentService:
         force_json_object: bool = False,
     ) -> dict[str, Any]:
         settings_payload: dict[str, Any] = {
-            "max_tokens": self._get_max_tokens(word_count),
+            "max_tokens": self._get_max_tokens(word_count, model_capabilities),
             "timeout": settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS,
         }
 
         reasoning = model_capabilities.get("reasoning")
         if isinstance(reasoning, dict) and reasoning:
             settings_payload["openrouter_reasoning"] = reasoning
+
+        provider_routing = model_capabilities.get("openrouter_provider")
+        if isinstance(provider_routing, dict) and provider_routing:
+            settings_payload["openrouter_provider"] = provider_routing
 
         if model_capabilities.get("send_temperature", True):
             settings_payload["temperature"] = creativity
@@ -563,7 +641,9 @@ class BlogAgentService:
                 # Brief back-off before each attempt: prevents hitting the
                 # provider rate-limit that causes empty responses.
                 if attempt > 1:
-                    await asyncio.sleep(attempt * 2)
+                    await asyncio.sleep(
+                        self._retry_delay_seconds(model_capabilities, attempt)
+                    )
 
                 agent = Agent(
                     pydantic_model,
@@ -654,7 +734,15 @@ class BlogAgentService:
         fallback = self._normalize_whitespace(self._normalize_dash_punctuation(fallback_title))
         if len(normalized) < 45 and len(fallback) > len(normalized):
             normalized = fallback
-        return self._clamp_str(normalized or fallback_title, 30, 65)
+        if len(normalized) < 45:
+            for suffix in (" Guide", ": Practical Guide", " Tips", " Insights"):
+                candidate = f"{normalized}{suffix}".strip()
+                if 45 <= len(candidate) <= 65:
+                    normalized = candidate
+                    break
+                if len(normalized) < len(candidate) <= 65:
+                    normalized = candidate
+        return self._clamp_str(normalized or fallback_title, 45, 65)
 
     def _normalize_seo_description(self, seo_description: str, fallback_summary: str) -> str:
         normalized = self._normalize_whitespace(
@@ -700,6 +788,96 @@ class BlogAgentService:
             prompt = f"{prompt.rstrip('. ')}. {', '.join(requirements)}."
 
         return prompt
+
+    @staticmethod
+    def _replace_ai_tropes(value: str) -> str:
+        replacements = {
+            r"\bleveraging\b": "using",
+            r"\bleveraged\b": "used",
+            r"\bleverage\b": "use",
+            r"\bdelve into\b": "examine",
+            r"\bin the realm of\b": "in",
+            r"\bit is worth noting\b": "note",
+            r"\bgame[- ]changer\b": "major shift",
+            r"\bgroundbreaking\b": "important",
+            r"\bseamlessly\b": "smoothly",
+            r"\bcutting[- ]edge\b": "modern",
+            r"\bparamount\b": "essential",
+            r"\bcomprehensive guides\b": "practical guides",
+            r"\bcomprehensive guide\b": "practical guide",
+        }
+        cleaned = value
+        for pattern, replacement in replacements.items():
+            cleaned = re.sub(pattern, replacement, cleaned, flags=re.IGNORECASE)
+        return cleaned
+
+    def _ensure_primary_keyword_in_seo(
+        self,
+        blog_post: BlogPost,
+        keywords: Optional[list[str]],
+    ) -> BlogPost:
+        primary_keyword = (keywords or [None])[0]
+        if not primary_keyword:
+            return blog_post
+
+        keyword = primary_keyword.strip()
+        if not keyword:
+            return blog_post
+
+        if keyword.lower() not in blog_post.seo_title.lower():
+            blog_post.seo_title = self._normalize_seo_title(
+                f"{keyword.title()}: {blog_post.seo_title}",
+                blog_post.title,
+            )
+
+        if keyword.lower() not in blog_post.seo_description.lower():
+            blog_post.seo_description = self._normalize_seo_description(
+                f"{keyword}: {blog_post.seo_description}",
+                blog_post.summary,
+            )
+
+        return blog_post
+
+    def _apply_quality_repairs(
+        self,
+        blog_post: BlogPost,
+        keywords: Optional[list[str]] = None,
+    ) -> BlogPost:
+        blog_post.title = self._replace_ai_tropes(
+            self._normalize_dash_punctuation(blog_post.title)
+        )
+        blog_post.summary = self._replace_ai_tropes(
+            self._normalize_dash_punctuation(blog_post.summary)
+        )
+        blog_post.seo_title = self._replace_ai_tropes(
+            self._normalize_dash_punctuation(blog_post.seo_title)
+        )
+        blog_post.seo_description = self._replace_ai_tropes(
+            self._normalize_dash_punctuation(blog_post.seo_description)
+        )
+        blog_post.hero_image_prompt = self._replace_ai_tropes(
+            self._normalize_dash_punctuation(blog_post.hero_image_prompt or "")
+        )
+        blog_post.sections = [
+            BlogSection(
+                heading=self._replace_ai_tropes(
+                    self._normalize_dash_punctuation(section.heading)
+                ),
+                body_markdown=self._replace_ai_tropes(
+                    self._normalize_dash_punctuation(section.body_markdown)
+                ),
+            )
+            for section in blog_post.sections
+        ]
+        blog_post.seo_title = self._normalize_seo_title(
+            blog_post.seo_title,
+            blog_post.title,
+        )
+        blog_post.seo_description = self._normalize_seo_description(
+            blog_post.seo_description,
+            blog_post.summary,
+        )
+        return self._ensure_primary_keyword_in_seo(blog_post, keywords)
 
     def _validate_and_create_blog_post(self, data: dict) -> BlogPost:
         """
@@ -773,7 +951,7 @@ class BlogAgentService:
             summary=summary,
         )
 
-        return BlogPost(
+        blog_post = BlogPost(
             title=title,
             slug=slug,
             summary=summary,
@@ -784,6 +962,7 @@ class BlogAgentService:
             hero_image_prompt=hero_image_prompt,
             sources=data.get("sources"),
         )
+        return self._apply_quality_repairs(blog_post)
 
     def _generate_slug(self, title: str) -> str:
         """Generate a URL-friendly slug from title."""
@@ -791,7 +970,8 @@ class BlogAgentService:
         slug = re.sub(r"[^\w\s-]", "", slug)
         slug = re.sub(r"[\s_]+", "-", slug)
         slug = re.sub(r"-+", "-", slug)
-        return slug.strip("-")[:50]
+        slug = slug.strip("-")[:50]
+        return slug.rstrip("-")
 
     async def generate(
         self,
@@ -862,6 +1042,7 @@ class BlogAgentService:
             blog_type=blog_type,
             keywords=keywords,
             sources=sources,
+            word_count=word_count,
         )
 
         # Append web research context if available
@@ -921,14 +1102,37 @@ class BlogAgentService:
         generation_time = time.time() - start_time
         return blog_post, generation_time, web_search_used, sources
 
-    def _get_max_tokens(self, word_count: str) -> int:
-        """Get max tokens based on target word count."""
-        return {
-            "short": 1200,
-            "medium": 1800,
-            "long": 4200,
-            "very-long": 6000,
-        }.get(word_count, 1800)
+    def _get_max_tokens(
+        self,
+        word_count: str,
+        model_capabilities: dict[str, Any] | None = None,
+    ) -> int:
+        """Get max tokens based on target word count.
+
+        Blog responses include JSON structure, headings, summaries, SEO fields,
+        and multiple section bodies, so they need a larger ceiling than plain
+        prose prompts. The previous caps were low enough for some models to
+        truncate the JSON object before the closing brace.
+        """
+        default_tokens = {
+            "short": 2200,
+            "medium": 3200,
+            "long": 5200,
+            "very-long": 7000,
+        }.get(word_count, 3200)
+        model_token_caps = (
+            model_capabilities.get("max_tokens_by_word_count")
+            if isinstance(model_capabilities, dict)
+            else None
+        )
+        if isinstance(model_token_caps, dict):
+            try:
+                override = int(model_token_caps.get(word_count))
+            except (TypeError, ValueError):
+                override = 0
+            if override > 0:
+                return override
+        return default_tokens
 
     def blog_post_to_html(self, blog_post: BlogPost) -> str:
         """

@@ -66,6 +66,7 @@ class _TagRecord:
 class BlogTaxonomyService:
     MAX_TAGS = 5
     LOW_CONFIDENCE_THRESHOLD = 0.45
+    MEANINGFUL_CATEGORY_EVIDENCE = 8
 
     @staticmethod
     async def suggest_for_generated_post(
@@ -135,7 +136,7 @@ class _TaxonomyResolver:
         keywords: Optional[list[str]],
         preferred_category_id: Optional[int],
     ) -> BlogTaxonomySuggestion:
-        full_text = " ".join(
+        core_text = " ".join(
             filter(
                 None,
                 [
@@ -143,11 +144,14 @@ class _TaxonomyResolver:
                     blog_post.title,
                     blog_post.summary,
                     " ".join(section.heading for section in blog_post.sections),
-                    " ".join(blog_post.tags or []),
                     " ".join(keywords or []),
                 ],
             )
         )
+        generated_tag_text = " ".join(blog_post.tags or [])
+        full_text = " ".join(filter(None, [core_text, generated_tag_text]))
+        core_phrase = _normalize_phrase(core_text)
+        core_tokens = _tokenize(core_text)
         full_phrase = _normalize_phrase(full_text)
         full_tokens = _tokenize(full_text)
         title_summary_phrase = _normalize_phrase(
@@ -191,6 +195,7 @@ class _TaxonomyResolver:
                 tag_scores[record.tag.id] = score
 
         category_scores: dict[int, int] = defaultdict(int)
+        category_direct_scores: dict[int, int] = defaultdict(int)
         for record in self.category_records:
             score = 0
 
@@ -198,34 +203,55 @@ class _TaxonomyResolver:
                 score += 18
             if record.slug_phrase and record.slug_phrase in title_summary_phrase:
                 score += 12
-            if record.phrase and record.phrase in full_phrase:
+            if record.phrase and record.phrase in core_phrase:
                 score += 8
 
-            overlap = len(record.tokens & full_tokens)
+            overlap = len(record.tokens & core_tokens)
             score += overlap * 3
 
             if record.category.parent_id:
                 parent = self.categories_by_id.get(record.category.parent_id)
                 if parent:
                     parent_tokens = _tokenize(f"{parent.name} {parent.slug}")
-                    score += len(parent_tokens & full_tokens)
+                    score += len(parent_tokens & core_tokens)
 
             if score > 0:
+                category_direct_scores[record.category.id] += score
                 category_scores[record.category.id] += score
 
         for tag_record in self.tag_records:
             score = tag_scores.get(tag_record.tag.id)
             if not score or not tag_record.tag.category_id:
                 continue
-            category_scores[tag_record.tag.category_id] += score * 3
-            parent_id = self.categories_by_id.get(tag_record.tag.category_id).parent_id
+
+            tag_category_id = tag_record.tag.category_id
+            tag_has_core_evidence = bool(
+                (tag_record.phrase and tag_record.phrase in title_summary_phrase)
+                or (tag_record.slug_phrase and tag_record.slug_phrase in title_summary_phrase)
+                or (tag_record.phrase and tag_record.phrase in keyword_phrases)
+                or (tag_record.tokens and tag_record.tokens.issubset(title_summary_tokens))
+            )
+            if (
+                category_direct_scores.get(tag_category_id, 0)
+                >= BlogTaxonomyService.MEANINGFUL_CATEGORY_EVIDENCE
+                or tag_has_core_evidence
+            ):
+                category_scores[tag_category_id] += score * 2
+            else:
+                # Generated tags can be noisy. A single stray tag such as
+                # "security" or "crime" should not override stronger topic,
+                # title, summary, and keyword evidence for the article.
+                category_scores[tag_category_id] += min(score, 8)
+
+            parent_id = self.categories_by_id.get(tag_category_id).parent_id
             if parent_id:
-                category_scores[parent_id] += score
+                category_scores[parent_id] += min(score, 10)
 
         chosen_category = self._pick_category(category_scores, preferred_category_id)
         chosen_tag_records = self._pick_tags(tag_scores, chosen_category)
         confidence_score = self._calculate_confidence(
             category_scores=category_scores,
+            category_direct_scores=category_direct_scores,
             tag_scores=tag_scores,
             chosen_category=chosen_category,
             chosen_tag_records=chosen_tag_records,
@@ -325,6 +351,7 @@ class _TaxonomyResolver:
         self,
         *,
         category_scores: dict[int, int],
+        category_direct_scores: dict[int, int],
         tag_scores: dict[int, int],
         chosen_category: Optional[Category],
         chosen_tag_records: list[_TagRecord],
@@ -333,6 +360,7 @@ class _TaxonomyResolver:
             return 0.0
 
         category_component = 0.0
+        confidence_cap: Optional[float] = None
         if chosen_category is not None:
             chosen_score = category_scores.get(chosen_category.id, 0)
             ranked_category_ids = sorted(
@@ -354,6 +382,10 @@ class _TaxonomyResolver:
             dominance = max(chosen_score - runner_up_score, 0) / max(chosen_score, 1)
             category_component = (saturation * 0.55) + (dominance * 0.25)
 
+            direct_score = category_direct_scores.get(chosen_category.id, 0)
+            if direct_score < BlogTaxonomyService.MEANINGFUL_CATEGORY_EVIDENCE:
+                confidence_cap = BlogTaxonomyService.LOW_CONFIDENCE_THRESHOLD - 0.05
+
         tag_component = 0.0
         if chosen_tag_records:
             average_tag_score = sum(
@@ -361,7 +393,10 @@ class _TaxonomyResolver:
             ) / max(len(chosen_tag_records), 1)
             tag_component = min(average_tag_score / 18, 1.0) * 0.2
 
-        return round(min(category_component + tag_component, 1.0), 2)
+        confidence = min(category_component + tag_component, 1.0)
+        if confidence_cap is not None:
+            confidence = min(confidence, confidence_cap)
+        return round(confidence, 2)
 
     @staticmethod
     def _best_overlap_bonus(

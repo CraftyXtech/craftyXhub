@@ -1,14 +1,14 @@
 {
-  "default_model": "gpt-5.5",
+  "default_model": "qwen-3.6-max-preview",
   "models": {
-    "gpt-5.5": {
-      "id": "openai/gpt-5.5",
-      "label": "GPT-5.5",
+    "gpt-5.4": {
+      "id": "openai/gpt-5.4",
+      "label": "GPT-5.4",
       "provider": "OpenAI",
-      "supports_structured": true,
+      "supports_structured": false,
       "supports_compat_json": true,
-      "blog_enabled": true,
-      "output_mode": "native_json_schema",
+      "blog_enabled": false,
+      "output_mode": "json_object",
       "reasoning": {
         "effort": "low",
         "exclude": true
@@ -20,36 +20,6 @@
       "id": "z-ai/glm-5.1",
       "label": "GLM 5.1",
       "provider": "Z.AI",
-      "supports_structured": true,
-      "supports_compat_json": true,
-      "blog_enabled": true,
-      "output_mode": "native_json_schema",
-      "reasoning": {
-        "enabled": false,
-        "exclude": true
-      },
-      "send_temperature": true,
-      "json_object_fallback": true
-    },
-    "kimi-k2.6": {
-      "id": "moonshotai/kimi-k2.6",
-      "label": "Kimi K2.6",
-      "provider": "Moonshot AI",
-      "supports_structured": false,
-      "supports_compat_json": true,
-      "blog_enabled": true,
-      "output_mode": "json_object",
-      "reasoning": {
-        "enabled": false,
-        "exclude": true
-      },
-      "send_temperature": true,
-      "json_object_fallback": true
-    },
-    "deepseek-v4-flash": {
-      "id": "deepseek/deepseek-v4-flash",
-      "label": "DeepSeek V4 Flash",
-      "provider": "DeepSeek",
       "supports_structured": false,
       "supports_compat_json": true,
       "blog_enabled": true,
@@ -74,31 +44,24 @@
         "exclude": true
       },
       "send_temperature": true,
-      "json_object_fallback": true
+      "json_object_fallback": true,
+      "openrouter_provider": {
+        "sort": "throughput",
+        "ignore": ["atlas-cloud"]
+      },
+      "transient_retry_delay_seconds": 3,
+      "max_tokens_by_word_count": {
+        "short": 1300
+      }
     },
     "qwen-3.6-max-preview": {
       "id": "qwen/qwen3.6-max-preview",
       "label": "Qwen 3.6 Max Preview",
       "provider": "Qwen",
-      "supports_structured": true,
+      "supports_structured": false,
       "supports_compat_json": true,
       "blog_enabled": true,
-      "output_mode": "native_json_schema",
-      "reasoning": {
-        "enabled": false,
-        "exclude": true
-      },
-      "send_temperature": true,
-      "json_object_fallback": true
-    },
-    "claude-sonnet-4.6": {
-      "id": "anthropic/claude-sonnet-4.6",
-      "label": "Sonnet 4.6",
-      "provider": "Anthropic",
-      "supports_structured": true,
-      "supports_compat_json": true,
-      "blog_enabled": true,
-      "output_mode": "native_json_schema",
+      "output_mode": "json_object",
       "reasoning": {
         "enabled": false,
         "exclude": true

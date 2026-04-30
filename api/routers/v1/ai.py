@@ -16,7 +16,7 @@ from services.ai import (
 )
 from services.ai.seo_keywords import resolve_seo_keywords
 from services.post import PostService
-from services.ai.llm_config import DEFAULT_MODEL
+from services.ai.llm_config import DEFAULT_MODEL, ensure_blog_model_enabled
 from schemas.ai import (
     GenerateRequest,
     GenerateResponse,
@@ -31,7 +31,7 @@ from schemas.ai import (
     BlogPost,
 )
 from schemas.post import PostCreate
-from models import User
+from models import Post, User
 from typing import List
 from datetime import datetime, timezone
 
@@ -41,6 +41,10 @@ logger = logging.getLogger(__name__)
 
 def _resolve_model_name(model_name: str | None) -> str:
     return model_name or DEFAULT_MODEL
+
+
+def _resolve_blog_model_name(model_name: str | None) -> str:
+    return ensure_blog_model_enabled(_resolve_model_name(model_name))
 
 
 def _iter_exception_messages(exc: Exception) -> list[str]:
@@ -107,7 +111,7 @@ def _raise_ai_http_exception(
             detail=(
                 f"{operation} with {model_name} timed out after about "
                 f"{settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS} seconds. "
-                "Try again, shorten the request, or switch to GPT-5.5."
+                "Try again, shorten the request, or switch to another enabled model."
             ),
         )
 
@@ -486,7 +490,7 @@ async def generate_blog(
         # Initialize the blog agent service
         blog_agent = BlogAgentService()
         use_web_search = request.use_web_search
-        resolved_model = _resolve_model_name(request.model)
+        resolved_model = _resolve_blog_model_name(request.model)
         seed_keywords = resolve_seo_keywords(
             topic=request.topic,
             provided_keywords=request.keywords,
@@ -589,6 +593,20 @@ async def generate_blog(
                     category_id = taxonomy_suggestion.category.id
 
                 # Create the post
+                final_slug = blog_post.slug
+                existing_post = await PostService.get_post_by_slug(
+                    db,
+                    final_slug,
+                    include_deleted=True,
+                )
+                if existing_post:
+                    final_slug = await PostService.generate_unique_slug(
+                        db,
+                        blog_post.title,
+                        Post,
+                    )
+                    blog_post.slug = final_slug
+
                 post_content_blocks = {
                     "ai_generation": {
                         "generator": "blog-agent",
@@ -608,7 +626,7 @@ async def generate_blog(
 
                 post_data = PostCreate(
                     title=blog_post.title,
-                    slug=blog_post.slug,
+                    slug=final_slug,
                     content=html_content,
                     content_blocks=post_content_blocks,
                     excerpt=blog_post.summary,

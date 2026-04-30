@@ -33,6 +33,8 @@ def _load_model_config() -> dict:
         )
     if not default_model or default_model not in models:
         raise RuntimeError("OpenRouter model config default_model must exist in models")
+    if not bool(models[default_model].get("blog_enabled", False)):
+        raise RuntimeError("OpenRouter model config default_model must be blog_enabled")
     return config
 
 
@@ -87,7 +89,28 @@ def get_blog_model_capabilities(model_name: str) -> dict:
         "reasoning": entry.get("reasoning"),
         "send_temperature": bool(entry.get("send_temperature", True)),
         "json_object_fallback": bool(entry.get("json_object_fallback", True)),
+        "max_tokens_by_word_count": entry.get("max_tokens_by_word_count") or {},
+        "transient_retry_delay_seconds": entry.get("transient_retry_delay_seconds"),
+        "openrouter_provider": entry.get("openrouter_provider") or {},
     }
+
+
+def ensure_blog_model_enabled(model_name: str) -> str:
+    entry = get_model_entry(model_name)
+    if not bool(entry.get("blog_enabled", False)):
+        visible = ", ".join(get_blog_model_keys())
+        raise ValueError(
+            f"Unsupported blog model: {model_name}. Supported blog models: {visible}"
+        )
+    return model_name
+
+
+def get_blog_model_keys() -> list[str]:
+    return [
+        key
+        for key, entry in AVAILABLE_MODELS.items()
+        if bool(entry.get("blog_enabled", False))
+    ]
 
 
 def get_model(model_name: str) -> OpenRouterModel:
@@ -122,11 +145,13 @@ def get_models_for_frontend() -> list[dict]:
             }
         ]
 
-    visible_models = [
-        (key, entry)
-        for key, entry in AVAILABLE_MODELS.items()
-        if bool(entry.get("blog_enabled", False))
-    ]
+    visible_model_keys = get_blog_model_keys()
+    if DEFAULT_MODEL in visible_model_keys:
+        visible_model_keys = [
+            DEFAULT_MODEL,
+            *[key for key in visible_model_keys if key != DEFAULT_MODEL],
+        ]
+    visible_models = [(key, AVAILABLE_MODELS[key]) for key in visible_model_keys]
 
     return [
         {
