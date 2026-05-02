@@ -60,7 +60,7 @@
       }
     },
     "deepseek-v4-pro": {
-      "id": "deepseek/deepseek-v4-pro",
+      "id": "deepseek-ai/deepseek-v4-pro",
       "label": "DeepSeek V4 Pro",
       "provider": "DeepSeek",
       "provider_type": "nvidia",
