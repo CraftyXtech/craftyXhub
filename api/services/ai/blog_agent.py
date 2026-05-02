@@ -62,6 +62,7 @@ class BlogAgentService:
         word_count: str = "medium",
         tone: str = "professional",
         language: str = "en-US",
+        internal_linking_context: str = "",
     ) -> str:
         """
         Build the prompt for blog generation using the tool config.
@@ -82,6 +83,7 @@ class BlogAgentService:
             "audience": audience or "General audience",
             "word_count": word_count_map.get(word_count, "around 500 words"),
             "tone": tone,
+            "internal_linking_context": internal_linking_context,
         }
 
         # Build the prompt from tool config
@@ -98,6 +100,67 @@ class BlogAgentService:
             prompt += f"\n\nIMPORTANT: Write all content in {language}."
 
         return prompt
+
+    @staticmethod
+    def _format_internal_linking_context(
+        published_posts: list[dict] | None,
+    ) -> str:
+        if not published_posts:
+            return (
+                "## Existing Articles You Can Reference\n"
+                "No existing published articles were provided. Do not invent internal /blog/ links."
+            )
+
+        grouped_posts: dict[str, list[dict]] = {}
+        for post in published_posts:
+            if not isinstance(post, dict):
+                continue
+
+            title = str(post.get("title") or "").strip()
+            slug = str(post.get("slug") or "").strip().strip("/")
+            if not title or not slug:
+                continue
+
+            category_name = str(
+                post.get("category_name")
+                or post.get("category")
+                or (
+                    f"Category {post.get('category_id')}"
+                    if post.get("category_id") is not None
+                    else "Uncategorized"
+                )
+            ).strip()
+            grouped_posts.setdefault(category_name or "Uncategorized", []).append(
+                {"title": title, "slug": slug}
+            )
+
+        if not grouped_posts:
+            return (
+                "## Existing Articles You Can Reference\n"
+                "No valid published article targets were provided. Do not invent internal /blog/ links."
+            )
+
+        lines = [
+            "## Existing Articles You Can Reference",
+            "When the content naturally relates to one of these articles, add an internal link using <a href=\"/blog/{slug}\">natural anchor text</a>. Aim for 2-4 contextual internal links total.",
+        ]
+        for category_name in sorted(grouped_posts):
+            lines.append(f"Category: {category_name}")
+            for post in grouped_posts[category_name]:
+                lines.append(f'- "{post["title"]}" -> /blog/{post["slug"]}')
+
+        return "\n".join(lines)
+
+    @staticmethod
+    def _count_internal_links(blog_post: BlogPost) -> int:
+        body = "\n".join(section.body_markdown for section in blog_post.sections)
+        return len(
+            re.findall(
+                r"""href=["']/blog/[^"']+["']|\]\(/blog/[^)\s]+(?:\s+["'][^"']+["'])?\)""",
+                body,
+                flags=re.IGNORECASE,
+            )
+        )
 
     def _build_outline_guidance(
         self,
@@ -230,6 +293,7 @@ class BlogAgentService:
         word_count: str,
         keywords: Optional[list[str]],
         draft_elapsed_s: float = 0.0,
+        published_posts_available: bool = False,
     ) -> tuple[BlogPost, dict[str, Any] | None, bool]:
         """
         Editorial phase: deterministic quality checks and one corrective revision.
@@ -245,6 +309,7 @@ class BlogAgentService:
             blog_post=blog_post,
             word_count=word_count,
             keywords=keywords,
+            published_posts_available=published_posts_available,
         )
         if not quality_issues:
             return blog_post, None, False
@@ -285,6 +350,7 @@ class BlogAgentService:
             blog_post=revised_blog_post,
             word_count=word_count,
             keywords=keywords,
+            published_posts_available=published_posts_available,
         )
         if revised_issues:
             # Return the revised post anyway — the issues are logged for
@@ -376,6 +442,7 @@ class BlogAgentService:
         blog_post: BlogPost,
         word_count: str,
         keywords: Optional[list[str]] = None,
+        published_posts_available: bool = False,
     ) -> list[str]:
         issues: list[str] = []
 
@@ -421,6 +488,11 @@ class BlogAgentService:
 
         issues.extend(seo_quality_issues(blog_post, keywords))
 
+        if published_posts_available and self._count_internal_links(blog_post) == 0:
+            issues.append(
+                "Add 2-4 contextual internal links to the provided existing articles using /blog/{slug} URLs."
+            )
+
         return issues
 
     def build_quality_report(
@@ -429,6 +501,7 @@ class BlogAgentService:
         word_count: str,
         keywords: Optional[list[str]] = None,
         phase_metrics: Optional[dict[str, Any]] = None,
+        published_posts_available: bool = False,
     ) -> dict:
         """
         Build a deterministic quality report for API consumers.
@@ -438,10 +511,12 @@ class BlogAgentService:
         readability = analyze_readability(full_text)
         trope_hits = find_ai_tropes(full_text)
         seo_issues = seo_quality_issues(blog_post, keywords)
+        internal_link_count = self._count_internal_links(blog_post)
         all_issues = self._collect_quality_issues(
             blog_post=blog_post,
             word_count=word_count,
             keywords=keywords,
+            published_posts_available=published_posts_available,
         )
 
         section_word_counts = [
@@ -457,6 +532,7 @@ class BlogAgentService:
             "body_word_count": body_word_count,
             "section_count": len(blog_post.sections),
             "section_word_counts": section_word_counts,
+            "internal_link_count": internal_link_count,
             "readability": readability,
             "ai_trope_hits": trope_hits,
             "seo_issues": seo_issues,
@@ -985,6 +1061,7 @@ class BlogAgentService:
         model: str = DEFAULT_MODEL,
         creativity: float = 0.7,
         use_web_search: bool = True,
+        published_posts: list[dict] | None = None,
     ) -> tuple[BlogPost, float, bool, list[dict] | None]:
         """
         Generate a complete blog post with configurable web search.
@@ -1004,6 +1081,9 @@ class BlogAgentService:
             "timings_ms": {},
             "usage": {},
             "revision_applied": False,
+            "internal_linking": {
+                "provided_targets": len(published_posts or []),
+            },
             "web_grounding": {
                 "requested": bool(use_web_search),
                 "ddg_attempted": False,
@@ -1027,6 +1107,7 @@ class BlogAgentService:
 
         # ── Phase 2: Outline Guidance ───────────────────────────────
         phase_start = time.perf_counter()
+        internal_linking_context = self._format_internal_linking_context(published_posts)
         prompt = self._build_blog_prompt(
             topic=topic,
             blog_type=blog_type,
@@ -1035,6 +1116,7 @@ class BlogAgentService:
             word_count=word_count,
             tone=tone,
             language=language,
+            internal_linking_context=internal_linking_context,
         )
 
         prompt += self._build_outline_guidance(
@@ -1085,6 +1167,7 @@ class BlogAgentService:
             word_count=word_count,
             keywords=keywords,
             draft_elapsed_s=draft_elapsed_s,
+            published_posts_available=bool(published_posts),
         )
         self._last_phase_metrics["timings_ms"]["editorial"] = round(
             (time.perf_counter() - phase_start) * 1000, 2
@@ -1093,6 +1176,9 @@ class BlogAgentService:
         self._last_phase_metrics["revision_applied"] = revision_applied
         self._last_phase_metrics["timings_ms"]["total"] = round(
             (time.perf_counter() - perf_start) * 1000, 2
+        )
+        self._last_phase_metrics["internal_linking"]["generated_link_count"] = (
+            self._count_internal_links(blog_post)
         )
 
         # Attach sources to the blog post if web search was used

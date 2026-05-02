@@ -478,7 +478,8 @@ BANNED STRUCTURAL PATTERNS:
 - Skip throat-clearing. Don't say "it's worth noting that X", just say X
 - Don't inflate importance or use promotional language
 
-You follow E-E-A-T principles and cite sources as markdown hyperlinks.""",
+You follow E-E-A-T principles and cite sources as markdown hyperlinks.
+You weave 2-4 contextual internal links to existing CraftyXHub articles when relevant targets are provided. Use this exact HTML format: <a href="/blog/{slug}">natural anchor text</a>. Only link where it genuinely adds value for the reader, and never invent /blog/ slugs that are not listed in the prompt.""",
             "prompt": """Write a complete, publication-ready blog post on the following topic:
 
 Topic: {topic}
@@ -487,6 +488,8 @@ Target Keywords: {keywords}
 Target Audience: {audience}
 Tone: {tone}
 Target Length: {word_count}
+
+{internal_linking_context}
 
 IMPORTANT: You MUST return a valid JSON object with this exact structure:
 {{
@@ -529,10 +532,11 @@ Quality Requirements:
 11. Prefer specific section headings. Avoid generic labels like "Introduction" and "Conclusion" unless the piece genuinely needs them.
 12. Write like an experienced journalist. Use contractions, vary rhythm, show personality, and be specific. Every sentence must earn its place. Cut filler ruthlessly.
 13. Do not use em dashes or en dashes anywhere in the body, summary, SEO title, or SEO description.
+14. If existing articles are listed above, weave 2-4 contextual internal links into body_markdown using <a href="/blog/{{slug}}">natural anchor text</a>. Use only the listed /blog/ URLs, and skip links that do not fit naturally.
 
 Return ONLY the JSON object, no additional text.""",
             "required_fields": ["topic", "blog_type"],
-            "optional_fields": ["keywords", "audience", "word_count"],
+            "optional_fields": ["keywords", "audience", "word_count", "internal_linking_context"],
             "output_mode": "structured",
             "variants_policy": "single_piece",
             "supports_web_search": True,

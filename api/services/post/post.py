@@ -1490,6 +1490,56 @@ class PostService:
             )
 
     @staticmethod
+    async def get_internal_link_targets(
+            session: AsyncSession,
+            *,
+            limit: int = 50,
+            category_id: Optional[int] = None,
+            include_deleted: bool = False
+    ) -> List[dict]:
+        try:
+            query = (
+                select(
+                    Post.title,
+                    Post.slug,
+                    Post.category_id,
+                    Category.name.label("category_name"),
+                )
+                .outerjoin(Category, Post.category_id == Category.id)
+                .where(Post.is_published == True)
+            )
+            query = PostService._add_soft_delete_filter(query, include_deleted)
+
+            if category_id:
+                query = query.order_by(
+                    (Post.category_id == category_id).desc(),
+                    Post.published_at.desc().nullslast(),
+                    Post.created_at.desc(),
+                )
+            else:
+                query = query.order_by(
+                    Post.published_at.desc().nullslast(),
+                    Post.created_at.desc(),
+                )
+
+            result = await session.execute(query.limit(limit))
+            return [
+                {
+                    "title": row.title,
+                    "slug": row.slug,
+                    "category_id": row.category_id,
+                    "category_name": row.category_name,
+                }
+                for row in result.all()
+                if row.title and row.slug
+            ]
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to get internal link targets: {str(e)}"
+            )
+
+    @staticmethod
     async def get_posts_count(
             session: AsyncSession,
             published_only: bool = True,

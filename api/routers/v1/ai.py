@@ -495,6 +495,13 @@ async def generate_blog(
             topic=request.topic,
             provided_keywords=request.keywords,
         )
+        published_posts = []
+        if db is not None:
+            published_posts = await PostService.get_internal_link_targets(
+                db,
+                category_id=request.category_id,
+                limit=50,
+            )
 
         # Generate the blog post
         blog_post, generation_time, web_search_used, sources = await blog_agent.generate(
@@ -508,6 +515,7 @@ async def generate_blog(
             model=resolved_model,
             creativity=request.creativity or 0.7,
             use_web_search=use_web_search,
+            published_posts=published_posts,
         )
 
         taxonomy_suggestion = await BlogTaxonomyService.suggest_for_generated_post(
@@ -528,6 +536,7 @@ async def generate_blog(
             word_count=request.word_count or "medium",
             keywords=resolved_keywords,
             phase_metrics=blog_agent.get_last_phase_metrics(),
+            published_posts_available=bool(published_posts),
         )
 
         draft_id = None
@@ -556,6 +565,7 @@ async def generate_blog(
                         "web_search_used": web_search_used,
                         "phase_metrics": blog_agent.get_last_phase_metrics(),
                         "quality_report": quality_report,
+                        "internal_link_targets_count": len(published_posts),
                         "taxonomy_suggestion": taxonomy_suggestion.model_dump(
                             exclude_none=True
                         ),
@@ -618,6 +628,7 @@ async def generate_blog(
                         "resolved_keywords": resolved_keywords,
                         "phase_metrics": blog_agent.get_last_phase_metrics(),
                         "quality_report": quality_report,
+                        "internal_link_targets_count": len(published_posts),
                         "taxonomy_suggestion": taxonomy_suggestion.model_dump(
                             exclude_none=True
                         ),

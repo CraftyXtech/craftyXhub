@@ -536,7 +536,67 @@ def test_build_quality_report_returns_expected_shape():
     assert "issues" in report
     assert "passed" in report
     assert "phase_metrics" in report
+    assert "internal_link_count" in report
     assert report["phase_metrics"]["timings_ms"]["total"] == 123.45
+
+
+def test_internal_linking_context_groups_existing_posts():
+    service = BlogAgentService()
+
+    context = service._format_internal_linking_context(
+        [
+            {
+                "title": "What Is Machine Learning",
+                "slug": "what-is-machine-learning",
+                "category_id": 45,
+                "category_name": "AI",
+            },
+            {
+                "title": "Neural Networks Explained",
+                "slug": "neural-networks-explained",
+                "category_id": 45,
+                "category_name": "AI",
+            },
+            {
+                "title": "Startup Cash Flow Basics",
+                "slug": "startup-cash-flow-basics",
+                "category_id": 51,
+                "category_name": "Business",
+            },
+        ]
+    )
+
+    assert "Category: AI" in context
+    assert '"What Is Machine Learning" -> /blog/what-is-machine-learning' in context
+    assert "Category: Business" in context
+    assert '<a href="/blog/{slug}">natural anchor text</a>' in context
+
+
+def test_quality_report_counts_internal_links_and_warns_when_missing():
+    service = BlogAgentService()
+    linked_post = _build_blog(250)
+    linked_post.sections[0].body_markdown += (
+        ' Read <a href="/blog/what-is-machine-learning">machine learning basics</a> next.'
+    )
+    linked_post.sections[1].body_markdown += (
+        " See [neural networks](/blog/neural-networks-explained) for the deeper model view."
+    )
+
+    linked_report = service.build_quality_report(
+        blog_post=linked_post,
+        word_count="medium",
+        published_posts_available=True,
+    )
+    assert linked_report["internal_link_count"] == 2
+    assert not any("internal links" in issue for issue in linked_report["issues"])
+
+    unlinked_report = service.build_quality_report(
+        blog_post=_build_blog(250),
+        word_count="medium",
+        published_posts_available=True,
+    )
+    assert unlinked_report["internal_link_count"] == 0
+    assert any("internal links" in issue for issue in unlinked_report["issues"])
 
 
 def test_build_model_settings_omits_temperature_for_reasoning_model():
