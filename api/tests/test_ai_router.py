@@ -25,15 +25,15 @@ def test_blog_generate_request_does_not_save_draft_by_default():
     assert request.save_draft is False
 
 
-def test_glm_51_is_the_only_enabled_blog_model():
+def test_kimi_k26_is_the_only_enabled_blog_model():
     assert "gpt-5.4" in AVAILABLE_MODELS
     assert AVAILABLE_MODELS["gpt-5.4"]["blog_enabled"] is False
-    assert DEFAULT_MODEL == "glm-5.1"
-    assert AVAILABLE_MODELS["glm-5.1"]["blog_enabled"] is True
-    assert AVAILABLE_MODELS["glm-5.1"]["provider_type"] == "nvidia"
+    assert DEFAULT_MODEL == "kimi-k2.6"
+    assert AVAILABLE_MODELS["kimi-k2.6"]["blog_enabled"] is True
+    assert AVAILABLE_MODELS["kimi-k2.6"]["provider_type"] == "nvidia"
     assert [
         key for key, entry in AVAILABLE_MODELS.items() if entry.get("blog_enabled")
-    ] == ["glm-5.1"]
+    ] == ["kimi-k2.6"]
 
 
 @pytest.fixture
@@ -356,7 +356,7 @@ async def test_get_blog_options_exposes_web_search_default(app, monkeypatch):
     assert data["use_web_search_default"] is True
     assert data["blog_types"][0]["value"] == "news"
     model_values = [model["value"] for model in data["models"]]
-    assert model_values == ["glm-5.1"]
+    assert model_values == ["kimi-k2.6"]
     assert data["models"][0]["provider_type"] == "nvidia"
     assert "gpt-5.4" not in model_values
 
