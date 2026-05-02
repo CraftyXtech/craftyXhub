@@ -25,10 +25,15 @@ def test_blog_generate_request_does_not_save_draft_by_default():
     assert request.save_draft is False
 
 
-def test_gpt_54_exists_but_is_paused_for_blog_generation():
+def test_glm_51_is_the_only_enabled_blog_model():
     assert "gpt-5.4" in AVAILABLE_MODELS
     assert AVAILABLE_MODELS["gpt-5.4"]["blog_enabled"] is False
-    assert DEFAULT_MODEL == "qwen-3.6-max-preview"
+    assert DEFAULT_MODEL == "glm-5.1"
+    assert AVAILABLE_MODELS["glm-5.1"]["blog_enabled"] is True
+    assert AVAILABLE_MODELS["glm-5.1"]["provider_type"] == "nvidia"
+    assert [
+        key for key, entry in AVAILABLE_MODELS.items() if entry.get("blog_enabled")
+    ] == ["glm-5.1"]
 
 
 @pytest.fixture
@@ -340,7 +345,7 @@ async def test_generate_blog_auto_generates_keywords_when_blank(app, monkeypatch
 
 @pytest.mark.asyncio
 async def test_get_blog_options_exposes_web_search_default(app, monkeypatch):
-    monkeypatch.setattr(settings, "OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setattr(settings, "NVIDIA_API_KEY", "test-key")
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
@@ -351,7 +356,8 @@ async def test_get_blog_options_exposes_web_search_default(app, monkeypatch):
     assert data["use_web_search_default"] is True
     assert data["blog_types"][0]["value"] == "news"
     model_values = [model["value"] for model in data["models"]]
-    assert model_values == ["qwen-3.6-max-preview", "glm-5.1", "deepseek-v4-pro"]
+    assert model_values == ["glm-5.1"]
+    assert data["models"][0]["provider_type"] == "nvidia"
     assert "gpt-5.4" not in model_values
 
 

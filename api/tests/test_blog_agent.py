@@ -635,6 +635,33 @@ def test_build_model_settings_adds_json_object_fallback():
     }
 
 
+def test_build_model_settings_merges_configured_extra_body_with_json_mode():
+    service = BlogAgentService()
+
+    model_settings = service._build_model_settings(
+        {
+            "supports_compat_json": True,
+            "json_object_fallback": True,
+            "send_temperature": True,
+            "extra_body": {
+                "chat_template_kwargs": {
+                    "enable_thinking": True,
+                    "clear_thinking": False,
+                }
+            },
+        },
+        creativity=0.7,
+        word_count="medium",
+        force_json_object=True,
+    )
+
+    assert model_settings["extra_body"]["chat_template_kwargs"] == {
+        "enable_thinking": True,
+        "clear_thinking": False,
+    }
+    assert model_settings["extra_body"]["response_format"] == {"type": "json_object"}
+
+
 def test_build_model_settings_passes_openrouter_provider_routing():
     service = BlogAgentService()
 

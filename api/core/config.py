@@ -46,6 +46,12 @@ class Settings:
     GROK_API_KEY: str = os.getenv("GROK_API_KEY", "")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    NVIDIA_API_KEY: str = os.getenv("NVIDIA_API_KEY", "")
+    NVIDIA_BASE_URL: str = os.getenv(
+        "NVIDIA_BASE_URL",
+        "https://integrate.api.nvidia.com/v1",
+    )
+    UNSPLASH_ACCESS_KEY: str = os.getenv("UNSPLASH_ACCESS_KEY", "")
     AI_MODEL_REQUEST_TIMEOUT_SECONDS: int = int(
         os.getenv("AI_MODEL_REQUEST_TIMEOUT_SECONDS", "45")
     )

@@ -630,12 +630,31 @@ class BlogAgentService:
         if model_capabilities.get("send_temperature", True):
             settings_payload["temperature"] = creativity
 
+        configured_extra_body = model_capabilities.get("extra_body")
+        if isinstance(configured_extra_body, dict) and configured_extra_body:
+            settings_payload["extra_body"] = self._deep_merge_dicts(
+                settings_payload.get("extra_body", {}),
+                configured_extra_body,
+            )
+
         if force_json_object and model_capabilities.get("json_object_fallback", True):
-            settings_payload["extra_body"] = {
-                "response_format": {"type": "json_object"}
-            }
+            settings_payload["extra_body"] = self._deep_merge_dicts(
+                settings_payload.get("extra_body", {}),
+                {"response_format": {"type": "json_object"}},
+            )
 
         return settings_payload
+
+    @staticmethod
+    def _deep_merge_dicts(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+        merged = dict(base)
+        for key, value in overlay.items():
+            existing = merged.get(key)
+            if isinstance(existing, dict) and isinstance(value, dict):
+                merged[key] = BlogAgentService._deep_merge_dicts(existing, value)
+            else:
+                merged[key] = value
+        return merged
 
     async def _run_generation_once(
         self,

@@ -218,6 +218,8 @@ typings/
 # IDE and Editor files
 .idea/
 .vscode/
+api/scripts/.batch_progress.json
+api/scripts/.batch_errors.jsonl
 *.swp
 *.swo
 *~
