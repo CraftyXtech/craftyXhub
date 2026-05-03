@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
 // MUI
@@ -94,7 +94,6 @@ import {
   validateFeaturedImageFile,
 } from '@/utils/featuredImageValidation';
 import { getApiErrorMessage } from '@/utils/apiError';
-import { filterTagIdsForCategory, getAllowedTagsForCategory } from '@/utils/taxonomyFilters';
 
 const SETTINGS_PANEL_WIDTH = 200;
 const INTELLIGENCE_PANEL_WIDTH = 380;
@@ -172,29 +171,12 @@ export default function AdminPostEditor() {
   const [tags, setTags] = useState([]);
 
   const [wordCount, setWordCount] = useState(0);
-  const allowedTags = useMemo(
-    () => getAllowedTagsForCategory(categoryId, categories, tags),
-    [categoryId, categories, tags]
-  );
 
   useEffect(() => {
     if (aiState?.categoryId && !categoryId) {
       setCategoryId(String(aiState.categoryId));
     }
   }, [aiState?.categoryId, categoryId]);
-
-  useEffect(() => {
-    if (!selectedTags.length) return;
-    const filteredTagIds = filterTagIdsForCategory(
-      selectedTags,
-      categoryId,
-      categories,
-      tags
-    );
-    if (filteredTagIds.length !== selectedTags.length) {
-      setSelectedTags(filteredTagIds);
-    }
-  }, [categoryId, categories, selectedTags, tags]);
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -440,13 +422,7 @@ export default function AdminPostEditor() {
     if (metadata.categoryId && !categoryId) setCategoryId(String(metadata.categoryId));
 
     if (metadata.tagIds?.length > 0 && selectedTags.length === 0) {
-      const compatibleTagIds = filterTagIdsForCategory(
-        metadata.tagIds,
-        metadata.categoryId || categoryId,
-        categories,
-        tags
-      );
-      setSelectedTags(compatibleTagIds);
+      setSelectedTags(metadata.tagIds);
       return;
     }
 
@@ -458,16 +434,10 @@ export default function AdminPostEditor() {
         ))
         .map(t => t.id);
       if (matchedTagIds.length > 0 && selectedTags.length === 0) {
-        const compatibleTagIds = filterTagIdsForCategory(
-          matchedTagIds,
-          metadata.categoryId || categoryId,
-          categories,
-          tags
-        );
-        setSelectedTags(compatibleTagIds);
+        setSelectedTags(matchedTagIds);
       }
     }
-  }, [categories, categoryId, excerpt, metaDescription, metaTitle, selectedTags.length, seoKeywords, slug, tags, title]);
+  }, [categoryId, excerpt, metaDescription, metaTitle, selectedTags.length, seoKeywords, slug, tags, title]);
 
   const handleGenerateExcerpt = useCallback(async () => {
     const currentContent = editorRef.current ? editorRef.current.getContent() : content;
@@ -1122,13 +1092,13 @@ export default function AdminPostEditor() {
                     renderValue={(selected) => (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {selected.map((id) => {
-                          const tag = allowedTags.find(t => t.id === id) || tags.find(t => t.id === id);
+                          const tag = tags.find(t => t.id === id);
                           return <Chip key={id} label={tag?.name || id} size="small" />;
                         })}
                       </Box>
                     )}
                   >
-                    {allowedTags.map((tag) => (
+                    {tags.map((tag) => (
                       <MenuItem key={tag.id} value={tag.id}>{tag.name}</MenuItem>
                     ))}
                   </Select>
@@ -1242,10 +1212,10 @@ export default function AdminPostEditor() {
                 <Select multiple value={selectedTags} onChange={(e) => setSelectedTags(e.target.value)} label="Tags"
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((id) => { const tag = allowedTags.find(t => t.id === id) || tags.find(t => t.id === id); return <Chip key={id} label={tag?.name || id} size="small" />; })}
+                      {selected.map((id) => { const tag = tags.find(t => t.id === id); return <Chip key={id} label={tag?.name || id} size="small" />; })}
                     </Box>
                   )}>
-                  {allowedTags.map((tag) => <MenuItem key={tag.id} value={tag.id}>{tag.name}</MenuItem>)}
+                  {tags.map((tag) => <MenuItem key={tag.id} value={tag.id}>{tag.name}</MenuItem>)}
                 </Select>
               </FormControl>
             </Box>

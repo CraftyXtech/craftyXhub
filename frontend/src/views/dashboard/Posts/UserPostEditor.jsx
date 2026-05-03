@@ -50,7 +50,6 @@ import {
   validateFeaturedImageFile,
 } from '@/utils/featuredImageValidation';
 import { getApiErrorMessage } from '@/utils/apiError';
-import { filterTagIdsForCategory, getAllowedTagsForCategory } from '@/utils/taxonomyFilters';
 
 /**
  * UserPostEditor - Medium-style distraction-free writing experience
@@ -104,14 +103,6 @@ export default function UserPostEditor() {
   const [tags, setTags] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [tagsLoading, setTagsLoading] = useState(false);
-  const allowedTags = useMemo(
-    () => getAllowedTagsForCategory(categoryId, categories, tags),
-    [categoryId, categories, tags]
-  );
-  const allowedPublishTags = useMemo(
-    () => getAllowedTagsForCategory(publishCategoryId, categories, tags),
-    [publishCategoryId, categories, tags]
-  );
 
   // Computed values
   const stats = useMemo(() => {
@@ -188,32 +179,6 @@ export default function UserPostEditor() {
       loadPost();
     }
   }, [id, isEditing]);
-
-  useEffect(() => {
-    if (!selectedTags.length) return;
-    const filteredTagIds = filterTagIdsForCategory(
-      selectedTags,
-      categoryId,
-      categories,
-      tags
-    );
-    if (filteredTagIds.length !== selectedTags.length) {
-      setSelectedTags(filteredTagIds);
-    }
-  }, [categoryId, categories, selectedTags, tags]);
-
-  useEffect(() => {
-    if (!publishTags.length) return;
-    const filteredTagIds = filterTagIdsForCategory(
-      publishTags,
-      publishCategoryId,
-      categories,
-      tags
-    );
-    if (filteredTagIds.length !== publishTags.length) {
-      setPublishTags(filteredTagIds);
-    }
-  }, [categories, publishCategoryId, publishTags, tags]);
 
   // Auto-save function
   const handleAutoSave = useCallback(async (contentData) => {
@@ -306,10 +271,10 @@ export default function UserPostEditor() {
   // Open publish dialog
   const handleOpenPublish = useCallback(() => {
     setPublishCategoryId(categoryId || '');
-    setPublishTags(filterTagIdsForCategory(selectedTags || [], categoryId, categories, tags));
+    setPublishTags(selectedTags || []);
     setPublishFeaturedFile(null);
     setPublishDialogOpen(true);
-  }, [categories, categoryId, selectedTags, tags]);
+  }, [categoryId, selectedTags]);
 
   const processPublishFeaturedFile = useCallback(async (file) => {
     if (!file) return;
@@ -568,7 +533,7 @@ export default function UserPostEditor() {
         categories={categories}
         categoryId={categoryId}
         onCategoryChange={handleCategoryChange}
-        tags={allowedTags}
+        tags={tags}
         selectedTags={selectedTags}
         onTagToggle={handleTagToggle}
         metaTitle={metaTitle}
@@ -633,7 +598,7 @@ export default function UserPostEditor() {
                 </Typography>
               </Stack>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {allowedPublishTags.map((tag) => {
+                {tags.map((tag) => {
                   const isSelected = publishTags.includes(tag.id);
                   const isDisabled = !isSelected && publishTags.length >= 5;
                   return (

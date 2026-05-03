@@ -282,42 +282,7 @@ class PostService:
         category_id: Optional[int],
         tags: List[Tag],
     ) -> None:
-        if category_id is None or not tags:
-            return
-
-        tag_category_ids = {tag.category_id for tag in tags if tag.category_id is not None}
-        if not tag_category_ids:
-            return
-
-        category_rows = await session.execute(select(Category.id, Category.parent_id))
-        parent_by_id = {row[0]: row[1] for row in category_rows.all()}
-
-        def lineage(category_value: int) -> set[int]:
-            lineage_ids: set[int] = set()
-            current_id: Optional[int] = category_value
-            while current_id is not None and current_id not in lineage_ids:
-                lineage_ids.add(current_id)
-                current_id = parent_by_id.get(current_id)
-            return lineage_ids
-
-        selected_lineage = lineage(category_id)
-        if not selected_lineage:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Category not found",
-            )
-
-        for tag_category_id in tag_category_ids:
-            tag_lineage = lineage(tag_category_id)
-            if not tag_lineage:
-                continue
-
-            # Allow parent<->child lineage matches while blocking sibling branches.
-            if category_id not in tag_lineage and tag_category_id not in selected_lineage:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Selected tags must belong to the chosen category branch",
-                )
+        return
 
     @staticmethod
     async def resolve_category_slug(

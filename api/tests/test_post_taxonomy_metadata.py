@@ -144,7 +144,7 @@ async def test_inactive_tags_without_canonical_replacement_are_rejected(client_a
 
 
 @pytest.mark.asyncio
-async def test_tags_must_belong_to_selected_category_branch(client_admin, client_author):
+async def test_tags_can_cross_category_branches(client_admin, client_author):
     tech = await _create_category(client_admin, name="Tech Root", slug="tech-root")
     products = await _create_category(
         client_admin,
@@ -176,8 +176,10 @@ async def test_tags_must_belong_to_selected_category_branch(client_admin, client
             "is_published": "true",
         },
     )
-    assert create_response.status_code == 400, create_response.text
-    assert create_response.json()["detail"] == "Selected tags must belong to the chosen category branch"
+    assert create_response.status_code == 201, create_response.text
+    payload = create_response.json()
+    assert payload["category"]["id"] == products["id"]
+    assert [tag["id"] for tag in payload["tags"]] == [security_tag["id"]]
 
 
 @pytest.mark.asyncio
