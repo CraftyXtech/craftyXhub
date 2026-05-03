@@ -4,7 +4,7 @@ import secrets
 import string
 
 
-def generate_slug(title: str, max_length: int = 50, add_random_suffix: bool = True) -> str:
+def generate_slug(title: str, max_length: int = 120, add_random_suffix: bool = True) -> str:
     if not title or not title.strip():
         return generate_random_slug()
 

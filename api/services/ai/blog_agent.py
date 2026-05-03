@@ -1081,7 +1081,7 @@ class BlogAgentService:
         slug = re.sub(r"[^\w\s-]", "", slug)
         slug = re.sub(r"[\s_]+", "-", slug)
         slug = re.sub(r"-+", "-", slug)
-        slug = slug.strip("-")[:50]
+        slug = slug.strip("-")[:120]
         return slug.rstrip("-")
 
     async def generate(
