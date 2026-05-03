@@ -159,11 +159,11 @@ const PostSettingsSidebar = ({
                   <ListSubheader key={`header-${cat.id}`} sx={{ lineHeight: '32px', fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', bgcolor: 'background.paper' }}>
                     {cat.name}
                   </ListSubheader>,
-                  <MenuItem key={cat.id} value={cat.id} sx={{ pl: 3, fontSize: '0.85rem' }}>
+                  <MenuItem key={cat.id} value={String(cat.id)} sx={{ pl: 3, fontSize: '0.85rem' }}>
                     All {cat.name}
                   </MenuItem>,
                   ...(cat.subcategories || []).map((sub) => (
-                    <MenuItem key={sub.id} value={sub.id} sx={{ pl: 4, fontSize: '0.85rem' }}>
+                    <MenuItem key={sub.id} value={String(sub.id)} sx={{ pl: 4, fontSize: '0.85rem' }}>
                       {sub.name}
                     </MenuItem>
                   ))

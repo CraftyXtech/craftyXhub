@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
 // MUI
@@ -94,6 +94,7 @@ import {
   validateFeaturedImageFile,
 } from '@/utils/featuredImageValidation';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { filterTagIdsForCategory, getAllowedTagsForCategory } from '@/utils/taxonomyFilters';
 
 const SETTINGS_PANEL_WIDTH = 200;
 const INTELLIGENCE_PANEL_WIDTH = 380;
@@ -171,12 +172,29 @@ export default function AdminPostEditor() {
   const [tags, setTags] = useState([]);
 
   const [wordCount, setWordCount] = useState(0);
+  const allowedTags = useMemo(
+    () => getAllowedTagsForCategory(categoryId, categories, tags),
+    [categoryId, categories, tags]
+  );
 
   useEffect(() => {
     if (aiState?.categoryId && !categoryId) {
       setCategoryId(String(aiState.categoryId));
     }
   }, [aiState?.categoryId, categoryId]);
+
+  useEffect(() => {
+    if (!selectedTags.length) return;
+    const filteredTagIds = filterTagIdsForCategory(
+      selectedTags,
+      categoryId,
+      categories,
+      tags
+    );
+    if (filteredTagIds.length !== selectedTags.length) {
+      setSelectedTags(filteredTagIds);
+    }
+  }, [categoryId, categories, selectedTags, tags]);
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -227,7 +245,7 @@ export default function AdminPostEditor() {
           setSlug(post.slug || '');
           setContent(post.content || ''); // Store in state so TinyMCE picks it up on re-mount
           setExcerpt(post.excerpt || '');
-          setCategoryId(post.category?.id || post.category_id || '');
+          setCategoryId(post.category?.id ? String(post.category.id) : post.category_id ? String(post.category_id) : '');
           setSelectedTags(post.tags?.map(t => t.id) || []);
           setMetaTitle(post.meta_title || '');
           setMetaDescription(post.meta_description || '');
@@ -422,7 +440,13 @@ export default function AdminPostEditor() {
     if (metadata.categoryId && !categoryId) setCategoryId(String(metadata.categoryId));
 
     if (metadata.tagIds?.length > 0 && selectedTags.length === 0) {
-      setSelectedTags(metadata.tagIds);
+      const compatibleTagIds = filterTagIdsForCategory(
+        metadata.tagIds,
+        metadata.categoryId || categoryId,
+        categories,
+        tags
+      );
+      setSelectedTags(compatibleTagIds);
       return;
     }
 
@@ -434,10 +458,16 @@ export default function AdminPostEditor() {
         ))
         .map(t => t.id);
       if (matchedTagIds.length > 0 && selectedTags.length === 0) {
-        setSelectedTags(matchedTagIds);
+        const compatibleTagIds = filterTagIdsForCategory(
+          matchedTagIds,
+          metadata.categoryId || categoryId,
+          categories,
+          tags
+        );
+        setSelectedTags(compatibleTagIds);
       }
     }
-  }, [categoryId, excerpt, metaDescription, metaTitle, selectedTags.length, seoKeywords, slug, tags, title]);
+  }, [categories, categoryId, excerpt, metaDescription, metaTitle, selectedTags.length, seoKeywords, slug, tags, title]);
 
   const handleGenerateExcerpt = useCallback(async () => {
     const currentContent = editorRef.current ? editorRef.current.getContent() : content;
@@ -1064,11 +1094,11 @@ export default function AdminPostEditor() {
                       <ListSubheader key={`header-${cat.id}`} sx={{ lineHeight: '32px', fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', bgcolor: 'background.paper' }}>
                         {cat.name}
                       </ListSubheader>,
-                      <MenuItem key={cat.id} value={cat.id} sx={{ pl: 3, fontSize: '0.85rem' }}>
+                      <MenuItem key={cat.id} value={String(cat.id)} sx={{ pl: 3, fontSize: '0.85rem' }}>
                         All {cat.name}
                       </MenuItem>,
                       ...(cat.subcategories || []).map((sub) => (
-                        <MenuItem key={sub.id} value={sub.id} sx={{ pl: 4, fontSize: '0.85rem' }}>
+                        <MenuItem key={sub.id} value={String(sub.id)} sx={{ pl: 4, fontSize: '0.85rem' }}>
                           {sub.name}
                         </MenuItem>
                       ))
@@ -1092,13 +1122,13 @@ export default function AdminPostEditor() {
                     renderValue={(selected) => (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {selected.map((id) => {
-                          const tag = tags.find(t => t.id === id);
+                          const tag = allowedTags.find(t => t.id === id) || tags.find(t => t.id === id);
                           return <Chip key={id} label={tag?.name || id} size="small" />;
                         })}
                       </Box>
                     )}
                   >
-                    {tags.map((tag) => (
+                    {allowedTags.map((tag) => (
                       <MenuItem key={tag.id} value={tag.id}>{tag.name}</MenuItem>
                     ))}
                   </Select>
@@ -1193,11 +1223,11 @@ export default function AdminPostEditor() {
                     <ListSubheader key={`header-${cat.id}`} sx={{ lineHeight: '32px', fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', bgcolor: 'background.paper' }}>
                       {cat.name}
                     </ListSubheader>,
-                    <MenuItem key={cat.id} value={cat.id} sx={{ pl: 3, fontSize: '0.85rem' }}>
+                    <MenuItem key={cat.id} value={String(cat.id)} sx={{ pl: 3, fontSize: '0.85rem' }}>
                       All {cat.name}
                     </MenuItem>,
                     ...(cat.subcategories || []).map((sub) => (
-                      <MenuItem key={sub.id} value={sub.id} sx={{ pl: 4, fontSize: '0.85rem' }}>
+                      <MenuItem key={sub.id} value={String(sub.id)} sx={{ pl: 4, fontSize: '0.85rem' }}>
                         {sub.name}
                       </MenuItem>
                     ))
@@ -1212,10 +1242,10 @@ export default function AdminPostEditor() {
                 <Select multiple value={selectedTags} onChange={(e) => setSelectedTags(e.target.value)} label="Tags"
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((id) => { const tag = tags.find(t => t.id === id); return <Chip key={id} label={tag?.name || id} size="small" />; })}
+                      {selected.map((id) => { const tag = allowedTags.find(t => t.id === id) || tags.find(t => t.id === id); return <Chip key={id} label={tag?.name || id} size="small" />; })}
                     </Box>
                   )}>
-                  {tags.map((tag) => <MenuItem key={tag.id} value={tag.id}>{tag.name}</MenuItem>)}
+                  {allowedTags.map((tag) => <MenuItem key={tag.id} value={tag.id}>{tag.name}</MenuItem>)}
                 </Select>
               </FormControl>
             </Box>

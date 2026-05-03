@@ -50,6 +50,7 @@ import {
   validateFeaturedImageFile,
 } from '@/utils/featuredImageValidation';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { filterTagIdsForCategory, getAllowedTagsForCategory } from '@/utils/taxonomyFilters';
 
 /**
  * UserPostEditor - Medium-style distraction-free writing experience
@@ -75,8 +76,8 @@ export default function UserPostEditor() {
   const [manualExcerpt, setManualExcerpt] = useState(aiState?.excerpt || '');
   const [excerptError, setExcerptError] = useState('');
   const [isGeneratingExcerpt, setIsGeneratingExcerpt] = useState(false);
-  const [categoryId, setCategoryId] = useState('');
-  const [selectedTags, setSelectedTags] = useState([]);
+  const [categoryId, setCategoryId] = useState(aiState?.categoryId ? String(aiState.categoryId) : '');
+  const [selectedTags, setSelectedTags] = useState(Array.isArray(aiState?.tagIds) ? aiState.tagIds : []);
   const [metaTitle, setMetaTitle] = useState(aiState?.metaTitle || '');
   const [metaDescription, setMetaDescription] = useState(aiState?.metaDescription || '');
   const [seoKeywords, setSeoKeywords] = useState(
@@ -103,6 +104,14 @@ export default function UserPostEditor() {
   const [tags, setTags] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [tagsLoading, setTagsLoading] = useState(false);
+  const allowedTags = useMemo(
+    () => getAllowedTagsForCategory(categoryId, categories, tags),
+    [categoryId, categories, tags]
+  );
+  const allowedPublishTags = useMemo(
+    () => getAllowedTagsForCategory(publishCategoryId, categories, tags),
+    [publishCategoryId, categories, tags]
+  );
 
   // Computed values
   const stats = useMemo(() => {
@@ -157,7 +166,7 @@ export default function UserPostEditor() {
 
           // Set metadata
           setManualExcerpt(post.excerpt || '');
-          setCategoryId(post.category?.id || post.category_id || '');
+          setCategoryId(post.category?.id ? String(post.category.id) : post.category_id ? String(post.category_id) : '');
           setSelectedTags(post.tags?.map(t => t.id) || []);
           setMetaTitle(post.meta_title || '');
           setMetaDescription(post.meta_description || '');
@@ -179,6 +188,32 @@ export default function UserPostEditor() {
       loadPost();
     }
   }, [id, isEditing]);
+
+  useEffect(() => {
+    if (!selectedTags.length) return;
+    const filteredTagIds = filterTagIdsForCategory(
+      selectedTags,
+      categoryId,
+      categories,
+      tags
+    );
+    if (filteredTagIds.length !== selectedTags.length) {
+      setSelectedTags(filteredTagIds);
+    }
+  }, [categoryId, categories, selectedTags, tags]);
+
+  useEffect(() => {
+    if (!publishTags.length) return;
+    const filteredTagIds = filterTagIdsForCategory(
+      publishTags,
+      publishCategoryId,
+      categories,
+      tags
+    );
+    if (filteredTagIds.length !== publishTags.length) {
+      setPublishTags(filteredTagIds);
+    }
+  }, [categories, publishCategoryId, publishTags, tags]);
 
   // Auto-save function
   const handleAutoSave = useCallback(async (contentData) => {
@@ -271,10 +306,10 @@ export default function UserPostEditor() {
   // Open publish dialog
   const handleOpenPublish = useCallback(() => {
     setPublishCategoryId(categoryId || '');
-    setPublishTags(selectedTags || []);
+    setPublishTags(filterTagIdsForCategory(selectedTags || [], categoryId, categories, tags));
     setPublishFeaturedFile(null);
     setPublishDialogOpen(true);
-  }, [categoryId, selectedTags]);
+  }, [categories, categoryId, selectedTags, tags]);
 
   const processPublishFeaturedFile = useCallback(async (file) => {
     if (!file) return;
@@ -533,7 +568,7 @@ export default function UserPostEditor() {
         categories={categories}
         categoryId={categoryId}
         onCategoryChange={handleCategoryChange}
-        tags={tags}
+        tags={allowedTags}
         selectedTags={selectedTags}
         onTagToggle={handleTagToggle}
         metaTitle={metaTitle}
@@ -577,11 +612,11 @@ export default function UserPostEditor() {
                   <ListSubheader key={`header-${cat.id}`} sx={{ lineHeight: '32px', fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', bgcolor: 'background.paper' }}>
                     {cat.name}
                   </ListSubheader>,
-                  <MenuItem key={cat.id} value={cat.id} sx={{ pl: 3, fontSize: '0.85rem' }}>
+                  <MenuItem key={cat.id} value={String(cat.id)} sx={{ pl: 3, fontSize: '0.85rem' }}>
                     All {cat.name}
                   </MenuItem>,
                   ...(cat.subcategories || []).map((sub) => (
-                    <MenuItem key={sub.id} value={sub.id} sx={{ pl: 4, fontSize: '0.85rem' }}>
+                    <MenuItem key={sub.id} value={String(sub.id)} sx={{ pl: 4, fontSize: '0.85rem' }}>
                       {sub.name}
                     </MenuItem>
                   ))
@@ -598,7 +633,7 @@ export default function UserPostEditor() {
                 </Typography>
               </Stack>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {tags.map((tag) => {
+                {allowedPublishTags.map((tag) => {
                   const isSelected = publishTags.includes(tag.id);
                   const isDisabled = !isSelected && publishTags.length >= 5;
                   return (
