@@ -44,6 +44,7 @@ _MODEL_CONFIG = _load_model_config()
 AVAILABLE_MODELS = _MODEL_CONFIG["models"]
 DEFAULT_MODEL = _MODEL_CONFIG["default_model"]
 NVIDIA_PROVIDER_TYPE = "nvidia"
+DEEPSEEK_PROVIDER_TYPE = "deepseek"
 OPENROUTER_PROVIDER_TYPE = "openrouter"
 
 
@@ -90,6 +91,28 @@ def _get_nvidia_provider() -> OpenAIProvider:
     )
 
 
+def _ensure_deepseek_api_key():
+    if not settings.DEEPSEEK_API_KEY:
+        raise ValueError(
+            "DeepSeek API key not configured. Add DEEPSEEK_API_KEY to .env"
+        )
+
+
+def _get_deepseek_provider() -> OpenAIProvider:
+    _ensure_deepseek_api_key()
+    request_timeout = settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS
+    http_client = cached_async_http_client(
+        provider=f"deepseek-{request_timeout}",
+        timeout=request_timeout,
+        connect=5,
+    )
+    return OpenAIProvider(
+        base_url=settings.DEEPSEEK_BASE_URL,
+        api_key=settings.DEEPSEEK_API_KEY,
+        http_client=http_client,
+    )
+
+
 def get_model_entry(model_name: str) -> dict:
     entry = AVAILABLE_MODELS.get(model_name)
     if not entry:
@@ -115,6 +138,7 @@ def get_blog_model_capabilities(model_name: str) -> dict:
         "output_mode": entry.get("output_mode", "prompted_json"),
         "reasoning": entry.get("reasoning"),
         "extra_body": entry.get("extra_body") or {},
+        "model_settings": entry.get("model_settings") or {},
         "send_temperature": bool(entry.get("send_temperature", True)),
         "json_object_fallback": bool(entry.get("json_object_fallback", True)),
         "max_tokens_by_word_count": entry.get("max_tokens_by_word_count") or {},
@@ -151,6 +175,11 @@ def get_model(model_name: str):
             entry["id"],
             provider=_get_nvidia_provider(),
         )
+    if entry.get("provider_type") == DEEPSEEK_PROVIDER_TYPE:
+        return OpenAIModel(
+            entry["id"],
+            provider=_get_deepseek_provider(),
+        )
 
     return OpenRouterModel(
         entry["id"],
@@ -166,6 +195,11 @@ def get_model_from_id(model_id: str):
                     model_id,
                     provider=_get_nvidia_provider(),
                 )
+            if entry.get("provider_type") == DEEPSEEK_PROVIDER_TYPE:
+                return OpenAIModel(
+                    model_id,
+                    provider=_get_deepseek_provider(),
+                )
             break
 
     return OpenRouterModel(
@@ -176,7 +210,11 @@ def get_model_from_id(model_id: str):
 
 def get_models_for_frontend() -> list[dict]:
     """Return the model list formatted for frontend dropdowns."""
-    if not settings.NVIDIA_API_KEY and not settings.OPENROUTER_API_KEY:
+    if (
+        not settings.NVIDIA_API_KEY
+        and not settings.DEEPSEEK_API_KEY
+        and not settings.OPENROUTER_API_KEY
+    ):
         default_entry = AVAILABLE_MODELS[DEFAULT_MODEL]
         return [
             {
@@ -214,7 +252,11 @@ def get_models_for_frontend() -> list[dict]:
 
 def get_models_for_test() -> list[dict]:
     """Return detailed model info for the /ai/test endpoint."""
-    if not settings.NVIDIA_API_KEY and not settings.OPENROUTER_API_KEY:
+    if (
+        not settings.NVIDIA_API_KEY
+        and not settings.DEEPSEEK_API_KEY
+        and not settings.OPENROUTER_API_KEY
+    ):
         return []
 
     models: list[dict] = []
@@ -223,6 +265,8 @@ def get_models_for_test() -> list[dict]:
         configured = (
             bool(settings.NVIDIA_API_KEY)
             if provider_type == NVIDIA_PROVIDER_TYPE
+            else bool(settings.DEEPSEEK_API_KEY)
+            if provider_type == DEEPSEEK_PROVIDER_TYPE
             else bool(settings.OPENROUTER_API_KEY)
         )
         models.append(

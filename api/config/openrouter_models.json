@@ -1,5 +1,5 @@
 {
-  "default_model": "qwen3.5-122b-a10b",
+  "default_model": "deepseek-v4-pro",
   "models": {
     "gpt-5.4": {
       "id": "openai/gpt-5.4",
@@ -60,13 +60,13 @@
       }
     },
     "deepseek-v4-pro": {
-      "id": "deepseek-ai/deepseek-v4-pro",
+      "id": "deepseek-v4-pro",
       "label": "DeepSeek V4 Pro",
       "provider": "DeepSeek",
-      "provider_type": "nvidia",
+      "provider_type": "deepseek",
       "supports_structured": false,
       "supports_compat_json": true,
-      "blog_enabled": false,
+      "blog_enabled": true,
       "output_mode": "json_object",
       "reasoning": {
         "enabled": false,
@@ -74,9 +74,13 @@
       },
       "send_temperature": true,
       "json_object_fallback": true,
-      "openrouter_provider": {
-        "sort": "throughput",
-        "ignore": ["atlas-cloud"]
+      "model_settings": {
+        "reasoning_effort": "high"
+      },
+      "extra_body": {
+        "thinking": {
+          "type": "enabled"
+        }
       },
       "transient_retry_delay_seconds": 3,
       "max_tokens_by_word_count": {
@@ -105,7 +109,7 @@
       "provider_type": "nvidia",
       "supports_structured": false,
       "supports_compat_json": true,
-      "blog_enabled": true,
+      "blog_enabled": false,
       "output_mode": "json_object",
       "reasoning": {
         "enabled": false,

@@ -618,17 +618,33 @@ class BlogAgentService:
             "max_tokens": self._get_max_tokens(word_count, model_capabilities),
             "timeout": settings.AI_MODEL_REQUEST_TIMEOUT_SECONDS,
         }
+        provider_type = str(model_capabilities.get("provider_type") or "openrouter")
 
         reasoning = model_capabilities.get("reasoning")
-        if isinstance(reasoning, dict) and reasoning:
+        if (
+            provider_type == "openrouter"
+            and isinstance(reasoning, dict)
+            and reasoning
+        ):
             settings_payload["openrouter_reasoning"] = reasoning
 
         provider_routing = model_capabilities.get("openrouter_provider")
-        if isinstance(provider_routing, dict) and provider_routing:
+        if (
+            provider_type == "openrouter"
+            and isinstance(provider_routing, dict)
+            and provider_routing
+        ):
             settings_payload["openrouter_provider"] = provider_routing
 
         if model_capabilities.get("send_temperature", True):
             settings_payload["temperature"] = creativity
+
+        configured_model_settings = model_capabilities.get("model_settings")
+        if isinstance(configured_model_settings, dict) and configured_model_settings:
+            settings_payload = self._deep_merge_dicts(
+                settings_payload,
+                configured_model_settings,
+            )
 
         configured_extra_body = model_capabilities.get("extra_body")
         if isinstance(configured_extra_body, dict) and configured_extra_body:
