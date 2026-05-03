@@ -21,16 +21,13 @@ export default function PostCard({ post, animationDelay = 0 }) {
     featured_image,
     category,
     author,
-    created_at,
-    read_time,
-    reading_time
+    created_at
   } = post;
 
   const postUrl = `/post/${slug || uuid || id}`;
   const imageUrl = getImageUrl(featured_image) || FALLBACK_IMAGE;
   const authorName = author?.full_name || author?.username || 'Anonymous';
   const categoryName = category?.name || category || 'General';
-  const displayReadingTime = reading_time || read_time;
   const formattedDate = created_at ? new Date(created_at).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -122,7 +119,7 @@ export default function PostCard({ post, animationDelay = 0 }) {
         {/* Meta & Read More */}
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Typography variant="caption" color="text.secondary">
-            {formattedDate} {displayReadingTime && `· ${displayReadingTime} min read`}
+            {formattedDate}
           </Typography>
           <Typography
             variant="caption"

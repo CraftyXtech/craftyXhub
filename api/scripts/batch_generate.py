@@ -107,6 +107,26 @@ IMAGE_FALLBACK_BY_CATEGORY = {
 }
 
 
+def infer_blog_type(topic: str) -> str:
+    lowered = topic.lower()
+
+    if " vs " in lowered or "versus" in lowered or "difference" in lowered:
+        return "comparison"
+    if lowered.startswith("how to ") or lowered.startswith("how do ") or lowered.startswith("how can "):
+        return "tutorial"
+    if lowered.startswith("what is ") or lowered.startswith("what are "):
+        return "tutorial"
+    if lowered.startswith("why ") or " should " in lowered:
+        return "opinion"
+    if lowered.startswith("best ") or lowered.startswith("top ") or " types of " in lowered:
+        return "listicle"
+    if " case study" in lowered:
+        return "case-study"
+    if " review" in lowered:
+        return "review"
+    return "tutorial"
+
+
 @dataclass(frozen=True)
 class TopicItem:
     key: str
@@ -273,6 +293,7 @@ async def publish_item(
     if dry_run:
         return f"dry-run:{item.topic}"
 
+    blog_type = infer_blog_type(item.topic)
     published_posts = await PostService.get_internal_link_targets(
         session,
         category_id=item.category_id,
@@ -280,7 +301,7 @@ async def publish_item(
     )
     blog_post, _, web_search_used, sources = await blog_agent.generate(
         topic=item.topic,
-        blog_type="how-to",
+        blog_type=blog_type,
         keywords=seed_keywords,
         audience="Curious professionals and practical learners",
         word_count=word_count,
@@ -341,6 +362,7 @@ async def publish_item(
                 "source_index": item.source_index,
                 "source_section": item.section,
                 "topic": item.topic,
+                "blog_type": blog_type,
                 "model": DEFAULT_MODEL,
                 "use_web_search": False,
                 "web_search_used": web_search_used,

@@ -56,7 +56,7 @@ async def reset_admin_account() -> None:
     new_user = User(
       email=ADMIN_EMAIL,
       username="admin",
-      full_name="Super Admin",
+      full_name="S.A",
       password=hashed_password,
       is_active=True,
       is_verified=True,
@@ -67,7 +67,7 @@ async def reset_admin_account() -> None:
     await session.commit()
     await session.refresh(new_user)
 
-    print("\n✅ Seeded fresh SUPER_ADMIN account:")
+    print("\n✅ Seeded fresh S.A account:")
     print(f"   Email     : {new_user.email}")
     print(f"   Username  : {new_user.username}")
     print(f"   Role      : {new_user.role.value}")
@@ -83,6 +83,5 @@ async def reset_admin_account() -> None:
 
 if __name__ == "__main__":
   asyncio.run(reset_admin_account())
-
 
 

@@ -151,7 +151,7 @@ export default function FeaturedPosts() {
                           {post.author?.full_name || 'Anonymous'}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" display="block">
-                          {formatDate(post.published_at)} · {post.reading_time || 5} min read
+                          {formatDate(post.published_at)}
                         </Typography>
                       </Box>
                     </Stack>

@@ -72,7 +72,7 @@ class BlogAgentService:
         word_count_map = {
             "short": "200-600 total body words",
             "medium": "350-900 total body words",
-            "long": "700-1600 total body words",
+            "long": "900-1200 total body words",
             "very-long": "1100-2500 total body words",
         }
 
@@ -186,7 +186,7 @@ class BlogAgentService:
         elif word_count == "medium":
             section_budget = "Use 4-5 sections. Keep each section body roughly 80-180 words."
         elif word_count == "long":
-            section_budget = "Use 5-7 sections. Develop each section with useful specifics."
+            section_budget = "Use 5-6 sections. Keep the full article around 900-1200 body words and make each section specific, concrete, and useful."
         else:
             section_budget = "Use 6-8 sections. Keep depth high without repeating ideas."
 
@@ -395,7 +395,7 @@ class BlogAgentService:
         target_ranges = {
             "short": (200, 600),
             "medium": (350, 900),
-            "long": (700, 1600),
+            "long": (900, 1200),
             "very-long": (1100, 8000),
         }
         return target_ranges.get(word_count, target_ranges["medium"])
@@ -405,7 +405,7 @@ class BlogAgentService:
         section_minimums = {
             "short": 30,
             "medium": 45,
-            "long": 70,
+            "long": 110,
             "very-long": 90,
         }
         return section_minimums.get(word_count, 45)
