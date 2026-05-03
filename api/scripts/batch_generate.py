@@ -118,6 +118,33 @@ class TopicItem:
     section: str
 
 
+def build_publish_excerpt(blog_post, html_content: str) -> str:
+    summary = PostService.normalize_excerpt(blog_post.summary) or ""
+    legacy_candidates = PostService.build_legacy_excerpt_candidates(
+        html_content,
+        None,
+    )
+    if summary and summary not in legacy_candidates:
+        return summary
+
+    section_headings = [section.heading.strip() for section in blog_post.sections if section.heading.strip()]
+    heading_text = ", ".join(section_headings[:3])
+    parts = [summary.rstrip(".")] if summary else []
+    if heading_text:
+        parts.append(f"Covers {heading_text}.")
+
+    excerpt = " ".join(part for part in parts if part).strip()
+    excerpt = PostService.normalize_excerpt(excerpt) or summary
+    if excerpt and excerpt not in legacy_candidates:
+        return excerpt
+
+    fallback = (
+        f"{blog_post.title}. This article explains the core ideas, practical uses, "
+        f"and key distinctions readers need to understand the topic with confidence."
+    )
+    return PostService.normalize_excerpt(fallback) or blog_post.title
+
+
 def parse_topics(file_key: str, path: Path) -> list[TopicItem]:
     if not path.exists():
         return []
@@ -293,6 +320,7 @@ async def publish_item(
     )
 
     html_content = blog_agent.blog_post_to_html(blog_post)
+    publish_excerpt = build_publish_excerpt(blog_post, html_content)
     body_word_count = sum(len(section.body_markdown.split()) for section in blog_post.sections)
     reading_time = max(1, body_word_count // 200)
     quality_report = blog_agent.build_quality_report(
@@ -323,7 +351,7 @@ async def publish_item(
                 "taxonomy_suggestion": taxonomy_suggestion.model_dump(exclude_none=True),
             }
         },
-        excerpt=blog_post.summary,
+        excerpt=publish_excerpt,
         featured_image=featured_image,
         meta_title=blog_post.seo_title,
         meta_description=blog_post.seo_description,
