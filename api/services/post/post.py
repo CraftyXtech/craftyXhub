@@ -592,8 +592,22 @@ class PostService:
             max_attempts: int = 5
     ) -> str:
         try:
-            for _ in range(max_attempts):
-                candidate_slug = generate_slug(title, max_length=max_length, add_random_suffix=False)
+            base_slug = generate_slug(
+                title,
+                max_length=max_length,
+                add_random_suffix=False,
+            )
+            if not base_slug:
+                base_slug = generate_random_slug(length=min(random_slug_length, max_length))
+
+            candidate_slug = base_slug
+            for attempt in range(max_attempts):
+                if attempt > 0:
+                    suffix = str(attempt + 1)
+                    trimmed_base = base_slug[: max_length - len(suffix) - 1].rstrip("-_")
+                    candidate_slug = (
+                        f"{trimmed_base}-{suffix}" if trimmed_base else suffix
+                    )
                 existing = await session.execute(
                     select(model).where(model.slug == candidate_slug)
                 )
