@@ -24,7 +24,8 @@ import {
   IconTrendingUp,
   IconClock,
   IconEdit,
-  IconRefresh
+  IconRefresh,
+  IconUser
 } from '@tabler/icons-react';
 
 // API
@@ -85,7 +86,7 @@ const StatCard = ({ icon: Icon, title, value, change, color = 'primary', loading
  */
 export default function Overview() {
   const { user } = useAuth();
-  const { data, isLoading, error, refetch } = useDashboard();
+  const { data, isLoading, error, refetch, isAdmin } = useDashboard();
   
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -100,6 +101,9 @@ export default function Overview() {
   const topPosts = data?.top_posts || [];
   const recentDocuments = data?.recent_documents || [];
   const draftsCount = data?.drafts?.length || 0;
+
+  // Personal stats for admin/superadmin
+  const personalStats = data?.personal_overview || {};
 
   // Compute display name with fallbacks
   const displayName = user?.username || user?.full_name || user?.email?.split('@')[0] || 'there';
@@ -199,6 +203,19 @@ export default function Overview() {
             color="error"
           />
         </Grid>
+
+        {/* Your Posts card — admin/superadmin only */}
+        {isAdmin && (
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              icon={IconUser}
+              title="Your Posts"
+              value={personalStats.total_posts ?? 0}
+              loading={isLoading}
+              color="warning"
+            />
+          </Grid>
+        )}
       </Grid>
 
       {/* Recent Activity */}

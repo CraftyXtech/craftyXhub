@@ -43,7 +43,13 @@ export const getImageUrl = (imagePath, folder = null) => {
  * @returns {Promise<object>} { posts, total, page, size }
  */
 export const getPosts = async (params = {}) => {
-  const clientParams = { ...params, published: true };
+  const clientParams = { published: true, ...params };
+  // Remove null/undefined values so they are not sent as query params
+  Object.keys(clientParams).forEach(key => {
+    if (clientParams[key] === null || clientParams[key] === undefined) {
+      delete clientParams[key];
+    }
+  });
   const response = await axiosPublic.get('/posts/', { params: clientParams });
   return response.data;
 };

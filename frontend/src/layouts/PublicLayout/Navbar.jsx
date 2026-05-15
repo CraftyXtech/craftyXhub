@@ -395,7 +395,7 @@ function AdvertisementBand({ adSlot }) {
   );
 }
 
-export default function Navbar() {
+export default function Navbar({ minimal = false }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
@@ -524,77 +524,78 @@ export default function Navbar() {
 
   return (
     <Box component="header">
-      <Box sx={{ bgcolor: '#17181C', color: 'white' }}>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: 'auto 1fr',
-              lg: 'auto 1fr auto',
-            },
-            gridTemplateAreas: {
-              xs: `
-                "label date"
-                "ticker ticker"
-              `,
-              lg: `
-                "label ticker date"
-              `,
-            },
-            gap: { xs: 1.5, lg: 2 },
-            alignItems: 'center',
-            maxWidth: 'none',
-            mx: 'auto',
-            px: { xs: 2, md: 6 },
-            py: { xs: 1.25, md: 1 },
-          }}
-        >
-          <Box sx={{ gridArea: 'label', display: 'flex', alignItems: 'center' }}>
-              <Box
-                sx={{
-                  px: 1.5,
-                  py: 0.7,
-                  borderRadius: 1,
-                  bgcolor: '#D62839',
-                  fontSize: 12,
-                  fontWeight: 800,
-                  letterSpacing: 0.9,
-                  lineHeight: 1,
-                  whiteSpace: 'nowrap',
-                }}
+      {!minimal && (
+        <Box sx={{ bgcolor: '#17181C', color: 'white' }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: 'auto 1fr',
+                lg: 'auto 1fr auto',
+              },
+              gridTemplateAreas: {
+                xs: `
+                  "label date"
+                  "ticker ticker"
+                `,
+                lg: `
+                  "label ticker date"
+                `,
+              },
+              gap: { xs: 1.5, lg: 2 },
+              alignItems: 'center',
+              maxWidth: 'none',
+              mx: 'auto',
+              px: { xs: 2, md: 6 },
+              py: { xs: 1.25, md: 1 },
+            }}
+          >
+            <Box sx={{ gridArea: 'label', display: 'flex', alignItems: 'center' }}>
+                <Box
+                  sx={{
+                    px: 1.5,
+                    py: 0.7,
+                    borderRadius: 1,
+                    bgcolor: '#D62839',
+                    fontSize: 12,
+                    fontWeight: 800,
+                    letterSpacing: 0.9,
+                    lineHeight: 1,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {settings.identity_label}
+                </Box>
+            </Box>
+
+              {visibleMarketStrip.length > 0 && (
+                <Box sx={{ gridArea: 'ticker', minWidth: 0, overflowX: 'auto', display: 'flex', alignItems: 'center' }}>
+                  <Stack direction="row" spacing={1} sx={{ pb: 0.2 }}>
+                    {visibleMarketStrip.map((item) => (
+                      <MarketChip key={`${item.symbol}-${item.label}`} item={item} pulseKey={marketPulseKey} />
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+                justifyContent="flex-end"
+                sx={{ gridArea: 'date' }}
               >
-                {settings.identity_label}
-              </Box>
-          </Box>
-
-            {visibleMarketStrip.length > 0 && (
-              <Box sx={{ gridArea: 'ticker', minWidth: 0, overflowX: 'auto', display: 'flex', alignItems: 'center' }}>
-                <Stack direction="row" spacing={1} sx={{ pb: 0.2 }}>
-                  {visibleMarketStrip.map((item) => (
-                    <MarketChip key={`${item.symbol}-${item.label}`} item={item} pulseKey={marketPulseKey} />
-                  ))}
-                </Stack>
-              </Box>
-            )}
-
-            <Stack
-              direction="row"
-              spacing={2}
-              alignItems="center"
-              justifyContent="flex-end"
-              sx={{ gridArea: 'date' }}
-            >
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.78)' }}>
-                {new Date().toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </Typography>
-              {!isMobile && socialLinks.length > 0 && (
-                <Stack direction="row" spacing={0.5}>
-                  {socialLinks.map((social) => {
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.78)' }}>
+                  {new Date().toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </Typography>
+                {!isMobile && socialLinks.length > 0 && (
+                  <Stack direction="row" spacing={0.5}>
+                    {socialLinks.map((social) => {
                     const Icon = socialIconMap[social.platform.toLowerCase()];
                     return (
                       <Tooltip key={`${social.platform}-${social.label}`} title={social.label}>
@@ -659,10 +660,12 @@ export default function Navbar() {
             </Stack>
         </Box>
       </Box>
+      )}
 
-      <BreakingTicker label={settings.breaking_label} posts={breakingPosts} />
-      <AdvertisementBand adSlot={settings.ad_slot} />
+      {!minimal && <BreakingTicker label={settings.breaking_label} posts={breakingPosts} />}
+      {!minimal && <AdvertisementBand adSlot={settings.ad_slot} />}
 
+      {!minimal && (
       <Box sx={{ bgcolor: 'white', borderBottom: '1px solid', borderColor: 'divider' }}>
         <Box
           sx={{
@@ -735,31 +738,53 @@ export default function Navbar() {
           </Stack>
         </Box>
       </Box>
+      )}
 
       <Box
         sx={{
           position: 'sticky',
           top: 0,
           zIndex: (currentTheme) => currentTheme.zIndex.appBar,
-          bgcolor: '#000000',
+          bgcolor: minimal ? '#0a0a0a' : '#000000',
           color: 'white',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}
       >
         <Box
           sx={{
-            maxWidth: 1280,
+            maxWidth: minimal ? 'none' : 1280,
             mx: 'auto',
-            px: { xs: 2, md: 3 },
+            px: { xs: 2, md: minimal ? 4 : 3 },
             minHeight: 60,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            ...(minimal && !isMobile
+              ? {
+                  display: 'grid',
+                  gridTemplateColumns: 'auto 1fr auto',
+                  gap: 2,
+                  width: '100%',
+                }
+              : {
+                  justifyContent: 'center',
+                }),
           }}
         >
           {isMobile ? (
-            <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end" sx={{ width: '100%' }}>
-              <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
+              {minimal && (
+                <RouterLink to="/" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  <Logo />
+                </RouterLink>
+              )}
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 'auto' }}>
+                {minimal && isAuthenticated && (
+                  <IconButton onClick={handleUserMenuOpen} size="small">
+                    <Avatar src={user?.profile?.avatar || undefined} sx={{ width: 32, height: 32 }}>
+                      {user?.full_name?.[0] || user?.username?.[0] || 'U'}
+                    </Avatar>
+                  </IconButton>
+                )}
                 <IconButton
                   onClick={() => setMobileSearchOpen(true)}
                   sx={{ color: 'white' }}
@@ -774,6 +799,120 @@ export default function Navbar() {
                 </IconButton>
               </Stack>
             </Stack>
+          ) : minimal ? (
+            <>
+              {/* Left: Logo */}
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <RouterLink to="/" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  <Logo />
+                </RouterLink>
+              </Box>
+
+              {/* Center: Nav items */}
+              <Stack direction="row" spacing={0.5} alignItems="center" useFlexGap flexWrap="wrap" justifyContent="center">
+                {loading ? (
+                  <>
+                    <Skeleton variant="rounded" width={80} height={32} sx={{ bgcolor: 'rgba(255,255,255,0.16)' }} />
+                    <Skeleton variant="rounded" width={96} height={32} sx={{ bgcolor: 'rgba(255,255,255,0.16)' }} />
+                    <Skeleton variant="rounded" width={88} height={32} sx={{ bgcolor: 'rgba(255,255,255,0.16)' }} />
+                  </>
+                ) : (
+                  navItems.map((item, index) => (
+                    item.dropdown ? (
+                      <Box key={item.label}>
+                        <Button
+                          onClick={(event) => handleMenuOpen(event, index)}
+                          endIcon={<IconChevronDown size={14} />}
+                          sx={{
+                            color: 'white',
+                            fontWeight: 800,
+                            letterSpacing: 0.5,
+                            px: 1.5,
+                          }}
+                        >
+                          {item.label}
+                        </Button>
+                        <Menu
+                          anchorEl={anchorEl}
+                          open={openMenuIndex === index}
+                          onClose={handleMenuClose}
+                          MenuListProps={{ onMouseLeave: handleMenuClose }}
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                        >
+                          <MenuItem component={RouterLink} to={item.path} onClick={handleMenuClose} sx={{ fontWeight: 700 }}>
+                            View All {item.label}
+                          </MenuItem>
+                          {item.dropdown.map((subItem) => (
+                            <MenuItem
+                              key={subItem.path}
+                              component={RouterLink}
+                              to={subItem.path}
+                              onClick={handleMenuClose}
+                            >
+                              {subItem.label}
+                            </MenuItem>
+                          ))}
+                        </Menu>
+                      </Box>
+                    ) : (
+                      <Button
+                        key={item.label}
+                        component={RouterLink}
+                        to={item.path}
+                        sx={{
+                          color: 'white',
+                          fontWeight: 800,
+                          letterSpacing: 0.5,
+                          px: 1.5,
+                        }}
+                      >
+                        {item.label}
+                      </Button>
+                    )
+                  ))
+                )}
+              </Stack>
+
+              {/* Right: Profile links */}
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end">
+                {isAuthenticated ? (
+                  <>
+                    <IconButton
+                      component={RouterLink}
+                      to="/dashboard/notifications"
+                      size="small"
+                      sx={{ color: 'rgba(255,255,255,0.78)' }}
+                    >
+                      <IconBell size={18} />
+                    </IconButton>
+                    <Button
+                      component={RouterLink}
+                      to="/dashboard"
+                      size="small"
+                      variant="contained"
+                      sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                    >
+                      Dashboard
+                    </Button>
+                    <IconButton onClick={handleUserMenuOpen} size="small">
+                      <Avatar src={user?.profile?.avatar || undefined} sx={{ width: 32, height: 32 }}>
+                        {user?.full_name?.[0] || user?.username?.[0] || 'U'}
+                      </Avatar>
+                    </IconButton>
+                  </>
+                ) : (
+                  <Stack direction="row" spacing={1}>
+                    <Button component={RouterLink} to="/auth/login" size="small" sx={{ color: 'white' }}>
+                      Log In
+                    </Button>
+                    <Button component={RouterLink} to="/auth/register" size="small" variant="contained" color="error">
+                      Join
+                    </Button>
+                  </Stack>
+                )}
+              </Stack>
+            </>
           ) : (
             <Stack direction="row" spacing={0.5} alignItems="center" useFlexGap flexWrap="wrap" justifyContent="center">
               {loading ? (
@@ -852,7 +991,6 @@ export default function Navbar() {
             </IconButton>
           </Stack>
           <Divider />
-
 
           <List sx={{ flexGrow: 1 }}>
             {navItems.map((item, index) => (

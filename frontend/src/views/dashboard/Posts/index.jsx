@@ -46,7 +46,9 @@ import {
   IconStar,
   IconStarOff,
   IconFlame,
-  IconBolt
+  IconBolt,
+  IconChevronDown,
+  IconCheck
 } from '@tabler/icons-react';
 
 // API
@@ -84,6 +86,16 @@ export default function Posts() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
+  // Status filter options
+  const STATUS_FILTERS = [
+    { key: 'all', label: 'All' },
+    { key: 'published', label: 'Published' },
+    { key: 'draft', label: 'Draft' },
+    { key: 'featured', label: 'Featured', icon: <IconStar size={16} /> },
+    { key: 'trending', label: 'Trending', icon: <IconFlame size={16} /> },
+    { key: 'breaking', label: 'Breaking News', icon: <IconBolt size={16} /> },
+  ];
+
   // State
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +104,8 @@ export default function Posts() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilterAnchorEl, setStatusFilterAnchorEl] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedPost, setSelectedPost] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -111,11 +125,32 @@ export default function Posts() {
       setError(null);
       
       const params = {
-        page: page + 1,
+        skip: page * rowsPerPage,
         limit: rowsPerPage,
         author_id: user?.id,
-        published: undefined // Get both published and drafts
+        published: null // null = omit param → server returns all
       };
+      
+      // Apply status filter
+      switch (statusFilter) {
+        case 'published':
+          params.published = true;
+          break;
+        case 'draft':
+          params.published = false;
+          break;
+        case 'featured':
+          params.is_featured = true;
+          break;
+        case 'trending':
+          params.is_homepage_trending = true;
+          break;
+        case 'breaking':
+          params.is_breaking_news = true;
+          break;
+        default: // 'all'
+          break;
+      }
       
       if (search) {
         params.search = search;
@@ -130,7 +165,7 @@ export default function Posts() {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage, search, user?.id]);
+  }, [page, rowsPerPage, search, statusFilter, user?.id]);
 
   useEffect(() => {
     fetchPosts();
@@ -537,7 +572,24 @@ export default function Posts() {
             <TableHead>
               <TableRow>
                 <TableCell>Post</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell
+                  onClick={(e) => setStatusFilterAnchorEl(e.currentTarget)}
+                  sx={{
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    '&:hover': { color: 'primary.main' },
+                    transition: 'color 0.15s',
+                  }}
+                >
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <span>
+                      {statusFilter === 'all'
+                        ? 'Status'
+                        : STATUS_FILTERS.find((f) => f.key === statusFilter)?.label}
+                    </span>
+                    <IconChevronDown size={16} />
+                  </Stack>
+                </TableCell>
                 {isAdminOrMod(user) && <TableCell>Quality</TableCell>}
                 {!isMobile && <TableCell>Views</TableCell>}
                 {!isMobile && <TableCell>Date</TableCell>}
@@ -685,6 +737,45 @@ export default function Posts() {
           />
         )}
       </Card>
+
+      {/* Status Filter Menu */}
+      <Menu
+        anchorEl={statusFilterAnchorEl}
+        open={Boolean(statusFilterAnchorEl)}
+        onClose={() => setStatusFilterAnchorEl(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: { minWidth: 180, mt: 0.5 }
+          }
+        }}
+      >
+        {STATUS_FILTERS.map((filter) => (
+          <MenuItem
+            key={filter.key}
+            selected={statusFilter === filter.key}
+            onClick={() => {
+              setStatusFilter(filter.key);
+              setPage(0);
+              setStatusFilterAnchorEl(null);
+            }}
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: 2,
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1}>
+              {filter.icon && <ListItemIcon sx={{ minWidth: 'auto' }}>{filter.icon}</ListItemIcon>}
+              <Typography variant="body2">{filter.label}</Typography>
+            </Stack>
+            {statusFilter === filter.key && (
+              <IconCheck size={16} />
+            )}
+          </MenuItem>
+        ))}
+      </Menu>
 
       {/* Actions Menu */}
       <Menu

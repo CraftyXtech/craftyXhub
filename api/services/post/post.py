@@ -1438,6 +1438,9 @@ class PostService:
             author_id: Optional[int] = None,
             category_id: Optional[int] = None,
             tag_id: Optional[int] = None,
+            is_featured: Optional[bool] = None,
+            is_homepage_trending: Optional[bool] = None,
+            is_breaking_news: Optional[bool] = None,
             include_deleted: bool = False
     ) -> List[Post]:
         try:
@@ -1455,6 +1458,12 @@ class PostService:
                 conditions.append(Post.category_id == category_id)
             if tag_id:
                 conditions.append(Post.tags.any(Tag.id == tag_id))
+            if is_featured is not None:
+                conditions.append(Post.is_featured == is_featured)
+            if is_homepage_trending is not None:
+                conditions.append(Post.is_homepage_trending == is_homepage_trending)
+            if is_breaking_news is not None:
+                conditions.append(Post.is_breaking_news == is_breaking_news)
 
             if conditions:
                 query = query.where(and_(*conditions))
@@ -1523,6 +1532,8 @@ class PostService:
             session: AsyncSession,
             published_only: bool = True,
             is_featured: Optional[bool] = None,
+            is_homepage_trending: Optional[bool] = None,
+            is_breaking_news: Optional[bool] = None,
             author_id: Optional[int] = None,
             category_id: Optional[int] = None,
             tag_id: Optional[int] = None,
@@ -1536,10 +1547,12 @@ class PostService:
             if published_only:
                 conditions.append(Post.is_published == True)
 
-            if is_featured:
+            if is_featured is not None:
                 conditions.append(Post.is_featured == is_featured)
-            elif is_featured is not None:
-                conditions.append(Post.is_featured == False)
+            if is_homepage_trending is not None:
+                conditions.append(Post.is_homepage_trending == is_homepage_trending)
+            if is_breaking_news is not None:
+                conditions.append(Post.is_breaking_news == is_breaking_news)
 
             if author_id:
                 conditions.append(Post.author_id == author_id)

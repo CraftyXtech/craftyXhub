@@ -66,7 +66,7 @@ export const useUserDashboard = () => {
  */
 export const useDashboard = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.role === 'moderator';
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'moderator';
   
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);

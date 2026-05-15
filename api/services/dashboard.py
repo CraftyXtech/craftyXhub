@@ -184,6 +184,10 @@ class DashboardService:
 
             # Current admin's drafts
             drafts = []
+            personal_overview = None
+            personal_engagement = None
+            personal_top_posts = []
+
             if current_user:
                 drafts_posts = await PostService.get_draft_posts(
                     session=session,
@@ -204,6 +208,78 @@ class DashboardService:
                     for post in drafts_posts
                 ]
 
+                # --- Personal stats for the current admin/superadmin ---
+                personal_total = await PostService.get_posts_count(
+                    session=session,
+                    published_only=False,
+                    author_id=current_user.id,
+                    include_deleted=False,
+                )
+                personal_published = await PostService.get_posts_count(
+                    session=session,
+                    published_only=True,
+                    author_id=current_user.id,
+                    include_deleted=False,
+                )
+                personal_drafts = personal_total - personal_published
+
+                personal_views = (
+                    await session.scalar(
+                        select(func.coalesce(func.sum(Post.view_count), 0)).where(
+                            and_(Post.author_id == current_user.id, Post.deleted_at.is_(None))
+                        )
+                    )
+                    or 0
+                )
+
+                personal_likes = (
+                    await session.scalar(
+                        select(func.count())
+                        .select_from(
+                            post_likes.join(Post, post_likes.c.post_id == Post.id)
+                        )
+                        .where(and_(Post.author_id == current_user.id, Post.deleted_at.is_(None)))
+                    )
+                    or 0
+                )
+
+                personal_comments = (
+                    await session.scalar(
+                        select(func.count(Comment.id)).join(
+                            Post, Comment.post_id == Post.id
+                        ).where(and_(Post.author_id == current_user.id, Post.deleted_at.is_(None)))
+                    )
+                    or 0
+                )
+
+                personal_bookmarks = (
+                    await session.scalar(
+                        select(func.count())
+                        .select_from(
+                            post_bookmarks.join(Post, post_bookmarks.c.post_id == Post.id)
+                        )
+                        .where(and_(Post.author_id == current_user.id, Post.deleted_at.is_(None)))
+                    )
+                    or 0
+                )
+
+                personal_overview = DashboardOverview(
+                    total_posts=int(personal_total),
+                    published_posts=int(personal_published),
+                    draft_posts=int(personal_drafts),
+                )
+
+                personal_engagement = EngagementMetrics(
+                    total_views=int(personal_views),
+                    total_likes=int(personal_likes),
+                    total_comments=int(personal_comments),
+                    total_bookmarks=int(personal_bookmarks),
+                )
+
+                personal_top_posts = await DashboardService._get_top_posts_for_user(
+                    session=session, user_id=current_user.id, limit=5
+                )
+
             return AdminDashboardResponse(
                 overview=overview,
                 posts_overview=posts_overview,
@@ -214,6 +290,9 @@ class DashboardService:
                 recent_subscribers=recent_subscribers,
                 drafts=drafts,
                 recent_documents=recent_documents,
+                personal_overview=personal_overview,
+                personal_engagement=personal_engagement,
+                personal_top_posts=personal_top_posts,
             )
         except HTTPException:
             raise
@@ -235,19 +314,19 @@ class DashboardService:
             user_id = current_user.id
 
             # Per-user posts counts
+            total_posts = await PostService.get_posts_count(
+                session=session,
+                published_only=False,
+                author_id=user_id,
+                include_deleted=False,
+            )
             published_posts = await PostService.get_posts_count(
                 session=session,
                 published_only=True,
                 author_id=user_id,
                 include_deleted=False,
             )
-            draft_posts = await PostService.get_posts_count(
-                session=session,
-                published_only=False,
-                author_id=user_id,
-                include_deleted=False,
-            )
-            total_posts = published_posts + draft_posts
+            draft_posts = total_posts - published_posts
 
             # Per-user engagement metrics
             total_views = (

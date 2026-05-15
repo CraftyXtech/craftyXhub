@@ -104,6 +104,11 @@ class AdminDashboardResponse(BaseModel):
     drafts: List[DashboardDocumentSummary] = []
     recent_documents: List[DashboardDocumentSummary] = []
 
+    # Personal stats for the current admin/superadmin
+    personal_overview: Optional[DashboardOverview] = None
+    personal_engagement: Optional[EngagementMetrics] = None
+    personal_top_posts: List[DashboardPostSummary] = []
+
 
 class UserDashboardResponse(BaseModel):
     """

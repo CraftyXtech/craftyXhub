@@ -324,11 +324,14 @@ async def resolve_report(
 async def get_posts(
         skip: int = Query(0, ge=0),
         limit: int = Query(10, ge=1, le=100),
-        published: bool = Query(True),
+        published: Optional[bool] = Query(None),
         author_id: Optional[int] = None,
         author_uuid: Optional[str] = None,
         category_id: Optional[int] = None,
         tag_id: Optional[int] = None,
+        is_featured: Optional[bool] = Query(None),
+        is_homepage_trending: Optional[bool] = Query(None),
+        is_breaking_news: Optional[bool] = Query(None),
         session: AsyncSession = Depends(get_db_session)
 ):
     # If author_uuid provided, resolve to author_id
@@ -337,22 +340,31 @@ async def get_posts(
         author = await AuthService.get_user_by_uuid(session, author_uuid)
         if author:
             author_id = author.id
+
+    # Default to published=True for public browsing when no filter is specified
+    published_only = published if published is not None else True
     
     posts = await PostService.get_posts(
         session,
         skip=skip,
         limit=limit,
-        published_only=published,
+        published_only=published_only,
         author_id=author_id,
         category_id=category_id,
-        tag_id=tag_id
+        tag_id=tag_id,
+        is_featured=is_featured,
+        is_homepage_trending=is_homepage_trending,
+        is_breaking_news=is_breaking_news
     )
     total = await PostService.get_posts_count(
         session,
-        published_only=published,
+        published_only=published_only,
         author_id=author_id,
         category_id=category_id,
-        tag_id=tag_id
+        tag_id=tag_id,
+        is_featured=is_featured,
+        is_homepage_trending=is_homepage_trending,
+        is_breaking_news=is_breaking_news
     )
     return {
         "posts": posts,
