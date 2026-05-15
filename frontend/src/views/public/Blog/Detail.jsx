@@ -100,15 +100,12 @@ function SocialShare({ title, slug, uuid, shareVersion }) {
   const shareUrlPrefix =
     import.meta.env.VITE_SHARE_URL_PREFIX ||
     `${shareBaseUrl.replace(/\/$/, '')}/s`;
-  const shareTarget = `${shareUrlPrefix.replace(/\/$/, '')}/${encodeURIComponent(uuid || slug)}`;
-  const normalizedVersion = shareVersion
-    ? new Date(shareVersion).getTime() || String(shareVersion).trim()
-    : '';
-  const shareUrl = normalizedVersion
-    ? `${shareTarget}?v=${encodeURIComponent(normalizedVersion)}`
-    : shareTarget;
+  // Use slug for clean, human-readable URLs (e.g. /s/my-article-title)
+  const shareUrl = `${shareUrlPrefix.replace(/\/$/, '')}/${encodeURIComponent(slug || uuid)}`;
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(title);
+  // WhatsApp: title on one line, URL on the next — lets the link preview render the featured image
+  const whatsappText = encodeURIComponent(`${title}\n${shareUrl}`);
   
   return (
     <Stack direction="row" spacing={1} alignItems="center">
@@ -147,7 +144,7 @@ function SocialShare({ title, slug, uuid, shareVersion }) {
       </IconButton>
       <IconButton
         component="a"
-        href={`https://api.whatsapp.com/send?text=${encodedTitle}%20${encodedUrl}`}
+        href={`https://api.whatsapp.com/send?text=${whatsappText}`}
         target="_blank"
         size="small"
         rel="noopener noreferrer"

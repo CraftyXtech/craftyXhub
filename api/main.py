@@ -107,7 +107,7 @@ def include_routers(app: FastAPI) -> None:
     async def get_image(
         filename: str,
         folder: str = Query(
-            ..., description="Folder category (e.g., 'posts', 'avatars')"
+            "posts", description="Folder category (e.g., 'posts', 'avatars')"
         ),
     ):
         if folder not in ["posts", "avatars", "media", "images"]:
