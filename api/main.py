@@ -197,6 +197,52 @@ def include_routers(app: FastAPI) -> None:
             },
         )
 
+
+    @app.get("/sitemap.xml", include_in_schema=False, response_class=HTMLResponse)
+    async def sitemap_xml(db=Depends(get_db_session)):
+        """Generate XML sitemap of all published articles."""
+        from fastapi.responses import Response
+
+        stmt = select(Post).where(Post.is_published == True).order_by(Post.published_at.desc().nullslast())
+        result = await db.execute(stmt)
+        posts = result.scalars().all()
+
+        urls = []
+        # Homepage
+        urls.append(f"""  <url>
+    <loc>https://craftyxhub.com/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>""")
+
+        # Static pages
+        for path, priority in [("/about", 0.5), ("/search", 0.3)]:
+            urls.append(f"""  <url>
+    <loc>https://craftyxhub.com{path}</loc>
+    <changefreq>monthly</changefreq>
+    <priority>{priority}</priority>
+  </url>""")
+
+        # Articles
+        for post in posts:
+            lastmod = post.updated_at or post.published_at or post.created_at
+            lastmod_str = lastmod.strftime("%Y-%m-%d") if lastmod else "2025-01-01"
+            slug = post.slug
+            urls.append(f"""  <url>
+    <loc>https://craftyxhub.com/post/{slug}</loc>
+    <lastmod>{lastmod_str}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>""")
+
+        xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{chr(10).join(urls)}
+</urlset>"""
+
+        return Response(content=xml, media_type="application/xml")
+
+
     app.include_router(v1_router)
 
 
