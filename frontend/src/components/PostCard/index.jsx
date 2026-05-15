@@ -2,6 +2,8 @@ import { Box, Typography, Card, CardContent, CardMedia, Chip, Stack, Avatar } fr
 import { motion } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
 import { getImageUrl } from '@/api/utils/imageUrl';
+import { preload } from 'swr';
+import { getPostBySlug } from '@/api/services/postService';
 
 const MotionCard = motion.create(Card);
 
@@ -38,6 +40,12 @@ export default function PostCard({ post, animationDelay = 0 }) {
     <MotionCard
       component={RouterLink}
       to={postUrl}
+      onMouseEnter={() => {
+        const postSlug = slug || uuid || id;
+        if (postSlug) {
+          preload(`/api/v1/posts/slug/${postSlug}`, () => getPostBySlug(postSlug));
+        }
+      }}
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}

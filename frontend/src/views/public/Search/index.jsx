@@ -19,6 +19,7 @@ import { IconArrowRight, IconSearch } from '@tabler/icons-react';
 import { getImageUrl } from '@/api/services/postService';
 import { searchPosts } from '@/api/services/searchService';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { Helmet } from 'react-helmet-async';
 
 export default function Search() {
   const navigate = useNavigate();
@@ -70,6 +71,10 @@ export default function Search() {
 
   return (
     <Box sx={{ bgcolor: '#F8F9FC', py: { xs: 4, md: 5 } }}>
+      <Helmet>
+        <title>Search | CraftyXHub</title>
+        <meta name="description" content="Search for articles, topics, and companies on CraftyXHub." />
+      </Helmet>
       <Container maxWidth="lg">
         <Stack spacing={3}>
           <Box>

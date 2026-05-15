@@ -4,7 +4,8 @@ import { useRef, useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Keyboard } from 'swiper/modules';
 import { IconArrowRight, IconArrowLeft } from '@tabler/icons-react';
-import { getFeaturedPosts, getHomepageTrendingPosts, getImageUrl, getRecentPosts } from '@/api/services/postService';
+import { getFeaturedPosts, getHomepageTrendingPosts, getImageUrl, getRecentPosts, getPostBySlug } from '@/api/services/postService';
+import { preload } from 'swr';
 
 // Swiper styles
 import 'swiper/css';
@@ -23,6 +24,10 @@ function HeroPostSlide({ post }) {
     <Box
       component={RouterLink}
       to={getPostUrl(post)}
+      onMouseEnter={() => {
+        const slug = post.slug || post.uuid || post.id;
+        if (slug) preload(`/api/v1/posts/slug/${slug}`, () => getPostBySlug(slug));
+      }}
       sx={{
         position: 'relative',
         display: 'block',
@@ -96,6 +101,10 @@ function FeaturedPostCard({ post, height = '100%' }) {
     <Box
       component={RouterLink}
       to={postUrl}
+      onMouseEnter={() => {
+        const slug = post.slug || post.uuid || post.id;
+        if (slug) preload(`/api/v1/posts/slug/${slug}`, () => getPostBySlug(slug));
+      }}
       sx={{
         position: 'relative',
         height: height,

@@ -18,6 +18,7 @@ import Pagination from '@/components/Pagination';
 import Breadcrumb from '@/components/Breadcrumb';
 import { getCategoryBySlug } from '@/api/services/categoryService';
 import { axiosPublic } from '@/api/axios';
+import { Helmet } from 'react-helmet-async';
 
 const MotionBox = motion.create(Box);
 
@@ -203,6 +204,11 @@ export default function Category() {
 
   return (
     <Box>
+      <Helmet>
+        <title>{category?.name ? `${category.name} | CraftyXHub` : 'Category | CraftyXHub'}</title>
+        <meta name="description" content={category?.description || `Explore articles in ${category?.name || 'this category'}`} />
+      </Helmet>
+
       {/* Category Header */}
       <Box
         sx={{

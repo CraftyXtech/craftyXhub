@@ -704,7 +704,7 @@ export default function Navbar({ minimal = false }) {
 
             <Box sx={{ display: 'flex', justifyContent: 'center', flex: { xs: 0, md: 1 } }}>
               <RouterLink to="/" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                <Logo />
+                <Logo height={isMobile ? 45 : 60} />
               </RouterLink>
             </Box>
 
@@ -745,17 +745,18 @@ export default function Navbar({ minimal = false }) {
           position: 'sticky',
           top: 0,
           zIndex: (currentTheme) => currentTheme.zIndex.appBar,
-          bgcolor: minimal ? '#0a0a0a' : '#000000',
-          color: 'white',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          bgcolor: minimal ? '#ffffff' : '#000000',
+          color: minimal ? '#14213D' : 'white',
+          borderBottom: minimal ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.08)',
         }}
       >
         <Box
           sx={{
             maxWidth: minimal ? 'none' : 1280,
             mx: 'auto',
-            px: { xs: 2, md: minimal ? 4 : 3 },
-            minHeight: 60,
+            pl: { xs: 0, md: minimal ? 4 : 3 },
+            pr: { xs: 2, md: minimal ? 4 : 3 },
+            minHeight: { xs: 48, md: 60 },
             display: 'flex',
             alignItems: 'center',
             ...(minimal && !isMobile
@@ -773,9 +774,11 @@ export default function Navbar({ minimal = false }) {
           {isMobile ? (
             <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
               {minimal && (
-                <RouterLink to="/" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                  <Logo />
-                </RouterLink>
+                <Box>
+                  <RouterLink to="/" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    <Logo height={44} />
+                  </RouterLink>
+                </Box>
               )}
               <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 'auto' }}>
                 {minimal && isAuthenticated && (
@@ -787,13 +790,13 @@ export default function Navbar({ minimal = false }) {
                 )}
                 <IconButton
                   onClick={() => setMobileSearchOpen(true)}
-                  sx={{ color: 'white' }}
+                  sx={{ color: 'inherit' }}
                 >
                   <IconSearch size={22} />
                 </IconButton>
                 <IconButton
                   onClick={handleDrawerToggle}
-                  sx={{ color: 'white' }}
+                  sx={{ color: 'inherit' }}
                 >
                   {mobileOpen ? <IconX size={22} /> : <IconMenu2 size={22} />}
                 </IconButton>
@@ -812,9 +815,9 @@ export default function Navbar({ minimal = false }) {
               <Stack direction="row" spacing={0.5} alignItems="center" useFlexGap flexWrap="wrap" justifyContent="center">
                 {loading ? (
                   <>
-                    <Skeleton variant="rounded" width={80} height={32} sx={{ bgcolor: 'rgba(255,255,255,0.16)' }} />
-                    <Skeleton variant="rounded" width={96} height={32} sx={{ bgcolor: 'rgba(255,255,255,0.16)' }} />
-                    <Skeleton variant="rounded" width={88} height={32} sx={{ bgcolor: 'rgba(255,255,255,0.16)' }} />
+                    <Skeleton variant="rounded" width={80} height={32} sx={{ bgcolor: 'rgba(0,0,0,0.08)' }} />
+                    <Skeleton variant="rounded" width={96} height={32} sx={{ bgcolor: 'rgba(0,0,0,0.08)' }} />
+                    <Skeleton variant="rounded" width={88} height={32} sx={{ bgcolor: 'rgba(0,0,0,0.08)' }} />
                   </>
                 ) : (
                   navItems.map((item, index) => (
@@ -824,7 +827,7 @@ export default function Navbar({ minimal = false }) {
                           onClick={(event) => handleMenuOpen(event, index)}
                           endIcon={<IconChevronDown size={14} />}
                           sx={{
-                            color: 'white',
+                            color: 'inherit',
                             fontWeight: 800,
                             letterSpacing: 0.5,
                             px: 1.5,
@@ -861,7 +864,7 @@ export default function Navbar({ minimal = false }) {
                         component={RouterLink}
                         to={item.path}
                         sx={{
-                          color: 'white',
+                          color: 'inherit',
                           fontWeight: 800,
                           letterSpacing: 0.5,
                           px: 1.5,
@@ -882,7 +885,7 @@ export default function Navbar({ minimal = false }) {
                       component={RouterLink}
                       to="/dashboard/notifications"
                       size="small"
-                      sx={{ color: 'rgba(255,255,255,0.78)' }}
+                      sx={{ color: 'inherit', opacity: 0.78 }}
                     >
                       <IconBell size={18} />
                     </IconButton>
@@ -891,7 +894,7 @@ export default function Navbar({ minimal = false }) {
                       to="/dashboard"
                       size="small"
                       variant="contained"
-                      sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: 'white' }}
+                      sx={{ bgcolor: 'rgba(0,0,0,0.05)', color: 'inherit', boxShadow: 'none', '&:hover': { bgcolor: 'rgba(0,0,0,0.1)', boxShadow: 'none' } }}
                     >
                       Dashboard
                     </Button>
@@ -903,7 +906,7 @@ export default function Navbar({ minimal = false }) {
                   </>
                 ) : (
                   <Stack direction="row" spacing={1}>
-                    <Button component={RouterLink} to="/auth/login" size="small" sx={{ color: 'white' }}>
+                    <Button component={RouterLink} to="/auth/login" size="small" sx={{ color: 'inherit' }}>
                       Log In
                     </Button>
                     <Button component={RouterLink} to="/auth/register" size="small" variant="contained" color="error">

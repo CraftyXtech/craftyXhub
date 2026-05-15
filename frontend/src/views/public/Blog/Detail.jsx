@@ -29,6 +29,7 @@ import {
   IconBrandX,
   IconBrandLinkedin,
   IconBrandReddit,
+  IconBrandWhatsapp,
   IconArrowLeft
 } from '@tabler/icons-react';
 import CommentSection from '@/components/CommentSection';
@@ -44,6 +45,8 @@ import { getApiBaseUrl } from '@/api/axios';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import { Helmet } from 'react-helmet-async';
+import useSWR from 'swr';
 
 const MotionBox = motion.create(Box);
 
@@ -144,6 +147,16 @@ function SocialShare({ title, slug, uuid, shareVersion }) {
       </IconButton>
       <IconButton
         component="a"
+        href={`https://api.whatsapp.com/send?text=${encodedTitle}%20${encodedUrl}`}
+        target="_blank"
+        size="small"
+        rel="noopener noreferrer"
+        aria-label="Share on WhatsApp"
+      >
+        <IconBrandWhatsapp size={18} />
+      </IconButton>
+      <IconButton
+        component="a"
         href={`https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`}
         target="_blank"
         size="small"
@@ -165,7 +178,7 @@ function RelatedPosts({ posts }) {
   if (validPosts.length === 0) return null;
   
   return (
-    <Box sx={{ bgcolor: 'grey.50', py: 6 }}>
+    <Box sx={{ bgcolor: 'grey.50', pt: 4, pb: 6 }}>
       <Container maxWidth="lg">
         <Typography variant="h5" sx={{ fontWeight: 600, mb: 4 }}>
           Related Articles
@@ -192,64 +205,49 @@ export default function BlogDetail() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   
-  const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [relatedPosts, setRelatedPosts] = useState([]);
-  const [categoryData, setCategoryData] = useState(null);
-  
   // User interaction state
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
 
+  // Use SWR for main post
+  const { 
+    data: post, 
+    error, 
+    isLoading: loading 
+  } = useSWR(
+    slug ? `/api/v1/posts/slug/${slug}` : null,
+    () => getPostBySlug(slug),
+    { revalidateOnFocus: false }
+  );
+
+  // Sync likes state when post data changes
+  useEffect(() => {
+    if (post) {
+      setLikesCount(post.likes_count || 0);
+    }
+  }, [post]);
+
+  // Use SWR for related posts
+  const { data: relatedData } = useSWR(
+    post?.slug ? `/api/v1/posts/${post.slug}/related` : null,
+    () => getRelatedPosts(post.slug, { limit: 12 }),
+    { revalidateOnFocus: false }
+  );
+  
+  const relatedPosts = (relatedData?.posts || []).filter(
+    (relatedPost) => relatedPost?.slug !== post?.slug && (relatedPost?.slug || relatedPost?.uuid)
+  );
+
+  // Use SWR for category data
+  const { data: categoryData } = useSWR(
+    post?.category?.slug ? `/api/v1/categories/slug/${post.category.slug}` : null,
+    () => getCategoryBySlug(post.category.slug),
+    { revalidateOnFocus: false }
+  );
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, [slug]);
-
-  // Fetch post data
-  useEffect(() => {
-    const fetchPost = async () => {
-      if (!slug) return;
-      
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Fetch main post first (required for subsequent calls)
-        const postData = await getPostBySlug(slug);
-        setPost(postData);
-        setLikesCount(postData.likes_count || 0);
-        
-        // Fetch related posts and category data IN PARALLEL
-        const [relatedResult, categoryResult] = await Promise.all([
-          // Related posts (use slug, not uuid) - fetch more for carousel
-          postData.slug 
-            ? getRelatedPosts(postData.slug, { limit: 12 }).catch(() => ({ posts: [] }))
-            : Promise.resolve({ posts: [] }),
-          // Category data for sidebar
-          postData.category?.slug
-            ? getCategoryBySlug(postData.category.slug).catch(() => null)
-            : Promise.resolve(null)
-        ]);
-
-        setRelatedPosts(
-          (relatedResult.posts || []).filter(
-            (relatedPost) => relatedPost?.slug !== postData.slug && (relatedPost?.slug || relatedPost?.uuid)
-          )
-        );
-        setCategoryData(categoryResult);
-        
-      } catch (err) {
-        console.error('Failed to fetch post:', err);
-        setError(err.message || 'Failed to load post');
-        setPost(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPost();
   }, [slug]);
 
   // Record public view count (works for ALL visitors, IP-deduplicated on backend)
@@ -337,7 +335,7 @@ export default function BlogDetail() {
     return (
       <Container maxWidth="lg" sx={{ py: 8, textAlign: 'center' }}>
         <Alert severity="error" sx={{ mb: 4 }}>
-          {error || 'Post not found'}
+          {error?.message || (typeof error === 'string' ? error : 'Post not found')}
         </Alert>
         <Button
           component={RouterLink}
@@ -357,75 +355,164 @@ export default function BlogDetail() {
     updatedAtMs && (!publishedAtMs || updatedAtMs - publishedAtMs > 60_000)
   );
 
+  // Prepare SEO Data
+  const seoTitle = post.meta_title || post.title;
+  const seoDescription = post.meta_description || post.excerpt || '';
+  const postUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const imageUrl = post.featured_image ? getImageUrl(post.featured_image) : '';
+  const publishedTime = post.published_at ? new Date(post.published_at).toISOString() : '';
+  const modifiedTime = post.updated_at ? new Date(post.updated_at).toISOString() : '';
+  
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": postUrl
+    },
+    "headline": seoTitle,
+    "description": seoDescription,
+    "image": imageUrl ? [imageUrl] : [],
+    "datePublished": publishedTime,
+    "dateModified": modifiedTime || publishedTime,
+    "author": {
+      "@type": "Person",
+      "name": post.author?.full_name || post.author?.username || 'CraftyXHub Author',
+      "url": `${typeof window !== 'undefined' ? window.location.origin : ''}/author/${post.author?.username}`
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "CraftyXHub",
+      "logo": {
+        "@type": "ImageObject",
+        "url": `${typeof window !== 'undefined' ? window.location.origin : ''}/logo.png`
+      }
+    }
+  };
+
   return (
     <Box>
+      <Helmet>
+        <title>{seoTitle} | CraftyXHub</title>
+        <meta name="description" content={seoDescription} />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:url" content={postUrl} />
+        {imageUrl && <meta property="og:image" content={imageUrl} />}
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="CraftyXHub" />
+        {publishedTime && <meta property="article:published_time" content={publishedTime} />}
+        {modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+        {post.author && <meta property="article:author" content={post.author.full_name} />}
+        {post.category && <meta property="article:section" content={post.category.name} />}
+        {post.tags?.map(tag => (
+          <meta property="article:tag" content={tag.name} key={tag.slug} />
+        ))}
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
+        {imageUrl && <meta name="twitter:image" content={imageUrl} />}
+        
+        {/* JSON-LD Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify(jsonLd)}
+        </script>
+      </Helmet>
+
       {/* Article Content */}
-      <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 } }}>
+      <Container maxWidth="lg" sx={{ pt: { xs: 4, md: 8 }, pb: 0 }}>
         <Grid container spacing={4}>
           {/* Main Content */}
           <Grid size={{ xs: 12, lg: 8 }}>
             {/* Meta Info */}
-            <Stack
-              direction="row"
-              spacing={3}
-              sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}
-            >
-              {post.published_at && (
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <IconCalendar size={16} color="#14213D" />
-                  <Typography variant="body2" color="text.secondary">
-                    Published {formatDate(post.published_at)}
-                  </Typography>
-                </Stack>
-              )}
-              {showUpdatedAt && (
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <IconCalendar size={16} color="#14213D" />
-                  <Typography variant="body2" color="text.secondary">
-                    Updated {formatDate(post.updated_at)}
-                  </Typography>
-                </Stack>
-              )}
-              {post.reading_time && (
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <IconClock size={16} color="#14213D" />
-                  <Typography variant="body2" color="text.secondary">
-                    {post.reading_time} min read
-                  </Typography>
-                </Stack>
-              )}
-              {post.category && (
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <IconFolder size={16} color="#14213D" />
-                  <Typography
-                    component={RouterLink}
-                    to={`/category/${post.category.slug}`}
-                    variant="body2"
-                    color="primary.main"
-                    sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                  >
-                    {post.category.name}
-                  </Typography>
-                </Stack>
-              )}
-              {post.author && (
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <IconUser size={16} color="#14213D" />
-                  <Typography variant="body2" color="text.secondary">
-                    By{' '}
+            <Box sx={{ mb: 3 }}>
+              {/* Mobile Layout */}
+              <Grid container spacing={1.5} sx={{ display: { xs: 'flex', md: 'none' } }}>
+                <Grid size={{ xs: 12 }}>
+                  <Stack direction="row" alignItems="center" spacing={2} flexWrap="wrap" useFlexGap sx={{ rowGap: 1 }}>
+                    {post.category && (
+                      <Stack direction="row" alignItems="center" spacing={0.5}>
+                        <IconFolder size={16} color="#666" />
+                        <Typography
+                          component={RouterLink}
+                          to={`/category/${post.category.slug}`}
+                          variant="body2"
+                          color="primary.main"
+                          fontWeight={600}
+                          sx={{ textDecoration: 'none' }}
+                        >
+                          {post.category.name}
+                        </Typography>
+                      </Stack>
+                    )}
+                    {(showUpdatedAt || post.published_at) && (
+                      <Stack direction="row" alignItems="center" spacing={0.5}>
+                        <IconCalendar size={16} color="#666" />
+                        <Typography variant="caption" color="text.secondary">
+                          {showUpdatedAt
+                            ? `Updated ${formatDate(post.updated_at)}`
+                            : formatDate(post.published_at)}
+                        </Typography>
+                      </Stack>
+                    )}
+                  </Stack>
+                </Grid>
+                {post.reading_time && (
+                  <Grid size={{ xs: 6 }}>
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <IconClock size={16} color="#666" />
+                      <Typography variant="caption" color="text.secondary">
+                        {post.reading_time} min read
+                      </Typography>
+                    </Stack>
+                  </Grid>
+                )}
+              </Grid>
+
+              {/* Desktop Layout */}
+              <Stack
+                direction="row"
+                spacing={3}
+                sx={{ display: { xs: 'none', md: 'flex' }, flexWrap: 'wrap', gap: 1 }}
+              >
+                {(showUpdatedAt || post.published_at) && (
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <IconCalendar size={16} color="#14213D" />
+                    <Typography variant="body2" color="text.secondary">
+                      {showUpdatedAt
+                        ? `Updated ${formatDate(post.updated_at)}`
+                        : `Published ${formatDate(post.published_at)}`}
+                    </Typography>
+                  </Stack>
+                )}
+                {post.reading_time && (
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <IconClock size={16} color="#14213D" />
+                    <Typography variant="body2" color="text.secondary">
+                      {post.reading_time} min read
+                    </Typography>
+                  </Stack>
+                )}
+                {post.category && (
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <IconFolder size={16} color="#14213D" />
                     <Typography
                       component={RouterLink}
-                      to={`/author/${post.author.username}`}
+                      to={`/category/${post.category.slug}`}
                       variant="body2"
                       color="primary.main"
                       sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                     >
-                      {post.author.full_name}
+                      {post.category.name}
                     </Typography>
-                  </Typography>
-                </Stack>
-              )}
-            </Stack>
+                  </Stack>
+                )}
+              </Stack>
+            </Box>
 
             {/* Title */}
             <Typography
@@ -650,17 +737,16 @@ export default function BlogDetail() {
 
             <Divider sx={{ my: 4 }} />
 
-            {/* Tags & Actions */}
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              justifyContent="space-between"
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
-              spacing={2}
-              sx={{ mb: 4 }}
-            >
-              {/* Tags */}
-              <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
-                {post.tags?.map((tag) => (
+            {/* Tags Only */}
+            {post.tags?.length > 0 && (
+              <Stack
+                direction="row"
+                spacing={1}
+                flexWrap="wrap"
+                gap={1}
+                sx={{ mb: 4 }}
+              >
+                {post.tags.map((tag) => (
                   <Chip
                     key={tag.slug || tag.id}
                     label={tag.name}
@@ -673,48 +759,73 @@ export default function BlogDetail() {
                   />
                 ))}
               </Stack>
+            )}
 
-              {/* Actions */}
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<IconHeart size={18} fill={isLiked ? 'currentColor' : 'none'} />}
-                  onClick={handleLike}
-                  sx={{
-                    borderColor: isLiked ? 'error.main' : 'grey.300',
-                    color: isLiked ? 'error.main' : 'text.primary'
-                  }}
-                >
-                  {likesCount}
-                </Button>
-                {isAuthenticated && (
-                  <SaveToListMenu
-                    postUuid={post.uuid}
-                    isBookmarked={isBookmarked}
-                    onBookmarkChange={setIsBookmarked}
-                  />
-                )}
-                {!isAuthenticated && (
-                  <IconButton
-                    onClick={handleBookmark}
-                    sx={{
-                      border: '1px solid',
-                      borderColor: 'grey.300',
-                      color: 'text.secondary'
-                    }}
-                  >
-                    <IconBookmark size={18} />
-                  </IconButton>
-                )}
-              </Stack>
-            </Stack>
-
-            {/* Author Box */}
-            <AuthorBox author={post.author} />
+            {/* Author & Actions Box */}
+            <Card variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+              <CardContent sx={{ py: 2, px: { xs: 2, sm: 3 }, '&:last-child': { pb: 2 } }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} sx={{ width: '100%' }}>
+                  {post.author && (
+                    <Stack 
+                      direction="row" 
+                      spacing={1.5} 
+                      alignItems="center"
+                      component={RouterLink}
+                      to={`/author/${post.author.username}`}
+                      sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { opacity: 0.8 } }}
+                    >
+                      <Avatar 
+                        sx={{ width: 40, height: 40, bgcolor: 'primary.main', color: 'white' }}
+                      >
+                        <IconUser size={24} />
+                      </Avatar>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {post.author.full_name}
+                      </Typography>
+                    </Stack>
+                  )}
+                  
+                  {/* Actions */}
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<IconHeart size={18} fill={isLiked ? 'currentColor' : 'none'} />}
+                      onClick={handleLike}
+                      sx={{
+                        borderColor: isLiked ? 'error.main' : 'grey.300',
+                        color: isLiked ? 'error.main' : 'text.primary',
+                        borderRadius: 2
+                      }}
+                    >
+                      {likesCount}
+                    </Button>
+                    {isAuthenticated ? (
+                      <SaveToListMenu
+                        postUuid={post.uuid}
+                        isBookmarked={isBookmarked}
+                        onBookmarkChange={setIsBookmarked}
+                      />
+                    ) : (
+                      <IconButton
+                        onClick={handleBookmark}
+                        sx={{
+                          border: '1px solid',
+                          borderColor: 'grey.300',
+                          color: 'text.secondary',
+                          borderRadius: 2
+                        }}
+                      >
+                        <IconBookmark size={18} />
+                      </IconButton>
+                    )}
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
 
             {/* Social Share */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <SocialShare
                 title={post.title}
                 slug={post.slug}

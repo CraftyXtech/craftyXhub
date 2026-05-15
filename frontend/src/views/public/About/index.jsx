@@ -19,6 +19,7 @@ import {
   IconBulb
 } from '@tabler/icons-react';
 import SectionHeader from '@/components/SectionHeader';
+import { Helmet } from 'react-helmet-async';
 
 const MotionBox = motion.create(Box);
 const MotionCard = motion.create(Card);
@@ -89,6 +90,11 @@ const values = [
 export default function About() {
   return (
     <Box>
+      <Helmet>
+        <title>About Us | CraftyXHub</title>
+        <meta name="description" content="About CraftyXHub - We're on a mission to democratize knowledge sharing by connecting curious minds with insightful stories." />
+      </Helmet>
+
       {/* Hero Section */}
       <Box
         sx={{

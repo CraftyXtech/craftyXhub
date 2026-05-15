@@ -25,6 +25,7 @@ import PostCard from '@/components/PostCard';
 import Breadcrumb from '@/components/Breadcrumb';
 import { getUserByUsername } from '@/api/services/userService';
 import { getPostsByAuthor } from '@/api/services/postService';
+import { Helmet } from 'react-helmet-async';
 
 const MotionBox = motion.create(Box);
 
@@ -132,6 +133,11 @@ export default function Author() {
 
   return (
     <Box>
+      <Helmet>
+        <title>{author?.full_name ? `${author.full_name} | CraftyXHub` : 'Author | CraftyXHub'}</title>
+        <meta name="description" content={profile?.bio || `Read articles by ${author?.full_name || 'this author'}`} />
+      </Helmet>
+
       {/* Author Header */}
       <Box
         sx={{

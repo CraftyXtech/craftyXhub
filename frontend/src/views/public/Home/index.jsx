@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { Box, Collapse } from '@mui/material';
+import { Helmet } from 'react-helmet-async';
 import HeroSection from './sections/HeroSection';
 import LatestPosts from './sections/LatestPosts';
 import CategoryCarouselSection from './sections/CategoryCarouselSection';
@@ -19,6 +20,11 @@ export default function Home() {
 
   return (
     <Box>
+      <Helmet>
+        <title>CraftyXHub | Home</title>
+        <meta name="description" content="Discover the latest articles, breaking news, and in-depth analyses on Tech, Business, and more on CraftyXHub." />
+      </Helmet>
+
       {/* Hero Slider + Featured Posts (side by side on desktop) */}
       <HeroSection />
 

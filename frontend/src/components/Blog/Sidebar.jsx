@@ -138,6 +138,7 @@ export default function Sidebar({
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.4 }}
         variant="outlined"
+        sx={{ display: { xs: 'none', lg: 'block' } }}
       >
         <CardContent>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -286,6 +287,7 @@ export default function Sidebar({
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
         variant="outlined"
+        sx={{ display: 'none' }}
       >
         <CardContent>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
