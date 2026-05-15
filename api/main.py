@@ -174,6 +174,29 @@ def include_routers(app: FastAPI) -> None:
             },
         )
 
+
+    @app.get("/post/{slug}", response_class=HTMLResponse, include_in_schema=False)
+    async def crawler_post_render(
+        slug: str,
+        request: Request,
+        db=Depends(get_db_session),
+    ):
+        """Render full SEO-friendly HTML page for crawlers visiting /post/{slug}."""
+        post = await PostService.get_post_by_slug(db, slug)
+        if not post or not post.is_published:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Post not found"
+            )
+        html = SharePageService.render_crawler_post_html(post)
+        return HTMLResponse(
+            content=html,
+            headers={
+                "Cache-Control": "public, max-age=3600",
+                "X-Robots-Tag": "index,follow",
+            },
+        )
+
     app.include_router(v1_router)
 
 

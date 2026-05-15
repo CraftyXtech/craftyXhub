@@ -298,3 +298,158 @@ class SharePageService:
         if value is None:
             return None
         return value.isoformat()
+
+    @classmethod
+    def render_crawler_post_html(cls, post: Post) -> str:
+        """Render a full SEO-friendly HTML page for crawlers."""
+        title = escape(post.meta_title or post.title, quote=True)
+        description = escape(post.meta_description or cls._extract_plain_text(post.excerpt or post.content), quote=True)
+        canonical_url = escape(cls._build_frontend_post_url(post.slug), quote=True)
+        image_url = escape(cls._resolve_image_url_for_crawler(post.featured_image), quote=True)
+        image_alt = escape(post.title or cls.SITE_NAME, quote=True)
+        site_name = escape(getattr(settings, "SITE_NAME", cls.SITE_NAME) or cls.SITE_NAME, quote=True)
+
+        author_name = ""
+        if getattr(post, "author", None) and getattr(post.author, "full_name", None):
+            author_name = escape(post.author.full_name, quote=True)
+
+        published_ts = post.published_at or post.created_at
+        published_iso = published_ts.isoformat() if published_ts else ""
+
+        body_title = escape(post.title)
+        body_content = post.content or ""
+
+        json_ld = json.dumps({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "headline": post.title or "",
+            "description": cls._extract_plain_text(post.excerpt or post.content)[:300] if (post.excerpt or post.content) else "",
+            "url": cls._build_frontend_post_url(post.slug),
+            "image": image_url if image_url else "",
+            "datePublished": published_iso,
+            "dateModified": published_iso,
+            "author": {
+                "@type": "Person",
+                "name": author_name or "CraftyXHub",
+            },
+            "publisher": {
+                "@type": "Organization",
+                "name": site_name,
+            },
+        }, ensure_ascii=False)
+
+        published_meta = ""
+        if published_iso:
+            published_meta = f'\n    <meta property="article:published_time" content="{escape(published_iso, quote=True)}" />'
+
+        author_meta = ""
+        if author_name:
+            author_meta = f'\n    <meta property="article:author" content="{author_name}" />'
+
+        return f"""<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content="{description}" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <link rel="canonical" href="{canonical_url}" />
+
+    <meta property="og:site_name" content="{site_name}" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="{title}" />
+    <meta property="og:description" content="{description}" />
+    <meta property="og:url" content="{canonical_url}" />
+    <meta property="og:image" content="{image_url}" />
+    <meta property="og:image:secure_url" content="{image_url}" />
+    <meta property="og:image:width" content="{cls.IMAGE_WIDTH}" />
+    <meta property="og:image:height" content="{cls.IMAGE_HEIGHT}" />
+    <meta property="og:image:alt" content="{image_alt}" />{published_meta}{author_meta}
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{title}" />
+    <meta name="twitter:description" content="{description}" />
+    <meta name="twitter:image" content="{image_url}" />
+    <meta name="twitter:image:alt" content="{image_alt}" />
+
+    <script type="application/ld+json">
+{json_ld}
+    </script>
+
+    <style>
+      * {{ box-sizing: border-box; }}
+      body {{
+        margin: 0;
+        padding: 0;
+        background: #f5f7fb;
+        color: #122033;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.6;
+      }}
+      .container {{
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 32px 20px;
+      }}
+      header {{
+        margin-bottom: 32px;
+      }}
+      h1 {{
+        font-size: 2rem;
+        line-height: 1.2;
+        margin: 0 0 8px;
+      }}
+      .meta {{
+        color: #54657d;
+        font-size: 0.875rem;
+        margin-bottom: 16px;
+      }}
+      .featured-image {{
+        max-width: 100%;
+        height: auto;
+        border-radius: 12px;
+        margin-bottom: 24px;
+      }}
+      article {{
+        background: #ffffff;
+        border: 1px solid #d8e0ea;
+        border-radius: 16px;
+        padding: 32px;
+        font-size: 1.0625rem;
+      }}
+      article img {{ max-width: 100%; height: auto; border-radius: 8px; }}
+      article p {{ margin: 0 0 1.2em; }}
+      article h2 {{ font-size: 1.4rem; margin: 1.6em 0 0.6em; }}
+      article h3 {{ font-size: 1.2rem; margin: 1.4em 0 0.5em; }}
+      article a {{ color: #0f6cbd; }}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>{body_title}</h1>
+        <div class="meta">
+          {f"By {author_name} — " if author_name else ""}{published_iso[:10] if published_iso else ""}
+        </div>
+        {"<img class='featured-image' src='" + image_url + "' alt='" + image_alt + "' />" if image_url else ""}
+      </header>
+      <article>
+        {body_content}
+      </article>
+    </div>
+  </body>
+</html>"""
+
+    @classmethod
+    def _resolve_image_url_for_crawler(cls, image_path: str | None) -> str:
+        """Resolve image URL for crawler render (without needing a Request object)."""
+        if image_path:
+            trimmed = image_path.strip()
+            if trimmed.startswith(("http://", "https://")):
+                return trimmed
+            pure_path = PurePosixPath(trimmed)
+            filename = pure_path.name
+            folder = pure_path.parent.name or "posts"
+            return cls._build_api_image_url(filename, folder)
+        return ""
