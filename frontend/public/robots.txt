@@ -1,0 +1,8 @@
+# CraftyXHub robots.txt
+# Allow all crawlers to access the site
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://craftyxhub.com/sitemap.xml

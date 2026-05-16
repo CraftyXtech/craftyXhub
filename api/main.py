@@ -175,7 +175,7 @@ def include_routers(app: FastAPI) -> None:
         )
 
 
-    @app.get("/post/{slug}", response_class=HTMLResponse, include_in_schema=False)
+    @app.api_route("/post/{slug}", methods=["GET", "HEAD"], response_class=HTMLResponse, include_in_schema=False)
     async def crawler_post_render(
         slug: str,
         request: Request,
