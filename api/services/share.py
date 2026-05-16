@@ -100,14 +100,16 @@ class SharePageService:
     <meta property="og:type" content="article" />
     <meta property="og:title" content="{title}" />
     <meta property="og:description" content="{description}" />
-    <meta property="og:url" content="{share_url}" />
+    <meta property="og:url" content="{canonical_url}" />
     <meta property="og:image" content="{image_url}" />
     <meta property="og:image:secure_url" content="{image_url}" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="{cls.IMAGE_WIDTH}" />
     <meta property="og:image:height" content="{cls.IMAGE_HEIGHT}" />
     <meta property="og:image:alt" content="{image_alt}" />{published_meta}{author_meta}
 
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@CraftyXHub" />
     <meta name="twitter:title" content="{title}" />
     <meta name="twitter:description" content="{description}" />
     <meta name="twitter:image" content="{image_url}" />
@@ -268,10 +270,12 @@ class SharePageService:
         api_base = settings.API_BASE_URL.rstrip("/")
         if not api_base.endswith("/v1"):
             api_base = f"{api_base}/v1"
-        return (
-            f"{api_base}/uploads/images/{quote(filename, safe='')}"
-            f"?folder={quote(folder, safe='')}"
-        )
+        url = f"{api_base}/uploads/images/{quote(filename, safe='')}"
+        # Only append folder param if it's not the default ('posts')
+        # Cleaner URLs improve compatibility with Facebook/LinkedIn crawlers
+        if folder and folder != "posts":
+            url += f"?folder={quote(folder, safe='')}"
+        return url
 
     @staticmethod
     def _extract_plain_text(content: str | None) -> str:
@@ -363,11 +367,13 @@ class SharePageService:
     <meta property="og:url" content="{canonical_url}" />
     <meta property="og:image" content="{image_url}" />
     <meta property="og:image:secure_url" content="{image_url}" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="{cls.IMAGE_WIDTH}" />
     <meta property="og:image:height" content="{cls.IMAGE_HEIGHT}" />
     <meta property="og:image:alt" content="{image_alt}" />{published_meta}{author_meta}
 
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@CraftyXHub" />
     <meta name="twitter:title" content="{title}" />
     <meta name="twitter:description" content="{description}" />
     <meta name="twitter:image" content="{image_url}" />
