@@ -216,7 +216,7 @@ def include_routers(app: FastAPI) -> None:
   </url>""")
 
         # Static pages
-        for path, priority in [("/about", 0.5), ("/search", 0.3)]:
+        for path, priority in [("/about", 0.5)]:
             urls.append(f"""  <url>
     <loc>https://craftyxhub.com{path}</loc>
     <changefreq>monthly</changefreq>

@@ -74,6 +74,8 @@ export default function Search() {
       <Helmet>
         <title>Search | CraftyXHub</title>
         <meta name="description" content="Search for articles, topics, and companies on CraftyXHub." />
+        <meta name="robots" content="noindex,follow" />
+        <link rel="canonical" href="https://craftyxhub.com/search" />
       </Helmet>
       <Container maxWidth="lg">
         <Stack spacing={3}>
