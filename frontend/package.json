@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "start": "node server.mjs",
-    "build": "vite build",
+    "build": "vite build && node scripts/create-search-index.mjs",
     "preview": "vite preview",
     "test:node": "node --test tests/*.test.mjs",
     "test:e2e": "playwright test",
