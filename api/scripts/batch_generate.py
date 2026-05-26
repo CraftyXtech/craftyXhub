@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Generate and publish knowledge-base articles from article-topics markdown files.
 
@@ -40,18 +39,19 @@ from services.unsplash_service import UnsplashService
 
 TOPIC_RE = re.compile(r"^\s*\d+\.\s+(.+?)\s*$")
 HEADING_RE = re.compile(r"^##\s+\d+\.\s+(.+?)\s*$")
-
 TOPIC_FILES = {
     "ai": REPO_ROOT / "article-topics" / "ai" / "ai-knowledge-base-topics.md",
     "web3": REPO_ROOT / "article-topics" / "web3-blockchain-crypto" / "web3-blockchain-knowledge-base-topics.md",
     "business": REPO_ROOT / "article-topics" / "business-finance" / "business-finance-knowledge-base-topics.md",
     "wellness": REPO_ROOT / "article-topics" / "wellness-living" / "wellness-living-knowledge-base-topics.md",
+    "current": REPO_ROOT / "article-topics" / "current-events" / "current-events-topics.md",
 }
 
 DEFAULT_CATEGORY_BY_FILE = {
     "ai": 45,
     "web3": 46,
     "business": 50,
+    "current": 44,
     "wellness": 62,
 }
 
@@ -87,6 +87,32 @@ SECTION_CATEGORY_MAP = {
         "remote work": 59,
         "default": 62,
     },
+    "current": {
+        "cybersecurity": 49,
+        "cyber": 49,
+        "crypto": 46,
+        "blockchain": 46,
+        "automation": 47,
+        "conflict": 69,
+        "war": 69,
+        "business": 50,
+        "markets": 50,
+        "energy": 50,
+        "global issues": 68,
+        "global": 68,
+        "politics": 70,
+        "governance": 70,
+        "security": 71,
+        "intelligence": 71,
+        "diplomacy": 72,
+        "international": 72,
+        "wellness": 62,
+        "mental health": 63,
+        "productivity": 59,
+        "remote work": 59,
+        "ai": 45,
+        "default": 44,
+    },
 }
 
 IMAGE_FALLBACK_BY_CATEGORY = {
@@ -104,6 +130,12 @@ IMAGE_FALLBACK_BY_CATEGORY = {
     62: "wellness lifestyle",
     63: "mental health wellbeing",
     64: "personal growth lifestyle",
+    # Global Issues (68-72)
+    68: "editorial global issues world",
+    69: "editorial conflict war military",
+    70: "editorial politics government",
+    71: "editorial security intelligence",
+    72: "editorial diplomacy international relations",
 }
 
 
@@ -288,12 +320,14 @@ async def publish_item(
     word_count: str,
     creativity: float,
     dry_run: bool,
+    use_web_search: bool = True,
+    blog_type: str | None = None,
 ) -> str:
     seed_keywords = resolve_seo_keywords(topic=item.topic, provided_keywords=None)
     if dry_run:
         return f"dry-run:{item.topic}"
 
-    blog_type = infer_blog_type(item.topic)
+    blog_type = blog_type or infer_blog_type(item.topic)
     published_posts = await PostService.get_internal_link_targets(
         session,
         category_id=item.category_id,
@@ -309,7 +343,7 @@ async def publish_item(
         language="en-US",
         model=DEFAULT_MODEL,
         creativity=creativity,
-        use_web_search=False,
+        use_web_search=use_web_search,
         published_posts=published_posts,
     )
 
@@ -364,7 +398,7 @@ async def publish_item(
                 "topic": item.topic,
                 "blog_type": blog_type,
                 "model": DEFAULT_MODEL,
-                "use_web_search": False,
+                "use_web_search": use_web_search,
                 "web_search_used": web_search_used,
                 "search_sources_count": len(sources or []),
                 "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -422,6 +456,8 @@ async def run_batch(args: argparse.Namespace) -> int:
                     word_count=args.word_count,
                     creativity=args.creativity,
                     dry_run=False,
+                    use_web_search=args.use_web_search,
+                    blog_type=args.blog_type,
                 )
                 completed.add(item.key)
                 progress["completed"] = sorted(completed)
@@ -460,6 +496,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--progress-file",
         default=str(API_ROOT / "scripts" / ".batch_progress.json"),
     )
+    parser.add_argument("--use-web-search", action="store_true", default=True,
+                        help="Enable web search for article generation (default: True)")
+    parser.add_argument("--blog-type", type=str, default=None,
+                        help="Override blog type for all topics (e.g. news, tutorial, listicle)")
     parser.add_argument(
         "--error-file",
         default=str(API_ROOT / "scripts" / ".batch_errors.jsonl"),
